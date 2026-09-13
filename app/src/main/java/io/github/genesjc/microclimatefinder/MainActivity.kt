@@ -3,38 +3,35 @@ package io.github.genesjc.microclimatefinder
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.microclimatefinder.domain.model.TerrainType
+import io.github.genesjc.microclimatefinder.domain.model.WeatherReading
+import io.github.genesjc.microclimatefinder.ui.components.StationCard
 import io.github.genesjc.microclimatefinder.ui.theme.MicroClimateFinderTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
             MicroClimateFinderTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    FlavorDemoScreen(modifier = Modifier.padding(innerPadding))
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    MainScreen()
                 }
             }
         }
@@ -42,62 +39,76 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun FlavorDemoScreen(modifier: Modifier = Modifier) {
-    val isCommercial = FlavorBadge.IS_COMMERCIAL
-    val badgeColor = if (isCommercial) Color(0xFF15803D) else Color(0xFF0284C7)
+fun MainScreen() {
+    val sampleStation = MicroclimateStation(
+        id = "station_ridge_01",
+        name = "Mt. Tamalpais Ridge",
+        latitude = 37.9235,
+        longitude = -122.5965,
+        elevationMeters = 784,
+        terrain = TerrainType.RIDGE,
+        currentReading = WeatherReading(
+            temperatureCelsius = 18.4,
+            humidityPercent = 44,
+            windSpeedKmh = 24.0,
+            windDirectionDegrees = 290,
+            solarIrradianceWm2 = 720.0,
+            pressureHpa = 1012.4
+        ),
+        microclimateDescription = "Warm and arid conditions sitting above the marine boundary inversion layer."
+    )
+
+    // Resolved cleanly at compile-time via Gradle BuildConfig for the active flavor
+    val flavorDescription = if (BuildConfig.IS_COMMERCIAL) {
+        "Micro Climate Finder (Commercial Edition)"
+    } else {
+        "Micro Climate Finder (FOSS Edition)"
+    }
+
+    val mapProviderName = if (BuildConfig.IS_COMMERCIAL) {
+        "Google Maps SDK & Premium Radar"
+    } else {
+        "OpenStreetMap / OsmDroid"
+    }
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(16.dp)
     ) {
+        // Flavor indicator banner
         Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = badgeColor.copy(alpha = 0.12f),
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.primaryContainer
         ) {
-            Text(
-                text = "VARIANT: ${BuildConfig.FLAVOR_TYPE}",
-                color = badgeColor,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-            )
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = flavorDescription,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "Map Engine: $mapProviderName",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
 
+        Spacer(modifier = Modifier.height(20.dp))
+
         Text(
-            text = FlavorBadge.TITLE,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            text = "Active Microclimate Station",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = FlavorBadge.DESCRIPTION,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Build Information",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = "• Package ID: ${BuildConfig.APPLICATION_ID}", fontSize = 12.sp)
-                Text(text = "• Version: ${BuildConfig.VERSION_NAME}", fontSize = 12.sp)
-                Text(text = "• Commercial Flags: ${BuildConfig.IS_COMMERCIAL}", fontSize = 12.sp)
-            }
-        }
+        // Visual verification: Render the station card directly
+        StationCard(station = sampleStation)
     }
 }
