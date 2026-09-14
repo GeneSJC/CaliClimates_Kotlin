@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +49,7 @@ fun LandingScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(20.dp)
+            .verticalScroll(rememberScrollState())
     ) {
         // App Header Banner
         Surface(
@@ -75,7 +78,7 @@ fun LandingScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Text(
             text = "Component & Feature Demos",
@@ -90,7 +93,7 @@ fun LandingScreen(
         DemoNavigationCard(
             title = "Station Card Preview",
             description = "Interactive single station card with elevation badge, dual C/F temps, wind, and terrain styling.",
-            badge = "Active (v0.8.2)",
+            badge = "v0.8.2",
             iconChar = "▦",
             onClick = { onNavigateTo(AppScreen.STATION_CARD_PREVIEW) }
         )
@@ -101,9 +104,20 @@ fun LandingScreen(
         DemoNavigationCard(
             title = "Sacramento Station Feed (CSV)",
             description = "21 verified NOAA stations (5m to 1406m elev) loaded from assets via StationListScreen.",
-            badge = "Active (v0.9)",
+            badge = "v0.9.2",
             iconChar = "▤",
             onClick = { onNavigateTo(AppScreen.STATION_LIST) }
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Demo 3: Regional Topo & Spatial Map Screen
+        DemoNavigationCard(
+            title = "Regional Topo & Spatial Map",
+            description = "Zero-key offline topographical map plotting 21 stations with interactive pin taps and elevation profile.",
+            badge = "v0.10.0",
+            iconChar = "▲",
+            onClick = { onNavigateTo(AppScreen.STATION_MAP) }
         )
     }
 }

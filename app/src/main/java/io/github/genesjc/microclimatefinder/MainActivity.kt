@@ -18,6 +18,7 @@ import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationCardPreviewScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationListScreen
+import io.github.genesjc.microclimatefinder.ui.screens.StationMapScreen
 import io.github.genesjc.microclimatefinder.ui.theme.MicroClimateFinderTheme
 
 class MainActivity : ComponentActivity() {
@@ -63,8 +64,15 @@ fun AppNavigation() {
             )
         }
         AppScreen.STATION_LIST -> {
-            // Passes DEFAULT_DATASET (referencing the zero-index of AVAILABLE_DATASETS)
             StationListScreen(
+                dataset = StationDatasets.DEFAULT_DATASET,
+                onNavigateBack = {
+                    currentScreen = AppScreen.LANDING
+                }
+            )
+        }
+        AppScreen.STATION_MAP -> {
+            StationMapScreen(
                 dataset = StationDatasets.DEFAULT_DATASET,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
