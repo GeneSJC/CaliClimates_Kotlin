@@ -20,6 +20,7 @@ import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationCardPreviewScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationListScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationMapScreen
+import io.github.genesjc.microclimatefinder.ui.screens.UnifiedDraggableMapScreen
 import io.github.genesjc.microclimatefinder.ui.theme.MicroClimateFinderTheme
 
 class MainActivity : ComponentActivity() {
@@ -83,6 +84,13 @@ fun AppNavigation() {
         AppScreen.DRAGGABLE_MAP -> {
             DraggableMapScreen(
                 dataset = StationDatasets.DEFAULT_DATASET,
+                onNavigateBack = {
+                    currentScreen = AppScreen.LANDING
+                }
+            )
+        }
+        AppScreen.UNIFIED_DRAGGABLE_MAP -> {
+            UnifiedDraggableMapScreen(
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }

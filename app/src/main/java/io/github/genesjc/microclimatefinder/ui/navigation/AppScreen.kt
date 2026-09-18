@@ -5,5 +5,6 @@ enum class AppScreen(val title: String) {
     STATION_CARD_PREVIEW("Station Card Preview"),
     STATION_LIST("Station List Feed"),
     STATION_MAP("Sacramento Topo Map"),
-    DRAGGABLE_MAP("Draggable Topo Map")
+    DRAGGABLE_MAP("Draggable Topo Map"),
+    UNIFIED_DRAGGABLE_MAP("California Transect Map")
 }

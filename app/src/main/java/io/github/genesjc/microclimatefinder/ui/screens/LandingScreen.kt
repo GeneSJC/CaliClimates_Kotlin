@@ -111,6 +111,7 @@ fun LandingScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Demo 3: Sacramento Topographical Map (v0.11.0)
         // Demo 3: Sacramento Topographical Map (v0.12.0) - Reverted to clean view without top region/biome buttons
         DemoNavigationCard(
             title = "Sacramento Topographical Map",
@@ -129,6 +130,17 @@ fun LandingScreen(
             badge = "v0.14.0",
             iconChar = "✥",
             onClick = { onNavigateTo(AppScreen.DRAGGABLE_MAP) }
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Demo 5: California Transect Map (v0.15.0 - Macro Draggable & Zoomable Canvas)
+        DemoNavigationCard(
+            title = "California Transect Map",
+            description = "Continuous 4-way pan & zoom from Sacramento & Sierra (39.4°N) to Monterey Bay & Salinas (35.6°N) across 36 regional stations with quick-jump anchors.",
+            badge = "v0.15.0",
+            iconChar = "🗺️",
+            onClick = { onNavigateTo(AppScreen.UNIFIED_DRAGGABLE_MAP) }
         )
     }
 }
