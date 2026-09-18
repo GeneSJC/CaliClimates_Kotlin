@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import io.github.genesjc.microclimatefinder.data.local.StationDatasets
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
+import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationCardPreviewScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationListScreen
@@ -79,5 +80,14 @@ fun AppNavigation() {
                 }
             )
         }
+        AppScreen.DRAGGABLE_MAP -> {
+            DraggableMapScreen(
+                dataset = StationDatasets.DEFAULT_DATASET,
+                onNavigateBack = {
+                    currentScreen = AppScreen.LANDING
+                }
+            )
+        }
+        else -> Unit
     }
 }

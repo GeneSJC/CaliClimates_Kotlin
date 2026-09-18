@@ -111,13 +111,24 @@ fun LandingScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Demo 3: Regional Topo & Spatial Map Screen
+        // Demo 3: Sacramento Topographical Map (v0.12.0) - Reverted to clean view without top region/biome buttons
         DemoNavigationCard(
-            title = "Regional Topo & Spatial Map",
-            description = "Zero-key offline topographical map plotting 21 stations with interactive pin taps and elevation profile.",
-            badge = "v0.10.0",
+            title = "Sacramento Topographical Map",
+            description = "21 verified NOAA stations (5m to 1406m elev) across Sacramento 60-mile grid. Dual spatial map and elevation profile.",
+            badge = "v0.12.0",
             iconChar = "▲",
             onClick = { onNavigateTo(AppScreen.STATION_MAP) }
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Demo 4: Draggable Topo Map (v0.14.0 - Step 1: Pan Gesture Canvas)
+        DemoNavigationCard(
+            title = "Draggable Topo Map",
+            description = "Interactive 4-way pan (N/S/E/W) with gesture dragging across Sacramento 60-mile stations, coordinate readout & recenter.",
+            badge = "v0.14.0",
+            iconChar = "✥",
+            onClick = { onNavigateTo(AppScreen.DRAGGABLE_MAP) }
         )
     }
 }
