@@ -4,6 +4,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
@@ -39,9 +42,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,6 +68,9 @@ import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -109,6 +118,26 @@ fun UnifiedDraggableMapScreen(
     var panX by remember { mutableFloatStateOf(0f) }
     var panY by remember { mutableFloatStateOf(0f) }
     var zoomScale by remember { mutableFloatStateOf(1.0f) }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    // Smooth programmatic panning & zooming for anchor chips and zoom buttons
+    fun animateTo(targetPanX: Float, targetPanY: Float, targetZoom: Float) {
+        coroutineScope.launch {
+            val startX = panX
+            val startY = panY
+            val startZ = zoomScale
+            animate(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
+            ) { progress, _ ->
+                panX = startX + (targetPanX - startX) * progress
+                panY = startY + (targetPanY - startY) * progress
+                zoomScale = startZ + (targetZoom - startZ) * progress
+            }
+        }
+    }
 
     // Geographic bounding box for the entire Central California transect
     val rawMinLat = remember(stations) { if (stations.isNotEmpty()) stations.minOf { it.latitude } else 35.6 }
@@ -181,7 +210,7 @@ fun UnifiedDraggableMapScreen(
                 modifier = Modifier.padding(start = 6.dp)
             ) {
                 Text(
-                    text = "v0.16.1",
+                    text = "v0.16.2",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1D4ED8),
@@ -228,9 +257,7 @@ fun UnifiedDraggableMapScreen(
                         shape = RoundedCornerShape(8.dp),
                         color = Color(0xFF0284C7),
                         modifier = Modifier.clickable {
-                            panX = 0f
-                            panY = 0f
-                            zoomScale = 1.0f
+                            animateTo(0f, 0f, 1.0f)
                         }
                     ) {
                         Text(
@@ -245,7 +272,7 @@ fun UnifiedDraggableMapScreen(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Quick-Jump Region Anchor Chips
+                // Quick-Jump Region Anchor Chips with Smooth Transitions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -263,9 +290,7 @@ fun UnifiedDraggableMapScreen(
                         label = "📍 Sacramento",
                         isActive = panY < -80f,
                         onClick = {
-                            panX = 10f
-                            panY = -180f
-                            zoomScale = 1.35f
+                            animateTo(10f, -180f, 1.35f)
                         }
                     )
 
@@ -274,9 +299,7 @@ fun UnifiedDraggableMapScreen(
                         label = "🌉 Bay & Delta",
                         isActive = panY in -80f..80f && zoomScale > 1.1f,
                         onClick = {
-                            panX = -15f
-                            panY = 0f
-                            zoomScale = 1.25f
+                            animateTo(-15f, 0f, 1.25f)
                         }
                     )
 
@@ -285,9 +308,7 @@ fun UnifiedDraggableMapScreen(
                         label = "🌊 Monterey Bay",
                         isActive = panY > 80f,
                         onClick = {
-                            panX = -25f
-                            panY = 180f
-                            zoomScale = 1.35f
+                            animateTo(-25f, 180f, 1.35f)
                         }
                     )
                 }
@@ -416,6 +437,58 @@ fun UnifiedDraggableMapScreen(
                     stations.sortedBy { getStationLODTier(it.id) }
                 }
 
+                // Smooth label fade-in and fade-out animation engine
+                val stationLabelAlphas = remember {
+                    val initialMap = HashMap<String, Float>(48)
+                    stations.forEach { st ->
+                        val tier = getStationLODTier(st.id)
+                        val isInitialMajor = tier == 1 || st.id == "KMRY" || st.id == "KSAC"
+                        initialMap[st.id] = if (isInitialMajor) 1f else 0f
+                    }
+                    initialMap
+                }
+                val targetLabelAlphas = remember { HashMap<String, Float>(48) }
+                var isAnimatingLabels by remember { mutableStateOf(false) }
+                var animFrameTick by remember { mutableLongStateOf(0L) }
+
+                // Smooth 60-120fps alpha interpolation loop when label visibility transitions
+                LaunchedEffect(isAnimatingLabels) {
+                    if (isAnimatingLabels) {
+                        var lastTimeNanos = withFrameNanos { it }
+                        while (isActive && isAnimatingLabels) {
+                            withFrameNanos { nowNanos ->
+                                val dt = ((nowNanos - lastTimeNanos) / 1_000_000_000f).coerceIn(0.001f, 0.05f)
+                                lastTimeNanos = nowNanos
+
+                                var stillActive = false
+                                val fadeSpeed = 4.5f // Completes 0.0 -> 1.0 fade in ~220ms
+
+                                for (station in stations) {
+                                    val current = stationLabelAlphas[station.id] ?: 0f
+                                    val target = targetLabelAlphas[station.id] ?: 0f
+                                    if (abs(current - target) > 0.005f) {
+                                        val step = dt * fadeSpeed
+                                        val next = if (current < target) {
+                                            (current + step).coerceAtMost(target)
+                                        } else {
+                                            (current - step).coerceAtLeast(target)
+                                        }
+                                        stationLabelAlphas[station.id] = next
+                                        stillActive = true
+                                    } else if (current != target) {
+                                        stationLabelAlphas[station.id] = target
+                                    }
+                                }
+
+                                animFrameTick = nowNanos
+                                if (!stillActive) {
+                                    isAnimatingLabels = false
+                                }
+                            }
+                        }
+                    }
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -475,6 +548,10 @@ fun UnifiedDraggableMapScreen(
                                 }
                             }
                     ) {
+                        // Subscribe drawing pass to frame tick when label opacity is animating
+                        @Suppress("UNUSED_VARIABLE")
+                        val subscribedFrameTick = animFrameTick
+
                         // Strict Skia hardware clipping: Nothing drawn inside can ever escape the map viewport bounds!
                         clipRect(0f, 0f, size.width, size.height) {
                             // 1. Base Continental Valley Landmass (Light fertile sage)
@@ -690,7 +767,7 @@ fun UnifiedDraggableMapScreen(
                                 }
                             }
 
-                            // 10. Level-of-Detail (LOD) & Anti-Collision Label Badges
+                            // 10. Level-of-Detail (LOD) & Anti-Collision Label Badges with Smooth Fade In/Out
                             val baseFontSize = (20f * zoomScale.coerceIn(0.85f, 1.25f))
                             textPaint.textSize = baseFontSize
                             selectedTextPaint.textSize = baseFontSize + 2f
@@ -706,98 +783,166 @@ fun UnifiedDraggableMapScreen(
                                 sortedStations
                             }
 
-                            stationsToRender.forEach { station ->
+                            // Pass 1: Compute target alpha and resolve spatial collision for each station
+                            var needsAnim = false
+                            for (station in stationsToRender) {
                                 val pinX = toScreenX(station.longitude)
                                 val pinY = toScreenY(station.latitude)
 
-                                if (pinX >= -60f && pinX <= canvasWidth + 60f && pinY >= -60f && pinY <= canvasHeight + 60f) {
-                                    val isSelected = station.id == selectedStation?.id
-                                    val tier = getStationLODTier(station.id)
-
-                                    // LOD Zoom Thresholds:
-                                    // Tier 1: always eligible (Sacramento, Monterey, Stockton, Salinas, Palo Alto, etc.)
-                                    // Tier 2: revealed at zoomScale >= 1.25f (Auburn, Santa Cruz, Travis AFB, Half Moon Bay, etc.)
-                                    // Tier 3: revealed at zoomScale >= 1.85f (Local foothill stations, ranches, minor fields)
-                                    // Selected station: ALWAYS eligible regardless of zoom
-                                    val isZoomEligible = isSelected || when (tier) {
-                                        1 -> true
-                                        2 -> zoomScale >= 1.25f
-                                        else -> zoomScale >= 1.85f
+                                if (pinX < -60f || pinX > canvasWidth + 60f || pinY < -60f || pinY > canvasHeight + 60f) {
+                                    targetLabelAlphas[station.id] = 0f
+                                    if ((stationLabelAlphas[station.id] ?: 0f) > 0.005f) {
+                                        needsAnim = true
                                     }
+                                    continue
+                                }
 
-                                    if (isZoomEligible) {
-                                        val labelName = getCleanStationName(station.id, station.name)
-                                        val showSubtitle = isSelected || zoomScale >= 1.75f
+                                val isSelected = station.id == selectedStation?.id
+                                val tier = getStationLODTier(station.id)
 
-                                        val currentTextPaint = if (isSelected) selectedTextPaint else textPaint
-                                        val currentSubPaint = if (isSelected) selectedSubTextPaint else subTextPaint
+                                // Smooth progressive zoom target LOD:
+                                // Tier 1: Always target 1.0f (Sacramento, Monterey, Stockton, Salinas, Palo Alto, etc.)
+                                // Tier 2: Smooth ramp between zoom 1.15x and 1.30x (Auburn, Santa Cruz, Travis AFB, etc.)
+                                // Tier 3: Smooth ramp between zoom 1.70x and 1.90x (Local foothill stations, ranches)
+                                val zoomTarget = if (isSelected) {
+                                    1.0f
+                                } else when (tier) {
+                                    1 -> 1.0f
+                                    2 -> ((zoomScale - 1.15f) / 0.15f).coerceIn(0f, 1f)
+                                    else -> ((zoomScale - 1.70f) / 0.20f).coerceIn(0f, 1f)
+                                }
 
-                                        val nameWidth = currentTextPaint.measureText(labelName)
-                                        val nameHeight = currentTextPaint.textSize
+                                if (zoomTarget <= 0f) {
+                                    targetLabelAlphas[station.id] = 0f
+                                    if ((stationLabelAlphas[station.id] ?: 0f) > 0.005f) {
+                                        needsAnim = true
+                                    }
+                                    continue
+                                }
 
-                                        val subText = if (showSubtitle) {
-                                            "${station.elevationMeters}m • ${station.currentReading.temperatureCelsius.roundToInt()}°C"
-                                        } else null
-                                        val subWidth = subText?.let { currentSubPaint.measureText(it) } ?: 0f
-                                        val subHeight = if (subText != null) currentSubPaint.textSize + 2f else 0f
+                                val labelName = getCleanStationName(station.id, station.name)
+                                val currentTextPaint = if (isSelected) selectedTextPaint else textPaint
+                                val currentSubPaint = if (isSelected) selectedSubTextPaint else subTextPaint
 
-                                        val padH = 8f
-                                        val padV = 5f
-                                        val badgeWidth = maxOf(nameWidth, subWidth) + (padH * 2f)
-                                        val badgeHeight = nameHeight + subHeight + (padV * 2f)
+                                val nameWidth = currentTextPaint.measureText(labelName)
+                                val nameHeight = currentTextPaint.textSize
 
-                                        val baseRadius = if (isSelected) 10f else 6.5f
-                                        val scaledRadius = baseRadius * zoomScale.coerceIn(0.7f, 1.4f)
-                                        val badgeLeft = pinX + scaledRadius + 5f
-                                        val badgeTop = pinY - (badgeHeight / 2f)
-                                        val candidateRect = RectF(badgeLeft, badgeTop, badgeLeft + badgeWidth, badgeTop + badgeHeight)
+                                val showSubtitle = isSelected || zoomScale >= 1.65f
+                                val subText = if (showSubtitle) {
+                                    "${station.elevationMeters}m • ${station.currentReading.temperatureCelsius.roundToInt()}°C"
+                                } else null
+                                val subWidth = subText?.let { currentSubPaint.measureText(it) } ?: 0f
+                                val subHeight = if (subText != null) currentSubPaint.textSize + 2f else 0f
 
-                                        // Collision check with 3px safety margin against already placed labels
-                                        val collisionMarginRect = RectF(
-                                            candidateRect.left - 3f,
-                                            candidateRect.top - 2f,
-                                            candidateRect.right + 3f,
-                                            candidateRect.bottom + 2f
-                                        )
+                                val padH = 8f
+                                val padV = 5f
+                                val badgeWidth = maxOf(nameWidth, subWidth) + (padH * 2f)
+                                val badgeHeight = nameHeight + subHeight + (padV * 2f)
 
-                                        var hasCollision = false
-                                        if (!isSelected) {
-                                            for (placed in reusablePlacedBounds) {
-                                                if (RectF.intersects(placed, collisionMarginRect)) {
-                                                    hasCollision = true
-                                                    break
-                                                }
-                                            }
-                                        }
+                                val baseRadius = if (isSelected) 10f else 6.5f
+                                val scaledRadius = baseRadius * zoomScale.coerceIn(0.7f, 1.4f)
+                                val badgeLeft = pinX + scaledRadius + 5f
+                                val badgeTop = pinY - (badgeHeight / 2f)
+                                val candidateRect = RectF(badgeLeft, badgeTop, badgeLeft + badgeWidth, badgeTop + badgeHeight)
 
-                                        if (!hasCollision) {
-                                            // Draw rounded pill background & border
-                                            drawContext.canvas.nativeCanvas.drawRoundRect(
-                                                candidateRect,
-                                                10f,
-                                                10f,
-                                                if (isSelected) selectedPillBgPaint else pillBgPaint
-                                            )
-                                            drawContext.canvas.nativeCanvas.drawRoundRect(
-                                                candidateRect,
-                                                10f,
-                                                10f,
-                                                if (isSelected) selectedPillBorderPaint else pillBorderPaint
-                                            )
+                                val collisionMarginRect = RectF(
+                                    candidateRect.left - 3f,
+                                    candidateRect.top - 2f,
+                                    candidateRect.right + 3f,
+                                    candidateRect.bottom + 2f
+                                )
 
-                                            // Draw title text
-                                            val textX = badgeLeft + padH
-                                            val textY = badgeTop + padV + nameHeight - 2f
-                                            drawContext.canvas.nativeCanvas.drawText(labelName, textX, textY, currentTextPaint)
-
-                                            // Draw elevation and temperature subtitle if zoomed or selected
-                                            if (subText != null) {
-                                                drawContext.canvas.nativeCanvas.drawText(subText, textX, textY + subHeight, currentSubPaint)
-                                            }
-
-                                            reusablePlacedBounds.add(candidateRect)
+                                var hasCollision = false
+                                if (!isSelected) {
+                                    for (placed in reusablePlacedBounds) {
+                                        if (RectF.intersects(placed, collisionMarginRect)) {
+                                            hasCollision = true
+                                            break
                                         }
                                     }
+                                }
+
+                                if (hasCollision) {
+                                    targetLabelAlphas[station.id] = 0f
+                                } else {
+                                    targetLabelAlphas[station.id] = zoomTarget
+                                    reusablePlacedBounds.add(candidateRect)
+                                }
+
+                                val cur = stationLabelAlphas[station.id] ?: 0f
+                                if (kotlin.math.abs(cur - (targetLabelAlphas[station.id] ?: 0f)) > 0.005f) {
+                                    needsAnim = true
+                                }
+                            }
+
+                            if (needsAnim && !isAnimatingLabels) {
+                                isAnimatingLabels = true
+                            }
+
+                            // Pass 2: Draw all labels with smooth animated alpha and zero per-frame object allocation
+                            for (station in stationsToRender) {
+                                val currentAlpha = stationLabelAlphas[station.id] ?: 0f
+                                if (currentAlpha <= 0.01f) {
+                                    continue // Faded out - zero draw cost
+                                }
+
+                                val pinX = toScreenX(station.longitude)
+                                val pinY = toScreenY(station.latitude)
+                                if (pinX < -60f || pinX > canvasWidth + 60f || pinY < -60f || pinY > canvasHeight + 60f) {
+                                    continue
+                                }
+
+                                val isSelected = station.id == selectedStation?.id
+                                val labelName = getCleanStationName(station.id, station.name)
+
+                                val currentTextPaint = if (isSelected) selectedTextPaint else textPaint
+                                val currentSubPaint = if (isSelected) selectedSubTextPaint else subTextPaint
+
+                                val nameWidth = currentTextPaint.measureText(labelName)
+                                val nameHeight = currentTextPaint.textSize
+
+                                val subZoomAlpha = if (isSelected) 1f else ((zoomScale - 1.65f) / 0.15f).coerceIn(0f, 1f)
+                                val subAlpha = currentAlpha * subZoomAlpha
+                                val showSubtitle = isSelected || subAlpha > 0.02f
+
+                                val subText = if (showSubtitle) {
+                                    "${station.elevationMeters}m • ${station.currentReading.temperatureCelsius.roundToInt()}°C"
+                                } else null
+                                val subWidth = subText?.let { currentSubPaint.measureText(it) } ?: 0f
+                                val subHeight = if (subText != null) currentSubPaint.textSize + 2f else 0f
+
+                                val padH = 8f
+                                val padV = 5f
+                                val badgeWidth = maxOf(nameWidth, subWidth) + (padH * 2f)
+                                val badgeHeight = nameHeight + subHeight + (padV * 2f)
+
+                                val baseRadius = if (isSelected) 10f else 6.5f
+                                val scaledRadius = baseRadius * zoomScale.coerceIn(0.7f, 1.4f)
+                                val badgeLeft = pinX + scaledRadius + 5f
+                                val badgeTop = pinY - (badgeHeight / 2f)
+                                val candidateRect = RectF(badgeLeft, badgeTop, badgeLeft + badgeWidth, badgeTop + badgeHeight)
+
+                                val bgPaint = if (isSelected) selectedPillBgPaint else pillBgPaint
+                                val borderPaint = if (isSelected) selectedPillBorderPaint else pillBorderPaint
+
+                                val baseBgAlpha = if (isSelected) 245f else 230f
+                                bgPaint.alpha = (baseBgAlpha * currentAlpha).roundToInt().coerceIn(0, 255)
+                                borderPaint.alpha = (255f * currentAlpha).roundToInt().coerceIn(0, 255)
+                                currentTextPaint.alpha = (255f * currentAlpha).roundToInt().coerceIn(0, 255)
+                                currentSubPaint.alpha = (210f * subAlpha).roundToInt().coerceIn(0, 255)
+
+                                // Draw rounded pill background & border with animated alpha
+                                drawContext.canvas.nativeCanvas.drawRoundRect(candidateRect, 10f, 10f, bgPaint)
+                                drawContext.canvas.nativeCanvas.drawRoundRect(candidateRect, 10f, 10f, borderPaint)
+
+                                // Draw title text
+                                val textX = badgeLeft + padH
+                                val textY = badgeTop + padV + nameHeight - 2f
+                                drawContext.canvas.nativeCanvas.drawText(labelName, textX, textY, currentTextPaint)
+
+                                // Draw elevation and temperature subtitle
+                                if (subText != null && subAlpha > 0.02f) {
+                                    drawContext.canvas.nativeCanvas.drawText(subText, textX, textY + subHeight, currentSubPaint)
                                 }
                             }
                         }
@@ -825,7 +970,7 @@ fun UnifiedDraggableMapScreen(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clickable {
-                                    zoomScale = (zoomScale * 1.25f).coerceAtMost(4.0f)
+                                    animateTo(panX, panY, (zoomScale * 1.25f).coerceAtMost(4.0f))
                                 }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -854,7 +999,7 @@ fun UnifiedDraggableMapScreen(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clickable {
-                                    zoomScale = (zoomScale / 1.25f).coerceAtLeast(0.5f)
+                                    animateTo(panX, panY, (zoomScale / 1.25f).coerceAtLeast(0.5f))
                                 }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
