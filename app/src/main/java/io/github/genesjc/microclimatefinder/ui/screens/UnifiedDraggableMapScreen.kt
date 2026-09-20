@@ -67,7 +67,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
+import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
 import kotlinx.coroutines.isActive
@@ -76,7 +78,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Unified Draggable Topo Map (v0.15.0 - Macro Central California Transect)
+ * Unified Draggable Topo Map (v0.18.0 - Macro Central California Transect)
  *
  * Demonstrates continuous 4-way pan and multi-touch zoom spanning from Northern California
  * (Sacramento River Basin & Sierra Crest, 39.4°N) south to Central Coast California
@@ -89,11 +91,13 @@ import kotlin.math.roundToInt
  *  - Quick-jump region anchor chips: [📍 Sacramento], [🌊 Monterey Bay], [🗺️ View All].
  *  - Real-time pan & zoom HUD readout with live offset display.
  *  - Floating +/- zoom controls and tap-to-inspect StationCard integration.
+ *  - Expandable Local News panel with direct story links and in-app viewer.
  */
 @Composable
 fun UnifiedDraggableMapScreen(
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenNewsStory: ((LocalNewsStory, String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val parser = remember { StationCsvParser(context) }
@@ -222,7 +226,7 @@ fun UnifiedDraggableMapScreen(
                 modifier = Modifier.padding(start = 6.dp)
             ) {
                 Text(
-                    text = "v0.17.0",
+                    text = "v0.18.0",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1D4ED8),
@@ -1038,9 +1042,15 @@ fun UnifiedDraggableMapScreen(
             exit = fadeOut()
         ) {
             selectedStation?.let { st ->
+                val cleanCity = remember(st.id, st.name) {
+                    LocalNewsRepository.getCleanCityName(st.id, st.name)
+                }
                 StationCard(
                     station = st,
-                    isSelected = true
+                    isSelected = true,
+                    onOpenStory = { story ->
+                        onOpenNewsStory?.invoke(story, cleanCity)
+                    }
                 )
             }
         }

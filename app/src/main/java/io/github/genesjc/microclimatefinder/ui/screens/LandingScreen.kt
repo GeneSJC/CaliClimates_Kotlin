@@ -134,11 +134,11 @@ fun LandingScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Demo 5: California Transect Map (v0.17.0 - Macro Draggable & Zoomable Canvas)
+        // Demo 5: California Transect Map (v0.18.0 - Macro Draggable & Zoomable Canvas with Local News)
         DemoNavigationCard(
             title = "California Transect Map",
-            description = "Continuous 4-way pan & zoom from Sacramento & Sierra (39.4°N) to Monterey Bay & Salinas (35.6°N) across 36 regional stations with zoom limits & snackbar feedback.",
-            badge = "v0.17.0",
+            description = "Continuous 4-way pan & zoom from Sacramento to Monterey Bay across 36 regional stations with expandable Local News panel & story viewer.",
+            badge = "v0.18.0",
             iconChar = "🗺️",
             onClick = { onNavigateTo(AppScreen.UNIFIED_DRAGGABLE_MAP) }
         )
