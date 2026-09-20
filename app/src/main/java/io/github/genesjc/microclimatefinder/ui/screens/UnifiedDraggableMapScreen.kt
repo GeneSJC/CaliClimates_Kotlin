@@ -36,6 +36,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -120,9 +122,19 @@ fun UnifiedDraggableMapScreen(
     var zoomScale by remember { mutableFloatStateOf(1.0f) }
 
     val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var lastDragSnackbarTimeMs by remember { mutableLongStateOf(0L) }
+
+    fun showSnackbar(message: String) {
+        coroutineScope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     // Smooth programmatic panning & zooming for anchor chips and zoom buttons
     fun animateTo(targetPanX: Float, targetPanY: Float, targetZoom: Float) {
+        val clampedZoom = targetZoom.coerceIn(1.0f, 4.0f)
         coroutineScope.launch {
             val startX = panX
             val startY = panY
@@ -134,7 +146,7 @@ fun UnifiedDraggableMapScreen(
             ) { progress, _ ->
                 panX = startX + (targetPanX - startX) * progress
                 panY = startY + (targetPanY - startY) * progress
-                zoomScale = startZ + (targetZoom - startZ) * progress
+                zoomScale = startZ + (clampedZoom - startZ) * progress
             }
         }
     }
@@ -210,7 +222,7 @@ fun UnifiedDraggableMapScreen(
                 modifier = Modifier.padding(start = 6.dp)
             ) {
                 Text(
-                    text = "v0.16.2",
+                    text = "v0.17.0",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1D4ED8),
@@ -221,103 +233,7 @@ fun UnifiedDraggableMapScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 2. Interactive Navigation HUD: Pan Offset, Zoom Level, Recenter + Quick Region Anchors
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                // Top HUD row: Coordinates & Reset button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "PAN: ",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "ΔX=${panX.roundToInt()}px, ΔY=${panY.roundToInt()}px • ${(zoomScale * 10).roundToInt() / 10f}x",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF0284C7)
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFF0284C7),
-                        modifier = Modifier.clickable {
-                            animateTo(0f, 0f, 1.0f)
-                        }
-                    ) {
-                        Text(
-                            text = "Recenter",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Quick-Jump Region Anchor Chips with Smooth Transitions
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "JUMP:",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    // Sacramento Basin Anchor
-                    RegionAnchorChip(
-                        label = "📍 Sacramento",
-                        isActive = panY < -80f,
-                        onClick = {
-                            animateTo(10f, -180f, 1.35f)
-                        }
-                    )
-
-                    // Delta / Bay Gateway Anchor
-                    RegionAnchorChip(
-                        label = "🌉 Bay & Delta",
-                        isActive = panY in -80f..80f && zoomScale > 1.1f,
-                        onClick = {
-                            animateTo(-15f, 0f, 1.25f)
-                        }
-                    )
-
-                    // Monterey Bay Anchor
-                    RegionAnchorChip(
-                        label = "🌊 Monterey Bay",
-                        isActive = panY > 80f,
-                        onClick = {
-                            animateTo(-25f, 180f, 1.35f)
-                        }
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // 3. Main Draggable & Zoomable Canvas Viewport
+        // 2. Main Draggable & Zoomable Canvas Viewport
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -506,13 +422,43 @@ fun UnifiedDraggableMapScreen(
                                         val panDelta = event.calculatePan()
                                         val zoomDelta = event.calculateZoom()
 
-                                        zoomScale = (zoomScale * zoomDelta).coerceIn(0.7f, 3.5f)
+                                        val newZoom = (zoomScale * zoomDelta).coerceIn(1.0f, 4.0f)
+                                        if (zoomDelta != 1.0f && newZoom == zoomScale) {
+                                            val now = System.currentTimeMillis()
+                                            if (now - lastDragSnackbarTimeMs > 2500L) {
+                                                lastDragSnackbarTimeMs = now
+                                                if (zoomDelta < 1.0f && zoomScale <= 1.05f) {
+                                                    showSnackbar("Max zoom-out reached")
+                                                } else if (zoomDelta > 1.0f && zoomScale >= 3.95f) {
+                                                    showSnackbar("Max zoom-in reached")
+                                                }
+                                            }
+                                        }
+                                        zoomScale = newZoom
 
-                                        // Clamp panning to viewport bounds to prevent panning off into empty void
-                                        val maxPanX = (canvasWidth * 0.45f * zoomScale)
-                                        val maxPanY = (canvasHeight * 0.45f * zoomScale)
-                                        panX = (panX + panDelta.x).coerceIn(-maxPanX, maxPanX)
-                                        panY = (panY + panDelta.y).coerceIn(-maxPanY, maxPanY)
+                                        // Restrict panning to keep Bay Area & Sacramento transect stations firmly in view.
+                                        // Prevents dragging off into empty void to the West (Pacific), East (Nevada), North, or South.
+                                        val maxPanX = (canvasWidth * 0.20f + canvasWidth * 0.22f * (zoomScale - 1f)).coerceAtLeast(canvasWidth * 0.18f)
+                                        val maxPanY = (canvasHeight * 0.22f + canvasHeight * 0.24f * (zoomScale - 1f)).coerceAtLeast(canvasHeight * 0.20f)
+
+                                        val tentativePanX = panX + panDelta.x
+                                        val tentativePanY = panY + panDelta.y
+
+                                        val clampedPanX = tentativePanX.coerceIn(-maxPanX, maxPanX)
+                                        val clampedPanY = tentativePanY.coerceIn(-maxPanY, maxPanY)
+
+                                        // If user attempts to drag beyond allowed boundary, alert them with snackbar
+                                        if ((panDelta.x != 0f && clampedPanX == panX && tentativePanX != panX) ||
+                                            (panDelta.y != 0f && clampedPanY == panY && tentativePanY != panY)) {
+                                            val now = System.currentTimeMillis()
+                                            if (now - lastDragSnackbarTimeMs > 2200L) {
+                                                lastDragSnackbarTimeMs = now
+                                                showSnackbar("Max dragging area reached")
+                                            }
+                                        }
+
+                                        panX = clampedPanX
+                                        panY = clampedPanY
 
                                         event.changes.forEach { it.consume() }
                                     }
@@ -727,42 +673,38 @@ fun UnifiedDraggableMapScreen(
                                         station.elevationMeters < 100 -> Color(0xFFF59E0B)  // Valley Floor (Amber)
                                         station.elevationMeters < 400 -> Color(0xFF10B981)  // Foothills (Emerald)
                                         station.elevationMeters < 900 -> Color(0xFF3B82F6)  // Low Montane (Blue)
-                                        else -> Color(0xFF7C3AED)                           // Alpine/Ridge (Purple)
+                                        else -> Color(0xFFA855F7)                           // Alpine/High Ridge (Purple)
                                     }
 
-                                    val baseRadius = if (isSelected) 10f else 6.5f
-                                    val scaledRadius = baseRadius * zoomScale.coerceIn(0.7f, 1.4f)
+                                    val baseRadius = if (isSelected) 9.dp.toPx() else 6.5.dp.toPx()
+                                    val scaledRadius = (baseRadius * (1f + (zoomScale - 1f) * 0.25f)).coerceIn(5.5.dp.toPx(), 16.dp.toPx())
 
                                     // Selection Pulse Halo
                                     if (isSelected) {
                                         drawCircle(
                                             color = pinColor.copy(alpha = 0.25f),
-                                            radius = scaledRadius * 2.8f,
+                                            radius = scaledRadius * 2.5f,
                                             center = Offset(pinX, pinY)
                                         )
                                         drawCircle(
                                             color = pinColor.copy(alpha = 0.45f),
-                                            radius = scaledRadius * 1.8f,
+                                            radius = scaledRadius * 1.6f,
                                             center = Offset(pinX, pinY)
                                         )
                                     }
 
-                                    // Pin Core
+                                    // White Pin Border for crisp contrast over any topo relief
+                                    drawCircle(
+                                        color = Color.White,
+                                        radius = scaledRadius + (2.dp.toPx() * (1f + (zoomScale - 1f) * 0.2f)).coerceIn(1.8f, 3.8f),
+                                        center = Offset(pinX, pinY)
+                                    )
+
+                                    // Solid Vibrant Pin Core
                                     drawCircle(
                                         color = pinColor,
                                         radius = scaledRadius,
                                         center = Offset(pinX, pinY)
-                                    )
-                                    drawCircle(
-                                        color = Color.White,
-                                        radius = scaledRadius * 0.45f,
-                                        center = Offset(pinX, pinY)
-                                    )
-                                    drawCircle(
-                                        color = Color.White.copy(alpha = 0.9f),
-                                        radius = scaledRadius,
-                                        center = Offset(pinX, pinY),
-                                        style = Stroke(width = 1.8f)
                                     )
                                 }
                             }
@@ -808,8 +750,8 @@ fun UnifiedDraggableMapScreen(
                                     1.0f
                                 } else when (tier) {
                                     1 -> 1.0f
-                                    2 -> ((zoomScale - 1.15f) / 0.15f).coerceIn(0f, 1f)
-                                    else -> ((zoomScale - 1.70f) / 0.20f).coerceIn(0f, 1f)
+                                    2 -> ((zoomScale - 1.05f) / 0.15f).coerceIn(0f, 1f)
+                                    else -> ((zoomScale - 1.25f) / 0.20f).coerceIn(0f, 1f)
                                 }
 
                                 if (zoomTarget <= 0f) {
@@ -970,7 +912,15 @@ fun UnifiedDraggableMapScreen(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clickable {
-                                    animateTo(panX, panY, (zoomScale * 1.25f).coerceAtMost(4.0f))
+                                    if (zoomScale >= 3.95f) {
+                                        coroutineScope.launch {
+                                            snackbarHostState.currentSnackbarData?.dismiss()
+                                            snackbarHostState.showSnackbar("Max zoom-in reached")
+                                        }
+                                    } else {
+                                        val nextZoom = (zoomScale * 1.25f).coerceAtMost(4.0f)
+                                        animateTo(panX, panY, nextZoom)
+                                    }
                                 }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -983,13 +933,17 @@ fun UnifiedDraggableMapScreen(
                             }
                         }
 
-                        // Current Zoom Multiplier Display
+                        // Current Zoom Multiplier Display (Tap to Recenter)
                         Text(
                             text = "${(zoomScale * 10).roundToInt() / 10f}x",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0284C7),
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            modifier = Modifier
+                                .padding(vertical = 4.dp)
+                                .clickable {
+                                    animateTo(0f, 0f, 1.0f)
+                                }
                         )
 
                         // Zoom Out Button (−)
@@ -999,7 +953,15 @@ fun UnifiedDraggableMapScreen(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clickable {
-                                    animateTo(panX, panY, (zoomScale / 1.25f).coerceAtLeast(0.5f))
+                                    if (zoomScale <= 1.05f) {
+                                        coroutineScope.launch {
+                                            snackbarHostState.currentSnackbarData?.dismiss()
+                                            snackbarHostState.showSnackbar("Max zoom-out reached")
+                                        }
+                                    } else {
+                                        val nextZoom = (zoomScale / 1.25f).coerceAtLeast(1.0f)
+                                        animateTo(panX, panY, nextZoom)
+                                    }
                                 }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -1014,12 +976,12 @@ fun UnifiedDraggableMapScreen(
                     }
                 }
 
-                // 5. Visual Gestural Hint Pill in Bottom-Left Corner
+                // 5. Visual Gestural Hint Pill in Bottom-Left Corner with Quick Recenter
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = Color.White.copy(alpha = 0.92f),
+                    color = Color.White.copy(alpha = 0.95f),
                     border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shadowElevation = 2.dp,
+                    shadowElevation = 3.dp,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .padding(start = 12.dp, bottom = 12.dp)
@@ -1036,8 +998,34 @@ fun UnifiedDraggableMapScreen(
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFF334155)
                         )
+                        if (panX != 0f || panY != 0f || zoomScale != 1.0f) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFFE0F2FE),
+                                modifier = Modifier.clickable {
+                                    animateTo(0f, 0f, 1.0f)
+                                }
+                            ) {
+                                Text(
+                                    text = "Recenter",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0369A1),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
                     }
                 }
+
+                // 6. Snackbar Host for Zoom Limit Alerts
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp)
+                )
             }
         }
 
@@ -1142,30 +1130,5 @@ private fun getCleanStationName(id: String, rawName: String): String {
             .replace(" Municipal", "")
             .replace(", Stockton", "")
             .take(16)
-    }
-}
-
-@Composable
-private fun RegionAnchorChip(
-    label: String,
-    isActive: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = if (isActive) Color(0xFFE0F2FE) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        border = BorderStroke(
-            1.dp,
-            if (isActive) Color(0xFF0284C7) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-        ),
-        modifier = Modifier.clickable(onClick = onClick)
-    ) {
-        Text(
-            text = label,
-            fontSize = 10.5.sp,
-            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-            color = if (isActive) Color(0xFF0369A1) else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        )
     }
 }
