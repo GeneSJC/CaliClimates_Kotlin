@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import io.github.genesjc.microclimatefinder.data.local.StationDatasets
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
+import io.github.genesjc.microclimatefinder.ui.screens.CaliforniaRegionsMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.NewsStoryViewerScreen
@@ -108,6 +109,16 @@ fun AppNavigation() {
                     selectedNewsCity = city
                     previousScreen = AppScreen.UNIFIED_DRAGGABLE_MAP
                     currentScreen = AppScreen.NEWS_STORY_VIEWER
+                }
+            )
+        }
+        AppScreen.CALIFORNIA_REGIONS -> {
+            CaliforniaRegionsMapScreen(
+                onNavigateBack = {
+                    currentScreen = AppScreen.LANDING
+                },
+                onNavigateToActiveTransect = {
+                    currentScreen = AppScreen.UNIFIED_DRAGGABLE_MAP
                 }
             )
         }

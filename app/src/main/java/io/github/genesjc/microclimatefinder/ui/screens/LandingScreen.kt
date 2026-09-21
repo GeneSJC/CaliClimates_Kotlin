@@ -142,6 +142,17 @@ fun LandingScreen(
             iconChar = "🗺️",
             onClick = { onNavigateTo(AppScreen.UNIFIED_DRAGGABLE_MAP) }
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Demo 6: California Regional Sections (v0.21.0 - Multi-Region Constraints & Map)
+        DemoNavigationCard(
+            title = "California Regional Sections",
+            description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
+            badge = "v0.21.0",
+            iconChar = "🧭",
+            onClick = { onNavigateTo(AppScreen.CALIFORNIA_REGIONS) }
+        )
     }
 }
 
