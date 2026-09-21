@@ -2,6 +2,7 @@ package io.github.genesjc.microclimatefinder.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -64,6 +65,7 @@ fun CaliforniaRegionsMapScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
+    var currentMapStyle by remember { mutableStateOf(CaliforniaMapStyle.CLASSIC) }
     val selectedRegion = remember(selectedRegionId) {
         CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == selectedRegionId }
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
@@ -85,7 +87,7 @@ fun CaliforniaRegionsMapScreen(
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                             ) {
                                 Text(
-                                    text = "v0.21.0",
+                                    text = "v0.22.0",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
@@ -198,11 +200,58 @@ fun CaliforniaRegionsMapScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Stylized Interactive Vector Map of California
-                        CaliforniaInteractiveCanvas(
-                            selectedRegionId = selectedRegionId,
-                            onSelectRegion = { selectedRegionId = it }
-                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Segmented Map Style Selector Tabs: "Classic CA" & "Picasso Style"
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(3.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                CaliforniaMapStyle.values().forEach { style ->
+                                    val isSelected = style == currentMapStyle
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent,
+                                        shadowElevation = if (isSelected) 1.dp else 0.dp,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable { currentMapStyle = style }
+                                    ) {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier.padding(vertical = 7.dp)
+                                        ) {
+                                            Text(
+                                                text = style.label,
+                                                fontSize = 12.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Map Viewport (Strict Light Mode)
+                        when (currentMapStyle) {
+                            CaliforniaMapStyle.CLASSIC -> CaliforniaClassicMapCanvas(
+                                selectedRegionId = selectedRegionId,
+                                onSelectRegion = { selectedRegionId = it }
+                            )
+                            CaliforniaMapStyle.PICASSO -> CaliforniaPicassoMapCanvas(
+                                selectedRegionId = selectedRegionId,
+                                onSelectRegion = { selectedRegionId = it }
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -491,33 +540,517 @@ fun CaliforniaRegionsMapScreen(
 /**
  * Custom Canvas rendering a stylized geographical representation of California's 6 climatic regions.
  */
+enum class CaliforniaMapStyle(val label: String) {
+    CLASSIC("Classic CA"),
+    PICASSO("Picasso Style")
+}
+
+/**
+ * Classic CA: Realistic Geographic Silhouette of California
+ * With accurate state bounds (42°N Oregon border, Lake Tahoe corner, diagonal Nevada border,
+ * Point Conception coastal hook, down to 32.5°N Mexico border) and 6 interlocking macro sections.
+ * Rendered in strict Light Mode.
+ */
+
+/**
+ * Classic CA: Realistic Geographic Silhouette of California
+ * With continuous interlocking regional topology:
+ * - North Coast, Cascade & Sierra Range
+ * - Bay Area & Sacramento River Transect
+ * - Central Valley agricultural basin
+ * - Central Coast (Big Sur to Santa Barbara)
+ * - Los Angeles & Basin
+ * - San Diego & South Coast
+ * All 6 regional polygons share identical boundary vertices, guaranteeing ZERO interior gaps.
+ * Rendered in strict Light Mode with subtle atmospheric grid lines.
+ */
 @Composable
-private fun CaliforniaInteractiveCanvas(
+private fun CaliforniaClassicMapCanvas(
     selectedRegionId: String,
     onSelectRegion: (String) -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(280.dp)
-            .background(Color(0xFF0F172A), RoundedCornerShape(12.dp))
+            .height(310.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFFF8FAFC), RoundedCornerShape(12.dp))
+            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+            .pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    val w = size.width.toFloat()
+                    val h = size.height.toFloat()
+                    val padX = w * 0.05f
+                    val padY = h * 0.05f
+                    val availW = w * 0.90f
+                    val availH = h * 0.90f
+                    val lonMin = -124.5f
+                    val lonMax = -114.1f
+                    val latMin = 32.4f
+                    val latMax = 42.1f
+
+                    fun px(lon: Float): Float = padX + ((lon - lonMin) / (lonMax - lonMin)) * availW
+                    fun py(lat: Float): Float = padY + (1.0f - (lat - latMin) / (latMax - latMin)) * availH
+
+                    fun inPoly(pt: Offset, poly: List<Offset>): Boolean {
+                        var inside = false
+                        var j = poly.size - 1
+                        for (i in poly.indices) {
+                            val xi = poly[i].x
+                            val yi = poly[i].y
+                            val xj = poly[j].x
+                            val yj = poly[j].y
+                            val intersect = ((yi > pt.y) != (yj > pt.y)) &&
+                                    (pt.x < (xj - xi) * (pt.y - yi) / (yj - yi) + xi)
+                            if (intersect) inside = !inside
+                            j = i
+                        }
+                        return inside
+                    }
+
+                    // Shared boundary vertices (lon, lat)
+                    val pTahoe = Offset(px(-120.00f), py(39.00f))
+                    val pNorthValleyMid = Offset(px(-120.80f), py(39.15f))
+                    val tNorthBayValley = Offset(px(-121.60f), py(39.20f))
+                    val pNorthBayMid = Offset(px(-122.80f), py(38.95f))
+                    val pCoastMendoSonoma = Offset(px(-123.65f), py(38.80f))
+
+                    val pBayValley1 = Offset(px(-121.20f), py(38.50f))
+                    val pBayValley2 = Offset(px(-121.15f), py(37.95f))
+                    val pBayValley3 = Offset(px(-121.30f), py(37.50f))
+                    val tBayValleyCoast = Offset(px(-121.50f), py(37.00f))
+                    val pBayCoastMid = Offset(px(-121.80f), py(36.95f))
+                    val pCoastMontereyBay = Offset(px(-121.85f), py(36.80f))
+
+                    val pCoastValley1 = Offset(px(-120.70f), py(36.20f))
+                    val pCoastValley2 = Offset(px(-120.10f), py(35.50f))
+                    val pCoastValley3 = Offset(px(-119.50f), py(35.00f))
+                    val tCoastValleyLa = Offset(px(-119.00f), py(34.80f))
+                    val pCoastLaMid = Offset(px(-119.30f), py(34.45f))
+                    val pCoastVentura = Offset(px(-119.10f), py(34.10f))
+
+                    val pValleyLa1 = Offset(px(-118.45f), py(35.05f))
+                    val pValleyLa2 = Offset(px(-117.80f), py(35.35f))
+                    val pValleyLa3 = Offset(px(-117.20f), py(35.80f))
+                    val pNevadaValleyLa = Offset(px(-115.80f), py(36.00f))
+
+                    val pCoastSanOnofre = Offset(px(-117.60f), py(33.38f))
+                    val pLaSd1 = Offset(px(-117.10f), py(33.45f))
+                    val pLaSd2 = Offset(px(-116.30f), py(33.35f))
+                    val pLaSd3 = Offset(px(-115.50f), py(33.20f))
+                    val pColoradoRiverMid = Offset(px(-114.60f), py(33.30f))
+
+                    val northPoly = listOf(
+                        pCoastMendoSonoma,
+                        Offset(px(-124.41f), py(40.44f)),
+                        Offset(px(-124.21f), py(42.00f)),
+                        Offset(px(-120.00f), py(42.00f)),
+                        pTahoe,
+                        pNorthValleyMid,
+                        tNorthBayValley,
+                        pNorthBayMid
+                    )
+
+                    val bayPoly = listOf(
+                        pCoastMendoSonoma,
+                        pNorthBayMid,
+                        tNorthBayValley,
+                        pBayValley1,
+                        pBayValley2,
+                        pBayValley3,
+                        tBayValleyCoast,
+                        pBayCoastMid,
+                        pCoastMontereyBay,
+                        Offset(px(-122.20f), py(37.00f)),
+                        Offset(px(-122.51f), py(37.77f)),
+                        Offset(px(-123.00f), py(38.00f))
+                    )
+
+                    val valleyPoly = listOf(
+                        pTahoe,
+                        pNorthValleyMid,
+                        tNorthBayValley,
+                        pBayValley1,
+                        pBayValley2,
+                        pBayValley3,
+                        tBayValleyCoast,
+                        pCoastValley1,
+                        pCoastValley2,
+                        pCoastValley3,
+                        tCoastValleyLa,
+                        pValleyLa1,
+                        pValleyLa2,
+                        pValleyLa3,
+                        pNevadaValleyLa,
+                        Offset(px(-117.20f), py(37.00f)),
+                        Offset(px(-118.60f), py(38.00f))
+                    )
+
+                    val coastPoly = listOf(
+                        pCoastMontereyBay,
+                        pBayCoastMid,
+                        tBayValleyCoast,
+                        pCoastValley1,
+                        pCoastValley2,
+                        pCoastValley3,
+                        tCoastValleyLa,
+                        pCoastLaMid,
+                        pCoastVentura,
+                        Offset(px(-119.70f), py(34.40f)),
+                        Offset(px(-120.47f), py(34.45f)),
+                        Offset(px(-120.85f), py(35.30f)),
+                        Offset(px(-121.90f), py(36.30f))
+                    )
+
+                    val laPoly = listOf(
+                        pCoastVentura,
+                        pCoastLaMid,
+                        tCoastValleyLa,
+                        pValleyLa1,
+                        pValleyLa2,
+                        pValleyLa3,
+                        pNevadaValleyLa,
+                        Offset(px(-114.63f), py(35.00f)),
+                        pColoradoRiverMid,
+                        pLaSd3,
+                        pLaSd2,
+                        pLaSd1,
+                        pCoastSanOnofre,
+                        Offset(px(-118.40f), py(33.74f)),
+                        Offset(px(-118.85f), py(34.02f))
+                    )
+
+                    val sdPoly = listOf(
+                        pCoastSanOnofre,
+                        pLaSd1,
+                        pLaSd2,
+                        pLaSd3,
+                        pColoradoRiverMid,
+                        Offset(px(-114.72f), py(32.72f)),
+                        Offset(px(-117.12f), py(32.53f)),
+                        Offset(px(-117.25f), py(32.72f))
+                    )
+
+                    when {
+                        inPoly(offset, northPoly) -> onSelectRegion(CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id)
+                        inPoly(offset, bayPoly) -> onSelectRegion(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
+                        inPoly(offset, valleyPoly) -> onSelectRegion(CaliforniaRegionalDefinitions.CENTRAL_VALLEY.id)
+                        inPoly(offset, coastPoly) -> onSelectRegion(CaliforniaRegionalDefinitions.CENTRAL_COAST.id)
+                        inPoly(offset, laPoly) -> onSelectRegion(CaliforniaRegionalDefinitions.LOS_ANGELES.id)
+                        inPoly(offset, sdPoly) -> onSelectRegion(CaliforniaRegionalDefinitions.SAN_DIEGO.id)
+                        else -> {
+                            val tapLon = lonMin + ((offset.x - padX) / availW) * (lonMax - lonMin)
+                            val tapLat = latMin + (1f - (offset.y - padY) / availH) * (latMax - latMin)
+                            val closest = CaliforniaRegionalDefinitions.ALL_REGIONS.minByOrNull { r ->
+                                val dLat = tapLat - r.centerLat
+                                val dLon = tapLon - r.centerLon
+                                dLat * dLat + dLon * dLon
+                            }
+                            closest?.let { onSelectRegion(it.id) }
+                        }
+                    }
+                }
+            }
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            val padX = w * 0.05f
+            val padY = h * 0.05f
+            val availW = w * 0.90f
+            val availH = h * 0.90f
+            val lonMin = -124.5f
+            val lonMax = -114.1f
+            val latMin = 32.4f
+            val latMax = 42.1f
+
+            fun px(lon: Float): Float = padX + ((lon - lonMin) / (lonMax - lonMin)) * availW
+            fun py(lat: Float): Float = padY + (1.0f - (lat - latMin) / (latMax - latMin)) * availH
+
+            // 1. Subtle light atmospheric grid lines (34°N, 36°N, 38°N, 40°N)
+            val gridLats = floatArrayOf(34f, 36f, 38f, 40f)
+            for (glat in gridLats) {
+                val y = py(glat)
+                drawLine(
+                    color = Color(0xFFE2E8F0),
+                    start = Offset(0f, y),
+                    end = Offset(w, y),
+                    strokeWidth = 1f
+                )
+            }
+
+            // Shared boundary vertices (Continuous Interlocking Topology)
+            val pTahoe = Offset(px(-120.00f), py(39.00f))
+            val pNorthValleyMid = Offset(px(-120.80f), py(39.15f))
+            val tNorthBayValley = Offset(px(-121.60f), py(39.20f))
+            val pNorthBayMid = Offset(px(-122.80f), py(38.95f))
+            val pCoastMendoSonoma = Offset(px(-123.65f), py(38.80f))
+
+            val pBayValley1 = Offset(px(-121.20f), py(38.50f))
+            val pBayValley2 = Offset(px(-121.15f), py(37.95f))
+            val pBayValley3 = Offset(px(-121.30f), py(37.50f))
+            val tBayValleyCoast = Offset(px(-121.50f), py(37.00f))
+            val pBayCoastMid = Offset(px(-121.80f), py(36.95f))
+            val pCoastMontereyBay = Offset(px(-121.85f), py(36.80f))
+
+            val pCoastValley1 = Offset(px(-120.70f), py(36.20f))
+            val pCoastValley2 = Offset(px(-120.10f), py(35.50f))
+            val pCoastValley3 = Offset(px(-119.50f), py(35.00f))
+            val tCoastValleyLa = Offset(px(-119.00f), py(34.80f))
+            val pCoastLaMid = Offset(px(-119.30f), py(34.45f))
+            val pCoastVentura = Offset(px(-119.10f), py(34.10f))
+
+            val pValleyLa1 = Offset(px(-118.45f), py(35.05f))
+            val pValleyLa2 = Offset(px(-117.80f), py(35.35f))
+            val pValleyLa3 = Offset(px(-117.20f), py(35.80f))
+            val pNevadaValleyLa = Offset(px(-115.80f), py(36.00f))
+
+            val pCoastSanOnofre = Offset(px(-117.60f), py(33.38f))
+            val pLaSd1 = Offset(px(-117.10f), py(33.45f))
+            val pLaSd2 = Offset(px(-116.30f), py(33.35f))
+            val pLaSd3 = Offset(px(-115.50f), py(33.20f))
+            val pColoradoRiverMid = Offset(px(-114.60f), py(33.30f))
+
+            fun makePath(pts: List<Offset>): Path {
+                val path = Path()
+                if (pts.isNotEmpty()) {
+                    path.moveTo(pts[0].x, pts[0].y)
+                    for (i in 1 until pts.size) {
+                        path.lineTo(pts[i].x, pts[i].y)
+                    }
+                    path.close()
+                }
+                return path
+            }
+
+            // Pacific Ocean coastal wash
+            val oceanPath = Path().apply {
+                moveTo(0f, 0f)
+                lineTo(px(-124.21f), py(42.00f))
+                lineTo(px(-124.41f), py(40.44f))
+                lineTo(pCoastMendoSonoma.x, pCoastMendoSonoma.y)
+                lineTo(px(-123.00f), py(38.00f))
+                lineTo(px(-122.51f), py(37.77f))
+                lineTo(px(-122.20f), py(37.00f))
+                lineTo(pCoastMontereyBay.x, pCoastMontereyBay.y)
+                lineTo(px(-121.90f), py(36.30f))
+                lineTo(px(-120.85f), py(35.30f))
+                lineTo(px(-120.47f), py(34.45f))
+                lineTo(px(-119.70f), py(34.40f))
+                lineTo(pCoastVentura.x, pCoastVentura.y)
+                lineTo(px(-118.85f), py(34.02f))
+                lineTo(px(-118.40f), py(33.74f))
+                lineTo(pCoastSanOnofre.x, pCoastSanOnofre.y)
+                lineTo(px(-117.25f), py(32.72f))
+                lineTo(px(-117.12f), py(32.53f))
+                lineTo(0f, py(32.53f))
+                close()
+            }
+            drawPath(oceanPath, color = Color(0xFFF0F9FF))
+
+            // 2. The 6 seamlessly interlocking regions (ZERO interior gaps)
+            val regionPolys = listOf(
+                Pair(
+                    CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA,
+                    makePath(listOf(
+                        pCoastMendoSonoma,
+                        Offset(px(-124.41f), py(40.44f)),
+                        Offset(px(-124.21f), py(42.00f)),
+                        Offset(px(-120.00f), py(42.00f)),
+                        pTahoe,
+                        pNorthValleyMid,
+                        tNorthBayValley,
+                        pNorthBayMid
+                    ))
+                ),
+                Pair(
+                    CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO,
+                    makePath(listOf(
+                        pCoastMendoSonoma,
+                        pNorthBayMid,
+                        tNorthBayValley,
+                        pBayValley1,
+                        pBayValley2,
+                        pBayValley3,
+                        tBayValleyCoast,
+                        pBayCoastMid,
+                        pCoastMontereyBay,
+                        Offset(px(-122.20f), py(37.00f)),
+                        Offset(px(-122.51f), py(37.77f)),
+                        Offset(px(-123.00f), py(38.00f))
+                    ))
+                ),
+                Pair(
+                    CaliforniaRegionalDefinitions.CENTRAL_VALLEY,
+                    makePath(listOf(
+                        pTahoe,
+                        pNorthValleyMid,
+                        tNorthBayValley,
+                        pBayValley1,
+                        pBayValley2,
+                        pBayValley3,
+                        tBayValleyCoast,
+                        pCoastValley1,
+                        pCoastValley2,
+                        pCoastValley3,
+                        tCoastValleyLa,
+                        pValleyLa1,
+                        pValleyLa2,
+                        pValleyLa3,
+                        pNevadaValleyLa,
+                        Offset(px(-117.20f), py(37.00f)),
+                        Offset(px(-118.60f), py(38.00f))
+                    ))
+                ),
+                Pair(
+                    CaliforniaRegionalDefinitions.CENTRAL_COAST,
+                    makePath(listOf(
+                        pCoastMontereyBay,
+                        pBayCoastMid,
+                        tBayValleyCoast,
+                        pCoastValley1,
+                        pCoastValley2,
+                        pCoastValley3,
+                        tCoastValleyLa,
+                        pCoastLaMid,
+                        pCoastVentura,
+                        Offset(px(-119.70f), py(34.40f)),
+                        Offset(px(-120.47f), py(34.45f)),
+                        Offset(px(-120.85f), py(35.30f)),
+                        Offset(px(-121.90f), py(36.30f))
+                    ))
+                ),
+                Pair(
+                    CaliforniaRegionalDefinitions.LOS_ANGELES,
+                    makePath(listOf(
+                        pCoastVentura,
+                        pCoastLaMid,
+                        tCoastValleyLa,
+                        pValleyLa1,
+                        pValleyLa2,
+                        pValleyLa3,
+                        pNevadaValleyLa,
+                        Offset(px(-114.63f), py(35.00f)),
+                        pColoradoRiverMid,
+                        pLaSd3,
+                        pLaSd2,
+                        pLaSd1,
+                        pCoastSanOnofre,
+                        Offset(px(-118.40f), py(33.74f)),
+                        Offset(px(-118.85f), py(34.02f))
+                    ))
+                ),
+                Pair(
+                    CaliforniaRegionalDefinitions.SAN_DIEGO,
+                    makePath(listOf(
+                        pCoastSanOnofre,
+                        pLaSd1,
+                        pLaSd2,
+                        pLaSd3,
+                        pColoradoRiverMid,
+                        Offset(px(-114.72f), py(32.72f)),
+                        Offset(px(-117.12f), py(32.53f)),
+                        Offset(px(-117.25f), py(32.72f))
+                    ))
+                )
+            )
+
+            // Fills lock together seamlessly
+            for ((region, path) in regionPolys) {
+                val isSelected = selectedRegionId == region.id
+                val color = Color(android.graphics.Color.parseColor(region.colorHex))
+                drawPath(
+                    path = path,
+                    color = if (isSelected) color.copy(alpha = 0.85f) else color.copy(alpha = 0.38f),
+                    style = Fill
+                )
+            }
+
+            // Clean boundary strokes
+            for ((region, path) in regionPolys) {
+                val isSelected = selectedRegionId == region.id
+                val color = Color(android.graphics.Color.parseColor(region.colorHex))
+                if (!isSelected) {
+                    drawPath(
+                        path = path,
+                        color = color.copy(alpha = 0.65f),
+                        style = Stroke(width = 1.2f)
+                    )
+                }
+            }
+
+            // Selected region highlighted stroke
+            for ((region, path) in regionPolys) {
+                if (selectedRegionId == region.id) {
+                    drawPath(
+                        path = path,
+                        color = Color(0xFF0F172A),
+                        style = Stroke(width = 2.8f)
+                    )
+                }
+            }
+
+            // Key anchor cities
+            // SF Bay
+            drawCircle(
+                color = Color(0xFF0284C7),
+                radius = 4.5f,
+                center = Offset(px(-122.42f), py(37.77f))
+            )
+            drawCircle(
+                color = Color.White,
+                radius = 2f,
+                center = Offset(px(-122.42f), py(37.77f))
+            )
+            // Sacramento
+            drawCircle(
+                color = Color(0xFF0284C7),
+                radius = 3.8f,
+                center = Offset(px(-121.49f), py(38.58f))
+            )
+            // LA
+            drawCircle(
+                color = Color(0xFFEC4899),
+                radius = 4f,
+                center = Offset(px(-118.24f), py(34.05f))
+            )
+            // San Diego
+            drawCircle(
+                color = Color(0xFFF59E0B),
+                radius = 4f,
+                center = Offset(px(-117.16f), py(32.72f))
+            )
+        }
+    }
+}
+
+/**
+ * Picasso Style: Cubist Polygonal Representation of California
+ * Seamless geometric abstraction with shared vertices between all adjacent blocks,
+ * completely filling interior gaps.
+ */
+@Composable
+private fun CaliforniaPicassoMapCanvas(
+    selectedRegionId: String,
+    onSelectRegion: (String) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(310.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFFF8FAFC), RoundedCornerShape(12.dp))
+            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val yRatio = offset.y / size.height
                     val xRatio = offset.x / size.width
-
                     when {
-                        // Northern CA (top 32%)
-                        yRatio < 0.32f -> onSelectRegion(CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id)
-                        // Bay Area / Sacramento (middle-west and center 32% to 54%)
-                        yRatio < 0.54f && xRatio < 0.65f -> onSelectRegion(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
-                        // Central Valley (interior swath 35% to 70%)
-                        yRatio in 0.40f..0.72f && xRatio >= 0.50f -> onSelectRegion(CaliforniaRegionalDefinitions.CENTRAL_VALLEY.id)
-                        // Central Coast (coastal swath 50% to 74%)
-                        yRatio in 0.50f..0.74f && xRatio < 0.52f -> onSelectRegion(CaliforniaRegionalDefinitions.CENTRAL_COAST.id)
-                        // LA (74% to 88%)
-                        yRatio in 0.74f..0.88f -> onSelectRegion(CaliforniaRegionalDefinitions.LOS_ANGELES.id)
-                        // San Diego (bottom 12%)
+                        yRatio < 0.31f -> onSelectRegion(CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id)
+                        yRatio < 0.52f && xRatio < 0.60f -> onSelectRegion(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
+                        yRatio in 0.31f..0.72f && xRatio >= 0.50f -> onSelectRegion(CaliforniaRegionalDefinitions.CENTRAL_VALLEY.id)
+                        yRatio in 0.52f..0.76f && xRatio < 0.50f -> onSelectRegion(CaliforniaRegionalDefinitions.CENTRAL_COAST.id)
+                        yRatio in 0.72f..0.88f -> onSelectRegion(CaliforniaRegionalDefinitions.LOS_ANGELES.id)
                         yRatio >= 0.88f -> onSelectRegion(CaliforniaRegionalDefinitions.SAN_DIEGO.id)
                         else -> onSelectRegion(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
                     }
@@ -528,145 +1061,136 @@ private fun CaliforniaInteractiveCanvas(
             val w = size.width
             val h = size.height
 
-            // Background grid lines (Atmospheric Lat/Lon Grid)
+            // Background grid lines
             for (i in 1..4) {
                 val lineY = h * (i / 5f)
                 drawLine(
-                    color = Color(0xFF1E293B),
+                    color = Color(0xFFE2E8F0),
                     start = Offset(0f, lineY),
                     end = Offset(w, lineY),
                     strokeWidth = 1f
                 )
             }
 
-            // Draw each region as a stylized polygonal block representing California's diagonal Northwest-to-Southeast orientation
-            // 1. Far Northern CA (Top)
-            val isNorthSelected = selectedRegionId == CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id
-            val northColor = Color(0xFF8B5CF6)
-            val northPath = Path().apply {
-                moveTo(w * 0.18f, h * 0.05f) // NW corner (Del Norte / Oregon border)
-                lineTo(w * 0.82f, h * 0.05f) // NE corner (Modoc)
-                lineTo(w * 0.76f, h * 0.30f) // East Cascade/Sierra transition
-                lineTo(w * 0.28f, h * 0.32f) // Mendocino Coast
-                close()
+            // Shared Picasso Vertices (normalized to completely eliminate gaps)
+            fun pt(xRatio: Float, yRatio: Float) = Offset(w * xRatio, h * yRatio)
+
+            val pNorthWest = pt(0.18f, 0.05f)
+            val pNorthEast = pt(0.85f, 0.05f)
+            val pTahoe = pt(0.78f, 0.29f)
+            val pNorthCoast = pt(0.27f, 0.31f)
+            val tNorthBayValley = pt(0.55f, 0.30f)
+
+            val pBayCoast = pt(0.22f, 0.49f)
+            val tBayValleyCoast = pt(0.57f, 0.49f)
+
+            val pCoastLaCoast = pt(0.36f, 0.73f)
+            val tCoastValleyLa = pt(0.48f, 0.69f)
+            val pValleyNevada = pt(0.74f, 0.69f)
+
+            val pLaSdCoast = pt(0.58f, 0.84f)
+            val pLaSdEast = pt(0.87f, 0.79f)
+
+            val pSdMexEast = pt(0.91f, 0.95f)
+            val pSdMexCoast = pt(0.64f, 0.95f)
+
+            fun makePath(pts: List<Offset>): Path {
+                val path = Path()
+                if (pts.isNotEmpty()) {
+                    path.moveTo(pts[0].x, pts[0].y)
+                    for (i in 1 until pts.size) {
+                        path.lineTo(pts[i].x, pts[i].y)
+                    }
+                    path.close()
+                }
+                return path
             }
-            drawPath(
-                path = northPath,
-                color = if (isNorthSelected) northColor.copy(alpha = 0.85f) else northColor.copy(alpha = 0.35f),
-                style = Fill
-            )
-            drawPath(
-                path = northPath,
-                color = if (isNorthSelected) Color.White else northColor,
-                style = Stroke(width = if (isNorthSelected) 3f else 1.5f)
+
+            val picassoPolys = listOf(
+                Pair(
+                    CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA,
+                    makePath(listOf(pNorthWest, pNorthEast, pTahoe, tNorthBayValley, pNorthCoast))
+                ),
+                Pair(
+                    CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO,
+                    makePath(listOf(pNorthCoast, tNorthBayValley, tBayValleyCoast, pBayCoast))
+                ),
+                Pair(
+                    CaliforniaRegionalDefinitions.CENTRAL_VALLEY,
+                    makePath(listOf(
+                        pTahoe,
+                        tNorthBayValley,
+                        tBayValleyCoast,
+                        tCoastValleyLa,
+                        pValleyNevada,
+                        pt(0.82f, 0.35f)
+                    ))
+                ),
+                Pair(
+                    CaliforniaRegionalDefinitions.CENTRAL_COAST,
+                    makePath(listOf(
+                        pBayCoast,
+                        tBayValleyCoast,
+                        tCoastValleyLa,
+                        pCoastLaCoast,
+                        pt(0.28f, 0.66f)
+                    ))
+                ),
+                Pair(
+                    CaliforniaRegionalDefinitions.LOS_ANGELES,
+                    makePath(listOf(
+                        pCoastLaCoast,
+                        tCoastValleyLa,
+                        pValleyNevada,
+                        pLaSdEast,
+                        pLaSdCoast
+                    ))
+                ),
+                Pair(
+                    CaliforniaRegionalDefinitions.SAN_DIEGO,
+                    makePath(listOf(
+                        pLaSdCoast,
+                        pLaSdEast,
+                        pSdMexEast,
+                        pSdMexCoast
+                    ))
+                )
             )
 
-            // 2. Bay Area & Sacramento (Middle-West)
-            val isBaySelected = selectedRegionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id
-            val bayColor = Color(0xFF0284C7)
-            val bayPath = Path().apply {
-                moveTo(w * 0.28f, h * 0.32f) // Sonoma/Marin
-                lineTo(w * 0.65f, h * 0.30f) // Sacramento / Sierra Western slope
-                lineTo(w * 0.58f, h * 0.50f) // San Joaquin Delta / Modesto line
-                lineTo(w * 0.22f, h * 0.50f) // Monterey Bay / Santa Cruz
-                close()
+            // Fills
+            for ((region, path) in picassoPolys) {
+                val isSelected = selectedRegionId == region.id
+                val color = Color(android.graphics.Color.parseColor(region.colorHex))
+                drawPath(
+                    path = path,
+                    color = if (isSelected) color.copy(alpha = 0.85f) else color.copy(alpha = 0.38f),
+                    style = Fill
+                )
             }
-            drawPath(
-                path = bayPath,
-                color = if (isBaySelected) bayColor.copy(alpha = 0.85f) else bayColor.copy(alpha = 0.35f),
-                style = Fill
-            )
-            drawPath(
-                path = bayPath,
-                color = if (isBaySelected) Color.White else bayColor,
-                style = Stroke(width = if (isBaySelected) 3f else 1.5f)
-            )
 
-            // 3. Central Valley (Interior agricultural trough)
-            val isValleySelected = selectedRegionId == CaliforniaRegionalDefinitions.CENTRAL_VALLEY.id
-            val valleyColor = Color(0xFFF97316)
-            val valleyPath = Path().apply {
-                moveTo(w * 0.58f, h * 0.32f)
-                lineTo(w * 0.80f, h * 0.38f) // Sierra Nevada Crest
-                lineTo(w * 0.72f, h * 0.72f) // Tehachapi Pass / Bakersfield
-                lineTo(w * 0.50f, h * 0.70f) // Kettleman / Interior Coast Range
-                lineTo(w * 0.58f, h * 0.50f)
-                close()
+            // Boundary outlines
+            for ((region, path) in picassoPolys) {
+                val isSelected = selectedRegionId == region.id
+                val color = Color(android.graphics.Color.parseColor(region.colorHex))
+                if (!isSelected) {
+                    drawPath(
+                        path = path,
+                        color = color.copy(alpha = 0.65f),
+                        style = Stroke(width = 1.2f)
+                    )
+                }
             }
-            drawPath(
-                path = valleyPath,
-                color = if (isValleySelected) valleyColor.copy(alpha = 0.85f) else valleyColor.copy(alpha = 0.35f),
-                style = Fill
-            )
-            drawPath(
-                path = valleyPath,
-                color = if (isValleySelected) Color.White else valleyColor,
-                style = Stroke(width = if (isValleySelected) 3f else 1.5f)
-            )
 
-            // 4. Central Coast (Big Sur, Monterey, Santa Barbara)
-            val isCoastSelected = selectedRegionId == CaliforniaRegionalDefinitions.CENTRAL_COAST.id
-            val coastColor = Color(0xFF10B981)
-            val coastPath = Path().apply {
-                moveTo(w * 0.22f, h * 0.50f) // Monterey Bay
-                lineTo(w * 0.50f, h * 0.50f) // Salinas Valley
-                lineTo(w * 0.50f, h * 0.70f) // San Luis Obispo
-                lineTo(w * 0.44f, h * 0.75f) // Point Conception / Santa Barbara
-                lineTo(w * 0.28f, h * 0.68f) // Santa Lucia Coastal scarp
-                close()
+            // Top selected outline
+            for ((region, path) in picassoPolys) {
+                if (selectedRegionId == region.id) {
+                    drawPath(
+                        path = path,
+                        color = Color(0xFF0F172A),
+                        style = Stroke(width = 2.8f)
+                    )
+                }
             }
-            drawPath(
-                path = coastPath,
-                color = if (isCoastSelected) coastColor.copy(alpha = 0.85f) else coastColor.copy(alpha = 0.35f),
-                style = Fill
-            )
-            drawPath(
-                path = coastPath,
-                color = if (isCoastSelected) Color.White else coastColor,
-                style = Stroke(width = if (isCoastSelected) 3f else 1.5f)
-            )
-
-            // 5. Los Angeles & Inland Empire
-            val isLaSelected = selectedRegionId == CaliforniaRegionalDefinitions.LOS_ANGELES.id
-            val laColor = Color(0xFFEC4899)
-            val laPath = Path().apply {
-                moveTo(w * 0.44f, h * 0.75f) // Ventura / Santa Monica
-                lineTo(w * 0.72f, h * 0.72f) // San Gabriel / San Bernardino Mtns
-                lineTo(w * 0.85f, h * 0.82f) // Coachella / Palm Springs boundary
-                lineTo(w * 0.56f, h * 0.87f) // Orange County Coast
-                close()
-            }
-            drawPath(
-                path = laPath,
-                color = if (isLaSelected) laColor.copy(alpha = 0.85f) else laColor.copy(alpha = 0.35f),
-                style = Fill
-            )
-            drawPath(
-                path = laPath,
-                color = if (isLaSelected) Color.White else laColor,
-                style = Stroke(width = if (isLaSelected) 3f else 1.5f)
-            )
-
-            // 6. San Diego & South Coast
-            val isSdSelected = selectedRegionId == CaliforniaRegionalDefinitions.SAN_DIEGO.id
-            val sdColor = Color(0xFFF59E0B)
-            val sdPath = Path().apply {
-                moveTo(w * 0.56f, h * 0.87f) // Oceanside / Carlsbad
-                lineTo(w * 0.85f, h * 0.82f) // Anza-Borrego
-                lineTo(w * 0.88f, h * 0.96f) // Imperial / Baja border
-                lineTo(w * 0.62f, h * 0.96f) // Tijuana / Border Field
-                close()
-            }
-            drawPath(
-                path = sdPath,
-                color = if (isSdSelected) sdColor.copy(alpha = 0.85f) else sdColor.copy(alpha = 0.35f),
-                style = Fill
-            )
-            drawPath(
-                path = sdPath,
-                color = if (isSdSelected) Color.White else sdColor,
-                style = Stroke(width = if (isSdSelected) 3f else 1.5f)
-            )
         }
     }
 }
