@@ -78,7 +78,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Unified Draggable Topo Map (v0.18.0 - Macro Central California Transect)
+ * Unified Draggable Topo Map (v0.19.0 - Macro Central California Transect)
  *
  * Demonstrates continuous 4-way pan and multi-touch zoom spanning from Northern California
  * (Sacramento River Basin & Sierra Crest, 39.4°N) south to Central Coast California
@@ -226,7 +226,7 @@ fun UnifiedDraggableMapScreen(
                 modifier = Modifier.padding(start = 6.dp)
             ) {
                 Text(
-                    text = "v0.18.0",
+                    text = "v0.19.0",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1D4ED8),
