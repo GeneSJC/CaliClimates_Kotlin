@@ -153,6 +153,17 @@ fun LandingScreen(
             iconChar = "🧭",
             onClick = { onNavigateTo(AppScreen.CALIFORNIA_REGIONS) }
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Demo 7: Animation Previews (v0.25.0)
+        DemoNavigationCard(
+            title = "Animation Previews",
+            description = "Interactive atmospheric and weather animation prototypes: fixed hero cloud v1.0, moving clouds v2.0, and offline web vector preview.",
+            badge = "v0.25.0",
+            iconChar = "✨",
+            onClick = { onNavigateTo(AppScreen.ANIMATION_PREVIEWS) }
+        )
     }
 }
 

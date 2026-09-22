@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Micro Climate Finder Splash Animation</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #08203E;
+    }
+    #splash-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(180deg, #38BDF8 0%, #0284C7 50%, #08203E 100%);
+      overflow: hidden;
+    }
+
+    /* Top Control Bar */
+    .control-bar {
+      position: relative;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px 8px;
+    }
+    .toggle-group {
+      display: flex;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(8px);
+      padding: 3px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .toggle-btn {
+      border: none;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.7);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .toggle-btn.active {
+      background: #0284C7;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+    .replay-btn {
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(15, 23, 42, 0.4);
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Sun Glow & Rays */
+    .sun-box {
+      position: absolute;
+      top: 15%;
+      left: 10%;
+      width: 100px;
+      height: 100px;
+      z-index: 5;
+    }
+    .sun-corona {
+      animation: sunPulse 3.5s ease-in-out infinite;
+      transform-origin: center;
+    }
+    .sun-rays {
+      animation: sunSpin 36s linear infinite;
+      transform-origin: 50px 50px;
+    }
+
+    /* Keyframe Animations */
+    @keyframes sunPulse {
+      0%, 100% { opacity: 0.4; transform: scale(0.96); }
+      50% { opacity: 0.65; transform: scale(1.05); }
+    }
+    @keyframes sunSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes floatHero {
+      0%, 100% { transform: translateY(0px) translateX(-6px); }
+      50% { transform: translateY(-12px) translateX(6px); }
+    }
+    @keyframes palmSway {
+      0%, 100% { transform: rotate(-2.5deg); }
+      50% { transform: rotate(3.5deg); }
+    }
+    @keyframes drift1 {
+      0% { transform: translateX(-140px); }
+      100% { transform: translateX(calc(100vw + 140px)); }
+    }
+    @keyframes drift2 {
+      0% { transform: translateX(-140px); }
+      100% { transform: translateX(calc(100vw + 140px)); }
+    }
+    @keyframes drift3 {
+      0% { transform: translateX(-120px); }
+      100% { transform: translateX(calc(100vw + 120px)); }
+    }
+    @keyframes windDrift {
+      0% { transform: translateX(-160px); opacity: 0; }
+      20% { opacity: 0.75; }
+      80% { opacity: 0.65; }
+      100% { transform: translateX(calc(100vw + 160px)); opacity: 0; }
+    }
+
+    /* Clouds Layer */
+    .cloud-stage {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Hero Cloud for v1.0 */
+    .hero-cloud-wrap {
+      animation: floatHero 5s ease-in-out infinite;
+      filter: drop-shadow(0 14px 24px rgba(2, 132, 199, 0.35));
+    }
+
+    /* v2.0 Moving Clouds */
+    .v2-clouds-wrap {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .drift-cloud-1 {
+      position: absolute;
+      top: 22%;
+      left: 0;
+      animation: drift1 38s linear infinite;
+      animation-delay: -12s;
+    }
+    .drift-cloud-2 {
+      position: absolute;
+      top: 32%;
+      left: 0;
+      animation: drift1 38s linear infinite;
+      animation-delay: -6s; /* tandem companion */
+    }
+    .drift-cloud-3 {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      animation: drift2 52s linear infinite;
+      animation-delay: -26s; /* offset solo */
+    }
+    .drift-cloud-4 {
+      position: absolute;
+      top: 10%;
+      left: 0;
+      animation: drift3 65s linear infinite;
+      animation-delay: -40s;
+    }
+
+    /* Wind Streamlines */
+    .wind-line-1 {
+      position: absolute;
+      top: 16%;
+      left: 0;
+      width: 180px;
+      animation: windDrift 24s ease-in-out infinite;
+      animation-delay: -6s;
+    }
+    .wind-line-2 {
+      position: absolute;
+      top: 42%;
+      left: 0;
+      width: 220px;
+      animation: windDrift 30s ease-in-out infinite;
+      animation-delay: -16s;
+    }
+
+    /* Branding Typography */
+    .branding-box {
+      position: relative;
+      z-index: 25;
+      text-align: center;
+      padding: 0 20px 10px;
+    }
+    .app-title {
+      color: #FFFFFF;
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    }
+    .app-subtitle {
+      color: rgba(224, 242, 254, 0.9);
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 4px;
+      letter-spacing: 0.2px;
+    }
+    .version-tag {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #FFFFFF;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Coastal Landscape & Palm */
+    .landscape-stage {
+      position: relative;
+      width: 100%;
+      height: 140px;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .dunes-svg {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .palm-tree {
+      position: absolute;
+      right: 32px;
+      bottom: 12px;
+      transform-origin: 50px 130px;
+      animation: palmSway 4s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <div id="splash-container">
+    <!-- Top Control Bar -->
+    <div class="control-bar">
+      <div class="toggle-group">
+        <button class="toggle-btn" id="btn-v1" onclick="setVersion('v1')">Fixed cloud v1.0</button>
+        <button class="toggle-btn active" id="btn-v2" onclick="setVersion('v2')">Moving clouds v2.0</button>
+      </div>
+      <button class="replay-btn" onclick="replayAnimation()">↺ Replay</button>
+    </div>
+
+    <!-- Golden Sun (Upper Sky) -->
+    <div class="sun-box">
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        <!-- Radial Corona Glow -->
+        <circle class="sun-corona" cx="50" cy="50" r="32" fill="#FDE047" />
+        <!-- Core Golden Disk -->
+        <circle cx="50" cy="50" r="20" fill="#F59E0B" />
+        <!-- Rotating Delicate Rays -->
+        <g class="sun-rays">
+          <line x1="50" y1="22" x2="50" y2="14" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" />
+          <line x1="50" y1="78" x2="50" y2="86" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" />
+          <line x1="22" y1="50" x2="14" y2="50" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" />
+          <line x1="78" y1="50" x2="86" y2="50" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" />
+          <line x1="30" y1="30" x2="24" y2="24" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" />
+          <line x1="70" y1="70" x2="76" y2="76" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" />
+          <line x1="70" y1="30" x2="76" y2="24" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" />
+          <line x1="30" y1="70" x2="24" y2="76" stroke="#FDE047" stroke-width="2.2" stroke-linecap="round" />
+        </g>
+      </svg>
+    </div>
+
+    <!-- Wind Streamlines -->
+    <div class="wind-line-1">
+      <svg width="180" height="20" viewBox="0 0 180 20">
+        <path d="M 0 10 C 40 4, 110 16, 170 10" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" opacity="0.65"/>
+      </svg>
+    </div>
+    <div class="wind-line-2">
+      <svg width="220" height="30" viewBox="0 0 220 30">
+        <path d="M 0 18 C 55 8, 130 25, 185 16 C 198 12, 205 8, 204 4 C 202 1, 196 3, 198 8" fill="none" stroke="#BAE6FD" stroke-width="2.0" stroke-linecap="round" opacity="0.7"/>
+      </svg>
+    </div>
+
+    <!-- Sky Animation Stage -->
+    <div class="cloud-stage">
+      <!-- v1.0 Hero Cloud -->
+      <div id="v1-stage" class="hero-cloud-wrap" style="display: none;">
+        <svg width="260" height="180" viewBox="0 0 512 360">
+          <!-- Rear Shadow -->
+          <path d="M 230 180 A 42 42 0 0 1 305 142 A 48 48 0 0 1 380 178 A 38 38 0 0 1 366 242 L 230 242 Z" fill="#93C5FD" opacity="0.85" transform="translate(10, -5)" />
+          <!-- Main Cloud Base -->
+          <path d="M 140 280 C 100 280 70 250 70 212 C 70 175 96 145 133 143 C 145 100 184 70 231 70 C 282 70 327 105 334 154 C 347 150 360 147 373 147 C 411 147 442 176 442 214 C 442 255 411 280 368 280 Z" fill="#C5DDF5" />
+          <!-- Left Sculpted Lobe -->
+          <path d="M 140 280 C 105 280 73 252 73 214 C 73 178 98 148 134 146 C 146 135 165 129 184 129 C 193 163 182 214 165 254 C 157 271 148 278 140 280 Z" fill="#EAF2FC" />
+          <!-- Right Sculpted Lobe -->
+          <path d="M 368 280 C 407 280 439 253 439 216 C 439 180 410 150 373 150 C 361 150 349 152 339 157 C 334 185 339 225 355 259 C 359 273 364 278 368 280 Z" fill="#EAF2FC" />
+          <!-- Central White Dome -->
+          <path d="M 155 180 C 158 123 189 73 233 73 C 279 73 318 109 329 157 C 336 191 329 237 314 271 C 269 277 200 271 166 231 C 158 214 155 197 155 180 Z" fill="#FFFFFF" />
+          <!-- Crest Highlight -->
+          <path d="M 195 85 C 215 78 245 78 268 85" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.8" />
+        </svg>
+      </div>
+
+      <!-- v2.0 Moving Stratus Clouds (SVG Horizontal Pills) -->
+      <div id="v2-stage" class="v2-clouds-wrap">
+        <!-- Cloud 1: Lead tandem cloud -->
+        <div class="drift-cloud-1">
+          <svg width="100" height="32" viewBox="0 0 160 50">
+            <path d="M 22 42 L 138 42 C 148 42 154 36 154 29 C 154 23 147 18 139 19 C 136 12 127 8 117 9 C 108 10 102 15 98 18 C 92 11 80 8 70 10 C 58 12 52 19 48 21 C 42 15 32 15 25 19 C 15 23 12 31 16 37 C 18 41 22 42 22 42 Z" fill="#93C5FD" opacity="0.8" transform="translate(4, -3)" />
+            <path d="M 20 40 L 140 40 C 150 40 156 34 156 27 C 156 21 148 16 140 17 C 137 10 128 6 118 7 C 108 8 102 13 98 16 C 92 9 80 6 70 8 C 58 10 52 17 48 19 C 42 13 32 13 25 17 C 15 21 12 29 16 35 C 18 39 20 40 20 40 Z" fill="#C5DDF5" />
+            <path d="M 22 38 L 138 38 C 146 38 152 33 152 27 C 152 22 145 18 138 19 C 135 13 127 9 117 10 C 109 11 103 15 100 18 C 94 12 83 9 74 11 C 63 13 58 19 54 21 C 49 16 40 16 34 19 C 25 22 22 29 25 34 Z" fill="#FFFFFF" />
+          </svg>
+        </div>
+
+        <!-- Cloud 2: Companion tandem cloud -->
+        <div class="drift-cloud-2">
+          <svg width="75" height="26" viewBox="0 0 160 50">
+            <path d="M 22 42 L 138 42 C 148 42 154 36 154 29 C 154 23 147 18 139 19 C 136 12 127 8 117 9 C 108 10 102 15 98 18 C 92 11 80 8 70 10 C 58 12 52 19 48 21 C 42 15 32 15 25 19 C 15 23 12 31 16 37 C 18 41 22 42 22 42 Z" fill="#93C5FD" opacity="0.8" transform="translate(4, -3)" />
+            <path d="M 20 40 L 140 40 C 150 40 156 34 156 27 C 156 21 148 16 140 17 C 137 10 128 6 118 7 C 108 8 102 13 98 16 C 92 9 80 6 70 8 C 58 10 52 17 48 19 C 42 13 32 13 25 17 C 15 21 12 29 16 35 C 18 39 20 40 20 40 Z" fill="#C5DDF5" />
+            <path d="M 22 38 L 138 38 C 146 38 152 33 152 27 C 152 22 145 18 138 19 C 135 13 127 9 117 10 C 109 11 103 15 100 18 C 94 12 83 9 74 11 C 63 13 58 19 54 21 C 49 16 40 16 34 19 C 25 22 22 29 25 34 Z" fill="#FFFFFF" />
+          </svg>
+        </div>
+
+        <!-- Cloud 3: Solo offset cloud -->
+        <div class="drift-cloud-3">
+          <svg width="90" height="30" viewBox="0 0 160 50">
+            <path d="M 22 42 L 138 42 C 148 42 154 36 154 29 C 154 23 147 18 139 19 C 136 12 127 8 117 9 C 108 10 102 15 98 18 C 92 11 80 8 70 10 C 58 12 52 19 48 21 C 42 15 32 15 25 19 C 15 23 12 31 16 37 C 18 41 22 42 22 42 Z" fill="#93C5FD" opacity="0.8" transform="translate(4, -3)" />
+            <path d="M 20 40 L 140 40 C 150 40 156 34 156 27 C 156 21 148 16 140 17 C 137 10 128 6 118 7 C 108 8 102 13 98 16 C 92 9 80 6 70 8 C 58 10 52 17 48 19 C 42 13 32 13 25 17 C 15 21 12 29 16 35 C 18 39 20 40 20 40 Z" fill="#C5DDF5" />
+            <path d="M 22 38 L 138 38 C 146 38 152 33 152 27 C 152 22 145 18 138 19 C 135 13 127 9 117 10 C 109 11 103 15 100 18 C 94 12 83 9 74 11 C 63 13 58 19 54 21 C 49 16 40 16 34 19 C 25 22 22 29 25 34 Z" fill="#FFFFFF" />
+          </svg>
+        </div>
+
+        <!-- Cloud 4: High wisp cloudlet -->
+        <div class="drift-cloud-4">
+          <svg width="55" height="20" viewBox="0 0 160 50">
+            <path d="M 20 40 L 140 40 C 150 40 156 34 156 27 C 156 21 148 16 140 17 C 137 10 128 6 118 7 C 108 8 102 13 98 16 C 92 9 80 6 70 8 C 58 10 52 17 48 19 C 42 13 32 13 25 17 C 15 21 12 29 16 35 C 18 39 20 40 20 40 Z" fill="#C5DDF5" />
+            <path d="M 22 38 L 138 38 C 146 38 152 33 152 27 C 152 22 145 18 138 19 C 135 13 127 9 117 10 C 109 11 103 15 100 18 C 94 12 83 9 74 11 C 63 13 58 19 54 21 C 49 16 40 16 34 19 C 25 22 22 29 25 34 Z" fill="#FFFFFF" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Branding Typography -->
+    <div class="branding-box">
+      <h1 class="app-title">Micro Climate Finder</h1>
+      <p class="app-subtitle">California Macro & Microclimatic Transects</p>
+      <span class="version-tag" id="mode-badge">Moving Clouds • v0.25.0</span>
+    </div>
+
+    <!-- Coastal Landscape & Palm Tree -->
+    <div class="landscape-stage">
+      <!-- Dunes -->
+      <svg class="dunes-svg" viewBox="0 0 360 120" preserveAspectRatio="none">
+        <path d="M 0 65 Q 110 45 220 70 T 360 50 L 360 120 L 0 120 Z" fill="#0F2C4C" opacity="0.9"/>
+        <path d="M 0 85 Q 130 70 250 90 T 360 75 L 360 120 L 0 120 Z" fill="#071626"/>
+      </svg>
+
+      <!-- Sculpted Palm Tree with 5 Fronds and Trunk -->
+      <div class="palm-tree">
+        <svg width="100" height="130" viewBox="0 0 100 130" style="overflow: visible;">
+          <!-- Amber Trunk Base -->
+          <path d="M 50 130 C 52 100, 56 60, 48 30" fill="none" stroke="#D97706" stroke-width="6" stroke-linecap="round" />
+          <!-- Amber Trunk Highlight -->
+          <path d="M 50 130 C 52 100, 56 60, 48 30" fill="none" stroke="#FBBF24" stroke-width="3" stroke-linecap="round" opacity="0.85" />
+
+          <!-- Crown of 5 Green Fan Fronds (Translated to Crown Apex 48, 30) -->
+          <g transform="translate(48, 30)">
+            <!-- Frond 1: Right Drooping Leaf -->
+            <path d="M 0 0 C 15 -10, 35 -5, 45 15 C 38 12, 25 3, 0 0" fill="#10B981" />
+            <!-- Frond 2: Right High Arch -->
+            <path d="M 0 0 C 12 -22, 30 -25, 38 -10 C 30 -12, 18 -12, 0 0" fill="#34D399" />
+            <!-- Frond 3: Center Crown Leaf -->
+            <path d="M 0 0 C 2 -28, 12 -35, 14 -22 C 10 -22, 4 -15, 0 0" fill="#6EE7B7" />
+            <!-- Frond 4: Left High Arch -->
+            <path d="M 0 0 C -12 -25, -28 -22, -35 -8 C -26 -12, -14 -12, 0 0" fill="#34D399" />
+            <!-- Frond 5: Left Drooping Leaf -->
+            <path d="M 0 0 C -15 -8, -32 -2, -40 18 C -33 13, -22 4, 0 0" fill="#10B981" />
+
+            <!-- Coconut Cluster -->
+            <circle cx="-1" cy="2" r="3.2" fill="#78350F" />
+            <circle cx="3.5" cy="3" r="2.8" fill="#78350F" />
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setVersion(ver) {
+      const v1Stage = document.getElementById('v1-stage');
+      const v2Stage = document.getElementById('v2-stage');
+      const btnV1 = document.getElementById('btn-v1');
+      const btnV2 = document.getElementById('btn-v2');
+      const badge = document.getElementById('mode-badge');
+
+      if (ver === 'v1') {
+        v1Stage.style.display = 'block';
+        v2Stage.style.display = 'none';
+        btnV1.classList.add('active');
+        btnV2.classList.remove('active');
+        badge.textContent = 'Fixed Hero Cloud • v0.25.0';
+      } else {
+        v1Stage.style.display = 'none';
+        v2Stage.style.display = 'block';
+        btnV1.classList.remove('active');
+        btnV2.classList.add('active');
+        badge.textContent = 'Moving Clouds • v0.25.0';
+      }
+    }
+
+    function replayAnimation() {
+      const container = document.getElementById('splash-container');
+      const parent = container.parentElement;
+      const clone = container.cloneNode(true);
+      parent.replaceChild(clone, container);
+    }
+  </script>
+</body>
+</html>

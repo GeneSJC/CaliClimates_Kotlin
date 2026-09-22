@@ -16,14 +16,18 @@ import androidx.compose.ui.Modifier
 import io.github.genesjc.microclimatefinder.data.local.StationDatasets
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
+import io.github.genesjc.microclimatefinder.ui.screens.AnimationPreviewsScreen
 import io.github.genesjc.microclimatefinder.ui.screens.CaliforniaRegionsMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
+import io.github.genesjc.microclimatefinder.ui.screens.FixedCloudSplashScreen
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
+import io.github.genesjc.microclimatefinder.ui.screens.MovingCloudsSplashScreen
 import io.github.genesjc.microclimatefinder.ui.screens.NewsStoryViewerScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationCardPreviewScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationListScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.UnifiedDraggableMapScreen
+import io.github.genesjc.microclimatefinder.ui.screens.WebSplashAnimationScreen
 import io.github.genesjc.microclimatefinder.ui.theme.MicroClimateFinderTheme
 
 class MainActivity : ComponentActivity() {
@@ -54,6 +58,8 @@ fun AppNavigation() {
         BackHandler {
             if (currentScreen == AppScreen.NEWS_STORY_VIEWER) {
                 currentScreen = previousScreen
+            } else if (currentScreen == AppScreen.ANIMATION_FIXED_CLOUD_V1 || currentScreen == AppScreen.ANIMATION_MOVING_CLOUDS_V2) {
+                currentScreen = AppScreen.ANIMATION_PREVIEWS
             } else {
                 currentScreen = AppScreen.LANDING
             }
@@ -119,6 +125,37 @@ fun AppNavigation() {
                 },
                 onNavigateToActiveTransect = {
                     currentScreen = AppScreen.UNIFIED_DRAGGABLE_MAP
+                }
+            )
+        }
+        AppScreen.ANIMATION_PREVIEWS -> {
+            AnimationPreviewsScreen(
+                onNavigateBack = {
+                    currentScreen = AppScreen.LANDING
+                },
+                onSelectAnimation = { animScreen ->
+                    currentScreen = animScreen
+                }
+            )
+        }
+        AppScreen.ANIMATION_FIXED_CLOUD_V1 -> {
+            FixedCloudSplashScreen(
+                onNavigateBack = {
+                    currentScreen = AppScreen.ANIMATION_PREVIEWS
+                }
+            )
+        }
+        AppScreen.ANIMATION_MOVING_CLOUDS_V2 -> {
+            MovingCloudsSplashScreen(
+                onNavigateBack = {
+                    currentScreen = AppScreen.ANIMATION_PREVIEWS
+                }
+            )
+        }
+        AppScreen.ANIMATION_WEB_VIEW -> {
+            WebSplashAnimationScreen(
+                onNavigateBack = {
+                    currentScreen = AppScreen.ANIMATION_PREVIEWS
                 }
             )
         }
