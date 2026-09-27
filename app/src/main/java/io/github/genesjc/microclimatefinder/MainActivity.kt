@@ -18,6 +18,7 @@ import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import io.github.genesjc.microclimatefinder.ui.screens.AnimationPreviewsScreen
 import io.github.genesjc.microclimatefinder.ui.screens.CaliforniaRegionsMapScreen
+import io.github.genesjc.microclimatefinder.ui.screens.DemosAndPreviewsScreen
 import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.FixedCloudSplashScreen
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
@@ -60,6 +61,13 @@ fun AppNavigation() {
                 currentScreen = previousScreen
             } else if (currentScreen == AppScreen.ANIMATION_FIXED_CLOUD_V1 || currentScreen == AppScreen.ANIMATION_MOVING_CLOUDS_V2) {
                 currentScreen = AppScreen.ANIMATION_PREVIEWS
+            } else if (currentScreen == AppScreen.STATION_CARD_PREVIEW ||
+                currentScreen == AppScreen.STATION_LIST ||
+                currentScreen == AppScreen.STATION_MAP ||
+                currentScreen == AppScreen.DRAGGABLE_MAP ||
+                currentScreen == AppScreen.ANIMATION_PREVIEWS
+            ) {
+                currentScreen = AppScreen.DEMOS_AND_PREVIEWS
             } else {
                 currentScreen = AppScreen.LANDING
             }
@@ -74,10 +82,20 @@ fun AppNavigation() {
                 }
             )
         }
+        AppScreen.DEMOS_AND_PREVIEWS -> {
+            DemosAndPreviewsScreen(
+                onNavigateTo = { targetScreen ->
+                    currentScreen = targetScreen
+                },
+                onNavigateBack = {
+                    currentScreen = AppScreen.LANDING
+                }
+            )
+        }
         AppScreen.STATION_CARD_PREVIEW -> {
             StationCardPreviewScreen(
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 }
             )
         }
@@ -85,7 +103,7 @@ fun AppNavigation() {
             StationListScreen(
                 dataset = StationDatasets.DEFAULT_DATASET,
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 }
             )
         }
@@ -93,7 +111,7 @@ fun AppNavigation() {
             StationMapScreen(
                 dataset = StationDatasets.DEFAULT_DATASET,
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 }
             )
         }
@@ -101,7 +119,7 @@ fun AppNavigation() {
             DraggableMapScreen(
                 dataset = StationDatasets.DEFAULT_DATASET,
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 }
             )
         }
@@ -131,7 +149,7 @@ fun AppNavigation() {
         AppScreen.ANIMATION_PREVIEWS -> {
             AnimationPreviewsScreen(
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 },
                 onSelectAnimation = { animScreen ->
                     currentScreen = animScreen
