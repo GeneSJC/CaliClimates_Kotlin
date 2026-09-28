@@ -163,7 +163,7 @@ object CaliforniaRegionalDefinitions {
 
     val NORTHERN_CALIFORNIA = CaliforniaRegion(
         id = "northern_california",
-        name = "The rest of Northern CA",
+        name = "Northern CA",
         title = "Far Northern California & Cascades",
         subtitle = "Redwood Temperate Rainforest to Mt. Shasta",
         minLat = 39.00,
@@ -188,11 +188,11 @@ object CaliforniaRegionalDefinitions {
     )
 
     val ALL_REGIONS = listOf(
-        BAY_AREA_SACRAMENTO, // Placed first as current active baseline
-        SAN_DIEGO,
-        LOS_ANGELES,
+        NORTHERN_CALIFORNIA,
+        BAY_AREA_SACRAMENTO,
         CENTRAL_COAST,
         CENTRAL_VALLEY,
-        NORTHERN_CALIFORNIA
+        LOS_ANGELES,
+        SAN_DIEGO
     )
 }
