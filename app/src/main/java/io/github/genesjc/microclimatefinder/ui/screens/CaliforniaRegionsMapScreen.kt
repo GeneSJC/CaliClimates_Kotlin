@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -69,7 +67,6 @@ fun CaliforniaRegionsMapScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
-    var currentMapStyle by remember { mutableStateOf(CaliforniaMapStyle.CLASSIC) }
     val selectedRegion = remember(selectedRegionId) {
         CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == selectedRegionId }
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
@@ -171,56 +168,11 @@ fun CaliforniaRegionsMapScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Segmented Map Style Selector Tabs: "Classic CA" & "Picasso Style"
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(3.dp),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                CaliforniaMapStyle.values().forEach { style ->
-                                    val isSelected = style == currentMapStyle
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent,
-                                        shadowElevation = if (isSelected) 1.dp else 0.dp,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable { currentMapStyle = style }
-                                    ) {
-                                        Box(
-                                            contentAlignment = Alignment.Center,
-                                            modifier = Modifier.padding(vertical = 7.dp)
-                                        ) {
-                                            Text(
-                                                text = style.label,
-                                                fontSize = 12.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
                         // Map Viewport (Strict Light Mode)
-                        when (currentMapStyle) {
-                            CaliforniaMapStyle.CLASSIC -> CaliforniaClassicMapCanvas(
-                                selectedRegionId = selectedRegionId,
-                                onSelectRegion = { selectedRegionId = it }
-                            )
-                            CaliforniaMapStyle.PICASSO -> CaliforniaPicassoMapCanvas(
-                                selectedRegionId = selectedRegionId,
-                                onSelectRegion = { selectedRegionId = it }
-                            )
-                        }
+                        CaliforniaClassicMapCanvas(
+                            selectedRegionId = selectedRegionId,
+                            onSelectRegion = { selectedRegionId = it }
+                        )
 
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -597,14 +549,6 @@ fun CaliforniaRegionsMapScreen(
             }
         }
     }
-}
-
-/**
- * Custom Canvas rendering a stylized geographical representation of California's 6 climatic regions.
- */
-enum class CaliforniaMapStyle(val label: String) {
-    CLASSIC("Classic CA"),
-    PICASSO("Picasso Style")
 }
 
 /**
@@ -1130,181 +1074,3 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCompassRose(cen
     drawCircle(color = color.copy(alpha = 0.5f), radius = radius * 0.14f, center = center)
 }
 
-/**
- * Picasso Style: Cubist Polygonal Representation of California
- * Seamless geometric abstraction with shared vertices between all adjacent blocks,
- * completely filling interior gaps.
- */
-@Composable
-private fun CaliforniaPicassoMapCanvas(
-    selectedRegionId: String,
-    onSelectRegion: (String) -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(430.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                Brush.linearGradient(colors = listOf(Color(0xFF1F2937), Color(0xFF111827))),
-                RoundedCornerShape(16.dp)
-            )
-            .border(1.5.dp, Color(0xFF374151), RoundedCornerShape(16.dp))
-            .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    val yRatio = offset.y / size.height
-                    val xRatio = offset.x / size.width
-                    when {
-                        yRatio < 0.31f -> onSelectRegion(CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id)
-                        yRatio < 0.52f && xRatio < 0.60f -> onSelectRegion(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
-                        yRatio in 0.31f..0.72f && xRatio >= 0.50f -> onSelectRegion(CaliforniaRegionalDefinitions.CENTRAL_VALLEY.id)
-                        yRatio in 0.52f..0.76f && xRatio < 0.50f -> onSelectRegion(CaliforniaRegionalDefinitions.CENTRAL_COAST.id)
-                        yRatio in 0.72f..0.88f -> onSelectRegion(CaliforniaRegionalDefinitions.LOS_ANGELES.id)
-                        yRatio >= 0.88f -> onSelectRegion(CaliforniaRegionalDefinitions.SAN_DIEGO.id)
-                        else -> onSelectRegion(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
-                    }
-                }
-            }
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-
-            // Faint structural grid lines against the dark gallery backdrop
-            for (i in 1..4) {
-                val lineY = h * (i / 5f)
-                drawLine(
-                    color = Color.White.copy(alpha = 0.06f),
-                    start = Offset(0f, lineY),
-                    end = Offset(w, lineY),
-                    strokeWidth = 1f
-                )
-            }
-
-            // Shared Picasso Vertices (normalized to completely eliminate gaps)
-            fun pt(xRatio: Float, yRatio: Float) = Offset(w * xRatio, h * yRatio)
-
-            val pNorthWest = pt(0.18f, 0.05f)
-            val pNorthEast = pt(0.85f, 0.05f)
-            val pTahoe = pt(0.78f, 0.29f)
-            val pNorthCoast = pt(0.27f, 0.31f)
-            val tNorthBayValley = pt(0.55f, 0.30f)
-
-            val pBayCoast = pt(0.22f, 0.49f)
-            val tBayValleyCoast = pt(0.57f, 0.49f)
-
-            val pCoastLaCoast = pt(0.36f, 0.73f)
-            val tCoastValleyLa = pt(0.48f, 0.69f)
-            val pValleyNevada = pt(0.74f, 0.69f)
-
-            val pLaSdCoast = pt(0.58f, 0.84f)
-            val pLaSdEast = pt(0.87f, 0.79f)
-
-            val pSdMexEast = pt(0.91f, 0.95f)
-            val pSdMexCoast = pt(0.64f, 0.95f)
-
-            fun makePath(pts: List<Offset>): Path {
-                val path = Path()
-                if (pts.isNotEmpty()) {
-                    path.moveTo(pts[0].x, pts[0].y)
-                    for (i in 1 until pts.size) {
-                        path.lineTo(pts[i].x, pts[i].y)
-                    }
-                    path.close()
-                }
-                return path
-            }
-
-            val picassoPolys = listOf(
-                Pair(
-                    CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA,
-                    makePath(listOf(pNorthWest, pNorthEast, pTahoe, tNorthBayValley, pNorthCoast))
-                ),
-                Pair(
-                    CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO,
-                    makePath(listOf(pNorthCoast, tNorthBayValley, tBayValleyCoast, pBayCoast))
-                ),
-                Pair(
-                    CaliforniaRegionalDefinitions.CENTRAL_VALLEY,
-                    makePath(listOf(
-                        pTahoe,
-                        tNorthBayValley,
-                        tBayValleyCoast,
-                        tCoastValleyLa,
-                        pValleyNevada,
-                        pt(0.82f, 0.35f)
-                    ))
-                ),
-                Pair(
-                    CaliforniaRegionalDefinitions.CENTRAL_COAST,
-                    makePath(listOf(
-                        pBayCoast,
-                        tBayValleyCoast,
-                        tCoastValleyLa,
-                        pCoastLaCoast,
-                        pt(0.28f, 0.66f)
-                    ))
-                ),
-                Pair(
-                    CaliforniaRegionalDefinitions.LOS_ANGELES,
-                    makePath(listOf(
-                        pCoastLaCoast,
-                        tCoastValleyLa,
-                        pValleyNevada,
-                        pLaSdEast,
-                        pLaSdCoast
-                    ))
-                ),
-                Pair(
-                    CaliforniaRegionalDefinitions.SAN_DIEGO,
-                    makePath(listOf(
-                        pLaSdCoast,
-                        pLaSdEast,
-                        pSdMexEast,
-                        pSdMexCoast
-                    ))
-                )
-            )
-
-            // Soft glow behind the selected block
-            for ((region, path) in picassoPolys) {
-                if (selectedRegionId == region.id) {
-                    val color = Color(android.graphics.Color.parseColor(region.colorHex))
-                    drawPath(path = path, color = color.copy(alpha = 0.45f), style = Stroke(width = 16f))
-                }
-            }
-
-            // Vivid gradient block fills — bold "museum canvas" cubist panels
-            for ((region, path) in picassoPolys) {
-                val isSelected = selectedRegionId == region.id
-                val color = Color(android.graphics.Color.parseColor(region.colorHex))
-                val bounds = path.getBounds()
-                drawPath(
-                    path = path,
-                    brush = Brush.linearGradient(
-                        colors = listOf(color.lighten(0.22f), color).map { if (isSelected) it else it.copy(alpha = 0.82f) },
-                        start = Offset(bounds.left, bounds.top),
-                        end = Offset(bounds.right, bounds.bottom)
-                    )
-                )
-            }
-
-            // Clean white canvas-mount outlines between every block
-            for ((_, path) in picassoPolys) {
-                drawPath(path = path, color = Color.White.copy(alpha = 0.5f), style = Stroke(width = 1.6f))
-            }
-
-            // Selected block gets a bold outline + pin marker
-            for ((region, path) in picassoPolys) {
-                if (selectedRegionId == region.id) {
-                    drawPath(path = path, color = Color.White, style = Stroke(width = 3.2f))
-                    val bounds = path.getBounds()
-                    drawPinMarker(
-                        center = Offset(bounds.center.x, bounds.center.y),
-                        color = Color(android.graphics.Color.parseColor(region.colorHex))
-                    )
-                }
-            }
-        }
-    }
-}
