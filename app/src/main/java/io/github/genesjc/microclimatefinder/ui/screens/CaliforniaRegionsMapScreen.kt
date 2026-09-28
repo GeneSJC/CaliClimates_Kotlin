@@ -745,7 +745,8 @@ private fun CaliforniaClassicMapCanvas(
                 lineTo(pCoastSanOnofre.x, pCoastSanOnofre.y)
                 lineTo(px(-117.25f), py(32.72f))
                 lineTo(px(-117.12f), py(32.53f))
-                lineTo(0f, py(32.53f))
+                lineTo(px(-117.12f), h)
+                lineTo(0f, h)
                 close()
             }
             drawPath(
