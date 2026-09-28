@@ -9,8 +9,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -59,7 +57,7 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaliforniaRegionsMapScreen(
     onNavigateBack: () -> Unit,
@@ -373,66 +371,6 @@ fun CaliforniaRegionsMapScreen(
                             }
                         }
 
-                        // Geographic Coordinate Constraints Table
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(
-                                    text = "GEOGRAPHICAL BOUNDING CONSTRAINTS",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    letterSpacing = 0.5.sp
-                                )
-
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Column {
-                                        Text(text = "Latitude Bounds", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(
-                                            text = "${selectedRegion.minLat}° N to ${selectedRegion.maxLat}° N",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                    Column {
-                                        Text(text = "Longitude Bounds", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(
-                                            text = "${selectedRegion.minLon}° W to ${selectedRegion.maxLon}° W",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                }
-
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Column {
-                                        Text(text = "Center Coordinate", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(
-                                            text = "${selectedRegion.centerLat}° N, ${selectedRegion.centerLon}° W",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                    Column {
-                                        Text(text = "Elevation Span", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        val maxFt = (selectedRegion.maxElevationMeters * 3.28084).toInt()
-                                        Text(
-                                            text = "${selectedRegion.minElevationMeters}m to ${selectedRegion.maxElevationMeters}m (${maxFt} ft)",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
                         // Description
                         Text(
                             text = selectedRegion.description,
@@ -467,35 +405,6 @@ fun CaliforniaRegionsMapScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         lineHeight = 16.sp
                                     )
-                                }
-                            }
-                        }
-
-                        // Key Reference Cities Chips
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "ANCHOR CITIES & STATIONS",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                letterSpacing = 0.5.sp
-                            )
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                selectedRegion.keyCities.forEach { city ->
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-                                    ) {
-                                        Text(
-                                            text = city,
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -1003,6 +912,46 @@ private fun CaliforniaClassicMapCanvas(
                 )
             }
 
+            // 3. Topographic relief — hachure ridgelines along California's actual mountain ranges,
+            // giving the fills physical texture and depth instead of a flat color wash.
+            val klamathCascades = listOf(
+                Offset(px(-123.60f), py(41.70f)),
+                Offset(px(-122.80f), py(41.20f)),
+                Offset(px(-122.20f), py(40.50f)),
+                Offset(px(-121.80f), py(39.80f))
+            )
+            val sierraNevada = listOf(
+                Offset(px(-120.30f), py(39.80f)),
+                Offset(px(-120.00f), py(39.00f)),
+                Offset(px(-119.50f), py(38.00f)),
+                Offset(px(-118.80f), py(37.00f)),
+                Offset(px(-118.30f), py(36.20f)),
+                Offset(px(-118.20f), py(35.30f)),
+                Offset(px(-118.00f), py(34.90f))
+            )
+            val coastRanges = listOf(
+                Offset(px(-123.40f), py(39.30f)),
+                Offset(px(-122.90f), py(38.60f)),
+                Offset(px(-122.30f), py(37.70f)),
+                Offset(px(-121.60f), py(36.60f)),
+                Offset(px(-120.90f), py(35.60f)),
+                Offset(px(-120.30f), py(34.80f))
+            )
+            val transverseRanges = listOf(
+                Offset(px(-119.60f), py(34.55f)),
+                Offset(px(-118.90f), py(34.35f)),
+                Offset(px(-118.10f), py(34.30f)),
+                Offset(px(-117.30f), py(34.20f))
+            )
+            val peninsularRanges = listOf(
+                Offset(px(-116.90f), py(33.70f)),
+                Offset(px(-116.70f), py(33.20f)),
+                Offset(px(-116.50f), py(32.70f))
+            )
+            for (ridge in listOf(klamathCascades, sierraNevada, coastRanges, transverseRanges, peninsularRanges)) {
+                drawHachureRidge(ridge)
+            }
+
             // Clean boundary strokes — warm ink-brown for an inked, hand-drawn map feel
             for ((_, path) in regionPolys) {
                 drawPath(
@@ -1055,6 +1004,65 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPinMarker(cente
     drawCircle(color = Color(0xFF2A1B12).copy(alpha = 0.35f), radius = 11f, center = center)
     drawCircle(color = Color.White, radius = 8.5f, center = center)
     drawCircle(color = color, radius = 6f, center = center)
+}
+
+/**
+ * Draws a hand-drawn "hachure" ridgeline along [points]: short ticks perpendicular to the
+ * ridge, dark on one side and light on the other, mimicking relief-shaded mountains on an
+ * antique topographic map. Ticks taper in near both ends of the ridge for a natural point.
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHachureRidge(
+    points: List<Offset>,
+    tickLength: Float = 11f,
+    spacing: Float = 8f,
+    darkColor: Color = Color(0xFF4A3728).copy(alpha = 0.42f),
+    lightColor: Color = Color(0xFFFFF6DE).copy(alpha = 0.55f)
+) {
+    if (points.size < 2) return
+    val segmentLengths = FloatArray(points.size - 1) { i ->
+        val dx = points[i + 1].x - points[i].x
+        val dy = points[i + 1].y - points[i].y
+        kotlin.math.hypot(dx, dy)
+    }
+    val totalLength = segmentLengths.sum()
+    if (totalLength < 1f) return
+
+    var traveled = 0f
+    var distanceSinceTick = 0f
+    for (i in segmentLengths.indices) {
+        val segLen = segmentLengths[i]
+        if (segLen < 0.5f) continue
+        val a = points[i]
+        val b = points[i + 1]
+        val dirX = (b.x - a.x) / segLen
+        val dirY = (b.y - a.y) / segLen
+        val normalX = -dirY
+        val normalY = dirX
+
+        var distanceInSegment = spacing - distanceSinceTick
+        while (distanceInSegment < segLen) {
+            val tickCenter = Offset(a.x + dirX * distanceInSegment, a.y + dirY * distanceInSegment)
+            val positionRatio = (traveled + distanceInSegment) / totalLength
+            // Taper ticks near both ends so the ridge fades in/out naturally
+            val taper = (kotlin.math.sin(positionRatio * Math.PI).toFloat()).coerceIn(0.35f, 1f)
+            val tLen = tickLength * taper
+            drawLine(
+                color = darkColor,
+                start = tickCenter,
+                end = Offset(tickCenter.x + normalX * tLen, tickCenter.y + normalY * tLen),
+                strokeWidth = 1.4f
+            )
+            drawLine(
+                color = lightColor,
+                start = tickCenter,
+                end = Offset(tickCenter.x - normalX * tLen * 0.6f, tickCenter.y - normalY * tLen * 0.6f),
+                strokeWidth = 1.1f
+            )
+            distanceInSegment += spacing
+        }
+        distanceSinceTick = segLen - (distanceInSegment - spacing)
+        traveled += segLen
+    }
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCompassRose(center: Offset, radius: Float, color: Color) {
