@@ -9,8 +9,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,8 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -47,12 +43,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,7 +56,7 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaliforniaRegionsMapScreen(
     onNavigateBack: () -> Unit,
@@ -68,7 +64,6 @@ fun CaliforniaRegionsMapScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
-    var currentMapStyle by remember { mutableStateOf(CaliforniaMapStyle.CLASSIC) }
     val selectedRegion = remember(selectedRegionId) {
         CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == selectedRegionId }
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
@@ -139,39 +134,6 @@ fun CaliforniaRegionsMapScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                // Explanatory Banner
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "ℹ",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
-                        Text(
-                            text = "Select any of California's 6 core sections to inspect geographic bounding constraints [minLat, maxLat, minLon, maxLon] and elevation profiles for future transects.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 16.sp
-                        )
-                    }
-                }
             }
 
             // Interactive California Spatial Map Card
@@ -203,58 +165,11 @@ fun CaliforniaRegionsMapScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // Segmented Map Style Selector Tabs: "Classic CA" & "Picasso Style"
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(3.dp),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                CaliforniaMapStyle.values().forEach { style ->
-                                    val isSelected = style == currentMapStyle
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent,
-                                        shadowElevation = if (isSelected) 1.dp else 0.dp,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable { currentMapStyle = style }
-                                    ) {
-                                        Box(
-                                            contentAlignment = Alignment.Center,
-                                            modifier = Modifier.padding(vertical = 7.dp)
-                                        ) {
-                                            Text(
-                                                text = style.label,
-                                                fontSize = 12.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
                         // Map Viewport (Strict Light Mode)
-                        when (currentMapStyle) {
-                            CaliforniaMapStyle.CLASSIC -> CaliforniaClassicMapCanvas(
-                                selectedRegionId = selectedRegionId,
-                                onSelectRegion = { selectedRegionId = it }
-                            )
-                            CaliforniaMapStyle.PICASSO -> CaliforniaPicassoMapCanvas(
-                                selectedRegionId = selectedRegionId,
-                                onSelectRegion = { selectedRegionId = it }
-                            )
-                        }
+                        CaliforniaClassicMapCanvas(
+                            selectedRegionId = selectedRegionId,
+                            onSelectRegion = { selectedRegionId = it }
+                        )
 
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -455,66 +370,6 @@ fun CaliforniaRegionsMapScreen(
                             }
                         }
 
-                        // Geographic Coordinate Constraints Table
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(
-                                    text = "GEOGRAPHICAL BOUNDING CONSTRAINTS",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    letterSpacing = 0.5.sp
-                                )
-
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Column {
-                                        Text(text = "Latitude Bounds", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(
-                                            text = "${selectedRegion.minLat}° N to ${selectedRegion.maxLat}° N",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                    Column {
-                                        Text(text = "Longitude Bounds", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(
-                                            text = "${selectedRegion.minLon}° W to ${selectedRegion.maxLon}° W",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                }
-
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Column {
-                                        Text(text = "Center Coordinate", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(
-                                            text = "${selectedRegion.centerLat}° N, ${selectedRegion.centerLon}° W",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                    Column {
-                                        Text(text = "Elevation Span", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        val maxFt = (selectedRegion.maxElevationMeters * 3.28084).toInt()
-                                        Text(
-                                            text = "${selectedRegion.minElevationMeters}m to ${selectedRegion.maxElevationMeters}m (${maxFt} ft)",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
                         // Description
                         Text(
                             text = selectedRegion.description,
@@ -553,59 +408,6 @@ fun CaliforniaRegionsMapScreen(
                             }
                         }
 
-                        // Key Reference Cities Chips
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "ANCHOR CITIES & STATIONS",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                letterSpacing = 0.5.sp
-                            )
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                selectedRegion.keyCities.forEach { city ->
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-                                    ) {
-                                        Text(
-                                            text = city,
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        // Constraint Code Definition Blueprint
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = "// Regional Draggable Canvas Constraint Blueprint",
-                                    fontSize = 10.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "const val MIN_LAT = ${selectedRegion.minLat}\nconst val MAX_LAT = ${selectedRegion.maxLat}\nconst val MIN_LON = ${selectedRegion.minLon}\nconst val MAX_LON = ${selectedRegion.maxLon}\nconst val CENTER_LAT = ${selectedRegion.centerLat}\nconst val CENTER_LON = ${selectedRegion.centerLon}",
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                                    lineHeight = 16.sp
-                                )
-                            }
-                        }
-
                         // Action Button if Active
                         if (selectedRegion.status == RegionStatus.ACTIVE_TRANSECT) {
                             Button(
@@ -631,14 +433,6 @@ fun CaliforniaRegionsMapScreen(
             }
         }
     }
-}
-
-/**
- * Custom Canvas rendering a stylized geographical representation of California's 6 climatic regions.
- */
-enum class CaliforniaMapStyle(val label: String) {
-    CLASSIC("Classic CA"),
-    PICASSO("Picasso Style")
 }
 
 /**
@@ -668,10 +462,16 @@ private fun CaliforniaClassicMapCanvas(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(310.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF8FAFC), RoundedCornerShape(12.dp))
-            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+            .height(430.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(Color(0xFFFFFBEB), Color(0xFFF3E1B8), Color(0xFFE6CD98)),
+                    radius = 900f
+                ),
+                RoundedCornerShape(16.dp)
+            )
+            .border(1.5.dp, Color(0xFFC9A66B), RoundedCornerShape(16.dp))
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val w = size.width.toFloat()
@@ -863,17 +663,23 @@ private fun CaliforniaClassicMapCanvas(
             fun px(lon: Float): Float = padX + ((lon - lonMin) / (lonMax - lonMin)) * availW
             fun py(lat: Float): Float = padY + (1.0f - (lat - latMin) / (latMax - latMin)) * availH
 
-            // 1. Subtle light atmospheric grid lines (34°N, 36°N, 38°N, 40°N)
+            // 1. Warm-toned dashed graticule lines (34°N, 36°N, 38°N, 40°N) — antique cartography feel
+            val graticuleEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)
             val gridLats = floatArrayOf(34f, 36f, 38f, 40f)
             for (glat in gridLats) {
                 val y = py(glat)
                 drawLine(
-                    color = Color(0xFFE2E8F0),
+                    color = Color(0xFFB89968),
                     start = Offset(0f, y),
                     end = Offset(w, y),
-                    strokeWidth = 1f
+                    strokeWidth = 1f,
+                    pathEffect = graticuleEffect,
+                    alpha = 0.55f
                 )
             }
+
+            // Decorative compass rose watermark (top-right), for character and a sense of place
+            drawCompassRose(center = Offset(w - 34f, 34f), radius = 22f, color = Color(0xFF8B6F3E))
 
             // Shared boundary vertices (Continuous Interlocking Topology)
             val pTahoe = Offset(px(-120.00f), py(39.00f))
@@ -942,7 +748,14 @@ private fun CaliforniaClassicMapCanvas(
                 lineTo(0f, py(32.53f))
                 close()
             }
-            drawPath(oceanPath, color = Color(0xFFF0F9FF))
+            drawPath(
+                oceanPath,
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFFCDEEF2), Color(0xFFA8DEE6)),
+                    start = Offset(0f, 0f),
+                    end = Offset(w, h)
+                )
+            )
 
             // 2. The 6 seamlessly interlocking regions (ZERO interior gaps)
             val regionPolys = listOf(
@@ -1051,28 +864,76 @@ private fun CaliforniaClassicMapCanvas(
                 )
             )
 
-            // Fills lock together seamlessly
+            // Soft glow halo behind the selected region, for a "pop on tap" feel
+            for ((region, path) in regionPolys) {
+                if (selectedRegionId == region.id) {
+                    val color = Color(android.graphics.Color.parseColor(region.colorHex))
+                    drawPath(path = path, color = color.copy(alpha = 0.30f), style = Stroke(width = 14f))
+                }
+            }
+
+            // Fills lock together seamlessly — richer gradient fills instead of flat washed-out tints
             for ((region, path) in regionPolys) {
                 val isSelected = selectedRegionId == region.id
                 val color = Color(android.graphics.Color.parseColor(region.colorHex))
+                val bounds = path.getBounds()
                 drawPath(
                     path = path,
-                    color = if (isSelected) color.copy(alpha = 0.85f) else color.copy(alpha = 0.38f),
-                    style = Fill
+                    brush = Brush.linearGradient(
+                        colors = listOf(color.copy(alpha = if (isSelected) 1f else 0.72f).lighten(0.18f), color.copy(alpha = if (isSelected) 1f else 0.72f)),
+                        start = Offset(bounds.left, bounds.top),
+                        end = Offset(bounds.right, bounds.bottom)
+                    )
                 )
             }
 
-            // Clean boundary strokes
-            for ((region, path) in regionPolys) {
-                val isSelected = selectedRegionId == region.id
-                val color = Color(android.graphics.Color.parseColor(region.colorHex))
-                if (!isSelected) {
-                    drawPath(
-                        path = path,
-                        color = color.copy(alpha = 0.65f),
-                        style = Stroke(width = 1.2f)
-                    )
-                }
+            // 3. Topographic relief — hachure ridgelines along California's actual mountain ranges,
+            // giving the fills physical texture and depth instead of a flat color wash.
+            val klamathCascades = listOf(
+                Offset(px(-123.60f), py(41.70f)),
+                Offset(px(-122.80f), py(41.20f)),
+                Offset(px(-122.20f), py(40.50f)),
+                Offset(px(-121.80f), py(39.80f))
+            )
+            val sierraNevada = listOf(
+                Offset(px(-120.30f), py(39.80f)),
+                Offset(px(-120.00f), py(39.00f)),
+                Offset(px(-119.50f), py(38.00f)),
+                Offset(px(-118.80f), py(37.00f)),
+                Offset(px(-118.30f), py(36.20f)),
+                Offset(px(-118.20f), py(35.30f)),
+                Offset(px(-118.00f), py(34.90f))
+            )
+            val coastRanges = listOf(
+                Offset(px(-123.40f), py(39.30f)),
+                Offset(px(-122.90f), py(38.60f)),
+                Offset(px(-122.30f), py(37.70f)),
+                Offset(px(-121.60f), py(36.60f)),
+                Offset(px(-120.90f), py(35.60f)),
+                Offset(px(-120.30f), py(34.80f))
+            )
+            val transverseRanges = listOf(
+                Offset(px(-119.60f), py(34.55f)),
+                Offset(px(-118.90f), py(34.35f)),
+                Offset(px(-118.10f), py(34.30f)),
+                Offset(px(-117.30f), py(34.20f))
+            )
+            val peninsularRanges = listOf(
+                Offset(px(-116.90f), py(33.70f)),
+                Offset(px(-116.70f), py(33.20f)),
+                Offset(px(-116.50f), py(32.70f))
+            )
+            for (ridge in listOf(klamathCascades, sierraNevada, coastRanges, transverseRanges, peninsularRanges)) {
+                drawHachureRidge(ridge)
+            }
+
+            // Clean boundary strokes — warm ink-brown for an inked, hand-drawn map feel
+            for ((_, path) in regionPolys) {
+                drawPath(
+                    path = path,
+                    color = Color(0xFF4A3728).copy(alpha = 0.55f),
+                    style = Stroke(width = 1.3f)
+                )
             }
 
             // Selected region highlighted stroke
@@ -1080,213 +941,119 @@ private fun CaliforniaClassicMapCanvas(
                 if (selectedRegionId == region.id) {
                     drawPath(
                         path = path,
-                        color = Color(0xFF0F172A),
-                        style = Stroke(width = 2.8f)
+                        color = Color(0xFF2A1B12),
+                        style = Stroke(width = 3f)
+                    )
+                    val bounds = path.getBounds()
+                    drawPinMarker(
+                        center = Offset(bounds.center.x, bounds.center.y),
+                        color = Color(android.graphics.Color.parseColor(region.colorHex))
                     )
                 }
             }
 
-            // Key anchor cities
-            // SF Bay
-            drawCircle(
-                color = Color(0xFF0284C7),
-                radius = 4.5f,
-                center = Offset(px(-122.42f), py(37.77f))
+            // Key anchor cities — warm ink-brown ring with bright core, matching the antique-map treatment
+            val cityMarkers = listOf(
+                Offset(px(-122.42f), py(37.77f)) to 4.5f, // SF Bay
+                Offset(px(-121.49f), py(38.58f)) to 3.6f, // Sacramento
+                Offset(px(-118.24f), py(34.05f)) to 4f,   // LA
+                Offset(px(-117.16f), py(32.72f)) to 4f    // San Diego
             )
-            drawCircle(
-                color = Color.White,
-                radius = 2f,
-                center = Offset(px(-122.42f), py(37.77f))
-            )
-            // Sacramento
-            drawCircle(
-                color = Color(0xFF0284C7),
-                radius = 3.8f,
-                center = Offset(px(-121.49f), py(38.58f))
-            )
-            // LA
-            drawCircle(
-                color = Color(0xFFEC4899),
-                radius = 4f,
-                center = Offset(px(-118.24f), py(34.05f))
-            )
-            // San Diego
-            drawCircle(
-                color = Color(0xFFF59E0B),
-                radius = 4f,
-                center = Offset(px(-117.16f), py(32.72f))
-            )
+            for ((center, radius) in cityMarkers) {
+                drawCircle(color = Color(0xFF2A1B12).copy(alpha = 0.55f), radius = radius + 1.6f, center = center)
+                drawCircle(color = Color(0xFFFFFBEB), radius = radius, center = center)
+                drawCircle(color = Color(0xFFB8860B), radius = radius * 0.45f, center = center)
+            }
         }
     }
+}
+
+private fun Color.lighten(fraction: Float): Color = Color(
+    red = red + (1f - red) * fraction,
+    green = green + (1f - green) * fraction,
+    blue = blue + (1f - blue) * fraction,
+    alpha = alpha
+)
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPinMarker(center: Offset, color: Color) {
+    drawCircle(color = Color(0xFF2A1B12).copy(alpha = 0.35f), radius = 11f, center = center)
+    drawCircle(color = Color.White, radius = 8.5f, center = center)
+    drawCircle(color = color, radius = 6f, center = center)
 }
 
 /**
- * Picasso Style: Cubist Polygonal Representation of California
- * Seamless geometric abstraction with shared vertices between all adjacent blocks,
- * completely filling interior gaps.
+ * Draws a hand-drawn "hachure" ridgeline along [points]: short ticks perpendicular to the
+ * ridge, dark on one side and light on the other, mimicking relief-shaded mountains on an
+ * antique topographic map. Ticks taper in near both ends of the ridge for a natural point.
  */
-@Composable
-private fun CaliforniaPicassoMapCanvas(
-    selectedRegionId: String,
-    onSelectRegion: (String) -> Unit
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHachureRidge(
+    points: List<Offset>,
+    tickLength: Float = 11f,
+    spacing: Float = 8f,
+    darkColor: Color = Color(0xFF4A3728).copy(alpha = 0.42f),
+    lightColor: Color = Color(0xFFFFF6DE).copy(alpha = 0.55f)
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(310.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF8FAFC), RoundedCornerShape(12.dp))
-            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
-            .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    val yRatio = offset.y / size.height
-                    val xRatio = offset.x / size.width
-                    when {
-                        yRatio < 0.31f -> onSelectRegion(CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id)
-                        yRatio < 0.52f && xRatio < 0.60f -> onSelectRegion(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
-                        yRatio in 0.31f..0.72f && xRatio >= 0.50f -> onSelectRegion(CaliforniaRegionalDefinitions.CENTRAL_VALLEY.id)
-                        yRatio in 0.52f..0.76f && xRatio < 0.50f -> onSelectRegion(CaliforniaRegionalDefinitions.CENTRAL_COAST.id)
-                        yRatio in 0.72f..0.88f -> onSelectRegion(CaliforniaRegionalDefinitions.LOS_ANGELES.id)
-                        yRatio >= 0.88f -> onSelectRegion(CaliforniaRegionalDefinitions.SAN_DIEGO.id)
-                        else -> onSelectRegion(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
-                    }
-                }
-            }
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
+    if (points.size < 2) return
+    val segmentLengths = FloatArray(points.size - 1) { i ->
+        val dx = points[i + 1].x - points[i].x
+        val dy = points[i + 1].y - points[i].y
+        kotlin.math.hypot(dx, dy)
+    }
+    val totalLength = segmentLengths.sum()
+    if (totalLength < 1f) return
 
-            // Background grid lines
-            for (i in 1..4) {
-                val lineY = h * (i / 5f)
-                drawLine(
-                    color = Color(0xFFE2E8F0),
-                    start = Offset(0f, lineY),
-                    end = Offset(w, lineY),
-                    strokeWidth = 1f
-                )
-            }
+    var traveled = 0f
+    var distanceSinceTick = 0f
+    for (i in segmentLengths.indices) {
+        val segLen = segmentLengths[i]
+        if (segLen < 0.5f) continue
+        val a = points[i]
+        val b = points[i + 1]
+        val dirX = (b.x - a.x) / segLen
+        val dirY = (b.y - a.y) / segLen
+        val normalX = -dirY
+        val normalY = dirX
 
-            // Shared Picasso Vertices (normalized to completely eliminate gaps)
-            fun pt(xRatio: Float, yRatio: Float) = Offset(w * xRatio, h * yRatio)
-
-            val pNorthWest = pt(0.18f, 0.05f)
-            val pNorthEast = pt(0.85f, 0.05f)
-            val pTahoe = pt(0.78f, 0.29f)
-            val pNorthCoast = pt(0.27f, 0.31f)
-            val tNorthBayValley = pt(0.55f, 0.30f)
-
-            val pBayCoast = pt(0.22f, 0.49f)
-            val tBayValleyCoast = pt(0.57f, 0.49f)
-
-            val pCoastLaCoast = pt(0.36f, 0.73f)
-            val tCoastValleyLa = pt(0.48f, 0.69f)
-            val pValleyNevada = pt(0.74f, 0.69f)
-
-            val pLaSdCoast = pt(0.58f, 0.84f)
-            val pLaSdEast = pt(0.87f, 0.79f)
-
-            val pSdMexEast = pt(0.91f, 0.95f)
-            val pSdMexCoast = pt(0.64f, 0.95f)
-
-            fun makePath(pts: List<Offset>): Path {
-                val path = Path()
-                if (pts.isNotEmpty()) {
-                    path.moveTo(pts[0].x, pts[0].y)
-                    for (i in 1 until pts.size) {
-                        path.lineTo(pts[i].x, pts[i].y)
-                    }
-                    path.close()
-                }
-                return path
-            }
-
-            val picassoPolys = listOf(
-                Pair(
-                    CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA,
-                    makePath(listOf(pNorthWest, pNorthEast, pTahoe, tNorthBayValley, pNorthCoast))
-                ),
-                Pair(
-                    CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO,
-                    makePath(listOf(pNorthCoast, tNorthBayValley, tBayValleyCoast, pBayCoast))
-                ),
-                Pair(
-                    CaliforniaRegionalDefinitions.CENTRAL_VALLEY,
-                    makePath(listOf(
-                        pTahoe,
-                        tNorthBayValley,
-                        tBayValleyCoast,
-                        tCoastValleyLa,
-                        pValleyNevada,
-                        pt(0.82f, 0.35f)
-                    ))
-                ),
-                Pair(
-                    CaliforniaRegionalDefinitions.CENTRAL_COAST,
-                    makePath(listOf(
-                        pBayCoast,
-                        tBayValleyCoast,
-                        tCoastValleyLa,
-                        pCoastLaCoast,
-                        pt(0.28f, 0.66f)
-                    ))
-                ),
-                Pair(
-                    CaliforniaRegionalDefinitions.LOS_ANGELES,
-                    makePath(listOf(
-                        pCoastLaCoast,
-                        tCoastValleyLa,
-                        pValleyNevada,
-                        pLaSdEast,
-                        pLaSdCoast
-                    ))
-                ),
-                Pair(
-                    CaliforniaRegionalDefinitions.SAN_DIEGO,
-                    makePath(listOf(
-                        pLaSdCoast,
-                        pLaSdEast,
-                        pSdMexEast,
-                        pSdMexCoast
-                    ))
-                )
+        var distanceInSegment = spacing - distanceSinceTick
+        while (distanceInSegment < segLen) {
+            val tickCenter = Offset(a.x + dirX * distanceInSegment, a.y + dirY * distanceInSegment)
+            val positionRatio = (traveled + distanceInSegment) / totalLength
+            // Taper ticks near both ends so the ridge fades in/out naturally
+            val taper = (kotlin.math.sin(positionRatio * Math.PI).toFloat()).coerceIn(0.35f, 1f)
+            val tLen = tickLength * taper
+            drawLine(
+                color = darkColor,
+                start = tickCenter,
+                end = Offset(tickCenter.x + normalX * tLen, tickCenter.y + normalY * tLen),
+                strokeWidth = 1.4f
             )
-
-            // Fills
-            for ((region, path) in picassoPolys) {
-                val isSelected = selectedRegionId == region.id
-                val color = Color(android.graphics.Color.parseColor(region.colorHex))
-                drawPath(
-                    path = path,
-                    color = if (isSelected) color.copy(alpha = 0.85f) else color.copy(alpha = 0.38f),
-                    style = Fill
-                )
-            }
-
-            // Boundary outlines
-            for ((region, path) in picassoPolys) {
-                val isSelected = selectedRegionId == region.id
-                val color = Color(android.graphics.Color.parseColor(region.colorHex))
-                if (!isSelected) {
-                    drawPath(
-                        path = path,
-                        color = color.copy(alpha = 0.65f),
-                        style = Stroke(width = 1.2f)
-                    )
-                }
-            }
-
-            // Top selected outline
-            for ((region, path) in picassoPolys) {
-                if (selectedRegionId == region.id) {
-                    drawPath(
-                        path = path,
-                        color = Color(0xFF0F172A),
-                        style = Stroke(width = 2.8f)
-                    )
-                }
-            }
+            drawLine(
+                color = lightColor,
+                start = tickCenter,
+                end = Offset(tickCenter.x - normalX * tLen * 0.6f, tickCenter.y - normalY * tLen * 0.6f),
+                strokeWidth = 1.1f
+            )
+            distanceInSegment += spacing
         }
+        distanceSinceTick = segLen - (distanceInSegment - spacing)
+        traveled += segLen
     }
 }
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCompassRose(center: Offset, radius: Float, color: Color) {
+    val points = mutableListOf<Offset>()
+    val spikes = 8
+    for (i in 0 until spikes * 2) {
+        val r = if (i % 2 == 0) radius else radius * 0.38f
+        val angle = (Math.PI * i / spikes) - Math.PI / 2
+        points.add(Offset(center.x + (r * kotlin.math.cos(angle)).toFloat(), center.y + (r * kotlin.math.sin(angle)).toFloat()))
+    }
+    val star = Path().apply {
+        moveTo(points[0].x, points[0].y)
+        for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
+        close()
+    }
+    drawPath(star, color = color.copy(alpha = 0.35f))
+    drawCircle(color = color.copy(alpha = 0.5f), radius = radius * 0.14f, center = center)
+}
+
