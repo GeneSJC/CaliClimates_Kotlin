@@ -68,3 +68,17 @@ merge + direct push.
 
 If that repo setting is off, merged branches need manual deletion from GitHub's
 branch list, since Claude's push credentials cannot delete a remote branch.
+
+## Handoff & Convention PDFs — Internal Use Only
+
+PDFs shared for project context — handoff summaries, coding-convention
+reports, delivery-convention reports, and similar reference documents — are
+for internal use only. They are working reference material, not project
+deliverables.
+
+**Do not commit these PDFs (or copies/extracts of them) into this git repo**
+unless explicitly told otherwise for a specific file. This applies regardless
+of branch, and regardless of whether the PDF was uploaded directly or
+extracted from a handoff `.zip`. When a PDF's content needs to inform the
+codebase, extract the relevant convention or decision into a proper repo doc
+(like this file) instead of adding the PDF itself.
