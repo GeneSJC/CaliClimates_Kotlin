@@ -49,7 +49,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -406,30 +405,6 @@ fun CaliforniaRegionsMapScreen(
                                         lineHeight = 16.sp
                                     )
                                 }
-                            }
-                        }
-
-                        // Constraint Code Definition Blueprint
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = "// Regional Draggable Canvas Constraint Blueprint",
-                                    fontSize = 10.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "const val MIN_LAT = ${selectedRegion.minLat}\nconst val MAX_LAT = ${selectedRegion.maxLat}\nconst val MIN_LON = ${selectedRegion.minLon}\nconst val MAX_LON = ${selectedRegion.maxLon}\nconst val CENTER_LAT = ${selectedRegion.centerLat}\nconst val CENTER_LON = ${selectedRegion.centerLon}",
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                                    lineHeight = 16.sp
-                                )
                             }
                         }
 
