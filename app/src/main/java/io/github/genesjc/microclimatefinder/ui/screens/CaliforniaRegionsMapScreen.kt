@@ -47,9 +47,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontFamily
@@ -139,39 +140,6 @@ fun CaliforniaRegionsMapScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
-                // Explanatory Banner
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "ℹ",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
-                        Text(
-                            text = "Select any of California's 6 core sections to inspect geographic bounding constraints [minLat, maxLat, minLon, maxLon] and elevation profiles for future transects.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 16.sp
-                        )
-                    }
-                }
             }
 
             // Interactive California Spatial Map Card
@@ -202,8 +170,6 @@ fun CaliforniaRegionsMapScreen(
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
-
-                        Spacer(modifier = Modifier.height(6.dp))
 
                         // Segmented Map Style Selector Tabs: "Classic CA" & "Picasso Style"
                         Surface(
@@ -668,10 +634,16 @@ private fun CaliforniaClassicMapCanvas(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(310.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF8FAFC), RoundedCornerShape(12.dp))
-            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+            .height(430.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(Color(0xFFFFFBEB), Color(0xFFF3E1B8), Color(0xFFE6CD98)),
+                    radius = 900f
+                ),
+                RoundedCornerShape(16.dp)
+            )
+            .border(1.5.dp, Color(0xFFC9A66B), RoundedCornerShape(16.dp))
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val w = size.width.toFloat()
@@ -863,17 +835,23 @@ private fun CaliforniaClassicMapCanvas(
             fun px(lon: Float): Float = padX + ((lon - lonMin) / (lonMax - lonMin)) * availW
             fun py(lat: Float): Float = padY + (1.0f - (lat - latMin) / (latMax - latMin)) * availH
 
-            // 1. Subtle light atmospheric grid lines (34°N, 36°N, 38°N, 40°N)
+            // 1. Warm-toned dashed graticule lines (34°N, 36°N, 38°N, 40°N) — antique cartography feel
+            val graticuleEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)
             val gridLats = floatArrayOf(34f, 36f, 38f, 40f)
             for (glat in gridLats) {
                 val y = py(glat)
                 drawLine(
-                    color = Color(0xFFE2E8F0),
+                    color = Color(0xFFB89968),
                     start = Offset(0f, y),
                     end = Offset(w, y),
-                    strokeWidth = 1f
+                    strokeWidth = 1f,
+                    pathEffect = graticuleEffect,
+                    alpha = 0.55f
                 )
             }
+
+            // Decorative compass rose watermark (top-right), for character and a sense of place
+            drawCompassRose(center = Offset(w - 34f, 34f), radius = 22f, color = Color(0xFF8B6F3E))
 
             // Shared boundary vertices (Continuous Interlocking Topology)
             val pTahoe = Offset(px(-120.00f), py(39.00f))
@@ -942,7 +920,14 @@ private fun CaliforniaClassicMapCanvas(
                 lineTo(0f, py(32.53f))
                 close()
             }
-            drawPath(oceanPath, color = Color(0xFFF0F9FF))
+            drawPath(
+                oceanPath,
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFFCDEEF2), Color(0xFFA8DEE6)),
+                    start = Offset(0f, 0f),
+                    end = Offset(w, h)
+                )
+            )
 
             // 2. The 6 seamlessly interlocking regions (ZERO interior gaps)
             val regionPolys = listOf(
@@ -1051,28 +1036,36 @@ private fun CaliforniaClassicMapCanvas(
                 )
             )
 
-            // Fills lock together seamlessly
+            // Soft glow halo behind the selected region, for a "pop on tap" feel
+            for ((region, path) in regionPolys) {
+                if (selectedRegionId == region.id) {
+                    val color = Color(android.graphics.Color.parseColor(region.colorHex))
+                    drawPath(path = path, color = color.copy(alpha = 0.30f), style = Stroke(width = 14f))
+                }
+            }
+
+            // Fills lock together seamlessly — richer gradient fills instead of flat washed-out tints
             for ((region, path) in regionPolys) {
                 val isSelected = selectedRegionId == region.id
                 val color = Color(android.graphics.Color.parseColor(region.colorHex))
+                val bounds = path.getBounds()
                 drawPath(
                     path = path,
-                    color = if (isSelected) color.copy(alpha = 0.85f) else color.copy(alpha = 0.38f),
-                    style = Fill
+                    brush = Brush.linearGradient(
+                        colors = listOf(color.copy(alpha = if (isSelected) 1f else 0.72f).lighten(0.18f), color.copy(alpha = if (isSelected) 1f else 0.72f)),
+                        start = Offset(bounds.left, bounds.top),
+                        end = Offset(bounds.right, bounds.bottom)
+                    )
                 )
             }
 
-            // Clean boundary strokes
-            for ((region, path) in regionPolys) {
-                val isSelected = selectedRegionId == region.id
-                val color = Color(android.graphics.Color.parseColor(region.colorHex))
-                if (!isSelected) {
-                    drawPath(
-                        path = path,
-                        color = color.copy(alpha = 0.65f),
-                        style = Stroke(width = 1.2f)
-                    )
-                }
+            // Clean boundary strokes — warm ink-brown for an inked, hand-drawn map feel
+            for ((_, path) in regionPolys) {
+                drawPath(
+                    path = path,
+                    color = Color(0xFF4A3728).copy(alpha = 0.55f),
+                    style = Stroke(width = 1.3f)
+                )
             }
 
             // Selected region highlighted stroke
@@ -1080,44 +1073,61 @@ private fun CaliforniaClassicMapCanvas(
                 if (selectedRegionId == region.id) {
                     drawPath(
                         path = path,
-                        color = Color(0xFF0F172A),
-                        style = Stroke(width = 2.8f)
+                        color = Color(0xFF2A1B12),
+                        style = Stroke(width = 3f)
+                    )
+                    val bounds = path.getBounds()
+                    drawPinMarker(
+                        center = Offset(bounds.center.x, bounds.center.y),
+                        color = Color(android.graphics.Color.parseColor(region.colorHex))
                     )
                 }
             }
 
-            // Key anchor cities
-            // SF Bay
-            drawCircle(
-                color = Color(0xFF0284C7),
-                radius = 4.5f,
-                center = Offset(px(-122.42f), py(37.77f))
+            // Key anchor cities — warm ink-brown ring with bright core, matching the antique-map treatment
+            val cityMarkers = listOf(
+                Offset(px(-122.42f), py(37.77f)) to 4.5f, // SF Bay
+                Offset(px(-121.49f), py(38.58f)) to 3.6f, // Sacramento
+                Offset(px(-118.24f), py(34.05f)) to 4f,   // LA
+                Offset(px(-117.16f), py(32.72f)) to 4f    // San Diego
             )
-            drawCircle(
-                color = Color.White,
-                radius = 2f,
-                center = Offset(px(-122.42f), py(37.77f))
-            )
-            // Sacramento
-            drawCircle(
-                color = Color(0xFF0284C7),
-                radius = 3.8f,
-                center = Offset(px(-121.49f), py(38.58f))
-            )
-            // LA
-            drawCircle(
-                color = Color(0xFFEC4899),
-                radius = 4f,
-                center = Offset(px(-118.24f), py(34.05f))
-            )
-            // San Diego
-            drawCircle(
-                color = Color(0xFFF59E0B),
-                radius = 4f,
-                center = Offset(px(-117.16f), py(32.72f))
-            )
+            for ((center, radius) in cityMarkers) {
+                drawCircle(color = Color(0xFF2A1B12).copy(alpha = 0.55f), radius = radius + 1.6f, center = center)
+                drawCircle(color = Color(0xFFFFFBEB), radius = radius, center = center)
+                drawCircle(color = Color(0xFFB8860B), radius = radius * 0.45f, center = center)
+            }
         }
     }
+}
+
+private fun Color.lighten(fraction: Float): Color = Color(
+    red = red + (1f - red) * fraction,
+    green = green + (1f - green) * fraction,
+    blue = blue + (1f - blue) * fraction,
+    alpha = alpha
+)
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPinMarker(center: Offset, color: Color) {
+    drawCircle(color = Color(0xFF2A1B12).copy(alpha = 0.35f), radius = 11f, center = center)
+    drawCircle(color = Color.White, radius = 8.5f, center = center)
+    drawCircle(color = color, radius = 6f, center = center)
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCompassRose(center: Offset, radius: Float, color: Color) {
+    val points = mutableListOf<Offset>()
+    val spikes = 8
+    for (i in 0 until spikes * 2) {
+        val r = if (i % 2 == 0) radius else radius * 0.38f
+        val angle = (Math.PI * i / spikes) - Math.PI / 2
+        points.add(Offset(center.x + (r * kotlin.math.cos(angle)).toFloat(), center.y + (r * kotlin.math.sin(angle)).toFloat()))
+    }
+    val star = Path().apply {
+        moveTo(points[0].x, points[0].y)
+        for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
+        close()
+    }
+    drawPath(star, color = color.copy(alpha = 0.35f))
+    drawCircle(color = color.copy(alpha = 0.5f), radius = radius * 0.14f, center = center)
 }
 
 /**
@@ -1133,10 +1143,13 @@ private fun CaliforniaPicassoMapCanvas(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(310.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF8FAFC), RoundedCornerShape(12.dp))
-            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+            .height(430.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                Brush.linearGradient(colors = listOf(Color(0xFF1F2937), Color(0xFF111827))),
+                RoundedCornerShape(16.dp)
+            )
+            .border(1.5.dp, Color(0xFF374151), RoundedCornerShape(16.dp))
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val yRatio = offset.y / size.height
@@ -1157,11 +1170,11 @@ private fun CaliforniaPicassoMapCanvas(
             val w = size.width
             val h = size.height
 
-            // Background grid lines
+            // Faint structural grid lines against the dark gallery backdrop
             for (i in 1..4) {
                 val lineY = h * (i / 5f)
                 drawLine(
-                    color = Color(0xFFE2E8F0),
+                    color = Color.White.copy(alpha = 0.06f),
                     start = Offset(0f, lineY),
                     end = Offset(w, lineY),
                     strokeWidth = 1f
@@ -1253,37 +1266,42 @@ private fun CaliforniaPicassoMapCanvas(
                 )
             )
 
-            // Fills
+            // Soft glow behind the selected block
             for ((region, path) in picassoPolys) {
-                val isSelected = selectedRegionId == region.id
-                val color = Color(android.graphics.Color.parseColor(region.colorHex))
-                drawPath(
-                    path = path,
-                    color = if (isSelected) color.copy(alpha = 0.85f) else color.copy(alpha = 0.38f),
-                    style = Fill
-                )
-            }
-
-            // Boundary outlines
-            for ((region, path) in picassoPolys) {
-                val isSelected = selectedRegionId == region.id
-                val color = Color(android.graphics.Color.parseColor(region.colorHex))
-                if (!isSelected) {
-                    drawPath(
-                        path = path,
-                        color = color.copy(alpha = 0.65f),
-                        style = Stroke(width = 1.2f)
-                    )
+                if (selectedRegionId == region.id) {
+                    val color = Color(android.graphics.Color.parseColor(region.colorHex))
+                    drawPath(path = path, color = color.copy(alpha = 0.45f), style = Stroke(width = 16f))
                 }
             }
 
-            // Top selected outline
+            // Vivid gradient block fills — bold "museum canvas" cubist panels
+            for ((region, path) in picassoPolys) {
+                val isSelected = selectedRegionId == region.id
+                val color = Color(android.graphics.Color.parseColor(region.colorHex))
+                val bounds = path.getBounds()
+                drawPath(
+                    path = path,
+                    brush = Brush.linearGradient(
+                        colors = listOf(color.lighten(0.22f), color).map { if (isSelected) it else it.copy(alpha = 0.82f) },
+                        start = Offset(bounds.left, bounds.top),
+                        end = Offset(bounds.right, bounds.bottom)
+                    )
+                )
+            }
+
+            // Clean white canvas-mount outlines between every block
+            for ((_, path) in picassoPolys) {
+                drawPath(path = path, color = Color.White.copy(alpha = 0.5f), style = Stroke(width = 1.6f))
+            }
+
+            // Selected block gets a bold outline + pin marker
             for ((region, path) in picassoPolys) {
                 if (selectedRegionId == region.id) {
-                    drawPath(
-                        path = path,
-                        color = Color(0xFF0F172A),
-                        style = Stroke(width = 2.8f)
+                    drawPath(path = path, color = Color.White, style = Stroke(width = 3.2f))
+                    val bounds = path.getBounds()
+                    drawPinMarker(
+                        center = Offset(bounds.center.x, bounds.center.y),
+                        color = Color(android.graphics.Color.parseColor(region.colorHex))
                     )
                 }
             }
