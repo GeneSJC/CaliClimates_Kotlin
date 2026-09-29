@@ -65,6 +65,7 @@ import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.TransectConfig
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
+import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
 import io.github.genesjc.microclimatefinder.ui.components.DemoNavigationCard
@@ -117,6 +118,82 @@ private fun landingEntries(
         }
     }
     return entries
+}
+
+/** About the current region: its subtitle and description, with traits and key cities on expand. */
+@Composable
+private fun RegionDetailsCard(region: CaliforniaRegion) {
+    var expanded by remember(region.id) { mutableStateOf(false) }
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                onClickLabel = if (expanded) "Show less about ${region.name}" else "Show more about ${region.name}",
+                role = Role.Button
+            ) { expanded = !expanded }
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = region.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = region.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    text = if (expanded) "Less ▲" else "More ▼",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = region.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = if (expanded) Int.MAX_VALUE else 3,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "What shapes the weather here",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                region.microclimateTraits.forEach { trait ->
+                    Text(
+                        text = "\u2022 $trait",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Key places",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = region.keyCities.joinToString(" \u2022 "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -347,6 +424,8 @@ fun LandingScreen(
                             }
                         }
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    RegionDetailsCard(region)
                     if (!hasStationData) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
@@ -359,12 +438,6 @@ fun LandingScreen(
                                     text = "No station data loaded",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = region.description,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
