@@ -80,8 +80,19 @@ class StationCsvParser(private val context: Context) {
             elevationMeters = elev,
             terrain = terrain,
             currentReading = reading,
-            microclimateDescription = getField(tokens, indices, "note") ?: describeMicroclimate(terrain, elev, name)
+            microclimateDescription = getField(tokens, indices, "note") ?: describeMicroclimate(terrain, elev, name),
+            reportsTemp = parseFlag(getField(tokens, indices, "reports_temp")),
+            reportsHumidity = parseFlag(getField(tokens, indices, "reports_humidity")),
+            reportsWind = parseFlag(getField(tokens, indices, "reports_wind")),
+            isFeatured = getField(tokens, indices, "tier")?.equals("featured", ignoreCase = true) == true
         )
+    }
+
+    // TRUE / FALSE in the data files; blank or anything else means unknown
+    private fun parseFlag(value: String?): Boolean? = when (value?.trim()?.uppercase()) {
+        "TRUE" -> true
+        "FALSE" -> false
+        else -> null
     }
 
     private fun deriveTerrainType(terrainStr: String, elevationMeters: Int): TerrainType {
