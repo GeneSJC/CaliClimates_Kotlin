@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
@@ -75,7 +76,6 @@ private data class LandingEntry(
 )
 
 private fun landingEntries(
-    regionName: String,
     dataset: StationDatasetInfo?,
     transect: TransectConfig?,
     transectStationCount: Int
@@ -86,20 +86,20 @@ private fun landingEntries(
             "(${dataset.minElevationMeters}m to ${dataset.maxElevationMeters}m elev)"
         val kind = dataset.subtitle.substringBefore(" • ")
         entries += LandingEntry(
-            title = "$regionName Station Feed (CSV)",
+            title = "Station Feed (CSV)",
             description = "$stats. $kind.",
             iconChar = "▤",
             target = AppScreen.STATION_LIST
         )
         entries += LandingEntry(
-            title = "$regionName Topographical Map",
-            description = "$stats across the $regionName region. Interactive spatial map.",
+            title = "Topographical Map",
+            description = "$stats. Interactive spatial map.",
             iconChar = "▲",
             target = AppScreen.STATION_MAP
         )
         entries += LandingEntry(
             title = "Elevation Profile",
-            description = "$regionName stations sorted by elevation, from lowest to highest, with live sky/weather theming.",
+            description = "Stations sorted by elevation, from lowest to highest, with live sky/weather theming.",
             iconChar = "⛰️",
             target = AppScreen.ELEVATION_PROFILE
         )
@@ -129,7 +129,6 @@ fun LandingScreen(
     val hasStationData = dataset != null
     val entries = remember(region.id, dataset) {
         landingEntries(
-            region.name,
             dataset,
             TransectConfigs.forRegion(region.id),
             region.activeStationCount
@@ -248,10 +247,11 @@ fun LandingScreen(
                         Spacer(modifier = Modifier.width(14.dp))
 
                         Text(
-                            text = "Micro Climate Finder",
-                            style = MaterialTheme.typography.titleLarge,
+                            text = region.name,
+                            style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.weight(1f)
                         )
@@ -272,39 +272,41 @@ fun LandingScreen(
             }
 
             item(span = { GridItemSpan(maxLineSpan) }) {
-                if (hasStationData) {
+                Column {
                     Text(
-                        text = "Region: ${region.name}",
+                        text = "Micro Climate Finder",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
-                } else {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "${region.name} (no station data loaded)",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = region.description,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Station data isn't included in this build for this region. " +
-                                    "Tap the California icon at the top right to switch regions.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    if (!hasStationData) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "No station data loaded",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = region.description,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Station data isn't included in this build for this region. " +
+                                        "Tap the California icon at the top right to switch regions.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
