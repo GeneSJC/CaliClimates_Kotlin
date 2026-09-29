@@ -40,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.genesjc.microclimatefinder.BuildConfig
 import io.github.genesjc.microclimatefinder.ui.components.DemoNavigationCard
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import kotlinx.coroutines.launch
@@ -84,18 +83,6 @@ fun LandingScreen(
     onNavigateTo: (AppScreen) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val flavorTitle = if (BuildConfig.IS_COMMERCIAL) {
-        "Micro Climate Finder • Commercial Edition"
-    } else {
-        "Micro Climate Finder • FOSS Edition"
-    }
-
-    val mapProvider = if (BuildConfig.IS_COMMERCIAL) {
-        "Google Maps SDK & Premium Radar"
-    } else {
-        "OpenStreetMap / OsmDroid"
-    }
-
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -177,37 +164,14 @@ fun LandingScreen(
 
                         Spacer(modifier = Modifier.width(14.dp))
 
-                        Column {
-                            Text(
-                                text = "Micro Climate Finder",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = flavorTitle,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                            )
-                            Text(
-                                text = "Active Engine: $mapProvider",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
+                        Text(
+                            text = "Micro Climate Finder",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                 }
-            }
-
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(
-                    text = "Component & Feature Demos",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
             }
 
             items(LANDING_ENTRIES) { entry ->
