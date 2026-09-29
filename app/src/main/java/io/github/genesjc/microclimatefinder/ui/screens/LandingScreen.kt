@@ -56,6 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
+import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.microclimatefinder.data.local.StationDatasets
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
@@ -72,39 +74,47 @@ private data class LandingEntry(
     val needsStationData: Boolean = true
 )
 
-private val LANDING_ENTRIES = listOf(
-    LandingEntry(
-        title = "Sacramento Station Feed (CSV)",
-        description = "21 verified NOAA stations (5m to 1406m elev) loaded from assets via StationListScreen.",
-        iconChar = "▤",
-        target = AppScreen.STATION_LIST
-    ),
-    LandingEntry(
-        title = "Sacramento Topographical Map",
-        description = "21 verified NOAA stations (5m to 1406m elev) across Sacramento 60-mile grid. Interactive spatial map.",
-        iconChar = "▲",
-        target = AppScreen.STATION_MAP
-    ),
-    LandingEntry(
-        title = "Elevation Profile",
-        description = "Sacramento stations sorted by elevation, from valley floor to Sierra ridgeline, with live sky/weather theming.",
-        iconChar = "⛰️",
-        target = AppScreen.ELEVATION_PROFILE
-    ),
-    LandingEntry(
-        title = "California Transect Map",
-        description = "Continuous 4-way pan & zoom from Sacramento to Monterey Bay across 36 regional stations with expandable Local News panel & story viewer.",
-        iconChar = "🗺️",
-        target = AppScreen.UNIFIED_DRAGGABLE_MAP
-    ),
-    LandingEntry(
-        title = "California Regional Sections",
-        description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
-        iconChar = "🧭",
-        target = AppScreen.CALIFORNIA_REGIONS,
-        needsStationData = false
+private fun landingEntries(regionName: String, dataset: StationDatasetInfo?): List<LandingEntry> {
+    val stats = if (dataset != null) {
+        "${dataset.stationCount} verified NOAA stations " +
+            "(${dataset.minElevationMeters}m to ${dataset.maxElevationMeters}m elev)"
+    } else {
+        "NOAA stations"
+    }
+    return listOf(
+        LandingEntry(
+            title = "$regionName Station Feed (CSV)",
+            description = "$stats loaded from assets via StationListScreen.",
+            iconChar = "▤",
+            target = AppScreen.STATION_LIST
+        ),
+        LandingEntry(
+            title = "$regionName Topographical Map",
+            description = "$stats across the $regionName region. Interactive spatial map.",
+            iconChar = "▲",
+            target = AppScreen.STATION_MAP
+        ),
+        LandingEntry(
+            title = "Elevation Profile",
+            description = "$regionName stations sorted by elevation, from lowest to highest, with live sky/weather theming.",
+            iconChar = "⛰️",
+            target = AppScreen.ELEVATION_PROFILE
+        ),
+        LandingEntry(
+            title = "California Transect Map",
+            description = "Continuous 4-way pan & zoom from Sacramento to Monterey Bay across 36 regional stations with expandable Local News panel & story viewer.",
+            iconChar = "🗺️",
+            target = AppScreen.UNIFIED_DRAGGABLE_MAP
+        ),
+        LandingEntry(
+            title = "California Regional Sections",
+            description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
+            iconChar = "🧭",
+            target = AppScreen.CALIFORNIA_REGIONS,
+            needsStationData = false
+        )
     )
-)
+}
 
 @Composable
 fun LandingScreen(
@@ -117,6 +127,9 @@ fun LandingScreen(
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
     }
     val hasStationData = region.status == RegionStatus.ACTIVE_TRANSECT
+    val entries = remember(region.id) {
+        landingEntries(region.name, StationDatasets.forRegion(region.id))
+    }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -286,7 +299,7 @@ fun LandingScreen(
                 }
             }
 
-            items(LANDING_ENTRIES.filter { hasStationData || !it.needsStationData }) { entry ->
+            items(entries.filter { hasStationData || !it.needsStationData }) { entry ->
                 DemoNavigationCard(
                     title = entry.title,
                     description = entry.description,
