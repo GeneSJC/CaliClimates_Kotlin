@@ -210,7 +210,7 @@ fun UnifiedDraggableMapScreen(
 
                 Column {
                     Text(
-                        text = "California Transect Map",
+                        text = "${config.displayName} Transect Map",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground

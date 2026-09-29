@@ -1,5 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -204,7 +206,7 @@ fun FixedCloudSplashScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Micro Climate Finder",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White

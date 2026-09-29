@@ -5,6 +5,7 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefin
 /** Per-region settings for the Transect Map: which stations to load and how to label them. */
 data class TransectConfig(
     val regionId: String,
+    val displayName: String,
     val assetFileName: String,
     val fallbackAssetFileName: String,
     val routeLabel: String,
@@ -15,6 +16,7 @@ object TransectConfigs {
     val ALL = listOf(
         TransectConfig(
             regionId = CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
+            displayName = "Bay Area",
             assetFileName = "california_unified_stations.csv",
             fallbackAssetFileName = "sacramento_stations_60mi.csv",
             routeLabel = "Sacramento to Monterey Bay",
