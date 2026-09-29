@@ -57,6 +57,70 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefin
 import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Content of the region picker overlay on Home: the selected region's name, the regional map to
+ * pick another, and a Confirm button. Picking on the map only marks a pending choice; the caller
+ * applies it when [onConfirm] fires.
+ */
+@Composable
+fun CaliforniaRegionPickerPanel(
+    pendingRegionId: String,
+    onPickRegion: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val region = remember(pendingRegionId) {
+        CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == pendingRegionId }
+            ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
+    }
+    Column(modifier = modifier.padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = region.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Tap the map to choose a region",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier
+                    .size(32.dp)
+                    .clickable(onClickLabel = "Close", onClick = onClose)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "\u2715",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        CaliforniaClassicMapCanvas(
+            selectedRegionId = pendingRegionId,
+            onSelectRegion = onPickRegion,
+            sizeModifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Confirm")
+        }
+    }
+}
+
 @Composable
 fun CaliforniaRegionsMapScreen(
     selectedRegionId: String,
@@ -458,12 +522,13 @@ fun CaliforniaRegionsMapScreen(
 @Composable
 private fun CaliforniaClassicMapCanvas(
     selectedRegionId: String,
-    onSelectRegion: (String) -> Unit
+    onSelectRegion: (String) -> Unit,
+    sizeModifier: Modifier = Modifier.height(430.dp)
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(430.dp)
+            .then(sizeModifier)
             .clip(RoundedCornerShape(16.dp))
             .background(
                 Brush.radialGradient(
