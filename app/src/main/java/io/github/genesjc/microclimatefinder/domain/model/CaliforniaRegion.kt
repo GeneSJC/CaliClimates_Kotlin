@@ -59,7 +59,7 @@ object CaliforniaRegionalDefinitions {
 
     val LOS_ANGELES = CaliforniaRegion(
         id = "los_angeles",
-        name = "LA",
+        name = "Los Angeles Area",
         title = "Los Angeles & Inland Empire",
         subtitle = "Santa Monica Basin to San Gabriel Crest",
         minLat = 33.50,
