@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
-import io.github.genesjc.microclimatefinder.data.local.StationDatasets
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
@@ -67,13 +66,13 @@ private val ELEVATION_LANDMARKS = listOf(
 
 @Composable
 fun ElevationProfileScreen(
-    dataset: StationDatasetInfo = StationDatasets.DEFAULT_DATASET,
+    dataset: StationDatasetInfo,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.assetFileName) { StationCsvParser(context) }
-    val stations = remember(dataset.assetFileName) { parser.loadStationsFromCsv(dataset.assetFileName) }
+    val parser = remember(dataset.fileName) { StationCsvParser(context) }
+    val stations = remember(dataset) { parser.loadStations(dataset) }
 
     var selectedStationId by remember {
         mutableStateOf(stations.firstOrNull()?.id)
