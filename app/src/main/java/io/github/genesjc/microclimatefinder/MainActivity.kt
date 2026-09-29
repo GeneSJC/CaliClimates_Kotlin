@@ -110,13 +110,14 @@ fun AppNavigation() {
     if (showLimitedDataNotice) {
         AlertDialog(
             onDismissRequest = { showLimitedDataNotice = false },
-            title = { Text("Limited data set") },
+            title = { Text("Limited station data") },
             text = {
                 Text(
-                    "You are running with a limited data set: $fullDataRegions of " +
-                        "${store.totalRegionCount()} regions have full station data. The rest show " +
-                        "no stations, and Bay Area / Sacramento shows a small built-in sample.\n\n" +
-                        "To load all regions, add the station files (stations_<regionId>.csv) to " +
+                    "$fullDataRegions of ${store.totalRegionCount()} regions have full station lists in " +
+                        "this build. The rest show no stations, and Bay Area / Sacramento shows a " +
+                        "small built-in sample. Readings for the stations that are shown are live " +
+                        "from the National Weather Service.\n\n" +
+                        "To load all station lists, add the station files (stations_<regionId>.csv) to " +
                         "app/src/debug/assets and rebuild."
                 )
             },

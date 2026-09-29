@@ -393,7 +393,11 @@ fun LandingScreen(
                     text = "$appName is an interactive explorer for California's " +
                         "microclimates — combining live NOAA station data, topographic maps, and " +
                         "regional climate visualizations across the state, from coastal fog belts to " +
-                        "alpine Sierra ridgelines.\n\nCurrent scope: California."
+                        "alpine Sierra ridgelines.\n\nCurrent scope: California.\n\n" +
+                        "Live readings: temperature, humidity, wind and pressure come from the " +
+                        "National Weather Service (weather.gov). Stations report about once an hour, " +
+                        "so a reading can be up to an hour or more old; each card shows when it was " +
+                        "taken. Readings are for general interest, not for safety or aviation decisions."
                 )
             }
         )
