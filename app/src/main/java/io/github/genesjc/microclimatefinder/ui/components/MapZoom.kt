@@ -1,5 +1,8 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -80,15 +83,47 @@ fun panForZoom(
     return clampPan(moved, newZoom, width, height, insetX, insetY)
 }
 
-/** Floating vertical zoom slider (1x to the maximum, log scale). */
+/** How much one tap on the zoom slider's + or - changes the zoom. */
+const val ZOOM_BUTTON_STEP = 1.6f
+
+/**
+ * Animates a zoom change about [anchor] (the point that stays put) so labels fade in and out along
+ * the way instead of jumping. Reports each frame's zoom and pan to [onFrame]. Zoom is interpolated
+ * on a log scale so equal steps feel equal.
+ */
+suspend fun animateZoom(
+    fromZoom: Float,
+    fromPan: Offset,
+    toZoom: Float,
+    anchor: Offset,
+    width: Float,
+    height: Float,
+    insetX: Float = 0f,
+    insetY: Float = 0f,
+    onFrame: (zoom: Float, pan: Offset) -> Unit
+) {
+    if (toZoom == fromZoom) return
+    animate(0f, 1f, animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)) { v, _ ->
+        val z = fromZoom * (toZoom / fromZoom).pow(v)
+        onFrame(z, panForZoom(fromPan, fromZoom, z, anchor, width, height, insetX, insetY))
+    }
+}
+
+/**
+ * Floating vertical zoom slider (1x to the maximum, log scale). [onValueChange] is called
+ * continuously while dragging; [onStep] is called for a tap on +, - or the rail, so the caller can
+ * animate those.
+ */
 @Composable
 fun ZoomSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onStep: (Float) -> Unit = onValueChange
 ) {
     val density = LocalDensity.current
     val currentOnValueChange by rememberUpdatedState(onValueChange)
+    val currentOnStep by rememberUpdatedState(onStep)
 
     // Widget handle: Rounded-square with width increased by 80% (32.dp width x 18.dp height)
     val thumbShape = RoundedCornerShape(4.dp)
@@ -112,13 +147,13 @@ fun ZoomSlider(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top: zoom in fully
+            // Top: zoom in one step
             Text(
                 text = "+",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { currentOnValueChange(MAX_MAP_ZOOM) }
+                modifier = Modifier.clickable { currentOnStep((value * ZOOM_BUTTON_STEP).coerceAtMost(MAX_MAP_ZOOM)) }
             )
 
             Text(
@@ -188,7 +223,7 @@ fun ZoomSlider(
                                 val relativeY = (tapOffset.y - thumbHeightPx / 2f).coerceIn(0f, usableHeightPx)
                                 val ratio = 1f - (relativeY / usableHeightPx)
                                 val newScale = zoomFromRatio(ratio)
-                                currentOnValueChange((newScale * 10f).roundToInt() / 10f)
+                                currentOnStep((newScale * 10f).roundToInt() / 10f)
                             }
                         }
                         .pointerInput(trackHeightPx) {
@@ -212,13 +247,13 @@ fun ZoomSlider(
                 )
             }
 
-            // Bottom: back to the full map
+            // Bottom: zoom out one step
             Text(
                 text = "\u2212",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clickable { currentOnValueChange(1.0f) }
+                modifier = Modifier.clickable { currentOnStep((value / ZOOM_BUTTON_STEP).coerceAtLeast(1f)) }
             )
 
             Text(

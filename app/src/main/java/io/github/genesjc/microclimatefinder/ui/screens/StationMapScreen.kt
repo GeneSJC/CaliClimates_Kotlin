@@ -80,6 +80,10 @@ import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
+import io.github.genesjc.microclimatefinder.ui.components.animateZoom
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import io.github.genesjc.microclimatefinder.ui.components.clampPan
 import io.github.genesjc.microclimatefinder.ui.components.labelBudget
 import io.github.genesjc.microclimatefinder.ui.components.labelFade
@@ -359,6 +363,15 @@ private fun SpatialMapCanvas(
     // View transform: zoom about the map centre plus a pan in pixels
     var zoom by remember(stations) { mutableStateOf(1f) }
     var pan by remember(stations) { mutableStateOf(Offset.Zero) }
+    // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
+    val zoomScope = rememberCoroutineScope()
+    var zoomJob by remember { mutableStateOf<Job?>(null) }
+    fun animateZoomTo(newZoom: Float, anchor: Offset, w: Float, h: Float) {
+        zoomJob?.cancel()
+        zoomJob = zoomScope.launch {
+            animateZoom(zoom, pan, newZoom, anchor, w, h) { z, p -> zoom = z; pan = p }
+        }
+    }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -380,12 +393,9 @@ private fun SpatialMapCanvas(
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     if (zoom >= MAX_MAP_ZOOM * 0.99f) {
-                        zoom = 1f
-                        pan = Offset.Zero
+                        animateZoomTo(1f, Offset(w / 2f, h / 2f), w, h)
                     } else {
-                        val newZoom = (zoom * 2f).coerceAtMost(MAX_MAP_ZOOM)
-                        pan = panForZoom(pan, zoom, newZoom, spot, w, h)
-                        zoom = newZoom
+                        animateZoomTo((zoom * 2f).coerceAtMost(MAX_MAP_ZOOM), spot, w, h)
                     }
                 })
             }
@@ -973,14 +983,17 @@ private fun SpatialMapCanvas(
         ZoomSlider(
             value = zoom,
             onValueChange = { newZoom ->
+                zoomJob?.cancel()
                 pan = panForZoom(pan, zoom, newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH)
                 zoom = newZoom
             },
+            onStep = { newZoom -> animateZoomTo(newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH) },
+            // Most of the map's height, below the top-right badge
             modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 4.dp)
+                .align(Alignment.BottomEnd)
+                .padding(end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
-                .fillMaxHeight(0.6f)
+                .fillMaxHeight(0.86f)
         )
     }
 }
