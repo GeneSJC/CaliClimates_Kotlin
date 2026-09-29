@@ -204,7 +204,7 @@ fun FixedCloudSplashScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Micro Climate Finder",
+                    text = "California Climate Finder",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White

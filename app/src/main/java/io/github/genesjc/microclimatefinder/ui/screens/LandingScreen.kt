@@ -162,7 +162,7 @@ fun LandingScreen(
             ModalDrawerSheet {
                 Column(modifier = Modifier.padding(vertical = 24.dp)) {
                     Text(
-                        text = "Micro Climate Finder",
+                        text = "California Climate Finder",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -294,7 +294,7 @@ fun LandingScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
                     Text(
-                        text = "Micro Climate Finder",
+                        text = "California Climate Finder",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -381,17 +381,16 @@ fun LandingScreen(
             },
             title = {
                 Text(
-                    text = "About Micro Climate Finder",
+                    text = "About California Climate Finder",
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = "Micro Climate Finder is an interactive explorer for California's " +
+                    text = "California Climate Finder is an interactive explorer for California's " +
                         "microclimates — combining live NOAA station data, topographic maps, and " +
                         "regional climate visualizations across the state, from coastal fog belts to " +
-                        "alpine Sierra ridgelines.\n\nCurrent scope: CA Climate Finder. The app is " +
-                        "focused on California for now."
+                        "alpine Sierra ridgelines.\n\nCurrent scope: California."
                 )
             }
         )
