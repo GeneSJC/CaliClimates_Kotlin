@@ -263,7 +263,7 @@ private fun ElevationProfileCanvas(
         rankedLandmarks.take(LANDMARK_COUNT).sorted().map { sorted[it].id }
     }
 
-    // View transform along the profile: horizontal zoom about the centre plus a horizontal pan in pixels
+    // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
     var zoom by remember(sorted) { mutableStateOf(1f) }
     var pan by remember(sorted) { mutableStateOf(Offset.Zero) }
 
@@ -347,13 +347,13 @@ private fun ElevationProfileCanvas(
             .fillMaxSize()
             .clipToBounds()
             .pointerInput(Unit) {
-                // Pinch to zoom along the profile, drag to pan
+                // Pinch to zoom in on the profile, drag to pan
                 detectTransformGestures { centroid, panChange, zoomChange, _ ->
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
-                    val anchored = panForZoom(pan, zoom, newZoom, Offset(centroid.x, h / 2f), w, h, insetX = CHART_PADDING_PX)
-                    pan = clampPan(anchored + Offset(panChange.x, 0f), newZoom, w, h, insetX = CHART_PADDING_PX)
+                    val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX)
+                    pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX)
                     zoom = newZoom
                 }
             }
@@ -367,7 +367,7 @@ private fun ElevationProfileCanvas(
                         pan = Offset.Zero
                     } else {
                         val newZoom = (zoom * 2f).coerceAtMost(MAX_MAP_ZOOM)
-                        pan = panForZoom(pan, zoom, newZoom, Offset(spot.x, h / 2f), w, h, insetX = CHART_PADDING_PX)
+                        pan = panForZoom(pan, zoom, newZoom, spot, w, h, CHART_PADDING_PX, CHART_PADDING_PX)
                         zoom = newZoom
                     }
                 })
@@ -383,6 +383,7 @@ private fun ElevationProfileCanvas(
         val widthPx = canvasW - (paddingPx * 2)
         val heightPx = canvasH - (paddingPx * 2)
         fun viewX(baseX: Float) = canvasW / 2f + (baseX - canvasW / 2f) * zoom + pan.x
+        fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
         val dotGrowth = zoomDotGrowth(zoom)
 
         // Labels that fit at this zoom: more appear as the profile spreads out, the newest fades in
@@ -398,8 +399,8 @@ private fun ElevationProfileCanvas(
                 val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
                 val elevRatio = station.elevationMeters / maxElevation
                 val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
-                val pinY = with(density) { (paddingPx + (1f - elevRatio) * heightPx).toDp().value }
-                if (pinX < 0f || pinX > widthDp.value) return false
+                val pinY = with(density) { viewY(paddingPx + (1f - elevRatio) * heightPx).toDp().value }
+                if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return false
                 val text = LocalNewsRepository.getCleanCityName(station.id, station.name) +
                     " ${"%,d".format(station.elevationMeters)}m"
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
@@ -450,7 +451,7 @@ private fun ElevationProfileCanvas(
                         sorted.forEachIndexed { index, station ->
                             val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                             val elevRatio = station.elevationMeters / maxElevation
-                            val y = padding + (1f - elevRatio) * h
+                            val y = viewY(padding + (1f - elevRatio) * h)
 
                             val dx = tapOffset.x - x
                             val dy = tapOffset.y - y
@@ -470,15 +471,15 @@ private fun ElevationProfileCanvas(
 
             // 1. DYNAMIC SKY GRADIENT FILL: fills the open space above & to the left of the slope
             val skyPath = Path().apply {
-                moveTo(viewX(padding), padding)
-                lineTo(viewX(size.width - padding), padding)
+                moveTo(viewX(padding), viewY(padding))
+                lineTo(viewX(size.width - padding), viewY(padding))
                 val lastElevRatio = (sorted.lastOrNull()?.elevationMeters ?: 0) / maxElevation
-                lineTo(viewX(size.width - padding), padding + (1f - lastElevRatio) * h)
+                lineTo(viewX(size.width - padding), viewY(padding + (1f - lastElevRatio) * h))
                 for (i in (sorted.size - 1) downTo 0) {
                     val st = sorted[i]
                     val x = viewX(padding + (i.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                     val elevRatio = st.elevationMeters / maxElevation
-                    val y = padding + (1f - elevRatio) * h
+                    val y = viewY(padding + (1f - elevRatio) * h)
                     lineTo(x, y)
                 }
                 close()
@@ -488,8 +489,8 @@ private fun ElevationProfileCanvas(
                 path = skyPath,
                 brush = Brush.verticalGradient(
                     colors = skyTheme.colors,
-                    startY = padding,
-                    endY = padding + h * 0.85f
+                    startY = viewY(padding),
+                    endY = viewY(padding + h * 0.85f)
                 )
             )
 
@@ -554,10 +555,10 @@ private fun ElevationProfileCanvas(
             sorted.forEachIndexed { index, station ->
                 val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                 val elevRatio = station.elevationMeters / maxElevation
-                val y = padding + (1f - elevRatio) * h
+                val y = viewY(padding + (1f - elevRatio) * h)
 
                 if (index == 0) {
-                    terrainPath.moveTo(x, size.height - padding)
+                    terrainPath.moveTo(x, viewY(size.height - padding))
                     terrainPath.lineTo(x, y)
                     linePath.moveTo(x, y)
                 } else {
@@ -565,7 +566,7 @@ private fun ElevationProfileCanvas(
                     linePath.lineTo(x, y)
                 }
             }
-            terrainPath.lineTo(viewX(size.width - padding), size.height - padding)
+            terrainPath.lineTo(viewX(size.width - padding), viewY(size.height - padding))
             terrainPath.close()
 
             // Gradient under the elevation curve (Warm valley 28°C -> Cool Ridge 18°C)
@@ -591,7 +592,7 @@ private fun ElevationProfileCanvas(
             sorted.forEachIndexed { index, station ->
                 val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                 val elevRatio = station.elevationMeters / maxElevation
-                val y = padding + (1f - elevRatio) * h
+                val y = viewY(padding + (1f - elevRatio) * h)
                 val isSelected = station.id == selectedStationId
 
                 val isLandmark = station.id in placedIds
@@ -725,7 +726,7 @@ private fun ElevationProfileCanvas(
         ZoomSlider(
             value = zoom,
             onValueChange = { newZoom ->
-                pan = panForZoom(pan, zoom, newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH, insetX = CHART_PADDING_PX)
+                pan = panForZoom(pan, zoom, newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX)
                 zoom = newZoom
             },
             modifier = Modifier
