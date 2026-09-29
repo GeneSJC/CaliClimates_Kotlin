@@ -37,6 +37,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
 import kotlin.math.PI
 import kotlin.math.abs
@@ -245,6 +246,7 @@ private fun panForZoom(pan: Offset, oldZoom: Float, newZoom: Float, anchor: Offs
 }
 
 /** Horizontal dot-size control under the map: small dot to large dot. */
+@OptIn(ExperimentalMaterial3Api::class) // custom slider thumb
 @Composable
 private fun PinSizeSlider(
     value: Float,
