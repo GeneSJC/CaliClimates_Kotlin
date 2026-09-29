@@ -89,7 +89,7 @@ fun StationMapScreen(
     var selectedStationId by remember {
         mutableStateOf(stations.firstOrNull()?.id)
     }
-    var pinScale by remember { mutableStateOf(1.0f) }
+    var pinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
 
@@ -221,6 +221,12 @@ fun StationMapScreen(
     }
 }
 
+/** Dots start a little larger than the base size so they are easy to see and tap. */
+private const val DEFAULT_PIN_SCALE = 1.3f
+
+/** Dots grow about 25% per zoom step, up to double, on top of the user's dot-size setting. */
+private fun zoomDotGrowth(zoom: Float): Float = (1f + (zoom - 1f) * 0.25f).coerceAtMost(2f)
+
 /** Highest zoom on the Topo Map. */
 private const val MAX_MAP_ZOOM = 8f
 
@@ -265,6 +271,14 @@ private fun PinSizeSlider(
             value = value,
             onValueChange = { onValueChange((it * 10f).roundToInt() / 10f) },
             valueRange = 1.0f..2.5f,
+            thumb = {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    shadowElevation = 2.dp,
+                    modifier = Modifier.size(20.dp)
+                ) {}
+            },
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 6.dp)
@@ -546,7 +560,8 @@ private fun SpatialMapCanvas(
                         var closestStation: MicroclimateStation? = null
                         var closestDist = Float.MAX_VALUE
 
-                        val maxTouchDist = 2000f * (pinScale * pinScale).coerceAtLeast(1f)
+                        val dotScale = pinScale * zoomDotGrowth(zoom)
+                        val maxTouchDist = 2000f * (dotScale * dotScale).coerceAtLeast(1f)
 
                         stations.forEach { station ->
                             val x = cx + (padding + ((station.longitude - minLon) / lonSpan).toFloat() * w - cx) * zoom + pan.x
@@ -780,7 +795,8 @@ private fun SpatialMapCanvas(
                 )
             }
 
-            // 8. Station Pins with dynamic pinScale
+            // 8. Station Pins: dot-size setting times the growth from zoom
+            val dotScale = pinScale * zoomDotGrowth(zoom)
             stations.forEach { station ->
                 val x = mapX(station.longitude)
                 val y = mapY(station.latitude)
@@ -796,25 +812,25 @@ private fun SpatialMapCanvas(
                 if (isSelected) {
                     drawCircle(
                         color = pinColor.copy(alpha = 0.35f),
-                        radius = 20f * pinScale,
+                        radius = 20f * dotScale,
                         center = Offset(x, y)
                     )
                     drawCircle(
                         color = pinColor,
-                        radius = 16f * pinScale,
+                        radius = 16f * dotScale,
                         center = Offset(x, y),
-                        style = Stroke(width = 3f * pinScale)
+                        style = Stroke(width = 3f * dotScale)
                     )
                 }
 
                 drawCircle(
                     color = Color.White,
-                    radius = if (isSelected) 9f * pinScale else 7f * pinScale,
+                    radius = if (isSelected) 9f * dotScale else 7f * dotScale,
                     center = Offset(x, y)
                 )
                 drawCircle(
                     color = pinColor,
-                    radius = if (isSelected) 7f * pinScale else 5.5f * pinScale,
+                    radius = if (isSelected) 7f * dotScale else 5.5f * dotScale,
                     center = Offset(x, y)
                 )
             }
