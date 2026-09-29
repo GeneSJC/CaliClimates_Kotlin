@@ -149,7 +149,7 @@ fun LandingScreen(
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Row(
-                        modifier = Modifier.padding(20.dp),
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
@@ -172,8 +172,9 @@ fun LandingScreen(
 
                         Text(
                             text = "Micro Climate Finder",
-                            style = MaterialTheme.typography.headlineMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 1,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
