@@ -211,7 +211,8 @@ fun StationMapScreen(
             StationCard(
                 station = selectedStation,
                 isSelected = true,
-                onSelect = { /* Already selected */ }
+                onSelect = { /* Already selected */ },
+                showLiveProbe = true
             )
         } else {
             Surface(
