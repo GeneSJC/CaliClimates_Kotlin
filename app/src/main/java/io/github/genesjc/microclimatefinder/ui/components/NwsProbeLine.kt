@@ -16,8 +16,8 @@ import io.github.genesjc.microclimatefinder.data.remote.NwsObservationProbe
 
 /** Dev proof line: the station's real latest reading from the National Weather Service. */
 @Composable
-fun NwsProbeLine(stationId: String, modifier: Modifier = Modifier) {
-    val prefix = "NWS live check (dev): "
+fun NwsProbeLine(stationId: String, isFeatured: Boolean, modifier: Modifier = Modifier) {
+    val prefix = "NWS live check (dev) [${if (isFeatured) "featured" else "standard"}]: "
     var text by remember(stationId) { mutableStateOf(prefix + "checking...") }
     LaunchedEffect(stationId) {
         text = prefix + NwsObservationProbe.describe(stationId)
