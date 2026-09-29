@@ -5,6 +5,12 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import io.github.genesjc.microclimatefinder.ui.components.LegendItem
+import io.github.genesjc.microclimatefinder.domain.model.TerrainType
+import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -87,18 +93,16 @@ private fun landingEntries(
 ): List<LandingEntry> {
     val entries = mutableListOf<LandingEntry>()
     if (dataset != null) {
-        val stats = "${dataset.stationCount} stations " +
-            "(${dataset.minElevationMeters}m to ${dataset.maxElevationMeters}m elev)"
         val kind = dataset.subtitle.substringBefore(" • ")
         entries += LandingEntry(
             title = "Station Feed (CSV)",
-            description = "$stats. $kind.",
+            description = "Every station in the region, as a list. $kind.",
             iconChar = "▤",
             target = AppScreen.STATION_LIST
         )
         entries += LandingEntry(
             title = "Topographical Map",
-            description = "$stats. Interactive spatial map.",
+            description = "Stations on a map of the region. Zoom, pan and tap a station.",
             iconChar = "▲",
             target = AppScreen.STATION_MAP
         )
@@ -118,6 +122,103 @@ private fun landingEntries(
         }
     }
     return entries
+}
+
+/** At a glance: how many stations, their elevation range, and the mix of terrain types. */
+@Composable
+private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
+    val minElev = stations.minOf { it.elevationMeters }
+    val maxElev = stations.maxOf { it.elevationMeters }
+    val mix = TerrainType.values()
+        .map { type -> type to stations.count { it.terrain == type } }
+        .filter { it.second > 0 }
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Snapshot",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "${stations.size}",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "stations",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "${"%,d".format(minElev)}\u2013${"%,d".format(maxElev)} m",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "elevation range",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = "Terrain mix",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(5.dp))
+            ) {
+                mix.forEach { (type, count) ->
+                    Box(
+                        modifier = Modifier
+                            .weight(count.toFloat())
+                            .fillMaxHeight()
+                            .background(terrainColor(type))
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                mix.forEach { (type, count) ->
+                    LegendItem(color = terrainColor(type), label = "${terrainShortName(type)} $count")
+                }
+            }
+        }
+    }
+}
+
+// Same colors as the map legends
+private fun terrainColor(type: TerrainType): Color = when (type) {
+    TerrainType.RIDGE -> Color(0xFF7C3AED)
+    TerrainType.VALLEY_BASIN -> Color(0xFFEA580C)
+    TerrainType.COASTAL -> Color(0xFF0284C7)
+    TerrainType.URBAN_CANYON -> Color(0xFF475569)
+}
+
+private fun terrainShortName(type: TerrainType): String = when (type) {
+    TerrainType.RIDGE -> "Ridge"
+    TerrainType.VALLEY_BASIN -> "Valley"
+    TerrainType.COASTAL -> "Coastal"
+    TerrainType.URBAN_CANYON -> "Urban"
 }
 
 /** About the current region: its subtitle and description, with traits and key cities on expand. */
@@ -210,6 +311,10 @@ fun LandingScreen(
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
     }
     val hasStationData = dataset != null
+    val context = LocalContext.current
+    val snapshotStations = remember(dataset) {
+        dataset?.let { StationCsvParser(context).loadStations(it) } ?: emptyList()
+    }
     val entries = remember(region.id, dataset) {
         landingEntries(
             dataset,
@@ -426,6 +531,10 @@ fun LandingScreen(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     RegionDetailsCard(region)
+                    if (snapshotStations.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        RegionSnapshotCard(snapshotStations)
+                    }
                     if (!hasStationData) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
