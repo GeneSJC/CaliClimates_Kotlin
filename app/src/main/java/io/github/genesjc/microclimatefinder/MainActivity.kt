@@ -20,6 +20,7 @@ import io.github.genesjc.microclimatefinder.ui.screens.AnimationPreviewsScreen
 import io.github.genesjc.microclimatefinder.ui.screens.CaliforniaRegionsMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.DemosAndPreviewsScreen
 import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
+import io.github.genesjc.microclimatefinder.ui.screens.ElevationProfileScreen
 import io.github.genesjc.microclimatefinder.ui.screens.FixedCloudSplashScreen
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.MovingCloudsSplashScreen
@@ -107,6 +108,14 @@ fun AppNavigation() {
         }
         AppScreen.STATION_MAP -> {
             StationMapScreen(
+                dataset = StationDatasets.DEFAULT_DATASET,
+                onNavigateBack = {
+                    currentScreen = AppScreen.LANDING
+                }
+            )
+        }
+        AppScreen.ELEVATION_PROFILE -> {
+            ElevationProfileScreen(
                 dataset = StationDatasets.DEFAULT_DATASET,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
