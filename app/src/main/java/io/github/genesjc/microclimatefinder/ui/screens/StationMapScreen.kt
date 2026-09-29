@@ -75,6 +75,9 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefin
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
+import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
+import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
+import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.clampPan
@@ -87,6 +90,8 @@ import io.github.genesjc.microclimatefinder.ui.components.StationCard
 @Composable
 fun StationMapScreen(
     dataset: StationDatasetInfo,
+    selectedRegionId: String,
+    onSelectRegion: (String) -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -100,9 +105,11 @@ fun StationMapScreen(
     var pinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
+    val pickerState = rememberRegionPickerState()
 
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
@@ -142,18 +149,7 @@ fun StationMapScreen(
                 )
             }
 
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Text(
-                    text = "${stations.size} Plotted",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
+            RegionPickerButton(state = pickerState, selectedRegionId = selectedRegionId)
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -196,12 +192,27 @@ fun StationMapScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Selected Station Inspector Card
-        Text(
-            text = "Station Inspector",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Station Inspector",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Text(
+                    text = "${stations.size} Plotted",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -226,6 +237,12 @@ fun StationMapScreen(
                 }
             }
         }
+    }
+    RegionPickerOverlay(
+        state = pickerState,
+        selectedRegionId = selectedRegionId,
+        onSelectRegion = onSelectRegion
+    )
     }
 }
 

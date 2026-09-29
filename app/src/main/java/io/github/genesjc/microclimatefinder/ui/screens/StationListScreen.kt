@@ -31,11 +31,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
+import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
+import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
 
 @Composable
 fun StationListScreen(
     dataset: StationDatasetInfo,
+    selectedRegionId: String,
+    onSelectRegion: (String) -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -43,9 +48,11 @@ fun StationListScreen(
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
     val stations = remember(dataset) { parser.loadStations(dataset) }
     var selectedStationId by remember { mutableStateOf<String?>(null) }
+    val pickerState = rememberRegionPickerState()
 
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(top = 16.dp, start = 16.dp, end = 16.dp)
     ) {
@@ -73,7 +80,7 @@ fun StationListScreen(
 
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                 Text(
-                    text = dataset.title,
+                    text = "${dataset.title} (${stations.size})",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -84,18 +91,7 @@ fun StationListScreen(
                 )
             }
 
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Text(
-                    text = "${stations.size} Loaded",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
+            RegionPickerButton(state = pickerState, selectedRegionId = selectedRegionId)
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -128,5 +124,11 @@ fun StationListScreen(
                 }
             }
         }
+    }
+    RegionPickerOverlay(
+        state = pickerState,
+        selectedRegionId = selectedRegionId,
+        onSelectRegion = onSelectRegion
+    )
     }
 }

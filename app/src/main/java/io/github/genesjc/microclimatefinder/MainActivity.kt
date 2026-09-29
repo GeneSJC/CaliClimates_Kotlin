@@ -76,6 +76,11 @@ fun AppNavigation() {
     val fullDataRegions = remember { store.fullDataRegionCount() }
     val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
     val defaultDataset = remember { store.defaultDataset() }
+    // Changes the app-wide region and remembers it (Home, Topo Map and Station Feed pickers use this)
+    fun pickRegion(regionId: String) {
+        selectedRegionId = regionId
+        regionPrefs.save(regionId)
+    }
     // Rows for the quick region picker on Home: every region with its station count
     val regionOptions = remember {
         CaliforniaRegionalDefinitions.ALL_REGIONS.map { r ->
@@ -120,10 +125,7 @@ fun AppNavigation() {
                 fullDataRegions = fullDataRegions,
                 totalRegions = store.totalRegionCount(),
                 regionOptions = regionOptions,
-                onSelectRegion = {
-                    selectedRegionId = it
-                    regionPrefs.save(it)
-                },
+                onSelectRegion = { pickRegion(it) },
                 onNavigateTo = { targetScreen ->
                     if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.LANDING
                     currentScreen = targetScreen
@@ -151,6 +153,8 @@ fun AppNavigation() {
         AppScreen.STATION_LIST -> {
             StationListScreen(
                 dataset = regionDataset ?: defaultDataset,
+                selectedRegionId = selectedRegionId,
+                onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -159,6 +163,8 @@ fun AppNavigation() {
         AppScreen.STATION_MAP -> {
             StationMapScreen(
                 dataset = regionDataset ?: defaultDataset,
+                selectedRegionId = selectedRegionId,
+                onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
