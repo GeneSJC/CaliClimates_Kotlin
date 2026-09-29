@@ -718,7 +718,8 @@ fun DraggableMapScreen(
         selectedStation?.let { st ->
             StationCard(
                 station = st,
-                isSelected = true
+                isSelected = true,
+                useMockReadings = true // demo screen: keeps the sample numbers
             )
         }
     }

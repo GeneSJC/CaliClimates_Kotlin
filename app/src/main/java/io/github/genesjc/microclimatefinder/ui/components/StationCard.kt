@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +45,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
+import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
+import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
@@ -56,10 +59,13 @@ fun StationCard(
     onSelect: () -> Unit = {},
     modifier: Modifier = Modifier,
     onOpenStory: ((LocalNewsStory) -> Unit)? = null,
-    showLiveProbe: Boolean = false
+    // Demos pass true to keep the built-in sample numbers; the real app shows live NWS readings.
+    useMockReadings: Boolean = false
 ) {
     val context = LocalContext.current
     var showNewsDialog by remember { mutableStateOf(false) }
+
+    val display = if (useMockReadings) mockDisplay(station) else liveDisplay(station)
 
     val cleanCity = remember(station.id, station.name) {
         LocalNewsRepository.getCleanCityName(station.id, station.name)
@@ -151,13 +157,14 @@ fun StationCard(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = String.format(Locale.US, "%.1f°C", station.currentReading.temperatureCelsius),
+                        text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) } ?: "—",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = String.format(Locale.US, "%.1f°F", station.currentReading.temperatureFahrenheit),
+                        text = display.tempC?.let { String.format(Locale.US, "%.1f°F", it * 9.0 / 5.0 + 32.0) }
+                            ?: display.status.orEmpty(),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -166,7 +173,7 @@ fun StationCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Microclimate Metric Pills (Humidity, Wind, Solar)
+            // Microclimate Metric Pills (Humidity, Wind, Solar in demos / Pressure for live readings)
             Surface(
                 shape = RoundedCornerShape(10.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -178,14 +185,19 @@ fun StationCard(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    MetricPill(label = "Humidity", value = "${station.currentReading.humidityPercent}%")
-                    MetricPill(label = "Wind", value = String.format(Locale.US, "%.1f km/h", station.currentReading.windSpeedKmh))
-                    MetricPill(label = "Solar", value = String.format(Locale.US, "%.0f W/m²", station.currentReading.solarIrradianceWm2))
+                    MetricPill(label = "Humidity", value = display.humidity)
+                    MetricPill(label = "Wind", value = display.wind)
+                    MetricPill(label = display.thirdLabel, value = display.thirdValue)
                 }
             }
 
-            if (showLiveProbe) {
-                NwsProbeLine(stationId = station.id, isFeatured = station.isFeatured)
+            if (display.tempC != null && display.status != null) {
+                Text(
+                    text = display.status,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -492,6 +504,67 @@ fun StationCard(
                 }
             }
         }
+    }
+}
+
+/** What the card shows for the current conditions. Null temperature means no reading to show. */
+private class CardDisplay(
+    val tempC: Double?,
+    val humidity: String,
+    val wind: String,
+    val thirdLabel: String,
+    val thirdValue: String,
+    val status: String?
+)
+
+private fun mockDisplay(station: MicroclimateStation): CardDisplay {
+    val r = station.currentReading
+    return CardDisplay(
+        tempC = r.temperatureCelsius,
+        humidity = "${r.humidityPercent}%",
+        wind = String.format(Locale.US, "%.1f km/h", r.windSpeedKmh),
+        thirdLabel = "Solar",
+        thirdValue = String.format(Locale.US, "%.0f W/m²", r.solarIrradianceWm2),
+        status = null
+    )
+}
+
+/** Real NWS reading for the station: from the prefetch cache when present, else fetched now. */
+@Composable
+private fun liveDisplay(station: MicroclimateStation): CardDisplay {
+    var result by remember(station.id) { mutableStateOf(LiveObservationCache.peek(station.id)) }
+    LaunchedEffect(station.id) {
+        result = if (station.canHaveLiveReading) LiveObservationCache.get(station.id) else ObservationResult.NoReading
+    }
+    return when (val r = result) {
+        is ObservationResult.Reading -> {
+            val o = r.observation
+            val age = o.ageMinutes()
+            CardDisplay(
+                tempC = o.temperatureCelsius,
+                humidity = o.humidityPercent?.let { String.format(Locale.US, "%.0f%%", it) } ?: "—",
+                wind = o.windSpeedKmh?.let { String.format(Locale.US, "%.1f km/h", it) } ?: "—",
+                thirdLabel = "Pressure",
+                thirdValue = o.pressureHpa?.let { String.format(Locale.US, "%.0f hPa", it) } ?: "—",
+                status = when {
+                    age == null -> "Updated: time unknown"
+                    age < 90 -> "Updated $age min ago"
+                    else -> "Updated ${age / 60} h ago"
+                }
+            )
+        }
+        else -> CardDisplay(
+            tempC = null,
+            humidity = "—",
+            wind = "—",
+            thirdLabel = "Pressure",
+            thirdValue = "—",
+            status = when (r) {
+                null -> "Checking…"
+                ObservationResult.Failed -> "Couldn't load reading"
+                else -> "No current reading"
+            }
+        )
     }
 }
 

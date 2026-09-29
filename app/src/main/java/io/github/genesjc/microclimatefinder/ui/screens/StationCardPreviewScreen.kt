@@ -94,6 +94,6 @@ fun StationCardPreviewScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         // Render the station card component
-        StationCard(station = sampleStation)
+        StationCard(station = sampleStation, useMockReadings = true)
     }
 }
