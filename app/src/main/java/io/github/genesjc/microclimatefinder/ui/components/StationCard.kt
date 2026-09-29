@@ -185,7 +185,7 @@ fun StationCard(
             }
 
             if (showLiveProbe) {
-                NwsProbeLine(stationId = station.id)
+                NwsProbeLine(stationId = station.id, isFeatured = station.isFeatured)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
