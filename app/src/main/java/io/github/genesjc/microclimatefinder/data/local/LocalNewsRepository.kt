@@ -55,10 +55,16 @@ object LocalNewsRepository {
     /** Keeps the place part of a station name, up to three words (for example "Santa Barbara"). */
     private fun cityFromStationName(stationName: String): String {
         val cleaned = stationName
+            .substringBefore('/')
             .replace(FACILITY_WORDS, " ")
             .replace(Regex("\\s+"), " ")
             .trim()
-        val words = cleaned.split(" ").filter { it.isNotBlank() }
+        // Drop station codes such as "Lpf01" or "SDHGPA"
+        val words = cleaned.split(" ").filter { word ->
+            word.isNotBlank() &&
+                word.none { it.isDigit() } &&
+                !(word.length >= 4 && word.all { it.isUpperCase() })
+        }
         return if (words.isEmpty()) stationName else words.take(3).joinToString(" ")
     }
 
