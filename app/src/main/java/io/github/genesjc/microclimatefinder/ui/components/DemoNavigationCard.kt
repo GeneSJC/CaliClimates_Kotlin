@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Full-width demo entry row used by list-style hub screens (Landing, Demos & Previews).
- * Icon sits inline with the title on the same row (with the arrow indicator), above the description.
+ * Icon sits inline with the title on the same row, above the description.
  */
 @Composable
 fun DemoNavigationCard(
@@ -70,15 +70,6 @@ fun DemoNavigationCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = "→",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
             }
 
