@@ -5,11 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,7 +73,6 @@ fun AppNavigation() {
     // Station data: the full bundled files per region, or the built-in Bay Area sample
     val store = remember { StationDataStore(context) }
     val fullDataRegions = remember { store.fullDataRegionCount() }
-    var showLimitedDataNotice by remember { mutableStateOf(fullDataRegions < store.totalRegionCount()) }
     val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
     val defaultDataset = remember { store.defaultDataset() }
 
@@ -109,31 +105,13 @@ fun AppNavigation() {
         }
     }
 
-    if (showLimitedDataNotice) {
-        AlertDialog(
-            onDismissRequest = { showLimitedDataNotice = false },
-            title = { Text("Limited station data") },
-            text = {
-                Text(
-                    "$fullDataRegions of ${store.totalRegionCount()} regions have full station lists in " +
-                        "this build. The rest show no stations, and Bay Area / Sacramento shows a " +
-                        "small built-in sample. Readings for the stations that are shown are live " +
-                        "from the National Weather Service.\n\n" +
-                        "To load all station lists, add the station files (stations_<regionId>.csv) to " +
-                        "app/src/debug/assets and rebuild."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showLimitedDataNotice = false }) { Text("OK") }
-            }
-        )
-    }
-
     when (currentScreen) {
         AppScreen.LANDING -> {
             LandingScreen(
                 selectedRegionId = selectedRegionId,
                 dataset = regionDataset,
+                fullDataRegions = fullDataRegions,
+                totalRegions = store.totalRegionCount(),
                 onNavigateTo = { targetScreen ->
                     if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.LANDING
                     currentScreen = targetScreen
