@@ -80,7 +80,7 @@ fun StationListScreen(
 
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                 Text(
-                    text = "${dataset.title} (${stations.size} Loaded)",
+                    text = "${dataset.title} (${stations.size})",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
