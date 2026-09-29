@@ -791,7 +791,13 @@ fun UnifiedDraggableMapScreen(
 
                                 val baseRadius = if (isSelected) 10f else 6.5f
                                 val scaledRadius = baseRadius * zoomScale.coerceIn(0.7f, 1.4f)
-                                val badgeLeft = pinX + scaledRadius + 5f
+                                val rightOfPin = pinX + scaledRadius + 5f
+                                // Near the right edge the badge goes to the left of the pin so it is not cut off
+                                val badgeLeft = if (rightOfPin + badgeWidth > canvasWidth - 4f) {
+                                    (pinX - scaledRadius - 5f - badgeWidth).coerceAtLeast(4f)
+                                } else {
+                                    rightOfPin
+                                }
                                 val badgeTop = pinY - (badgeHeight / 2f)
                                 val candidateRect = RectF(badgeLeft, badgeTop, badgeLeft + badgeWidth, badgeTop + badgeHeight)
 
@@ -868,7 +874,13 @@ fun UnifiedDraggableMapScreen(
 
                                 val baseRadius = if (isSelected) 10f else 6.5f
                                 val scaledRadius = baseRadius * zoomScale.coerceIn(0.7f, 1.4f)
-                                val badgeLeft = pinX + scaledRadius + 5f
+                                val rightOfPin = pinX + scaledRadius + 5f
+                                // Near the right edge the badge goes to the left of the pin so it is not cut off
+                                val badgeLeft = if (rightOfPin + badgeWidth > canvasWidth - 4f) {
+                                    (pinX - scaledRadius - 5f - badgeWidth).coerceAtLeast(4f)
+                                } else {
+                                    rightOfPin
+                                }
                                 val badgeTop = pinY - (badgeHeight / 2f)
                                 val candidateRect = RectF(badgeLeft, badgeTop, badgeLeft + badgeWidth, badgeTop + badgeHeight)
 
