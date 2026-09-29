@@ -66,7 +66,7 @@ private val DEMOS_AND_PREVIEWS_ENTRIES = listOf(
  * Demos & Previews Hub Screen
  * Two-column grid housing the component/feature demo cards moved off the Landing list:
  * Station Card Preview, Draggable Topo Map, Animation Previews, and California Regional Sections
- * (also reachable from the California icon on Home).
+ * (also reachable from the California button on Home).
  */
 @Composable
 fun DemosAndPreviewsScreen(

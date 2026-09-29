@@ -3,6 +3,7 @@ package io.github.genesjc.microclimatefinder.ui.screens
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.text.font.FontWeight
@@ -258,15 +260,33 @@ fun LandingScreen(
 
                         Spacer(modifier = Modifier.width(10.dp))
 
-                        CaliforniaOutlineIcon(
-                            fill = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.18f),
-                            stroke = MaterialTheme.colorScheme.onPrimaryContainer,
+                        // Change-region button: the California outline on a bordered chip like the menu button
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)
+                            ),
                             modifier = Modifier
-                                .size(40.dp)
-                                .onGloballyPositioned { iconBounds = Rect(it.positionInRoot(), it.size.toSize()) }
-                                .alpha(if (expanding) 0f else 1f)
-                                .clickable(enabled = !expanding) { expanding = true }
-                        )
+                                .size(44.dp)
+                                .clickable(
+                                    enabled = !expanding,
+                                    onClickLabel = "Change region",
+                                    role = Role.Button
+                                ) { expanding = true }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                CaliforniaOutlineIcon(
+                                    fill = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.18f),
+                                    stroke = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .onGloballyPositioned { iconBounds = Rect(it.positionInRoot(), it.size.toSize()) }
+                                        .alpha(if (expanding) 0f else 1f)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -302,7 +322,7 @@ fun LandingScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = "Station data isn't included in this build for this region. " +
-                                        "Tap the California icon at the top right to switch regions.",
+                                        "Tap the California button at the top right to switch regions.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
