@@ -23,3 +23,6 @@ local.properties
 .idea/runConfigurations.xml
 .idea/vcs.xml
 
+
+# Full station data dropped in for local full-data builds (never committed)
+app/src/debug/assets/stations_*.csv

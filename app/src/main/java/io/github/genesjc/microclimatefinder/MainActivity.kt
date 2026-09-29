@@ -5,15 +5,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import io.github.genesjc.microclimatefinder.data.local.StationDatasets
+import androidx.compose.ui.platform.LocalContext
+import io.github.genesjc.microclimatefinder.data.local.StationDataStore
+import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
+import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import io.github.genesjc.microclimatefinder.ui.screens.AnimationPreviewsScreen
@@ -54,6 +60,18 @@ fun AppNavigation() {
     var previousScreen by remember { mutableStateOf(AppScreen.LANDING) }
     var selectedNewsStory by remember { mutableStateOf<LocalNewsStory?>(null) }
     var selectedNewsCity by remember { mutableStateOf("") }
+    // Where Back returns to from Regional Sections (Home icon or Demos & Previews)
+    var regionsReturnScreen by remember { mutableStateOf(AppScreen.LANDING) }
+    // App-wide CA region; the Regional Sections screen is its only writer
+    var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
+
+    // Station data: the full bundled files per region, or the built-in Bay Area sample
+    val context = LocalContext.current
+    val store = remember { StationDataStore(context) }
+    val fullDataRegions = remember { store.fullDataRegionCount() }
+    var showLimitedDataNotice by remember { mutableStateOf(fullDataRegions < store.totalRegionCount()) }
+    val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
+    val defaultDataset = remember { store.defaultDataset() }
 
     // Intercept hardware/gesture back press when not on Landing
     if (currentScreen != AppScreen.LANDING) {
@@ -62,6 +80,8 @@ fun AppNavigation() {
                 currentScreen = previousScreen
             } else if (currentScreen == AppScreen.ANIMATION_FIXED_CLOUD_V1 || currentScreen == AppScreen.ANIMATION_MOVING_CLOUDS_V2) {
                 currentScreen = AppScreen.ANIMATION_PREVIEWS
+            } else if (currentScreen == AppScreen.CALIFORNIA_REGIONS) {
+                currentScreen = regionsReturnScreen
             } else if (currentScreen == AppScreen.STATION_CARD_PREVIEW ||
                 currentScreen == AppScreen.DRAGGABLE_MAP ||
                 currentScreen == AppScreen.ANIMATION_PREVIEWS
@@ -73,10 +93,32 @@ fun AppNavigation() {
         }
     }
 
+    if (showLimitedDataNotice) {
+        AlertDialog(
+            onDismissRequest = { showLimitedDataNotice = false },
+            title = { Text("Limited data set") },
+            text = {
+                Text(
+                    "You are running with a limited data set: $fullDataRegions of " +
+                        "${store.totalRegionCount()} regions have full station data. The rest show " +
+                        "no stations, and Bay Area / Sacramento shows a small built-in sample.\n\n" +
+                        "To load all regions, add the station files (stations_<regionId>.csv) to " +
+                        "app/src/debug/assets and rebuild."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showLimitedDataNotice = false }) { Text("OK") }
+            }
+        )
+    }
+
     when (currentScreen) {
         AppScreen.LANDING -> {
             LandingScreen(
+                selectedRegionId = selectedRegionId,
+                dataset = regionDataset,
                 onNavigateTo = { targetScreen ->
+                    if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.LANDING
                     currentScreen = targetScreen
                 }
             )
@@ -84,6 +126,7 @@ fun AppNavigation() {
         AppScreen.DEMOS_AND_PREVIEWS -> {
             DemosAndPreviewsScreen(
                 onNavigateTo = { targetScreen ->
+                    if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.DEMOS_AND_PREVIEWS
                     currentScreen = targetScreen
                 },
                 onNavigateBack = {
@@ -100,7 +143,7 @@ fun AppNavigation() {
         }
         AppScreen.STATION_LIST -> {
             StationListScreen(
-                dataset = StationDatasets.DEFAULT_DATASET,
+                dataset = regionDataset ?: defaultDataset,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -108,7 +151,7 @@ fun AppNavigation() {
         }
         AppScreen.STATION_MAP -> {
             StationMapScreen(
-                dataset = StationDatasets.DEFAULT_DATASET,
+                dataset = regionDataset ?: defaultDataset,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -116,7 +159,7 @@ fun AppNavigation() {
         }
         AppScreen.ELEVATION_PROFILE -> {
             ElevationProfileScreen(
-                dataset = StationDatasets.DEFAULT_DATASET,
+                dataset = regionDataset ?: defaultDataset,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -124,7 +167,7 @@ fun AppNavigation() {
         }
         AppScreen.DRAGGABLE_MAP -> {
             DraggableMapScreen(
-                dataset = StationDatasets.DEFAULT_DATASET,
+                dataset = defaultDataset,
                 onNavigateBack = {
                     currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 }
@@ -132,6 +175,7 @@ fun AppNavigation() {
         }
         AppScreen.UNIFIED_DRAGGABLE_MAP -> {
             UnifiedDraggableMapScreen(
+                config = TransectConfigs.forRegion(selectedRegionId) ?: TransectConfigs.DEFAULT,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 },
@@ -144,9 +188,17 @@ fun AppNavigation() {
             )
         }
         AppScreen.CALIFORNIA_REGIONS -> {
+            // Opened from Demos & Previews the screen is a standalone demo with its own region
+            // state; opened from the Home button it still sets the app-wide region.
+            val isDemo = regionsReturnScreen == AppScreen.DEMOS_AND_PREVIEWS
+            var demoRegionId by remember {
+                mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
+            }
             CaliforniaRegionsMapScreen(
+                selectedRegionId = if (isDemo) demoRegionId else selectedRegionId,
+                onSelectRegion = { if (isDemo) demoRegionId = it else selectedRegionId = it },
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = regionsReturnScreen
                 },
                 onNavigateToActiveTransect = {
                     currentScreen = AppScreen.UNIFIED_DRAGGABLE_MAP

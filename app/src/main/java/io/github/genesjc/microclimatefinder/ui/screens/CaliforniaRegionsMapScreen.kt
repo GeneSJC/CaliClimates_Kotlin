@@ -59,11 +59,12 @@ import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaliforniaRegionsMapScreen(
+    selectedRegionId: String,
+    onSelectRegion: (String) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToActiveTransect: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
     val selectedRegion = remember(selectedRegionId) {
         CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == selectedRegionId }
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
@@ -168,7 +169,7 @@ fun CaliforniaRegionsMapScreen(
                         // Map Viewport (Strict Light Mode)
                         CaliforniaClassicMapCanvas(
                             selectedRegionId = selectedRegionId,
-                            onSelectRegion = { selectedRegionId = it }
+                            onSelectRegion = onSelectRegion
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -308,7 +309,7 @@ fun CaliforniaRegionsMapScreen(
                                             }
                                         },
                                         onClick = {
-                                            selectedRegionId = region.id
+                                            onSelectRegion(region.id)
                                             dropdownExpanded = false
                                         }
                                     )

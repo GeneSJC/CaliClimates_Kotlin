@@ -54,7 +54,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
-import io.github.genesjc.microclimatefinder.data.local.StationDatasets
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
 import kotlin.math.hypot
@@ -75,13 +74,13 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun DraggableMapScreen(
-    dataset: StationDatasetInfo = StationDatasets.DEFAULT_DATASET,
+    dataset: StationDatasetInfo,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.assetFileName) { StationCsvParser(context) }
-    val stations = remember(dataset.assetFileName) { parser.loadStationsFromCsv(dataset.assetFileName) }
+    val parser = remember(dataset.fileName) { StationCsvParser(context) }
+    val stations = remember(dataset) { parser.loadStations(dataset) }
 
     var selectedStation by remember {
         mutableStateOf(stations.firstOrNull { it.id == "KSAC" } ?: stations.firstOrNull())
@@ -155,7 +154,7 @@ fun DraggableMapScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Sacramento 60-Mile Group • Pan & Zoom",
+                        text = "${dataset.title} • Pan & Zoom",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

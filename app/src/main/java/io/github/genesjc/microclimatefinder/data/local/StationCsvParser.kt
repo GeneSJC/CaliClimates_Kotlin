@@ -5,32 +5,32 @@ import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.WeatherReading
 import java.io.BufferedReader
-import java.io.InputStreamReader
 
 class StationCsvParser(private val context: Context) {
 
-    fun loadStationsFromCsv(fileName: String = "sacramento_stations_60mi.csv"): List<MicroclimateStation> {
-        val stations = mutableListOf<MicroclimateStation>()
+    fun loadStationsFromCsv(fileName: String = "stations_bay_area_sacramento_sample.csv"): List<MicroclimateStation> =
         try {
-            context.assets.open(fileName).use { inputStream ->
-                BufferedReader(InputStreamReader(inputStream)).use { reader ->
-                    val header = reader.readLine() ?: return emptyList()
-                    val headerIndices = parseHeaderIndices(header)
-
-                    var line = reader.readLine()
-                    var syntheticIndex = 0
-                    while (line != null) {
-                        if (line.isNotBlank()) {
-                            parseLine(line, headerIndices, syntheticIndex++)?.let { station ->
-                                stations.add(station)
-                            }
-                        }
-                        line = reader.readLine()
-                    }
-                }
-            }
+            context.assets.open(fileName).use { parse(it.bufferedReader()) }
         } catch (e: Exception) {
             e.printStackTrace()
+            emptyList()
+        }
+
+    fun loadStations(dataset: StationDatasetInfo): List<MicroclimateStation> =
+        loadStationsFromCsv(dataset.fileName)
+
+    fun parse(reader: BufferedReader): List<MicroclimateStation> {
+        val stations = mutableListOf<MicroclimateStation>()
+        val header = reader.readLine() ?: return emptyList()
+        val headerIndices = parseHeaderIndices(header.removePrefix("\uFEFF"))
+
+        var line = reader.readLine()
+        var syntheticIndex = 0
+        while (line != null) {
+            if (line.isNotBlank()) {
+                parseLine(line, headerIndices, syntheticIndex++)?.let { stations.add(it) }
+            }
+            line = reader.readLine()
         }
         return stations
     }
@@ -50,7 +50,7 @@ class StationCsvParser(private val context: Context) {
 
         // Support both schema naming styles: "id" / "station_id", "name" / "station_name", "elevation_meters" / "elevation_m"
         val id = getField(tokens, indices, "id", "station_id") ?: "STATION_$index"
-        val name = getField(tokens, indices, "name", "station_name") ?: "Station $index"
+        val name = getField(tokens, indices, "display_name", "name", "station_name") ?: "Station $index"
         val lat = getField(tokens, indices, "latitude", "lat")?.toDoubleOrNull() ?: 38.5816
         val lon = getField(tokens, indices, "longitude", "lon")?.toDoubleOrNull() ?: -121.4944
         val elev = getField(tokens, indices, "elevation_meters", "elevation_m", "elevation")?.toIntOrNull() ?: 15
@@ -80,7 +80,7 @@ class StationCsvParser(private val context: Context) {
             elevationMeters = elev,
             terrain = terrain,
             currentReading = reading,
-            microclimateDescription = describeMicroclimate(terrain, elev, name)
+            microclimateDescription = getField(tokens, indices, "note") ?: describeMicroclimate(terrain, elev, name)
         )
     }
 
@@ -97,9 +97,9 @@ class StationCsvParser(private val context: Context) {
     private fun describeMicroclimate(terrain: TerrainType, elevationMeters: Int, name: String): String {
         return when (terrain) {
             TerrainType.RIDGE -> "High-elevation montane ridge (${elevationMeters}m). Cooler adiabatic temps with brisk mountain breezes."
-            TerrainType.COASTAL -> "Low-lying Sacramento River Delta corridor (${elevationMeters}m). Maritime breeze and enhanced humidity."
+            TerrainType.COASTAL -> "Low-lying coastal or delta site (${elevationMeters}m). Maritime breeze and enhanced humidity."
             TerrainType.URBAN_CANYON -> "Dense urban heat-island core (${elevationMeters}m) with daytime thermal storage."
-            TerrainType.VALLEY_BASIN -> "Sacramento Valley interior flatland (${elevationMeters}m). Warm, sunny climate with strong diurnal swings."
+            TerrainType.VALLEY_BASIN -> "Interior valley or basin site (${elevationMeters}m). Warm, sunny climate with strong diurnal swings."
         }
     }
 

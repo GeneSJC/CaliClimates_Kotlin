@@ -8,7 +8,7 @@ enum class AppScreen(val title: String) {
     STATION_MAP("Sacramento Topo Map"),
     ELEVATION_PROFILE("Elevation Profile"),
     DRAGGABLE_MAP("Draggable Topo Map"),
-    UNIFIED_DRAGGABLE_MAP("California Transect Map"),
+    UNIFIED_DRAGGABLE_MAP("Bay Area Transect Map"),
     CALIFORNIA_REGIONS("California Regional Sections"),
     ANIMATION_PREVIEWS("Animation Previews"),
     ANIMATION_FIXED_CLOUD_V1("Fixed Cloud v1.0 Animation"),

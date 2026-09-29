@@ -42,9 +42,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
-import io.github.genesjc.microclimatefinder.data.local.StationDatasets
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
@@ -57,23 +57,79 @@ private data class LandmarkCity(
     val xOffsetDp: Int = 0
 )
 
-private val ELEVATION_LANDMARKS = listOf(
-    LandmarkCity("KSAC", "Sacramento 5m", yOffsetDp = -24, xOffsetDp = 4),
-    LandmarkCity("KLHM", "Lincoln 37m", yOffsetDp = -24, xOffsetDp = 0),
-    LandmarkCity("KAUN", "Auburn 453m", yOffsetDp = -26, xOffsetDp = -10),
-    LandmarkCity("KGOO", "Grass Valley 961m", yOffsetDp = -26, xOffsetDp = -20),
-    LandmarkCity("BDMC1", "Bald Mtn 1,406m", yOffsetDp = -28, xOffsetDp = -26)
-)
+private const val LANDMARK_COUNT = 6
+
+// Rough chart width on a phone, used only to keep labels inside the chart
+private const val CHART_WIDTH_DP_ESTIMATE = 300f
+
+/**
+ * Picks stations spread evenly by elevation and labels each with its place name and elevation.
+ * Airport stations are preferred near each target because they are recognizable cities. Labels are
+ * placed left to right on up to three heights, and a label is skipped when it would overlap one
+ * already placed at the same height.
+ */
+private fun buildLandmarks(sorted: List<MicroclimateStation>): List<LandmarkCity> {
+    if (sorted.isEmpty()) return emptyList()
+    val candidateCount = minOf(LANDMARK_COUNT + 3, sorted.size)
+    val maxElev = sorted.last().elevationMeters.coerceAtLeast(1)
+    val chosen = mutableListOf<Int>()
+    for (i in 0 until candidateCount) {
+        val target = if (candidateCount == 1) 0 else ((i * (sorted.size - 1).toFloat() / (candidateCount - 1)) + 0.5f).toInt()
+        val window = (target - 2..target + 2).filter { it in sorted.indices && it !in chosen }
+        val pick = window
+            .filter { sorted[it].id.startsWith("K") }
+            .minByOrNull { kotlin.math.abs(it - target) }
+            ?: window.minByOrNull { kotlin.math.abs(it - target) }
+            ?: target
+        chosen.add(pick)
+    }
+
+    val placed = mutableListOf<Triple<Float, Float, Int>>() // left, right, height level
+    val result = mutableListOf<LandmarkCity>()
+    for (idx in chosen.distinct().sorted()) {
+        if (result.size >= LANDMARK_COUNT) break
+        val station = sorted[idx]
+        val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
+        val elevRatio = station.elevationMeters.toFloat() / maxElev
+        val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
+        val label = "$city ${"%,d".format(station.elevationMeters)}m"
+        // Estimated label width at 9sp; labels that would pass the chart's right edge end at the pin instead
+        val labelWidthDp = label.length * 5.4f + 10f
+        val xOffset = when {
+            ratioX * CHART_WIDTH_DP_ESTIMATE + labelWidthDp - 24f > CHART_WIDTH_DP_ESTIMATE * 0.95f ->
+                (24f - labelWidthDp).toInt()
+            ratioX < 0.12f -> 4
+            else -> 0
+        }
+        val left = ratioX * CHART_WIDTH_DP_ESTIMATE + xOffset - 24f
+        val right = left + labelWidthDp
+        // High pins stay on the lowest height so they remain inside the chart
+        val maxLevel = if (elevRatio > 0.8f) 0 else 2
+        val level = (0..maxLevel).firstOrNull { lv ->
+            placed.none { it.third == lv && left < it.second && right > it.first }
+        } ?: continue
+        placed.add(Triple(left, right, level))
+        result.add(
+            LandmarkCity(
+                id = station.id,
+                displayName = label,
+                yOffsetDp = -26 - 16 * level,
+                xOffsetDp = xOffset
+            )
+        )
+    }
+    return result
+}
 
 @Composable
 fun ElevationProfileScreen(
-    dataset: StationDatasetInfo = StationDatasets.DEFAULT_DATASET,
+    dataset: StationDatasetInfo,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.assetFileName) { StationCsvParser(context) }
-    val stations = remember(dataset.assetFileName) { parser.loadStationsFromCsv(dataset.assetFileName) }
+    val parser = remember(dataset.fileName) { StationCsvParser(context) }
+    val stations = remember(dataset) { parser.loadStations(dataset) }
 
     var selectedStationId by remember {
         mutableStateOf(stations.firstOrNull()?.id)
@@ -116,7 +172,7 @@ fun ElevationProfileScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${dataset.title} • 60-Mile Grid",
+                    text = "${dataset.title} • ${dataset.stationCount} stations",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -164,7 +220,7 @@ fun ElevationProfileScreen(
             LegendItem(color = Color(0xFF7C3AED), label = "Ridge (>500m)")
             LegendItem(color = Color(0xFFEA580C), label = "Valley Basin")
             LegendItem(color = Color(0xFF0284C7), label = "Delta / Coast")
-            LegendItem(color = Color(0xFF166534), label = "Sierra Relief")
+            LegendItem(color = Color(0xFF166534), label = "Mountain Relief")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -223,6 +279,7 @@ private fun ElevationProfileCanvas(
     // Sort stations by elevation ascending (valley 5m -> ridge 1406m)
     val sorted = remember(stations) { stations.sortedBy { it.elevationMeters } }
     val maxElevation = remember(sorted) { (sorted.maxOfOrNull { it.elevationMeters } ?: 1500).toFloat() }
+    val landmarks = remember(sorted) { buildLandmarks(sorted) }
 
     val currentStation = sorted.find { it.id == selectedStationId } ?: sorted.firstOrNull()
     val tempF = currentStation?.currentReading?.temperatureFahrenheit ?: 85.0
@@ -443,7 +500,7 @@ private fun ElevationProfileCanvas(
                 val y = padding + (1f - elevRatio) * h
                 val isSelected = station.id == selectedStationId
 
-                val isLandmark = ELEVATION_LANDMARKS.any { it.id == station.id }
+                val isLandmark = landmarks.any { it.id == station.id }
 
                 val pinColor = when (station.terrain) {
                     TerrainType.RIDGE -> Color(0xFF7C3AED)
@@ -498,10 +555,12 @@ private fun ElevationProfileCanvas(
                 .offset(x = 45.dp, y = 45.dp)
                 .clickable {
                     // Tap to cycle landmarks
-                    val currentIndex = ELEVATION_LANDMARKS.indexOfFirst { it.id == currentStation?.id }
-                    val nextIndex = if (currentIndex >= 0) (currentIndex + 1) % ELEVATION_LANDMARKS.size else 0
-                    val nextId = ELEVATION_LANDMARKS[nextIndex].id
-                    sorted.find { it.id == nextId }?.let { onSelectStation(it) }
+                    if (landmarks.isNotEmpty()) {
+                        val currentIndex = landmarks.indexOfFirst { it.id == currentStation?.id }
+                        val nextIndex = if (currentIndex >= 0) (currentIndex + 1) % landmarks.size else 0
+                        val nextId = landmarks[nextIndex].id
+                        sorted.find { it.id == nextId }?.let { onSelectStation(it) }
+                    }
                 }
         ) {
             Row(
@@ -539,7 +598,7 @@ private fun ElevationProfileCanvas(
 
         // Overlay Interactive City Landmark Labels along the curve
         sorted.forEachIndexed { index, station ->
-            val landmark = ELEVATION_LANDMARKS.find { it.id == station.id }
+            val landmark = landmarks.find { it.id == station.id }
             if (landmark != null) {
                 val ratioX = index.toFloat() / (sorted.size - 1).coerceAtLeast(1)
                 val elevRatio = station.elevationMeters / maxElevation
