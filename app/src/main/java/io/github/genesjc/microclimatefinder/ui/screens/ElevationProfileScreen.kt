@@ -59,6 +59,9 @@ private data class LandmarkCity(
 
 private const val LANDMARK_COUNT = 6
 
+// Rough chart width on a phone, used only to keep labels inside the chart
+private const val CHART_WIDTH_DP_ESTIMATE = 300f
+
 /**
  * Picks about six stations spread evenly by elevation and labels each with its place name and
  * elevation. Airport stations are preferred near each target because they are recognizable cities.
@@ -83,15 +86,18 @@ private fun buildLandmarks(sorted: List<MicroclimateStation>): List<LandmarkCity
         val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
         val elevRatio = station.elevationMeters.toFloat() / maxElev
         val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
+        val label = "$city ${"%,d".format(station.elevationMeters)}m"
+        // Estimated label width at 9sp; labels that would pass the chart's right edge end at the pin instead
+        val labelWidthDp = label.length * 5.4f + 10f
         LandmarkCity(
             id = station.id,
-            displayName = "$city ${"%,d".format(station.elevationMeters)}m",
+            displayName = label,
             // Alternate label heights so neighbors do not overlap; keep high pins inside the chart
             yOffsetDp = if (n % 2 == 1 && elevRatio < 0.7f) -40 else -26,
             xOffsetDp = when {
+                ratioX * CHART_WIDTH_DP_ESTIMATE + labelWidthDp - 24f > CHART_WIDTH_DP_ESTIMATE * 0.95f ->
+                    (24f - labelWidthDp).toInt()
                 ratioX < 0.12f -> 4
-                ratioX > 0.85f -> -44
-                ratioX > 0.65f -> -20
                 else -> 0
             }
         )

@@ -849,10 +849,14 @@ private fun SpatialMapCanvas(
             landmarks.forEach { station ->
                 val ratioX = ((station.longitude - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
                 val ratioY = (1f - ((station.latitude - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
-                val xDp = with(density) { (paddingPx + ratioX * widthPx).toDp() } + (if (ratioX > 0.72f) (-56).dp else 0.dp)
-                val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + (if (ratioY < 0.12f) 8.dp else (-16).dp)
                 val isSelected = station.id == selectedStationId
                 val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
+                val elevText = "%,d".format(station.elevationMeters) + "m"
+                // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
+                val labelWidthDp = ((city.length + elevText.length + 1) * 4.6f + 10f).dp
+                val pinXDp = with(density) { (paddingPx + ratioX * widthPx).toDp() }
+                val xDp = if (pinXDp + labelWidthDp > widthDp - 6.dp) pinXDp - labelWidthDp else pinXDp
+                val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + (if (ratioY < 0.12f) 8.dp else (-16).dp)
 
                 Surface(
                     shape = RoundedCornerShape(4.dp),
@@ -873,7 +877,7 @@ private fun SpatialMapCanvas(
                             color = Color(0xFF1E293B)
                         )
                         Text(
-                            text = " ${"%,d".format(station.elevationMeters)}m",
+                            text = " $elevText",
                             fontSize = 7.sp,
                             color = Color(0xFF64748B)
                         )
@@ -1007,16 +1011,22 @@ private fun DrawScope.drawNeutralBase(
     while (lon <= maxLon) {
         val x = mapX(lon)
         drawLine(Color.DarkGray.copy(alpha = 0.10f), Offset(x, padding), Offset(x, size.height - padding), 1f)
-        val label = textMeasurer.measure("%.2f\u00B0W".format(abs(lon)).replace(".00", ".0"), labelStyle)
-        drawText(label, topLeft = Offset(x + 2f, size.height - padding - label.size.height))
+        // Skip labels under the scale bar (bottom-left)
+        if (x > padding + 120.dp.toPx()) {
+            val label = textMeasurer.measure("%.2f\u00B0W".format(abs(lon)).replace(".00", ".0"), labelStyle)
+            drawText(label, topLeft = Offset(x + 2f, size.height - padding - label.size.height))
+        }
         lon += step
     }
     var lat = ceil(minLat / step) * step
     while (lat <= maxLat) {
         val y = mapY(lat)
         drawLine(Color.DarkGray.copy(alpha = 0.10f), Offset(padding, y), Offset(size.width - padding, y), 1f)
-        val label = textMeasurer.measure("%.2f\u00B0N".format(lat).replace(".00", ".0"), labelStyle)
-        drawText(label, topLeft = Offset(padding + 3f, y - label.size.height - 1f))
+        // Skip labels under the compass (top-left)
+        if (y > padding + 34.dp.toPx()) {
+            val label = textMeasurer.measure("%.2f\u00B0N".format(lat).replace(".00", ".0"), labelStyle)
+            drawText(label, topLeft = Offset(padding + 3f, y - label.size.height - 1f))
+        }
         lat += step
     }
 
