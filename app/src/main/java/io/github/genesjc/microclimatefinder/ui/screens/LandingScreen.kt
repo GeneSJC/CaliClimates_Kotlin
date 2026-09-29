@@ -60,9 +60,15 @@ private val LANDING_ENTRIES = listOf(
     ),
     LandingEntry(
         title = "Sacramento Topographical Map",
-        description = "21 verified NOAA stations (5m to 1406m elev) across Sacramento 60-mile grid. Dual spatial map and elevation profile.",
+        description = "21 verified NOAA stations (5m to 1406m elev) across Sacramento 60-mile grid. Interactive spatial map.",
         iconChar = "▲",
         target = AppScreen.STATION_MAP
+    ),
+    LandingEntry(
+        title = "Elevation Profile",
+        description = "Sacramento stations sorted by elevation, from valley floor to Sierra ridgeline, with live sky/weather theming.",
+        iconChar = "⛰️",
+        target = AppScreen.ELEVATION_PROFILE
     ),
     LandingEntry(
         title = "California Transect Map",
