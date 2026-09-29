@@ -79,6 +79,7 @@ fun AppNavigation() {
     when (currentScreen) {
         AppScreen.LANDING -> {
             LandingScreen(
+                selectedRegionId = selectedRegionId,
                 onNavigateTo = { targetScreen ->
                     currentScreen = targetScreen
                 }
@@ -103,7 +104,7 @@ fun AppNavigation() {
         }
         AppScreen.STATION_LIST -> {
             StationListScreen(
-                dataset = StationDatasets.DEFAULT_DATASET,
+                dataset = StationDatasets.forRegion(selectedRegionId) ?: StationDatasets.DEFAULT_DATASET,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -111,7 +112,7 @@ fun AppNavigation() {
         }
         AppScreen.STATION_MAP -> {
             StationMapScreen(
-                dataset = StationDatasets.DEFAULT_DATASET,
+                dataset = StationDatasets.forRegion(selectedRegionId) ?: StationDatasets.DEFAULT_DATASET,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -119,7 +120,7 @@ fun AppNavigation() {
         }
         AppScreen.ELEVATION_PROFILE -> {
             ElevationProfileScreen(
-                dataset = StationDatasets.DEFAULT_DATASET,
+                dataset = StationDatasets.forRegion(selectedRegionId) ?: StationDatasets.DEFAULT_DATASET,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }

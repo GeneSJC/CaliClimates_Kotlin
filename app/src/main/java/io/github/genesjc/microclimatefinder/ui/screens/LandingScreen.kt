@@ -56,6 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
+import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
 import io.github.genesjc.microclimatefinder.ui.components.DemoNavigationCard
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
@@ -66,7 +68,8 @@ private data class LandingEntry(
     val title: String,
     val description: String,
     val iconChar: String,
-    val target: AppScreen
+    val target: AppScreen,
+    val needsStationData: Boolean = true
 )
 
 private val LANDING_ENTRIES = listOf(
@@ -98,15 +101,22 @@ private val LANDING_ENTRIES = listOf(
         title = "California Regional Sections",
         description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
         iconChar = "🧭",
-        target = AppScreen.CALIFORNIA_REGIONS
+        target = AppScreen.CALIFORNIA_REGIONS,
+        needsStationData = false
     )
 )
 
 @Composable
 fun LandingScreen(
+    selectedRegionId: String,
     onNavigateTo: (AppScreen) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val region = remember(selectedRegionId) {
+        CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == selectedRegionId }
+            ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
+    }
+    val hasStationData = region.status == RegionStatus.ACTIVE_TRANSECT
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -237,7 +247,46 @@ fun LandingScreen(
                 }
             }
 
-            items(LANDING_ENTRIES) { entry ->
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                if (hasStationData) {
+                    Text(
+                        text = "Region: ${region.name}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                } else {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "${region.name} (Planned)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = region.description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Station data isn't available for this region yet. " +
+                                    "Use California Regional Sections to switch regions.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            items(LANDING_ENTRIES.filter { hasStationData || !it.needsStationData }) { entry ->
                 DemoNavigationCard(
                     title = entry.title,
                     description = entry.description,
