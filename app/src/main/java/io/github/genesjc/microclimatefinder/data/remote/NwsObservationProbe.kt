@@ -32,6 +32,12 @@ object NwsObservationProbe {
     }
 
     private fun fetch(stationId: String): String {
+        val cached = LiveObservationCache.peek(stationId)
+        if (cached is ObservationResult.Reading) {
+            val o = cached.observation
+            val age = o.ageMinutes()?.let { "$it min ago" } ?: "no timestamp"
+            return "%.1f°C / %.1f°F • %s • prefetched (cache)".format(Locale.US, o.temperatureCelsius, o.temperatureFahrenheit, age)
+        }
         val url = URL("https://api.weather.gov/stations/${URLEncoder.encode(stationId, "UTF-8")}/observations/latest")
         val conn = url.openConnection() as HttpURLConnection
         conn.connectTimeout = 10_000

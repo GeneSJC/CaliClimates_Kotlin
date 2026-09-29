@@ -11,14 +11,19 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
+import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
+import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
@@ -72,6 +77,15 @@ fun AppNavigation() {
     var showLimitedDataNotice by remember { mutableStateOf(fullDataRegions < store.totalRegionCount()) }
     val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
     val defaultDataset = remember { store.defaultDataset() }
+
+    // Fetch live readings for the region's featured stations when a region loads; switching region
+    // cancels this and starts the new region's.
+    LaunchedEffect(regionDataset) {
+        regionDataset?.let { dataset ->
+            val stations = withContext(Dispatchers.IO) { StationCsvParser(context).loadStations(dataset) }
+            LiveObservationCache.prefetch(stations)
+        }
+    }
 
     // Intercept hardware/gesture back press when not on Landing
     if (currentScreen != AppScreen.LANDING) {
