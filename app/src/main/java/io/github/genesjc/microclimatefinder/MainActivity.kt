@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
+import io.github.genesjc.microclimatefinder.data.local.RegionPreferences
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
@@ -67,11 +68,12 @@ fun AppNavigation() {
     var selectedNewsCity by remember { mutableStateOf("") }
     // Where Back returns to from Regional Sections (Home icon or Demos & Previews)
     var regionsReturnScreen by remember { mutableStateOf(AppScreen.LANDING) }
-    // App-wide CA region; the Regional Sections screen is its only writer
-    var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
+    val context = LocalContext.current
+    // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
+    val regionPrefs = remember { RegionPreferences(context) }
+    var selectedRegionId by remember { mutableStateOf(regionPrefs.load()) }
 
     // Station data: the full bundled files per region, or the built-in Bay Area sample
-    val context = LocalContext.current
     val store = remember { StationDataStore(context) }
     val fullDataRegions = remember { store.fullDataRegionCount() }
     var showLimitedDataNotice by remember { mutableStateOf(fullDataRegions < store.totalRegionCount()) }
@@ -211,7 +213,14 @@ fun AppNavigation() {
             }
             CaliforniaRegionsMapScreen(
                 selectedRegionId = if (isDemo) demoRegionId else selectedRegionId,
-                onSelectRegion = { if (isDemo) demoRegionId = it else selectedRegionId = it },
+                onSelectRegion = {
+                    if (isDemo) {
+                        demoRegionId = it
+                    } else {
+                        selectedRegionId = it
+                        regionPrefs.save(it)
+                    }
+                },
                 onNavigateBack = {
                     currentScreen = regionsReturnScreen
                 },
