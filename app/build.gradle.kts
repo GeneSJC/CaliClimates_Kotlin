@@ -74,3 +74,18 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
+
+// Prints the app's build label (BuildInfo.LABEL) in the build output, so it is clear which build ran.
+// Read as a file input so Gradle's configuration cache picks up label changes.
+val buildLabel = providers.fileContents(
+    layout.projectDirectory.file("src/main/java/io/github/genesjc/microclimatefinder/BuildInfo.kt")
+).asText.map { text ->
+    Regex("LABEL = \"([^\"]+)\"").find(text)?.groupValues?.get(1) ?: "unknown"
+}
+
+tasks.register("printBuildLabel") {
+    val label = buildLabel
+    doLast { println("Build label: ${label.get()}") }
+}
+
+tasks.matching { it.name == "preBuild" }.configureEach { dependsOn("printBuildLabel") }
