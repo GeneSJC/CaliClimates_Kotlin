@@ -3,6 +3,8 @@ package io.github.genesjc.microclimatefinder.ui.screens
 import android.annotation.SuppressLint
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import io.github.genesjc.microclimatefinder.R
+import org.json.JSONObject
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -77,7 +79,19 @@ fun WebSplashAnimationScreen(
                     settings.domStorageEnabled = true
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
-                    webViewClient = WebViewClient()
+                    // The page's title text is replaced with the app_name string once loaded, so the
+                    // name lives in one place even if the HTML asset is swapped for a newer version
+                    val appName = context.getString(R.string.app_name)
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView, url: String?) {
+                            val name = JSONObject.quote(appName)
+                            view.evaluateJavascript(
+                                "(function(){var t=document.querySelector('.app-title');" +
+                                    "if(t){t.textContent=$name;}document.title=$name;})();",
+                                null
+                            )
+                        }
+                    }
                     loadUrl("file:///android_asset/splash_animation_web.html")
                 }
             }

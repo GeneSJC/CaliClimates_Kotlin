@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.util.lerp
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import io.github.genesjc.microclimatefinder.BuildInfo
+import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.TransectConfig
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
@@ -136,6 +138,7 @@ fun LandingScreen(
             region.activeStationCount
         )
     }
+    val appName = stringResource(R.string.app_name)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -162,7 +165,7 @@ fun LandingScreen(
             ModalDrawerSheet {
                 Column(modifier = Modifier.padding(vertical = 24.dp)) {
                     Text(
-                        text = "California Climate Finder",
+                        text = appName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -294,7 +297,7 @@ fun LandingScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
                     Text(
-                        text = "California Climate Finder",
+                        text = appName,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -381,13 +384,13 @@ fun LandingScreen(
             },
             title = {
                 Text(
-                    text = "About California Climate Finder",
+                    text = "About $appName",
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = "California Climate Finder is an interactive explorer for California's " +
+                    text = "$appName is an interactive explorer for California's " +
                         "microclimates — combining live NOAA station data, topographic maps, and " +
                         "regional climate visualizations across the state, from coastal fog belts to " +
                         "alpine Sierra ridgelines.\n\nCurrent scope: California."

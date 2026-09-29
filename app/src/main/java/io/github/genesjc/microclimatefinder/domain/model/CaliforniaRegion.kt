@@ -155,7 +155,7 @@ object CaliforniaRegionalDefinitions {
             "Diablo Range rain shadow and thermal inland transition",
             "Lapse-rate cooling up Western Sierra Nevada slope to 1406m"
         ),
-        description = "The primary baseline transect of California Climate Finder: fully unified draggable and zoomable coordinate space covering 36 stations from Pacific tidepools to alpine ridge tops.",
+        description = "The primary baseline transect: fully unified draggable and zoomable coordinate space covering 36 stations from Pacific tidepools to alpine ridge tops.",
         status = RegionStatus.ACTIVE_TRANSECT,
         activeStationCount = 36,
         colorHex = "#0E7C86"
