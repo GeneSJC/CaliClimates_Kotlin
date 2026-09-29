@@ -1,32 +1,68 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.BuildConfig
+import io.github.genesjc.microclimatefinder.ui.components.DemoNavigationCard
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
+
+private data class LandingEntry(
+    val title: String,
+    val description: String,
+    val iconChar: String,
+    val target: AppScreen
+)
+
+private val LANDING_ENTRIES = listOf(
+    LandingEntry(
+        title = "Demos & Previews",
+        description = "Component/feature demos: Station Card Preview, Draggable Topo Map, and Animation Previews.",
+        iconChar = "▦",
+        target = AppScreen.DEMOS_AND_PREVIEWS
+    ),
+    LandingEntry(
+        title = "Sacramento Station Feed (CSV)",
+        description = "21 verified NOAA stations (5m to 1406m elev) loaded from assets via StationListScreen.",
+        iconChar = "▤",
+        target = AppScreen.STATION_LIST
+    ),
+    LandingEntry(
+        title = "Sacramento Topographical Map",
+        description = "21 verified NOAA stations (5m to 1406m elev) across Sacramento 60-mile grid. Dual spatial map and elevation profile.",
+        iconChar = "▲",
+        target = AppScreen.STATION_MAP
+    ),
+    LandingEntry(
+        title = "California Transect Map",
+        description = "Continuous 4-way pan & zoom from Sacramento to Monterey Bay across 36 regional stations with expandable Local News panel & story viewer.",
+        iconChar = "🗺️",
+        target = AppScreen.UNIFIED_DRAGGABLE_MAP
+    ),
+    LandingEntry(
+        title = "California Regional Sections",
+        description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
+        iconChar = "🧭",
+        target = AppScreen.CALIFORNIA_REGIONS
+    )
+)
 
 @Composable
 fun LandingScreen(
@@ -45,209 +81,60 @@ fun LandingScreen(
         "OpenStreetMap / OsmDroid"
     }
 
-    Column(
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
         modifier = modifier
             .fillMaxSize()
-            .padding(20.dp)
-            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp),
+        contentPadding = PaddingValues(top = 20.dp, bottom = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // App Header Banner
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.primaryContainer
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                    text = "Micro Climate Finder",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = flavorTitle,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                )
-                Text(
-                    text = "Active Engine: $mapProvider",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            // App Header Banner
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = "Micro Climate Finder",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = flavorTitle,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                    )
+                    Text(
+                        text = "Active Engine: $mapProvider",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = "Component & Feature Demos",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Demo 1: Station Card Preview Screen
-        DemoNavigationCard(
-            title = "Station Card Preview",
-            description = "Interactive single station card with elevation badge, dual C/F temps, wind, and terrain styling.",
-            badge = "v0.8.2",
-            iconChar = "▦",
-            onClick = { onNavigateTo(AppScreen.STATION_CARD_PREVIEW) }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Demo 2: Generic Station List Feed (Passes Sacramento Dataset)
-        DemoNavigationCard(
-            title = "Sacramento Station Feed (CSV)",
-            description = "21 verified NOAA stations (5m to 1406m elev) loaded from assets via StationListScreen.",
-            badge = "v0.9.2",
-            iconChar = "▤",
-            onClick = { onNavigateTo(AppScreen.STATION_LIST) }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Demo 3: Sacramento Topographical Map (v0.11.0)
-        // Demo 3: Sacramento Topographical Map (v0.12.0) - Reverted to clean view without top region/biome buttons
-        DemoNavigationCard(
-            title = "Sacramento Topographical Map",
-            description = "21 verified NOAA stations (5m to 1406m elev) across Sacramento 60-mile grid. Dual spatial map and elevation profile.",
-            badge = "v0.12.0",
-            iconChar = "▲",
-            onClick = { onNavigateTo(AppScreen.STATION_MAP) }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Demo 4: Draggable Topo Map (v0.14.0 - Step 1: Pan Gesture Canvas)
-        DemoNavigationCard(
-            title = "Draggable Topo Map",
-            description = "Interactive 4-way pan (N/S/E/W) with gesture dragging across Sacramento 60-mile stations, coordinate readout & recenter.",
-            badge = "v0.14.0",
-            iconChar = "✥",
-            onClick = { onNavigateTo(AppScreen.DRAGGABLE_MAP) }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Demo 5: California Transect Map (v0.20.0 - Macro Draggable & Zoomable Canvas with Launcher Icon)
-        DemoNavigationCard(
-            title = "California Transect Map",
-            description = "Continuous 4-way pan & zoom from Sacramento to Monterey Bay across 36 regional stations with expandable Local News panel & story viewer.",
-            badge = "v0.20.0",
-            iconChar = "🗺️",
-            onClick = { onNavigateTo(AppScreen.UNIFIED_DRAGGABLE_MAP) }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Demo 6: California Regional Sections (v0.21.0 - Multi-Region Constraints & Map)
-        DemoNavigationCard(
-            title = "California Regional Sections",
-            description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
-            badge = "v0.21.0",
-            iconChar = "🧭",
-            onClick = { onNavigateTo(AppScreen.CALIFORNIA_REGIONS) }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Demo 7: Animation Previews (v0.25.0)
-        DemoNavigationCard(
-            title = "Animation Previews",
-            description = "Interactive atmospheric and weather animation prototypes: fixed hero cloud v1.0, moving clouds v2.0, and offline web vector preview.",
-            badge = "v0.25.0",
-            iconChar = "✨",
-            onClick = { onNavigateTo(AppScreen.ANIMATION_PREVIEWS) }
-        )
-    }
-}
-
-@Composable
-private fun DemoNavigationCard(
-    title: String,
-    description: String,
-    badge: String,
-    iconChar: String,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                modifier = Modifier.size(44.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = iconChar,
-                        fontSize = 20.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp)
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                    ) {
-                        Text(
-                            text = badge,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 16.sp
-                )
-            }
-
+        item(span = { GridItemSpan(maxLineSpan) }) {
             Text(
-                text = "→",
-                fontSize = 18.sp,
+                text = "Component & Feature Demos",
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        items(LANDING_ENTRIES) { entry ->
+            DemoNavigationCard(
+                title = entry.title,
+                description = entry.description,
+                iconChar = entry.iconChar,
+                onClick = { onNavigateTo(entry.target) }
             )
         }
     }
