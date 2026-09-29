@@ -779,7 +779,7 @@ fun UnifiedDraggableMapScreen(
 
                                 val showSubtitle = isSelected || zoomScale >= 1.65f
                                 val subText = if (showSubtitle) {
-                                    "${station.elevationMeters}m • ${station.currentReading.temperatureCelsius.roundToInt()}°C"
+                                    "${station.elevationMeters}m elev."
                                 } else null
                                 val subWidth = subText?.let { currentSubPaint.measureText(it) } ?: 0f
                                 val subHeight = if (subText != null) currentSubPaint.textSize + 2f else 0f
@@ -856,7 +856,7 @@ fun UnifiedDraggableMapScreen(
                                 val showSubtitle = isSelected || subAlpha > 0.02f
 
                                 val subText = if (showSubtitle) {
-                                    "${station.elevationMeters}m • ${station.currentReading.temperatureCelsius.roundToInt()}°C"
+                                    "${station.elevationMeters}m elev."
                                 } else null
                                 val subWidth = subText?.let { currentSubPaint.measureText(it) } ?: 0f
                                 val subHeight = if (subText != null) currentSubPaint.textSize + 2f else 0f

@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
+import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
@@ -282,10 +285,30 @@ private fun ElevationProfileCanvas(
     val landmarks = remember(sorted) { buildLandmarks(sorted) }
 
     val currentStation = sorted.find { it.id == selectedStationId } ?: sorted.firstOrNull()
-    val tempF = currentStation?.currentReading?.temperatureFahrenheit ?: 85.0
+    // Real NWS temperature for the selected station; null while loading or when it has no reading
+    var live by remember(currentStation?.id) {
+        mutableStateOf(currentStation?.let { LiveObservationCache.peek(it.id) })
+    }
+    LaunchedEffect(currentStation?.id) {
+        currentStation?.let {
+            live = if (it.canHaveLiveReading) LiveObservationCache.get(it.id) else ObservationResult.NoReading
+        }
+    }
+    val tempF: Double? = (live as? ObservationResult.Reading)?.observation?.temperatureFahrenheit
 
     val skyTheme = remember(tempF) {
         when {
+            tempF == null -> SkyAtmosphereTheme(
+                colors = listOf(
+                    Color(0xFF475569).copy(alpha = 0.40f),
+                    Color(0xFF94A3B8).copy(alpha = 0.20f),
+                    Color(0xFFE2E8F0).copy(alpha = 0.05f)
+                ),
+                condition = "No current reading",
+                icon = "⛰️",
+                accent = Color(0xFFCBD5E1),
+                badgeBg = Color(0xFF1E293B)
+            )
             tempF >= 84.0 -> SkyAtmosphereTheme(
                 colors = listOf(
                     Color(0xFFC2410C).copy(alpha = 0.45f),
@@ -402,7 +425,9 @@ private fun ElevationProfileCanvas(
             )
 
             // 2. DYNAMIC WEATHER VISUALS (Clouds / Sun corona in the upper-left quadrant)
-            if (tempF >= 84.0) {
+            if (tempF == null) {
+                // No live reading: plain sky, no weather visuals
+            } else if (tempF >= 84.0) {
                 // Valley solar heat corona
                 drawCircle(
                     color = Color(0xFFFDE047).copy(alpha = 0.25f),
@@ -572,7 +597,7 @@ private fun ElevationProfileCanvas(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "${tempF.toInt()}°F",
+                            text = tempF?.let { "${it.toInt()}°F" } ?: "—°F",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
