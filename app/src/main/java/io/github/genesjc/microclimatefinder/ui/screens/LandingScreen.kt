@@ -5,6 +5,9 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
@@ -337,21 +340,29 @@ fun LandingScreen(
     var showLimitedDataDialog by remember { mutableStateOf(false) }
     var showRegionMenu by remember { mutableStateOf(false) }
 
-    // Hero expand: the CA icon grows from the header corner to fill the screen, then
-    // opens the Regional Sections screen.
+    // Region picker overlay: the CA icon grows from the header corner into a panel over Home
+    // (about 75% of the screen, with a translucent scrim). Picking a region on its map only marks
+    // a pending choice; Home changes when Confirm is tapped.
     val expand = remember { Animatable(0f) }
-    var expanding by remember { mutableStateOf(false) }
+    var overlayVisible by remember { mutableStateOf(false) }
+    var pendingRegionId by remember { mutableStateOf(selectedRegionId) }
     var iconBounds by remember { mutableStateOf(Rect.Zero) }
     var containerOrigin by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     var containerWidth by remember { mutableStateOf(0f) }
     var containerHeight by remember { mutableStateOf(0f) }
 
-    LaunchedEffect(expanding) {
-        if (expanding) {
-            expand.animateTo(1f, tween(durationMillis = 700, easing = FastOutSlowInEasing))
-            onNavigateTo(AppScreen.CALIFORNIA_REGIONS)
+    fun openOverlay() {
+        pendingRegionId = selectedRegionId
+        overlayVisible = true
+        scope.launch { expand.animateTo(1f, tween(durationMillis = 450, easing = FastOutSlowInEasing)) }
+    }
+    fun closeOverlay() {
+        scope.launch {
+            expand.animateTo(0f, tween(durationMillis = 300, easing = FastOutSlowInEasing))
+            overlayVisible = false
         }
     }
+    BackHandler(enabled = overlayVisible) { closeOverlay() }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -527,10 +538,10 @@ fun LandingScreen(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clickable(
-                                    enabled = !expanding,
+                                    enabled = !overlayVisible,
                                     onClickLabel = "Change region",
                                     role = Role.Button
-                                ) { expanding = true }
+                                ) { openOverlay() }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 CaliforniaOutlineIcon(
@@ -539,7 +550,7 @@ fun LandingScreen(
                                     modifier = Modifier
                                         .size(28.dp)
                                         .onGloballyPositioned { iconBounds = Rect(it.positionInRoot(), it.size.toSize()) }
-                                        .alpha(if (expanding) 0f else 1f)
+                                        .alpha(if (overlayVisible) 0f else 1f)
                                 )
                             }
                         }
@@ -639,30 +650,61 @@ fun LandingScreen(
             }
         }
 
-        if (expanding) {
+        if (overlayVisible) {
             val t = expand.value
             val density = LocalDensity.current
+            val noRipple = remember { MutableInteractionSource() }
+            val targetW = containerWidth * 0.92f
+            val targetH = containerHeight * 0.75f
+            val targetX = (containerWidth - targetW) / 2f
+            val targetY = (containerHeight - targetH) / 2f
             val startX = iconBounds.left - containerOrigin.x
             val startY = iconBounds.top - containerOrigin.y
-            val widthPx = lerp(iconBounds.width, containerWidth, t)
-            val heightPx = lerp(iconBounds.height, containerHeight, t)
+            // Scrim: tapping it closes the overlay without changing the region
             Box(
                 modifier = Modifier
-                    .offset { IntOffset(lerp(startX, 0f, t).roundToInt(), lerp(startY, 0f, t).roundToInt()) }
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f * t))
+                    .clickable(interactionSource = noRipple, indication = null) { closeOverlay() }
+            )
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(lerp(startX, targetX, t).roundToInt(), lerp(startY, targetY, t).roundToInt()) }
                     .size(
-                        width = with(density) { widthPx.toDp() },
-                        height = with(density) { heightPx.toDp() }
+                        width = with(density) { lerp(iconBounds.width, targetW, t).toDp() },
+                        height = with(density) { lerp(iconBounds.height, targetH, t).toDp() }
                     )
-                    .clip(RoundedCornerShape(lerp(10f, 0f, t).dp))
-                    .background(Color(0xFFF4EBD0).copy(alpha = t))
+                    .clip(RoundedCornerShape(lerp(10f, 24f, t).dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = t))
+                    // Taps inside the panel must not reach the scrim
+                    .clickable(interactionSource = noRipple, indication = null) { },
+                contentAlignment = Alignment.Center
             ) {
                 CaliforniaOutlineIcon(
                     fill = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
                     stroke = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding((lerp(0f, 32f, t)).dp)
+                        .padding(lerp(0f, 32f, t).dp)
+                        .alpha((1f - t * 2f).coerceAtLeast(0f))
                 )
+                if (t > 0.5f) {
+                    CaliforniaRegionPickerPanel(
+                        pendingRegionId = pendingRegionId,
+                        onPickRegion = { pendingRegionId = it },
+                        onConfirm = {
+                            if (pendingRegionId != selectedRegionId) onSelectRegion(pendingRegionId)
+                            closeOverlay()
+                        },
+                        onClose = { closeOverlay() },
+                        modifier = Modifier
+                            .requiredSize(
+                                width = with(density) { targetW.toDp() },
+                                height = with(density) { targetH.toDp() }
+                            )
+                            .alpha(((t - 0.5f) / 0.5f).coerceIn(0f, 1f))
+                    )
+                }
             }
         }
         }
