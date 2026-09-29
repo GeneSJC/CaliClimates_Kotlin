@@ -56,7 +56,6 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 
-@OptIn(ExperimentalMaterial3Api::class)
 /**
  * Content of the region picker overlay on Home: the selected region's name, the regional map to
  * pick another, and a Confirm button. Picking on the map only marks a pending choice; the caller
@@ -121,6 +120,7 @@ fun CaliforniaRegionPickerPanel(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaliforniaRegionsMapScreen(
     selectedRegionId: String,
