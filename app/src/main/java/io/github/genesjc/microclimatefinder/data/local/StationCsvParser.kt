@@ -5,7 +5,6 @@ import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.WeatherReading
 import java.io.BufferedReader
-import java.io.File
 
 class StationCsvParser(private val context: Context) {
 
@@ -17,19 +16,8 @@ class StationCsvParser(private val context: Context) {
             emptyList()
         }
 
-    /** Loads a dataset from imported private storage, or from bundled assets. */
     fun loadStations(dataset: StationDatasetInfo): List<MicroclimateStation> =
-        if (!dataset.isExternal) {
-            loadStationsFromCsv(dataset.fileName)
-        } else {
-            try {
-                File(File(context.filesDir, StationDataStore.DATA_DIR_NAME), dataset.fileName)
-                    .bufferedReader().use { parse(it) }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                emptyList()
-            }
-        }
+        loadStationsFromCsv(dataset.fileName)
 
     fun parse(reader: BufferedReader): List<MicroclimateStation> {
         val stations = mutableListOf<MicroclimateStation>()

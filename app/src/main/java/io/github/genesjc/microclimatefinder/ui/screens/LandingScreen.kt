@@ -131,7 +131,6 @@ fun LandingScreen(
     selectedRegionId: String,
     dataset: StationDatasetInfo?,
     onNavigateTo: (AppScreen) -> Unit,
-    onImportStationData: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val region = remember(selectedRegionId) {
@@ -190,16 +189,6 @@ fun LandingScreen(
                         onClick = {
                             scope.launch { drawerState.close() }
                             onNavigateTo(AppScreen.DEMOS_AND_PREVIEWS)
-                        },
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("Import Station Data") },
-                        icon = { Text(text = "⇩", fontSize = 18.sp) },
-                        selected = false,
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            onImportStationData()
                         },
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
@@ -317,8 +306,8 @@ fun LandingScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Station data isn't loaded for this region. Import it from the menu " +
-                                    "(Import Station Data), or use California Regional Sections to switch regions.",
+                                text = "Station data isn't included in this build for this region. " +
+                                    "Use California Regional Sections to switch regions.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

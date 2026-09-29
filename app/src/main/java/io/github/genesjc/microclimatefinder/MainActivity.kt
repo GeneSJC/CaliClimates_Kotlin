@@ -3,8 +3,6 @@ package io.github.genesjc.microclimatefinder
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
@@ -14,13 +12,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import io.github.genesjc.microclimatefinder.data.local.ImportResult
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
@@ -67,24 +63,13 @@ fun AppNavigation() {
     // App-wide CA region; the Regional Sections screen is its only writer
     var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
 
-    // Station data: imported files and the built-in sample, resolved per region
+    // Station data: the full bundled files per region, or the built-in Bay Area sample
     val context = LocalContext.current
     val store = remember { StationDataStore(context) }
-    var dataVersion by remember { mutableIntStateOf(0) }
-    var importResult by remember { mutableStateOf<ImportResult?>(null) }
-    val fullDataRegions = remember(dataVersion) { store.fullDataRegionCount() }
+    val fullDataRegions = remember { store.fullDataRegionCount() }
     var showLimitedDataNotice by remember { mutableStateOf(fullDataRegions < store.totalRegionCount()) }
-    val regionDataset = remember(selectedRegionId, dataVersion) { store.datasetFor(selectedRegionId) }
-    val defaultDataset = remember(dataVersion) { store.defaultDataset() }
-
-    val importLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenMultipleDocuments()
-    ) { uris ->
-        if (uris.isNotEmpty()) {
-            importResult = store.importFrom(uris)
-            dataVersion++
-        }
-    }
+    val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
+    val defaultDataset = remember { store.defaultDataset() }
 
     // Intercept hardware/gesture back press when not on Landing
     if (currentScreen != AppScreen.LANDING) {
@@ -113,42 +98,12 @@ fun AppNavigation() {
                     "You are running with a limited data set: $fullDataRegions of " +
                         "${store.totalRegionCount()} regions have full station data. The rest show " +
                         "no stations, and Bay Area / Sacramento shows a small built-in sample.\n\n" +
-                        "Import the station data files from the menu (Import Station Data) to load all regions."
+                        "To load all regions, add the station files (stations_<regionId>.csv) to " +
+                        "app/src/debug/assets and rebuild."
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    showLimitedDataNotice = false
-                    importLauncher.launch(arrayOf("*/*"))
-                }) { Text("Import now") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLimitedDataNotice = false }) { Text("Later") }
-            }
-        )
-    }
-
-    importResult?.let { result ->
-        AlertDialog(
-            onDismissRequest = { importResult = null },
-            title = { Text("Station data import") },
-            text = {
-                Text(
-                    buildString {
-                        if (result.importedRegionNames.isNotEmpty()) {
-                            append("Loaded: ${result.importedRegionNames.joinToString(", ")}.")
-                        } else {
-                            append("Nothing was imported.")
-                        }
-                        if (result.skipped.isNotEmpty()) {
-                            append("\n\nSkipped:\n")
-                            append(result.skipped.joinToString("\n") { "• $it" })
-                        }
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { importResult = null }) { Text("OK") }
+                TextButton(onClick = { showLimitedDataNotice = false }) { Text("OK") }
             }
         )
     }
@@ -158,7 +113,6 @@ fun AppNavigation() {
             LandingScreen(
                 selectedRegionId = selectedRegionId,
                 dataset = regionDataset,
-                onImportStationData = { importLauncher.launch(arrayOf("*/*")) },
                 onNavigateTo = { targetScreen ->
                     currentScreen = targetScreen
                 }
