@@ -40,16 +40,32 @@ object LocalNewsRepository {
             "BKSC1" -> "Brooks"
             "MTZC1" -> "Jackson"
             "ESPC1" -> "Placerville"
-            else -> stationName
-                .replace(" Airport", "")
-                .replace(" Municipal", "")
-                .replace(" Regional", "")
-                .replace(" County", "")
-                .replace(" Executive", "")
-                .replace(" Intl", "")
-                .replace(" Nut Tree", "")
-                .split(" ").firstOrNull() ?: stationName
+            else -> cityFromStationName(stationName)
         }
+    }
+
+    // Words that describe the facility, not the place
+    private val FACILITY_WORDS = Regex(
+        "\\b(International|Intl|Airport|Airfield|Airpark|Air Park|Air Terminal|Air Force Base|" +
+            "Municipal|Regional|Metropolitan|Public|County|Executive|Field|Weather Station|" +
+            "Meteorological Site)\\b",
+        RegexOption.IGNORE_CASE
+    )
+
+    /** Keeps the place part of a station name, up to three words (for example "Santa Barbara"). */
+    private fun cityFromStationName(stationName: String): String {
+        val cleaned = stationName
+            .substringBefore('/')
+            .replace(FACILITY_WORDS, " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        // Drop station codes such as "Lpf01" or "SDHGPA"
+        val words = cleaned.split(" ").filter { word ->
+            word.isNotBlank() &&
+                word.none { it.isDigit() } &&
+                !(word.length >= 4 && word.all { it.isUpperCase() })
+        }
+        return if (words.isEmpty()) stationName else words.take(3).joinToString(" ")
     }
 
     fun getLocalStories(city: String): List<LocalNewsStory> {

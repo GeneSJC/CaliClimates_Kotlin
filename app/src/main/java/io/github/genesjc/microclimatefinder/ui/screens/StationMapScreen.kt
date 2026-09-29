@@ -52,7 +52,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
-import io.github.genesjc.microclimatefinder.data.local.StationDatasets
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
@@ -60,13 +59,13 @@ import io.github.genesjc.microclimatefinder.ui.components.StationCard
 
 @Composable
 fun StationMapScreen(
-    dataset: StationDatasetInfo = StationDatasets.DEFAULT_DATASET,
+    dataset: StationDatasetInfo,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.assetFileName) { StationCsvParser(context) }
-    val stations = remember(dataset.assetFileName) { parser.loadStationsFromCsv(dataset.assetFileName) }
+    val parser = remember(dataset.fileName) { StationCsvParser(context) }
+    val stations = remember(dataset) { parser.loadStations(dataset) }
 
     var selectedStationId by remember {
         mutableStateOf(stations.firstOrNull()?.id)
@@ -110,7 +109,7 @@ fun StationMapScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${dataset.title} • 60-Mile Grid",
+                    text = "${dataset.title} • ${dataset.stationCount} stations",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -179,7 +178,7 @@ fun StationMapScreen(
             LegendItem(color = Color(0xFF7C3AED), label = "Ridge (>500m)")
             LegendItem(color = Color(0xFFEA580C), label = "Valley Basin")
             LegendItem(color = Color(0xFF0284C7), label = "Delta / Coast")
-            LegendItem(color = Color(0xFF166534), label = "Sierra Relief")
+            LegendItem(color = Color(0xFF166534), label = "Mountain Relief")
         }
 
         Spacer(modifier = Modifier.height(16.dp))

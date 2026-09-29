@@ -5,15 +5,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import io.github.genesjc.microclimatefinder.data.local.StationDatasets
+import androidx.compose.ui.platform.LocalContext
+import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
@@ -59,6 +63,14 @@ fun AppNavigation() {
     // App-wide CA region; the Regional Sections screen is its only writer
     var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
 
+    // Station data: the full bundled files per region, or the built-in Bay Area sample
+    val context = LocalContext.current
+    val store = remember { StationDataStore(context) }
+    val fullDataRegions = remember { store.fullDataRegionCount() }
+    var showLimitedDataNotice by remember { mutableStateOf(fullDataRegions < store.totalRegionCount()) }
+    val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
+    val defaultDataset = remember { store.defaultDataset() }
+
     // Intercept hardware/gesture back press when not on Landing
     if (currentScreen != AppScreen.LANDING) {
         BackHandler {
@@ -77,10 +89,30 @@ fun AppNavigation() {
         }
     }
 
+    if (showLimitedDataNotice) {
+        AlertDialog(
+            onDismissRequest = { showLimitedDataNotice = false },
+            title = { Text("Limited data set") },
+            text = {
+                Text(
+                    "You are running with a limited data set: $fullDataRegions of " +
+                        "${store.totalRegionCount()} regions have full station data. The rest show " +
+                        "no stations, and Bay Area / Sacramento shows a small built-in sample.\n\n" +
+                        "To load all regions, add the station files (stations_<regionId>.csv) to " +
+                        "app/src/debug/assets and rebuild."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showLimitedDataNotice = false }) { Text("OK") }
+            }
+        )
+    }
+
     when (currentScreen) {
         AppScreen.LANDING -> {
             LandingScreen(
                 selectedRegionId = selectedRegionId,
+                dataset = regionDataset,
                 onNavigateTo = { targetScreen ->
                     currentScreen = targetScreen
                 }
@@ -105,7 +137,7 @@ fun AppNavigation() {
         }
         AppScreen.STATION_LIST -> {
             StationListScreen(
-                dataset = StationDatasets.forRegion(selectedRegionId) ?: StationDatasets.DEFAULT_DATASET,
+                dataset = regionDataset ?: defaultDataset,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -113,7 +145,7 @@ fun AppNavigation() {
         }
         AppScreen.STATION_MAP -> {
             StationMapScreen(
-                dataset = StationDatasets.forRegion(selectedRegionId) ?: StationDatasets.DEFAULT_DATASET,
+                dataset = regionDataset ?: defaultDataset,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -121,7 +153,7 @@ fun AppNavigation() {
         }
         AppScreen.ELEVATION_PROFILE -> {
             ElevationProfileScreen(
-                dataset = StationDatasets.forRegion(selectedRegionId) ?: StationDatasets.DEFAULT_DATASET,
+                dataset = regionDataset ?: defaultDataset,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -129,7 +161,7 @@ fun AppNavigation() {
         }
         AppScreen.DRAGGABLE_MAP -> {
             DraggableMapScreen(
-                dataset = StationDatasets.DEFAULT_DATASET,
+                dataset = defaultDataset,
                 onNavigateBack = {
                     currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 }

@@ -56,12 +56,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
+import io.github.genesjc.microclimatefinder.BuildInfo
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
-import io.github.genesjc.microclimatefinder.data.local.StationDatasets
 import io.github.genesjc.microclimatefinder.data.local.TransectConfig
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
-import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
 import io.github.genesjc.microclimatefinder.ui.components.DemoNavigationCard
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
@@ -72,61 +71,66 @@ private data class LandingEntry(
     val title: String,
     val description: String,
     val iconChar: String,
-    val target: AppScreen,
-    val needsStationData: Boolean = true
+    val target: AppScreen
 )
+
+// Regions whose Topo Map artwork (rivers, valley floor) exists; others get it with their data.
+private val TOPO_ARTWORK_REGION_IDS = setOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
 
 private fun landingEntries(
     regionName: String,
     dataset: StationDatasetInfo?,
     transect: TransectConfig?,
-    transectStationCount: Int
+    transectStationCount: Int,
+    hasTopoArtwork: Boolean
 ): List<LandingEntry> {
-    val transectRoute = transect?.routeLabel ?: regionName
-    val stats = if (dataset != null) {
-        "${dataset.stationCount} verified NOAA stations " +
+    val entries = mutableListOf<LandingEntry>()
+    if (dataset != null) {
+        val stats = "${dataset.stationCount} stations " +
             "(${dataset.minElevationMeters}m to ${dataset.maxElevationMeters}m elev)"
-    } else {
-        "NOAA stations"
-    }
-    return listOf(
-        LandingEntry(
+        val kind = dataset.subtitle.substringBefore(" • ")
+        entries += LandingEntry(
             title = "$regionName Station Feed (CSV)",
-            description = "$stats loaded from assets via StationListScreen.",
+            description = "$stats. $kind.",
             iconChar = "▤",
             target = AppScreen.STATION_LIST
-        ),
-        LandingEntry(
-            title = "$regionName Topographical Map",
-            description = "$stats across the $regionName region. Interactive spatial map.",
-            iconChar = "▲",
-            target = AppScreen.STATION_MAP
-        ),
-        LandingEntry(
+        )
+        if (hasTopoArtwork) {
+            entries += LandingEntry(
+                title = "$regionName Topographical Map",
+                description = "$stats across the $regionName region. Interactive spatial map.",
+                iconChar = "▲",
+                target = AppScreen.STATION_MAP
+            )
+        }
+        entries += LandingEntry(
             title = "Elevation Profile",
             description = "$regionName stations sorted by elevation, from lowest to highest, with live sky/weather theming.",
             iconChar = "⛰️",
             target = AppScreen.ELEVATION_PROFILE
-        ),
-        LandingEntry(
-            title = "California Transect Map",
-            description = "Continuous 4-way pan & zoom from $transectRoute across $transectStationCount regional stations with expandable Local News panel & story viewer.",
-            iconChar = "🗺️",
-            target = AppScreen.UNIFIED_DRAGGABLE_MAP
-        ),
-        LandingEntry(
-            title = "California Regional Sections",
-            description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
-            iconChar = "🧭",
-            target = AppScreen.CALIFORNIA_REGIONS,
-            needsStationData = false
         )
+        if (transect != null) {
+            entries += LandingEntry(
+                title = "California Transect Map",
+                description = "Continuous 4-way pan & zoom from ${transect.routeLabel} across $transectStationCount regional stations with expandable Local News panel & story viewer.",
+                iconChar = "🗺️",
+                target = AppScreen.UNIFIED_DRAGGABLE_MAP
+            )
+        }
+    }
+    entries += LandingEntry(
+        title = "California Regional Sections",
+        description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
+        iconChar = "🧭",
+        target = AppScreen.CALIFORNIA_REGIONS
     )
+    return entries
 }
 
 @Composable
 fun LandingScreen(
     selectedRegionId: String,
+    dataset: StationDatasetInfo?,
     onNavigateTo: (AppScreen) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -134,13 +138,14 @@ fun LandingScreen(
         CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == selectedRegionId }
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
     }
-    val hasStationData = region.status == RegionStatus.ACTIVE_TRANSECT
-    val entries = remember(region.id) {
+    val hasStationData = dataset != null
+    val entries = remember(region.id, dataset) {
         landingEntries(
             region.name,
-            StationDatasets.forRegion(region.id),
+            dataset,
             TransectConfigs.forRegion(region.id),
-            region.activeStationCount
+            region.activeStationCount,
+            region.id in TOPO_ARTWORK_REGION_IDS
         )
     }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -174,6 +179,12 @@ fun LandingScreen(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                    Text(
+                        text = "Build ${BuildInfo.LABEL}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 2.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider()
@@ -290,7 +301,7 @@ fun LandingScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "${region.name} (Planned)",
+                                text = "${region.name} (no station data loaded)",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -302,7 +313,7 @@ fun LandingScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Station data isn't available for this region yet. " +
+                                text = "Station data isn't included in this build for this region. " +
                                     "Use California Regional Sections to switch regions.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -312,7 +323,7 @@ fun LandingScreen(
                 }
             }
 
-            items(entries.filter { hasStationData || !it.needsStationData }) { entry ->
+            items(entries) { entry ->
                 DemoNavigationCard(
                     title = entry.title,
                     description = entry.description,
