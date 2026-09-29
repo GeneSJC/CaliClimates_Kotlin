@@ -93,7 +93,6 @@ fun LandingScreen(
         DemoNavigationCard(
             title = "Station Card Preview",
             description = "Interactive single station card with elevation badge, dual C/F temps, wind, and terrain styling.",
-            badge = "v0.8.2",
             iconChar = "▦",
             onClick = { onNavigateTo(AppScreen.STATION_CARD_PREVIEW) }
         )
@@ -104,7 +103,6 @@ fun LandingScreen(
         DemoNavigationCard(
             title = "Sacramento Station Feed (CSV)",
             description = "21 verified NOAA stations (5m to 1406m elev) loaded from assets via StationListScreen.",
-            badge = "v0.9.2",
             iconChar = "▤",
             onClick = { onNavigateTo(AppScreen.STATION_LIST) }
         )
@@ -116,7 +114,6 @@ fun LandingScreen(
         DemoNavigationCard(
             title = "Sacramento Topographical Map",
             description = "21 verified NOAA stations (5m to 1406m elev) across Sacramento 60-mile grid. Dual spatial map and elevation profile.",
-            badge = "v0.12.0",
             iconChar = "▲",
             onClick = { onNavigateTo(AppScreen.STATION_MAP) }
         )
@@ -127,7 +124,6 @@ fun LandingScreen(
         DemoNavigationCard(
             title = "Draggable Topo Map",
             description = "Interactive 4-way pan (N/S/E/W) with gesture dragging across Sacramento 60-mile stations, coordinate readout & recenter.",
-            badge = "v0.14.0",
             iconChar = "✥",
             onClick = { onNavigateTo(AppScreen.DRAGGABLE_MAP) }
         )
@@ -138,7 +134,6 @@ fun LandingScreen(
         DemoNavigationCard(
             title = "California Transect Map",
             description = "Continuous 4-way pan & zoom from Sacramento to Monterey Bay across 36 regional stations with expandable Local News panel & story viewer.",
-            badge = "v0.20.0",
             iconChar = "🗺️",
             onClick = { onNavigateTo(AppScreen.UNIFIED_DRAGGABLE_MAP) }
         )
@@ -149,7 +144,6 @@ fun LandingScreen(
         DemoNavigationCard(
             title = "California Regional Sections",
             description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
-            badge = "v0.21.0",
             iconChar = "🧭",
             onClick = { onNavigateTo(AppScreen.CALIFORNIA_REGIONS) }
         )
@@ -160,7 +154,6 @@ fun LandingScreen(
         DemoNavigationCard(
             title = "Animation Previews",
             description = "Interactive atmospheric and weather animation prototypes: fixed hero cloud v1.0, moving clouds v2.0, and offline web vector preview.",
-            badge = "v0.25.0",
             iconChar = "✨",
             onClick = { onNavigateTo(AppScreen.ANIMATION_PREVIEWS) }
         )
@@ -171,7 +164,6 @@ fun LandingScreen(
 private fun DemoNavigationCard(
     title: String,
     description: String,
-    badge: String,
     iconChar: String,
     onClick: () -> Unit
 ) {
@@ -184,70 +176,52 @@ private fun DemoNavigationCard(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                modifier = Modifier.size(44.dp)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = iconChar,
-                        fontSize = 20.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    modifier = Modifier.size(36.dp)
                 ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp)
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                    ) {
+                    Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = badge,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            text = iconChar,
+                            fontSize = 17.sp,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+
+                Spacer(modifier = Modifier.width(10.dp))
+
                 Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 16.sp
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = "→",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
-                text = "→",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 16.sp
             )
         }
     }
