@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import io.github.genesjc.microclimatefinder.data.local.StationDatasets
+import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
@@ -136,6 +137,7 @@ fun AppNavigation() {
         }
         AppScreen.UNIFIED_DRAGGABLE_MAP -> {
             UnifiedDraggableMapScreen(
+                config = TransectConfigs.forRegion(selectedRegionId) ?: TransectConfigs.DEFAULT,
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 },

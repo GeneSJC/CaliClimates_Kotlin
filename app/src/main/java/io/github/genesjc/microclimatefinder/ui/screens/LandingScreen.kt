@@ -58,6 +58,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationDatasets
+import io.github.genesjc.microclimatefinder.data.local.TransectConfig
+import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
@@ -74,7 +76,13 @@ private data class LandingEntry(
     val needsStationData: Boolean = true
 )
 
-private fun landingEntries(regionName: String, dataset: StationDatasetInfo?): List<LandingEntry> {
+private fun landingEntries(
+    regionName: String,
+    dataset: StationDatasetInfo?,
+    transect: TransectConfig?,
+    transectStationCount: Int
+): List<LandingEntry> {
+    val transectRoute = transect?.routeLabel ?: regionName
     val stats = if (dataset != null) {
         "${dataset.stationCount} verified NOAA stations " +
             "(${dataset.minElevationMeters}m to ${dataset.maxElevationMeters}m elev)"
@@ -102,7 +110,7 @@ private fun landingEntries(regionName: String, dataset: StationDatasetInfo?): Li
         ),
         LandingEntry(
             title = "California Transect Map",
-            description = "Continuous 4-way pan & zoom from Sacramento to Monterey Bay across 36 regional stations with expandable Local News panel & story viewer.",
+            description = "Continuous 4-way pan & zoom from $transectRoute across $transectStationCount regional stations with expandable Local News panel & story viewer.",
             iconChar = "🗺️",
             target = AppScreen.UNIFIED_DRAGGABLE_MAP
         ),
@@ -128,7 +136,12 @@ fun LandingScreen(
     }
     val hasStationData = region.status == RegionStatus.ACTIVE_TRANSECT
     val entries = remember(region.id) {
-        landingEntries(region.name, StationDatasets.forRegion(region.id))
+        landingEntries(
+            region.name,
+            StationDatasets.forRegion(region.id),
+            TransectConfigs.forRegion(region.id),
+            region.activeStationCount
+        )
     }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()

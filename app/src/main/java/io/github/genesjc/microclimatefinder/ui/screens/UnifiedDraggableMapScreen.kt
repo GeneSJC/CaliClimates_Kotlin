@@ -67,6 +67,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.genesjc.microclimatefinder.data.local.TransectConfig
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
@@ -95,28 +96,31 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun UnifiedDraggableMapScreen(
+    config: TransectConfig,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenNewsStory: ((LocalNewsStory, String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val parser = remember { StationCsvParser(context) }
-    val stations = remember {
+    val stations = remember(config) {
         try {
-            val unified = parser.loadStationsFromCsv("california_unified_stations.csv")
-            if (unified.isNotEmpty()) unified else parser.loadStationsFromCsv("sacramento_stations_60mi.csv")
+            val unified = parser.loadStationsFromCsv(config.assetFileName)
+            if (unified.isNotEmpty()) unified else parser.loadStationsFromCsv(config.fallbackAssetFileName)
         } catch (e: Exception) {
-            parser.loadStationsFromCsv("sacramento_stations_60mi.csv")
+            parser.loadStationsFromCsv(config.fallbackAssetFileName)
         }
     }
 
-    var selectedStation by remember {
-        mutableStateOf(stations.firstOrNull { it.id == "KMRY" } ?: stations.firstOrNull { it.id == "KSAC" } ?: stations.firstOrNull())
-    }
+    fun defaultStation() =
+        config.defaultStationIds.firstNotNullOfOrNull { id -> stations.firstOrNull { it.id == id } }
+            ?: stations.firstOrNull()
+
+    var selectedStation by remember(config) { mutableStateOf(defaultStation()) }
 
     LaunchedEffect(stations) {
         if (selectedStation == null && stations.isNotEmpty()) {
-            selectedStation = stations.firstOrNull { it.id == "KSAC" } ?: stations.first()
+            selectedStation = defaultStation()
         }
     }
 
@@ -212,7 +216,7 @@ fun UnifiedDraggableMapScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Sacramento to Monterey Bay • 36 Stations",
+                        text = "${config.routeLabel} • ${stations.size} Stations",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
