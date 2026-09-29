@@ -846,17 +846,30 @@ private fun SpatialMapCanvas(
             }
         } else {
             // Place labels picked from the loaded stations
-            landmarks.forEach { station ->
+            val placedRects = mutableListOf<List<Float>>()
+            var shownLabels = 0
+            for (station in landmarks) {
+                if (shownLabels >= MAP_LABEL_COUNT) break
                 val ratioX = ((station.longitude - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
                 val ratioY = (1f - ((station.latitude - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
                 val isSelected = station.id == selectedStationId
                 val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
+                    .let { if (it.length > 18) it.take(17) + "\u2026" else it }
                 val elevText = "%,d".format(station.elevationMeters) + "m"
                 // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
                 val labelWidthDp = ((city.length + elevText.length + 1) * 4.6f + 10f).dp
                 val pinXDp = with(density) { (paddingPx + ratioX * widthPx).toDp() }
                 val xDp = if (pinXDp + labelWidthDp > widthDp - 6.dp) pinXDp - labelWidthDp else pinXDp
                 val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + (if (ratioY < 0.12f) 8.dp else (-16).dp)
+
+                // Skip a label that would overlap one already placed
+                val left = xDp.value
+                val top = yDp.value
+                val right = left + labelWidthDp.value
+                val bottom = top + 16f
+                if (placedRects.any { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }) continue
+                placedRects.add(listOf(left, top, right, bottom))
+                shownLabels++
 
                 Surface(
                     shape = RoundedCornerShape(4.dp),
@@ -959,6 +972,9 @@ private fun SpatialMapCanvas(
 }
 
 
+// Maximum number of place labels drawn on the neutral base map
+private const val MAP_LABEL_COUNT = 6
+
 /** Plain base map with no terrain artwork: land, ocean, state border, coast and a lat/lon grid. */
 private fun DrawScope.drawNeutralBase(
     minLon: Double,
@@ -1000,34 +1016,36 @@ private fun DrawScope.drawNeutralBase(
     drawPath(ocean, color = Color(0xFFDCEBF4))
 
     // Latitude / longitude grid with degree labels
-    val span = maxOf(maxLon - minLon, maxLat - minLat)
-    val step = when {
-        span > 6.0 -> 1.0
-        span > 2.5 -> 0.5
-        else -> 0.25
+    // Steps chosen so neighboring labels stay at least ~64dp (longitude) and ~44dp (latitude) apart
+    fun niceStep(spanDegrees: Double, lengthPx: Float, minGapPx: Float): Double {
+        val steps = listOf(0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0)
+        return steps.firstOrNull { it / spanDegrees * lengthPx >= minGapPx } ?: steps.last()
     }
+    val lonStep = niceStep(maxLon - minLon, size.width - padding * 2, 64.dp.toPx())
+    val latStep = niceStep(maxLat - minLat, size.height - padding * 2, 44.dp.toPx())
+    fun degrees(value: Double): String = "%.2f".format(value).trimEnd('0').trimEnd('.')
     val labelStyle = TextStyle(fontSize = 8.sp, color = Color(0xFF64748B))
-    var lon = ceil(minLon / step) * step
+    var lon = ceil(minLon / lonStep) * lonStep
     while (lon <= maxLon) {
         val x = mapX(lon)
         drawLine(Color.DarkGray.copy(alpha = 0.10f), Offset(x, padding), Offset(x, size.height - padding), 1f)
         // Skip labels under the scale bar (bottom-left)
         if (x > padding + 120.dp.toPx()) {
-            val label = textMeasurer.measure("%.2f\u00B0W".format(abs(lon)).replace(".00", ".0"), labelStyle)
+            val label = textMeasurer.measure("${degrees(abs(lon))}\u00B0W", labelStyle)
             drawText(label, topLeft = Offset(x + 2f, size.height - padding - label.size.height))
         }
-        lon += step
+        lon += lonStep
     }
-    var lat = ceil(minLat / step) * step
+    var lat = ceil(minLat / latStep) * latStep
     while (lat <= maxLat) {
         val y = mapY(lat)
         drawLine(Color.DarkGray.copy(alpha = 0.10f), Offset(padding, y), Offset(size.width - padding, y), 1f)
         // Skip labels under the compass (top-left)
         if (y > padding + 34.dp.toPx()) {
-            val label = textMeasurer.measure("%.2f\u00B0N".format(lat).replace(".00", ".0"), labelStyle)
+            val label = textMeasurer.measure("${degrees(lat)}\u00B0N", labelStyle)
             drawText(label, topLeft = Offset(padding + 3f, y - label.size.height - 1f))
         }
-        lat += step
+        lat += latStep
     }
 
     // Border (dashed) and coast
@@ -1051,7 +1069,7 @@ private fun DrawScope.drawNeutralBase(
  * Picks about six stations spread across the map for place labels. Airport stations (K-prefixed)
  * are preferred because they are recognizable cities.
  */
-private fun pickMapLandmarks(stations: List<MicroclimateStation>, count: Int = 6): List<MicroclimateStation> {
+private fun pickMapLandmarks(stations: List<MicroclimateStation>, count: Int = MAP_LABEL_COUNT * 2): List<MicroclimateStation> {
     if (stations.size <= count) return stations
     val midLat = stations.map { it.latitude }.average()
     val lonScale = cos(midLat * PI / 180)

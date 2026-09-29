@@ -63,17 +63,19 @@ private const val LANDMARK_COUNT = 6
 private const val CHART_WIDTH_DP_ESTIMATE = 300f
 
 /**
- * Picks about six stations spread evenly by elevation and labels each with its place name and
- * elevation. Airport stations are preferred near each target because they are recognizable cities.
+ * Picks stations spread evenly by elevation and labels each with its place name and elevation.
+ * Airport stations are preferred near each target because they are recognizable cities. Labels are
+ * placed left to right on up to three heights, and a label is skipped when it would overlap one
+ * already placed at the same height.
  */
 private fun buildLandmarks(sorted: List<MicroclimateStation>): List<LandmarkCity> {
     if (sorted.isEmpty()) return emptyList()
-    val count = minOf(LANDMARK_COUNT, sorted.size)
+    val candidateCount = minOf(LANDMARK_COUNT + 3, sorted.size)
     val maxElev = sorted.last().elevationMeters.coerceAtLeast(1)
     val chosen = mutableListOf<Int>()
-    for (i in 0 until count) {
-        val target = if (count == 1) 0 else ((i * (sorted.size - 1).toFloat() / (count - 1)) + 0.5f).toInt()
-        val window = (target - 3..target + 3).filter { it in sorted.indices && it !in chosen }
+    for (i in 0 until candidateCount) {
+        val target = if (candidateCount == 1) 0 else ((i * (sorted.size - 1).toFloat() / (candidateCount - 1)) + 0.5f).toInt()
+        val window = (target - 2..target + 2).filter { it in sorted.indices && it !in chosen }
         val pick = window
             .filter { sorted[it].id.startsWith("K") }
             .minByOrNull { kotlin.math.abs(it - target) }
@@ -81,7 +83,11 @@ private fun buildLandmarks(sorted: List<MicroclimateStation>): List<LandmarkCity
             ?: target
         chosen.add(pick)
     }
-    return chosen.distinct().sorted().mapIndexed { n, idx ->
+
+    val placed = mutableListOf<Triple<Float, Float, Int>>() // left, right, height level
+    val result = mutableListOf<LandmarkCity>()
+    for (idx in chosen.distinct().sorted()) {
+        if (result.size >= LANDMARK_COUNT) break
         val station = sorted[idx]
         val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
         val elevRatio = station.elevationMeters.toFloat() / maxElev
@@ -89,19 +95,30 @@ private fun buildLandmarks(sorted: List<MicroclimateStation>): List<LandmarkCity
         val label = "$city ${"%,d".format(station.elevationMeters)}m"
         // Estimated label width at 9sp; labels that would pass the chart's right edge end at the pin instead
         val labelWidthDp = label.length * 5.4f + 10f
-        LandmarkCity(
-            id = station.id,
-            displayName = label,
-            // Alternate label heights so neighbors do not overlap; keep high pins inside the chart
-            yOffsetDp = if (n % 2 == 1 && elevRatio < 0.7f) -40 else -26,
-            xOffsetDp = when {
-                ratioX * CHART_WIDTH_DP_ESTIMATE + labelWidthDp - 24f > CHART_WIDTH_DP_ESTIMATE * 0.95f ->
-                    (24f - labelWidthDp).toInt()
-                ratioX < 0.12f -> 4
-                else -> 0
-            }
+        val xOffset = when {
+            ratioX * CHART_WIDTH_DP_ESTIMATE + labelWidthDp - 24f > CHART_WIDTH_DP_ESTIMATE * 0.95f ->
+                (24f - labelWidthDp).toInt()
+            ratioX < 0.12f -> 4
+            else -> 0
+        }
+        val left = ratioX * CHART_WIDTH_DP_ESTIMATE + xOffset - 24f
+        val right = left + labelWidthDp
+        // High pins stay on the lowest height so they remain inside the chart
+        val maxLevel = if (elevRatio > 0.8f) 0 else 2
+        val level = (0..maxLevel).firstOrNull { lv ->
+            placed.none { it.third == lv && left < it.second && right > it.first }
+        } ?: continue
+        placed.add(Triple(left, right, level))
+        result.add(
+            LandmarkCity(
+                id = station.id,
+                displayName = label,
+                yOffsetDp = -26 - 16 * level,
+                xOffsetDp = xOffset
+            )
         )
     }
+    return result
 }
 
 @Composable
