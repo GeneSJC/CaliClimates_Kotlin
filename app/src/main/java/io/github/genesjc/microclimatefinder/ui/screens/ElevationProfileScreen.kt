@@ -239,8 +239,7 @@ fun ElevationProfileScreen(
             StationCard(
                 station = selectedStation,
                 isSelected = true,
-                onSelect = { /* Already selected */ },
-                showLiveProbe = true
+                onSelect = { /* Already selected */ }
             )
         } else {
             Surface(
