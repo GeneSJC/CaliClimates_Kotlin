@@ -74,15 +74,11 @@ private data class LandingEntry(
     val target: AppScreen
 )
 
-// Regions whose Topo Map artwork (rivers, valley floor) exists; others get it with their data.
-private val TOPO_ARTWORK_REGION_IDS = setOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
-
 private fun landingEntries(
     regionName: String,
     dataset: StationDatasetInfo?,
     transect: TransectConfig?,
-    transectStationCount: Int,
-    hasTopoArtwork: Boolean
+    transectStationCount: Int
 ): List<LandingEntry> {
     val entries = mutableListOf<LandingEntry>()
     if (dataset != null) {
@@ -95,14 +91,12 @@ private fun landingEntries(
             iconChar = "▤",
             target = AppScreen.STATION_LIST
         )
-        if (hasTopoArtwork) {
-            entries += LandingEntry(
-                title = "$regionName Topographical Map",
-                description = "$stats across the $regionName region. Interactive spatial map.",
-                iconChar = "▲",
-                target = AppScreen.STATION_MAP
-            )
-        }
+        entries += LandingEntry(
+            title = "$regionName Topographical Map",
+            description = "$stats across the $regionName region. Interactive spatial map.",
+            iconChar = "▲",
+            target = AppScreen.STATION_MAP
+        )
         entries += LandingEntry(
             title = "Elevation Profile",
             description = "$regionName stations sorted by elevation, from lowest to highest, with live sky/weather theming.",
@@ -144,8 +138,7 @@ fun LandingScreen(
             region.name,
             dataset,
             TransectConfigs.forRegion(region.id),
-            region.activeStationCount,
-            region.id in TOPO_ARTWORK_REGION_IDS
+            region.activeStationCount
         )
     }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)

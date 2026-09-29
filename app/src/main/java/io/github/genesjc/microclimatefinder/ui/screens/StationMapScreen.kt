@@ -34,6 +34,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.cos
 import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,16 +46,25 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.microclimatefinder.domain.model.CaliforniaGeography
+import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
@@ -150,6 +163,7 @@ fun StationMapScreen(
                 ) {
                     SpatialMapCanvas(
                         stations = stations,
+                        hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
                         selectedStationId = selectedStationId,
                         pinScale = pinScale,
                         onSelectStation = { selectedStationId = it.id }
@@ -386,6 +400,7 @@ private val REGIONAL_MAP_CITIES = listOf(
 @Composable
 private fun SpatialMapCanvas(
     stations: List<MicroclimateStation>,
+    hasArtwork: Boolean,
     selectedStationId: String?,
     pinScale: Float = 1.0f,
     onSelectStation: (MicroclimateStation) -> Unit
@@ -408,6 +423,9 @@ private fun SpatialMapCanvas(
 
     val latSpan = (maxLat - minLat)
     val lonSpan = (maxLon - minLon)
+
+    val textMeasurer = rememberTextMeasurer()
+    val landmarks = remember(stations) { pickMapLandmarks(stations) }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val widthDp = maxWidth
@@ -455,200 +473,208 @@ private fun SpatialMapCanvas(
             fun mapX(lon: Double): Float = padding + ((lon - minLon) / lonSpan).toFloat() * w
             fun mapY(lat: Double): Float = padding + (1f - ((lat - minLat) / latSpan).toFloat()) * h
 
-            // 1. Base Alluvial Sacramento Valley Floor
-            drawRect(color = Color(0xFFF1F6EC))
+            if (hasArtwork) {
+                // 1. Base Alluvial Sacramento Valley Floor
+                drawRect(color = Color(0xFFF1F6EC))
 
-            // 2. Coast Range Foothills & Vaca Mountains (Western boundary strip)
-            val coastRangePath = Path().apply {
-                moveTo(mapX(minLon), mapY(maxLat))
-                lineTo(mapX(-122.02), mapY(maxLat))
-                lineTo(mapX(-121.98), mapY(39.10))
-                lineTo(mapX(-121.92), mapY(38.65))
-                lineTo(mapX(-121.88), mapY(38.30))
-                lineTo(mapX(-121.84), mapY(minLat))
-                lineTo(mapX(minLon), mapY(minLat))
-                close()
-            }
-            drawPath(path = coastRangePath, color = Color(0xFFE3ECD7))
+                // 2. Coast Range Foothills & Vaca Mountains (Western boundary strip)
+                val coastRangePath = Path().apply {
+                    moveTo(mapX(minLon), mapY(maxLat))
+                    lineTo(mapX(-122.02), mapY(maxLat))
+                    lineTo(mapX(-121.98), mapY(39.10))
+                    lineTo(mapX(-121.92), mapY(38.65))
+                    lineTo(mapX(-121.88), mapY(38.30))
+                    lineTo(mapX(-121.84), mapY(minLat))
+                    lineTo(mapX(minLon), mapY(minLat))
+                    close()
+                }
+                drawPath(path = coastRangePath, color = Color(0xFFE3ECD7))
 
-            // 3. Sierra Nevada Elevation Relief Bands (Rising eastward)
-            // Band A: Low Foothills & Oak Belt (100m - 350m)
-            val foothillsPath = Path().apply {
-                moveTo(mapX(-121.36), mapY(maxLat))
-                lineTo(mapX(-121.30), mapY(39.10))
-                lineTo(mapX(-121.20), mapY(38.80))
-                lineTo(mapX(-121.05), mapY(38.50))
-                lineTo(mapX(-120.85), mapY(38.15))
-                lineTo(mapX(-120.75), mapY(minLat))
-                lineTo(mapX(maxLon), mapY(minLat))
-                lineTo(mapX(maxLon), mapY(maxLat))
-                close()
-            }
-            drawPath(path = foothillsPath, color = Color(0xFFDFE9D0))
+                // 3. Sierra Nevada Elevation Relief Bands (Rising eastward)
+                // Band A: Low Foothills & Oak Belt (100m - 350m)
+                val foothillsPath = Path().apply {
+                    moveTo(mapX(-121.36), mapY(maxLat))
+                    lineTo(mapX(-121.30), mapY(39.10))
+                    lineTo(mapX(-121.20), mapY(38.80))
+                    lineTo(mapX(-121.05), mapY(38.50))
+                    lineTo(mapX(-120.85), mapY(38.15))
+                    lineTo(mapX(-120.75), mapY(minLat))
+                    lineTo(mapX(maxLon), mapY(minLat))
+                    lineTo(mapX(maxLon), mapY(maxLat))
+                    close()
+                }
+                drawPath(path = foothillsPath, color = Color(0xFFDFE9D0))
 
-            // Band B: Montane Pine & Conifer Forest (350m - 850m)
-            val montanePath = Path().apply {
-                moveTo(mapX(-121.18), mapY(maxLat))
-                lineTo(mapX(-121.10), mapY(39.15))
-                lineTo(mapX(-120.95), mapY(38.85))
-                lineTo(mapX(-120.78), mapY(38.55))
-                lineTo(mapX(-120.65), mapY(38.20))
-                lineTo(mapX(-120.55), mapY(minLat))
-                lineTo(mapX(maxLon), mapY(minLat))
-                lineTo(mapX(maxLon), mapY(maxLat))
-                close()
-            }
-            drawPath(path = montanePath, color = Color(0xFFC7DEB1))
+                // Band B: Montane Pine & Conifer Forest (350m - 850m)
+                val montanePath = Path().apply {
+                    moveTo(mapX(-121.18), mapY(maxLat))
+                    lineTo(mapX(-121.10), mapY(39.15))
+                    lineTo(mapX(-120.95), mapY(38.85))
+                    lineTo(mapX(-120.78), mapY(38.55))
+                    lineTo(mapX(-120.65), mapY(38.20))
+                    lineTo(mapX(-120.55), mapY(minLat))
+                    lineTo(mapX(maxLon), mapY(minLat))
+                    lineTo(mapX(maxLon), mapY(maxLat))
+                    close()
+                }
+                drawPath(path = montanePath, color = Color(0xFFC7DEB1))
 
-            // Band C: Sierra High Ridge & Subalpine Crest (>850m - 1500m+)
-            val highRidgePath = Path().apply {
-                moveTo(mapX(-120.95), mapY(maxLat))
-                lineTo(mapX(-120.88), mapY(39.15))
-                lineTo(mapX(-120.72), mapY(38.90))
-                lineTo(mapX(-120.58), mapY(38.60))
-                lineTo(mapX(-120.48), mapY(38.25))
-                lineTo(mapX(maxLon), mapY(38.25))
-                lineTo(mapX(maxLon), mapY(maxLat))
-                close()
-            }
-            drawPath(path = highRidgePath, color = Color(0xFFAECFA0))
+                // Band C: Sierra High Ridge & Subalpine Crest (>850m - 1500m+)
+                val highRidgePath = Path().apply {
+                    moveTo(mapX(-120.95), mapY(maxLat))
+                    lineTo(mapX(-120.88), mapY(39.15))
+                    lineTo(mapX(-120.72), mapY(38.90))
+                    lineTo(mapX(-120.58), mapY(38.60))
+                    lineTo(mapX(-120.48), mapY(38.25))
+                    lineTo(mapX(maxLon), mapY(38.25))
+                    lineTo(mapX(maxLon), mapY(maxLat))
+                    close()
+                }
+                drawPath(path = highRidgePath, color = Color(0xFFAECFA0))
 
-            // 4. Subtle Topographic Elevation Contour Lines
-            val contourColor = Color(0xFF6B8B5B).copy(alpha = 0.35f)
-            val contourStroke = Stroke(width = 1.2f, cap = StrokeCap.Round)
+                // 4. Subtle Topographic Elevation Contour Lines
+                val contourColor = Color(0xFF6B8B5B).copy(alpha = 0.35f)
+                val contourStroke = Stroke(width = 1.2f, cap = StrokeCap.Round)
 
-            // 150m Contour
-            val contour150 = Path().apply {
-                moveTo(mapX(-121.36), mapY(maxLat))
-                lineTo(mapX(-121.30), mapY(39.10))
-                lineTo(mapX(-121.20), mapY(38.80))
-                lineTo(mapX(-121.05), mapY(38.50))
-                lineTo(mapX(-120.85), mapY(38.15))
-                lineTo(mapX(-120.75), mapY(minLat))
-            }
-            drawPath(contour150, color = contourColor, style = contourStroke)
+                // 150m Contour
+                val contour150 = Path().apply {
+                    moveTo(mapX(-121.36), mapY(maxLat))
+                    lineTo(mapX(-121.30), mapY(39.10))
+                    lineTo(mapX(-121.20), mapY(38.80))
+                    lineTo(mapX(-121.05), mapY(38.50))
+                    lineTo(mapX(-120.85), mapY(38.15))
+                    lineTo(mapX(-120.75), mapY(minLat))
+                }
+                drawPath(contour150, color = contourColor, style = contourStroke)
 
-            // 400m Contour
-            val contour400 = Path().apply {
-                moveTo(mapX(-121.18), mapY(maxLat))
-                lineTo(mapX(-121.10), mapY(39.15))
-                lineTo(mapX(-120.95), mapY(38.85))
-                lineTo(mapX(-120.78), mapY(38.55))
-                lineTo(mapX(-120.65), mapY(38.20))
-                lineTo(mapX(-120.55), mapY(minLat))
-            }
-            drawPath(contour400, color = contourColor, style = contourStroke)
+                // 400m Contour
+                val contour400 = Path().apply {
+                    moveTo(mapX(-121.18), mapY(maxLat))
+                    lineTo(mapX(-121.10), mapY(39.15))
+                    lineTo(mapX(-120.95), mapY(38.85))
+                    lineTo(mapX(-120.78), mapY(38.55))
+                    lineTo(mapX(-120.65), mapY(38.20))
+                    lineTo(mapX(-120.55), mapY(minLat))
+                }
+                drawPath(contour400, color = contourColor, style = contourStroke)
 
-            // 900m Contour
-            val contour900 = Path().apply {
-                moveTo(mapX(-120.95), mapY(maxLat))
-                lineTo(mapX(-120.88), mapY(39.15))
-                lineTo(mapX(-120.72), mapY(38.90))
-                lineTo(mapX(-120.58), mapY(38.60))
-                lineTo(mapX(-120.48), mapY(38.25))
-            }
-            drawPath(contour900, color = contourColor, style = contourStroke)
+                // 900m Contour
+                val contour900 = Path().apply {
+                    moveTo(mapX(-120.95), mapY(maxLat))
+                    lineTo(mapX(-120.88), mapY(39.15))
+                    lineTo(mapX(-120.72), mapY(38.90))
+                    lineTo(mapX(-120.58), mapY(38.60))
+                    lineTo(mapX(-120.48), mapY(38.25))
+                }
+                drawPath(contour900, color = contourColor, style = contourStroke)
 
-            // Coast Range Contour
-            val contourCoast = Path().apply {
-                moveTo(mapX(-122.02), mapY(maxLat))
-                lineTo(mapX(-121.98), mapY(39.10))
-                lineTo(mapX(-121.92), mapY(38.65))
-                lineTo(mapX(-121.88), mapY(38.30))
-                lineTo(mapX(-121.84), mapY(minLat))
-            }
-            drawPath(contourCoast, color = contourColor.copy(alpha = 0.25f), style = contourStroke)
+                // Coast Range Contour
+                val contourCoast = Path().apply {
+                    moveTo(mapX(-122.02), mapY(maxLat))
+                    lineTo(mapX(-121.98), mapY(39.10))
+                    lineTo(mapX(-121.92), mapY(38.65))
+                    lineTo(mapX(-121.88), mapY(38.30))
+                    lineTo(mapX(-121.84), mapY(minLat))
+                }
+                drawPath(contourCoast, color = contourColor.copy(alpha = 0.25f), style = contourStroke)
 
-            // 5. Sutter Buttes (Distinct circular volcanic peak cluster in northern valley)
-            val sutterX = mapX(-121.82)
-            val sutterY = mapY(39.21)
-            drawCircle(color = Color(0xFFD2E3C0), radius = 13f, center = Offset(sutterX, sutterY))
-            drawCircle(color = Color(0xFFBED7A6), radius = 8f, center = Offset(sutterX, sutterY))
-            drawCircle(color = Color(0xFF8BA674), radius = 3.5f, center = Offset(sutterX, sutterY))
+                // 5. Sutter Buttes (Distinct circular volcanic peak cluster in northern valley)
+                val sutterX = mapX(-121.82)
+                val sutterY = mapY(39.21)
+                drawCircle(color = Color(0xFFD2E3C0), radius = 13f, center = Offset(sutterX, sutterY))
+                drawCircle(color = Color(0xFFBED7A6), radius = 8f, center = Offset(sutterX, sutterY))
+                drawCircle(color = Color(0xFF8BA674), radius = 3.5f, center = Offset(sutterX, sutterY))
 
-            // 6. Hydrography & Waterways (Vibrant River Blue)
-            val waterColor = Color(0xFF0284C7)
-            val waterGlow = Color(0xFF38BDF8).copy(alpha = 0.35f)
+                // 6. Hydrography & Waterways (Vibrant River Blue)
+                val waterColor = Color(0xFF0284C7)
+                val waterGlow = Color(0xFF38BDF8).copy(alpha = 0.35f)
 
-            // Sacramento-San Joaquin Delta / Suisun Estuary Channels (Southwest)
-            val deltaChannel1 = Path().apply {
-                moveTo(mapX(-121.85), mapY(38.10))
-                lineTo(mapX(-121.72), mapY(38.18))
-                lineTo(mapX(-121.65), mapY(38.28))
-            }
-            val deltaChannel2 = Path().apply {
-                moveTo(mapX(-121.90), mapY(38.15))
-                lineTo(mapX(-121.78), mapY(38.22))
-                lineTo(mapX(-121.68), mapY(38.35))
-            }
-            drawPath(deltaChannel1, color = waterColor.copy(alpha = 0.6f), style = Stroke(width = 2.5f))
-            drawPath(deltaChannel2, color = waterColor.copy(alpha = 0.5f), style = Stroke(width = 2.0f))
+                // Sacramento-San Joaquin Delta / Suisun Estuary Channels (Southwest)
+                val deltaChannel1 = Path().apply {
+                    moveTo(mapX(-121.85), mapY(38.10))
+                    lineTo(mapX(-121.72), mapY(38.18))
+                    lineTo(mapX(-121.65), mapY(38.28))
+                }
+                val deltaChannel2 = Path().apply {
+                    moveTo(mapX(-121.90), mapY(38.15))
+                    lineTo(mapX(-121.78), mapY(38.22))
+                    lineTo(mapX(-121.68), mapY(38.35))
+                }
+                drawPath(deltaChannel1, color = waterColor.copy(alpha = 0.6f), style = Stroke(width = 2.5f))
+                drawPath(deltaChannel2, color = waterColor.copy(alpha = 0.5f), style = Stroke(width = 2.0f))
 
-            // Folsom Lake Reservoir (distinct multi-arm polygon)
-            val folsomLakePath = Path().apply {
-                moveTo(mapX(-121.17), mapY(38.70))
-                lineTo(mapX(-121.14), mapY(38.74))
-                lineTo(mapX(-121.10), mapY(38.78))
-                lineTo(mapX(-121.07), mapY(38.76))
-                lineTo(mapX(-121.10), mapY(38.73))
-                lineTo(mapX(-121.05), mapY(38.70))
-                lineTo(mapX(-121.11), mapY(38.67))
-                lineTo(mapX(-121.16), mapY(38.69))
-                close()
-            }
-            drawPath(path = folsomLakePath, color = waterColor)
-            drawPath(path = folsomLakePath, color = Color(0xFF0369A1), style = Stroke(width = 1.2f))
+                // Folsom Lake Reservoir (distinct multi-arm polygon)
+                val folsomLakePath = Path().apply {
+                    moveTo(mapX(-121.17), mapY(38.70))
+                    lineTo(mapX(-121.14), mapY(38.74))
+                    lineTo(mapX(-121.10), mapY(38.78))
+                    lineTo(mapX(-121.07), mapY(38.76))
+                    lineTo(mapX(-121.10), mapY(38.73))
+                    lineTo(mapX(-121.05), mapY(38.70))
+                    lineTo(mapX(-121.11), mapY(38.67))
+                    lineTo(mapX(-121.16), mapY(38.69))
+                    close()
+                }
+                drawPath(path = folsomLakePath, color = waterColor)
+                drawPath(path = folsomLakePath, color = Color(0xFF0369A1), style = Stroke(width = 1.2f))
 
-            // Feather River
-            val featherRiverPath = Path().apply {
-                moveTo(mapX(-121.58), mapY(39.36))
-                lineTo(mapX(-121.60), mapY(39.08))
-                lineTo(mapX(-121.62), mapY(38.80))
-            }
-            drawPath(featherRiverPath, color = waterColor.copy(alpha = 0.8f), style = Stroke(width = 1.8f, cap = StrokeCap.Round))
+                // Feather River
+                val featherRiverPath = Path().apply {
+                    moveTo(mapX(-121.58), mapY(39.36))
+                    lineTo(mapX(-121.60), mapY(39.08))
+                    lineTo(mapX(-121.62), mapY(38.80))
+                }
+                drawPath(featherRiverPath, color = waterColor.copy(alpha = 0.8f), style = Stroke(width = 1.8f, cap = StrokeCap.Round))
 
-            // American River (Flows from Sierra -> Folsom Lake -> Confluence with Sacramento River)
-            val americanRiverPath = Path().apply {
-                moveTo(mapX(-120.98), mapY(38.85))
-                lineTo(mapX(-121.15), mapY(38.71)) // Folsom Lake
-                lineTo(mapX(-121.28), mapY(38.65)) // Fair Oaks
-                lineTo(mapX(-121.40), mapY(38.60)) // Rancho Cordova
-                lineTo(mapX(-121.51), mapY(38.59)) // Confluence at Sacramento
-            }
-            drawPath(americanRiverPath, color = waterGlow, style = Stroke(width = 3.6f, cap = StrokeCap.Round))
-            drawPath(americanRiverPath, color = waterColor, style = Stroke(width = 2.2f, cap = StrokeCap.Round))
+                // American River (Flows from Sierra -> Folsom Lake -> Confluence with Sacramento River)
+                val americanRiverPath = Path().apply {
+                    moveTo(mapX(-120.98), mapY(38.85))
+                    lineTo(mapX(-121.15), mapY(38.71)) // Folsom Lake
+                    lineTo(mapX(-121.28), mapY(38.65)) // Fair Oaks
+                    lineTo(mapX(-121.40), mapY(38.60)) // Rancho Cordova
+                    lineTo(mapX(-121.51), mapY(38.59)) // Confluence at Sacramento
+                }
+                drawPath(americanRiverPath, color = waterGlow, style = Stroke(width = 3.6f, cap = StrokeCap.Round))
+                drawPath(americanRiverPath, color = waterColor, style = Stroke(width = 2.2f, cap = StrokeCap.Round))
 
-            // Sacramento River (Main valley arterial waterway)
-            val sacRiverPath = Path().apply {
-                moveTo(mapX(-121.92), mapY(39.38))
-                lineTo(mapX(-121.82), mapY(39.20))
-                lineTo(mapX(-121.75), mapY(38.98))
-                lineTo(mapX(-121.68), mapY(38.80))
-                lineTo(mapX(-121.61), mapY(38.70)) // Adjacent to KSMF
-                lineTo(mapX(-121.51), mapY(38.59)) // Sacramento confluence
-                lineTo(mapX(-121.52), mapY(38.50)) // Passing KSAC
-                lineTo(mapX(-121.57), mapY(38.38))
-                lineTo(mapX(-121.68), mapY(38.25))
-                lineTo(mapX(-121.78), mapY(38.00)) // Into Delta
-            }
-            drawPath(sacRiverPath, color = waterGlow, style = Stroke(width = 4.2f, cap = StrokeCap.Round))
-            drawPath(sacRiverPath, color = waterColor, style = Stroke(width = 2.6f, cap = StrokeCap.Round))
+                // Sacramento River (Main valley arterial waterway)
+                val sacRiverPath = Path().apply {
+                    moveTo(mapX(-121.92), mapY(39.38))
+                    lineTo(mapX(-121.82), mapY(39.20))
+                    lineTo(mapX(-121.75), mapY(38.98))
+                    lineTo(mapX(-121.68), mapY(38.80))
+                    lineTo(mapX(-121.61), mapY(38.70)) // Adjacent to KSMF
+                    lineTo(mapX(-121.51), mapY(38.59)) // Sacramento confluence
+                    lineTo(mapX(-121.52), mapY(38.50)) // Passing KSAC
+                    lineTo(mapX(-121.57), mapY(38.38))
+                    lineTo(mapX(-121.68), mapY(38.25))
+                    lineTo(mapX(-121.78), mapY(38.00)) // Into Delta
+                }
+                drawPath(sacRiverPath, color = waterGlow, style = Stroke(width = 4.2f, cap = StrokeCap.Round))
+                drawPath(sacRiverPath, color = waterColor, style = Stroke(width = 2.6f, cap = StrokeCap.Round))
 
-            // 7. Subtle Geographic Reference Grid
-            for (i in 1..3) {
-                val gridY = padding + (h * i / 4f)
-                drawLine(
-                    color = Color.DarkGray.copy(alpha = 0.08f),
-                    start = Offset(padding, gridY),
-                    end = Offset(size.width - padding, gridY),
-                    strokeWidth = 1f
-                )
-                val gridX = padding + (w * i / 4f)
-                drawLine(
-                    color = Color.DarkGray.copy(alpha = 0.08f),
-                    start = Offset(gridX, padding),
-                    end = Offset(gridX, size.height - padding),
-                    strokeWidth = 1f
+                // 7. Subtle Geographic Reference Grid
+                for (i in 1..3) {
+                    val gridY = padding + (h * i / 4f)
+                    drawLine(
+                        color = Color.DarkGray.copy(alpha = 0.08f),
+                        start = Offset(padding, gridY),
+                        end = Offset(size.width - padding, gridY),
+                        strokeWidth = 1f
+                    )
+                    val gridX = padding + (w * i / 4f)
+                    drawLine(
+                        color = Color.DarkGray.copy(alpha = 0.08f),
+                        start = Offset(gridX, padding),
+                        end = Offset(gridX, size.height - padding),
+                        strokeWidth = 1f
+                    )
+                }
+            } else {
+                drawNeutralBase(
+                    minLon = minLon, maxLon = maxLon, minLat = minLat, maxLat = maxLat,
+                    padding = padding, mapX = ::mapX, mapY = ::mapY,
+                    textMeasurer = textMeasurer
                 )
             }
 
@@ -692,126 +718,164 @@ private fun SpatialMapCanvas(
             }
         }
 
-        // 9. Overlay Cartographic Typography & Landmark Badges
-        // Regional Watermark Labels
-        Box(
-            modifier = Modifier
-                .offset(x = 36.dp, y = 140.dp)
-        ) {
-            Text(
-                text = "SACRAMENTO VALLEY",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 2.sp,
-                color = Color(0xFF4B6349).copy(alpha = 0.38f)
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .offset(x = (widthDp * 0.58f), y = 60.dp)
-        ) {
-            Text(
-                text = "SIERRA NEVADA",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 1.5.sp,
-                color = Color(0xFF3F5938).copy(alpha = 0.48f)
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .offset(x = 10.dp, y = (heightDp * 0.76f))
-        ) {
-            Text(
-                text = "THE DELTA",
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                color = Color(0xFF0284C7).copy(alpha = 0.55f)
-            )
-        }
-
-        // Folsom Lake label
-        Box(
-            modifier = Modifier
-                .offset(x = (widthDp * 0.52f), y = (heightDp * 0.44f))
-        ) {
-            Text(
-                text = "Folsom Lake",
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF0369A1)
-            )
-        }
-
-        // Sutter Buttes label
-        Box(
-            modifier = Modifier
-                .offset(x = (widthDp * 0.14f), y = (heightDp * 0.12f))
-        ) {
-            Text(
-                text = "Sutter Buttes",
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF4B6349).copy(alpha = 0.70f)
-            )
-        }
-
-        // Interactive Regional Cities & Landmarks
-        REGIONAL_MAP_CITIES.forEach { city ->
-            val ratioX = ((city.lon - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
-            val ratioY = (1f - ((city.lat - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
-
-            val xDp = with(density) { (paddingPx + ratioX * widthPx).toDp() } + city.xOffsetDp.dp
-            val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + city.yOffsetDp.dp
-
-            val isSelected = city.targetStationId == selectedStationId
-
-            Surface(
-                shape = RoundedCornerShape(4.dp),
-                color = if (city.isCapital) {
-                    Color(0xFFFEF3C7)
-                } else {
-                    Color.White.copy(alpha = 0.88f)
-                },
-                border = androidx.compose.foundation.BorderStroke(
-                    width = 1.dp,
-                    color = if (city.isCapital) Color(0xFFD97706) else Color.DarkGray.copy(alpha = 0.25f)
-                ),
+        if (hasArtwork) {
+            // 9. Overlay Cartographic Typography & Landmark Badges
+            // Regional Watermark Labels
+            Box(
                 modifier = Modifier
-                    .offset(x = xDp, y = yDp)
-                    .clickable {
-                        city.targetStationId?.let { targetId ->
-                            stations.find { it.id == targetId }?.let { onSelectStation(it) }
+                    .offset(x = 36.dp, y = 140.dp)
+            ) {
+                Text(
+                    text = "SACRAMENTO VALLEY",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 2.sp,
+                    color = Color(0xFF4B6349).copy(alpha = 0.38f)
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .offset(x = (widthDp * 0.58f), y = 60.dp)
+            ) {
+                Text(
+                    text = "SIERRA NEVADA",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.5.sp,
+                    color = Color(0xFF3F5938).copy(alpha = 0.48f)
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .offset(x = 10.dp, y = (heightDp * 0.76f))
+            ) {
+                Text(
+                    text = "THE DELTA",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    color = Color(0xFF0284C7).copy(alpha = 0.55f)
+                )
+            }
+
+            // Folsom Lake label
+            Box(
+                modifier = Modifier
+                    .offset(x = (widthDp * 0.52f), y = (heightDp * 0.44f))
+            ) {
+                Text(
+                    text = "Folsom Lake",
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0369A1)
+                )
+            }
+
+            // Sutter Buttes label
+            Box(
+                modifier = Modifier
+                    .offset(x = (widthDp * 0.14f), y = (heightDp * 0.12f))
+            ) {
+                Text(
+                    text = "Sutter Buttes",
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF4B6349).copy(alpha = 0.70f)
+                )
+            }
+
+            // Interactive Regional Cities & Landmarks
+            REGIONAL_MAP_CITIES.forEach { city ->
+                val ratioX = ((city.lon - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
+                val ratioY = (1f - ((city.lat - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
+
+                val xDp = with(density) { (paddingPx + ratioX * widthPx).toDp() } + city.xOffsetDp.dp
+                val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + city.yOffsetDp.dp
+
+                val isSelected = city.targetStationId == selectedStationId
+
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = if (city.isCapital) {
+                        Color(0xFFFEF3C7)
+                    } else {
+                        Color.White.copy(alpha = 0.88f)
+                    },
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 1.dp,
+                        color = if (city.isCapital) Color(0xFFD97706) else Color.DarkGray.copy(alpha = 0.25f)
+                    ),
+                    modifier = Modifier
+                        .offset(x = xDp, y = yDp)
+                        .clickable {
+                            city.targetStationId?.let { targetId ->
+                                stations.find { it.id == targetId }?.let { onSelectStation(it) }
+                            }
+                        }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
+                    ) {
+                        if (city.isCapital) {
+                            Text(
+                                text = "★ ",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFD97706)
+                            )
+                        }
+                        Text(
+                            text = city.name,
+                            fontSize = 8.sp,
+                            fontWeight = if (city.isCapital || isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (city.isCapital) Color(0xFF92400E) else Color(0xFF1E293B)
+                        )
+                        if (city.elevationText != null) {
+                            Text(
+                                text = " ${city.elevationText}",
+                                fontSize = 7.sp,
+                                color = Color(0xFF64748B),
+                                fontWeight = FontWeight.Normal
+                            )
                         }
                     }
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
+                }
+            }
+        } else {
+            // Place labels picked from the loaded stations
+            landmarks.forEach { station ->
+                val ratioX = ((station.longitude - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
+                val ratioY = (1f - ((station.latitude - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
+                val xDp = with(density) { (paddingPx + ratioX * widthPx).toDp() } + (if (ratioX > 0.72f) (-56).dp else 0.dp)
+                val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + (if (ratioY < 0.12f) 8.dp else (-16).dp)
+                val isSelected = station.id == selectedStationId
+                val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
+
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.White.copy(alpha = 0.88f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.DarkGray.copy(alpha = 0.25f)),
+                    modifier = Modifier
+                        .offset(x = xDp, y = yDp)
+                        .clickable { onSelectStation(station) }
                 ) {
-                    if (city.isCapital) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
+                    ) {
                         Text(
-                            text = "★ ",
+                            text = city,
                             fontSize = 8.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFD97706)
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = Color(0xFF1E293B)
                         )
-                    }
-                    Text(
-                        text = city.name,
-                        fontSize = 8.sp,
-                        fontWeight = if (city.isCapital || isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (city.isCapital) Color(0xFF92400E) else Color(0xFF1E293B)
-                    )
-                    if (city.elevationText != null) {
                         Text(
-                            text = " ${city.elevationText}",
+                            text = " ${"%,d".format(station.elevationMeters)}m",
                             fontSize = 7.sp,
-                            color = Color(0xFF64748B),
-                            fontWeight = FontWeight.Normal
+                            color = Color(0xFF64748B)
                         )
                     }
                 }
@@ -840,7 +904,12 @@ private fun SpatialMapCanvas(
             }
         }
 
-        // Map Scale Bar (Bottom-Left)
+        // Map Scale Bar (Bottom-Left): a bar drawn to the map's real scale
+        val midLat = (minLat + maxLat) / 2
+        val mapWidthKm = lonSpan * 111.32 * cos(midLat * PI / 180)
+        val scaleKm = listOf(5, 10, 20, 25, 50, 100, 200).lastOrNull { it <= mapWidthKm * 0.4 } ?: 5
+        val scaleMiles = (scaleKm * 0.621371).roundToInt()
+        val scaleBarDp = with(density) { (scaleKm / mapWidthKm * widthPx).toFloat().toDp() }
         Surface(
             shape = RoundedCornerShape(4.dp),
             color = Color.White.copy(alpha = 0.90f),
@@ -849,12 +918,15 @@ private fun SpatialMapCanvas(
                 .align(Alignment.BottomStart)
                 .padding(start = 6.dp, bottom = 6.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-            ) {
+            Column(modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp)) {
+                Box(
+                    modifier = Modifier
+                        .width(scaleBarDp)
+                        .height(3.dp)
+                        .background(Color(0xFF334155))
+                )
                 Text(
-                    text = "0 ── 15 mi (24 km)",
+                    text = "$scaleMiles mi ($scaleKm km)",
                     fontSize = 7.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF334155)
@@ -872,7 +944,7 @@ private fun SpatialMapCanvas(
                 .padding(end = 6.dp, top = 6.dp)
         ) {
             Text(
-                text = "🗺️ Topo Relief",
+                text = if (hasArtwork) "🗺️ Topo Relief" else "Base map: coast and border only",
                 fontSize = 7.5.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF166534),
@@ -880,4 +952,115 @@ private fun SpatialMapCanvas(
             )
         }
     }
+}
+
+
+/** Plain base map with no terrain artwork: land, ocean, state border, coast and a lat/lon grid. */
+private fun DrawScope.drawNeutralBase(
+    minLon: Double,
+    maxLon: Double,
+    minLat: Double,
+    maxLat: Double,
+    padding: Float,
+    mapX: (Double) -> Float,
+    mapY: (Double) -> Float,
+    textMeasurer: TextMeasurer
+) {
+    val far = 5000f
+    val coast = CaliforniaGeography.COAST
+    val border = CaliforniaGeography.LAND_BORDER
+
+    // Land
+    drawRect(color = Color(0xFFF1F6EC))
+
+    // Outside California (Nevada, Arizona, Oregon): everything past the land border
+    val outside = Path().apply {
+        moveTo(mapX(border.first().first), mapY(border.first().second))
+        for (i in 1 until border.size) lineTo(mapX(border[i].first), mapY(border[i].second))
+        lineTo(mapX(border.last().first), -far)
+        lineTo(far, -far)
+        lineTo(far, mapY(border.first().second))
+        close()
+    }
+    drawPath(outside, color = Color(0xFFE8E8E1))
+
+    // Pacific Ocean: everything west of the coast
+    val ocean = Path().apply {
+        moveTo(mapX(coast.first().first), -far)
+        for (point in coast) lineTo(mapX(point.first), mapY(point.second))
+        lineTo(mapX(coast.last().first), far)
+        lineTo(-far, far)
+        lineTo(-far, -far)
+        close()
+    }
+    drawPath(ocean, color = Color(0xFFDCEBF4))
+
+    // Latitude / longitude grid with degree labels
+    val span = maxOf(maxLon - minLon, maxLat - minLat)
+    val step = when {
+        span > 6.0 -> 1.0
+        span > 2.5 -> 0.5
+        else -> 0.25
+    }
+    val labelStyle = TextStyle(fontSize = 8.sp, color = Color(0xFF64748B))
+    var lon = ceil(minLon / step) * step
+    while (lon <= maxLon) {
+        val x = mapX(lon)
+        drawLine(Color.DarkGray.copy(alpha = 0.10f), Offset(x, padding), Offset(x, size.height - padding), 1f)
+        val label = textMeasurer.measure("%.2f\u00B0W".format(abs(lon)).replace(".00", ".0"), labelStyle)
+        drawText(label, topLeft = Offset(x + 2f, size.height - padding - label.size.height))
+        lon += step
+    }
+    var lat = ceil(minLat / step) * step
+    while (lat <= maxLat) {
+        val y = mapY(lat)
+        drawLine(Color.DarkGray.copy(alpha = 0.10f), Offset(padding, y), Offset(size.width - padding, y), 1f)
+        val label = textMeasurer.measure("%.2f\u00B0N".format(lat).replace(".00", ".0"), labelStyle)
+        drawText(label, topLeft = Offset(padding + 3f, y - label.size.height - 1f))
+        lat += step
+    }
+
+    // Border (dashed) and coast
+    val borderPath = Path().apply {
+        moveTo(mapX(border.first().first), mapY(border.first().second))
+        for (i in 1 until border.size) lineTo(mapX(border[i].first), mapY(border[i].second))
+    }
+    drawPath(
+        borderPath,
+        color = Color(0xFF94A3B8),
+        style = Stroke(width = 1.8f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f)))
+    )
+    val coastPath = Path().apply {
+        moveTo(mapX(coast.first().first), mapY(coast.first().second))
+        for (i in 1 until coast.size) lineTo(mapX(coast[i].first), mapY(coast[i].second))
+    }
+    drawPath(coastPath, color = Color(0xFF7FA7C4), style = Stroke(width = 2.6f, cap = StrokeCap.Round))
+}
+
+/**
+ * Picks about six stations spread across the map for place labels. Airport stations (K-prefixed)
+ * are preferred because they are recognizable cities.
+ */
+private fun pickMapLandmarks(stations: List<MicroclimateStation>, count: Int = 6): List<MicroclimateStation> {
+    if (stations.size <= count) return stations
+    val midLat = stations.map { it.latitude }.average()
+    val lonScale = cos(midLat * PI / 180)
+    fun dist(a: MicroclimateStation, b: MicroclimateStation): Double {
+        val dx = (a.longitude - b.longitude) * lonScale
+        val dy = a.latitude - b.latitude
+        return kotlin.math.sqrt(dx * dx + dy * dy)
+    }
+    fun bonus(s: MicroclimateStation) = if (s.id.startsWith("K")) 0.4 else 0.0
+    val centerLon = stations.map { it.longitude }.average()
+    val seed = stations.minByOrNull { (abs(it.latitude - midLat) + abs(it.longitude - centerLon)) - bonus(it) }
+        ?: return stations.take(count)
+    val chosen = mutableListOf(seed)
+    while (chosen.size < count) {
+        val next = stations
+            .filter { it !in chosen }
+            .maxByOrNull { candidate -> chosen.minOf { dist(candidate, it) } + bonus(candidate) }
+            ?: break
+        chosen.add(next)
+    }
+    return chosen
 }
