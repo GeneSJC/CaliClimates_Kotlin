@@ -32,6 +32,7 @@ import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.ElevationProfileScreen
 import io.github.genesjc.microclimatefinder.ui.screens.FixedCloudSplashScreen
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
+import io.github.genesjc.microclimatefinder.ui.screens.RegionOption
 import io.github.genesjc.microclimatefinder.ui.screens.MovingCloudsSplashScreen
 import io.github.genesjc.microclimatefinder.ui.screens.NewsStoryViewerScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationCardPreviewScreen
@@ -75,6 +76,12 @@ fun AppNavigation() {
     val fullDataRegions = remember { store.fullDataRegionCount() }
     val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
     val defaultDataset = remember { store.defaultDataset() }
+    // Rows for the quick region picker on Home: every region with its station count
+    val regionOptions = remember {
+        CaliforniaRegionalDefinitions.ALL_REGIONS.map { r ->
+            RegionOption(r.id, r.name, store.datasetFor(r.id)?.stationCount)
+        }
+    }
 
     // Fetch live readings for the region's featured stations when a region loads; switching region
     // cancels this and starts the new region's.
@@ -112,6 +119,11 @@ fun AppNavigation() {
                 dataset = regionDataset,
                 fullDataRegions = fullDataRegions,
                 totalRegions = store.totalRegionCount(),
+                regionOptions = regionOptions,
+                onSelectRegion = {
+                    selectedRegionId = it
+                    regionPrefs.save(it)
+                },
                 onNavigateTo = { targetScreen ->
                     if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.LANDING
                     currentScreen = targetScreen

@@ -5,6 +5,9 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
@@ -123,6 +126,9 @@ private fun landingEntries(
     }
     return entries
 }
+
+/** One row in the quick region picker. */
+data class RegionOption(val id: String, val name: String, val stationCount: Int?)
 
 /** At a glance: how many stations, their elevation range, and the mix of terrain types. */
 @Composable
@@ -303,6 +309,8 @@ fun LandingScreen(
     dataset: StationDatasetInfo?,
     fullDataRegions: Int,
     totalRegions: Int,
+    regionOptions: List<RegionOption>,
+    onSelectRegion: (String) -> Unit,
     onNavigateTo: (AppScreen) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -327,6 +335,7 @@ fun LandingScreen(
     val scope = rememberCoroutineScope()
     var showAboutDialog by remember { mutableStateOf(false) }
     var showLimitedDataDialog by remember { mutableStateOf(false) }
+    var showRegionMenu by remember { mutableStateOf(false) }
 
     // Hero expand: the CA icon grows from the header corner to fill the screen, then
     // opens the Regional Sections screen.
@@ -436,15 +445,74 @@ fun LandingScreen(
 
                         Spacer(modifier = Modifier.width(14.dp))
 
-                        Text(
-                            text = region.name,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.weight(1f)
-                        )
+                        // Region name with a chevron: tap for the quick region picker
+                        Box(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(onClickLabel = "Choose region", role = Role.Button) {
+                                        showRegionMenu = true
+                                    }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = region.name,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                                Text(
+                                    text = "\u25BE",
+                                    fontSize = 20.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.padding(start = 6.dp, end = 4.dp)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showRegionMenu,
+                                onDismissRequest = { showRegionMenu = false }
+                            ) {
+                                regionOptions.forEach { option ->
+                                    val isCurrent = option.id == selectedRegionId
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.widthIn(min = 200.dp)
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = option.name,
+                                                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
+                                                    )
+                                                    Text(
+                                                        text = option.stationCount?.let { "$it stations" } ?: "No station list",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                if (isCurrent) {
+                                                    Text(
+                                                        text = "\u2713",
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.padding(start = 12.dp)
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            showRegionMenu = false
+                                            if (!isCurrent) onSelectRegion(option.id)
+                                        }
+                                    )
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.width(10.dp))
 
