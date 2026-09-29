@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
+import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
+import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
+import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
@@ -340,29 +343,7 @@ fun LandingScreen(
     var showLimitedDataDialog by remember { mutableStateOf(false) }
     var showRegionMenu by remember { mutableStateOf(false) }
 
-    // Region picker overlay: the CA icon grows from the header corner into a panel over Home
-    // (about 75% of the screen, with a translucent scrim). Picking a region on its map only marks
-    // a pending choice; Home changes when Confirm is tapped.
-    val expand = remember { Animatable(0f) }
-    var overlayVisible by remember { mutableStateOf(false) }
-    var pendingRegionId by remember { mutableStateOf(selectedRegionId) }
-    var iconBounds by remember { mutableStateOf(Rect.Zero) }
-    var containerOrigin by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-    var containerWidth by remember { mutableStateOf(0f) }
-    var containerHeight by remember { mutableStateOf(0f) }
-
-    fun openOverlay() {
-        pendingRegionId = selectedRegionId
-        overlayVisible = true
-        scope.launch { expand.animateTo(1f, tween(durationMillis = 450, easing = FastOutSlowInEasing)) }
-    }
-    fun closeOverlay() {
-        scope.launch {
-            expand.animateTo(0f, tween(durationMillis = 300, easing = FastOutSlowInEasing))
-            overlayVisible = false
-        }
-    }
-    BackHandler(enabled = overlayVisible) { closeOverlay() }
+    val pickerState = rememberRegionPickerState()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -409,15 +390,7 @@ fun LandingScreen(
             }
         }
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .onGloballyPositioned {
-                    containerOrigin = it.positionInRoot()
-                    containerWidth = it.size.width.toFloat()
-                    containerHeight = it.size.height.toFloat()
-                }
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = modifier
@@ -528,32 +501,12 @@ fun LandingScreen(
                         Spacer(modifier = Modifier.width(10.dp))
 
                         // Change-region button: the California outline on a bordered chip like the menu button
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
-                            border = BorderStroke(
-                                1.dp,
-                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)
-                            ),
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clickable(
-                                    enabled = !overlayVisible,
-                                    onClickLabel = "Change region",
-                                    role = Role.Button
-                                ) { openOverlay() }
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                CaliforniaOutlineIcon(
-                                    fill = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.18f),
-                                    stroke = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier
-                                        .size(28.dp)
-                                        .onGloballyPositioned { iconBounds = Rect(it.positionInRoot(), it.size.toSize()) }
-                                        .alpha(if (overlayVisible) 0f else 1f)
-                                )
-                            }
-                        }
+                        RegionPickerButton(
+                            state = pickerState,
+                            selectedRegionId = selectedRegionId,
+                            background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                            content = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                 }
             }
@@ -650,63 +603,11 @@ fun LandingScreen(
             }
         }
 
-        if (overlayVisible) {
-            val t = expand.value
-            val density = LocalDensity.current
-            val noRipple = remember { MutableInteractionSource() }
-            val targetW = containerWidth * 0.92f
-            val targetH = containerHeight * 0.75f
-            val targetX = (containerWidth - targetW) / 2f
-            val targetY = (containerHeight - targetH) / 2f
-            val startX = iconBounds.left - containerOrigin.x
-            val startY = iconBounds.top - containerOrigin.y
-            // Scrim: tapping it closes the overlay without changing the region
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f * t))
-                    .clickable(interactionSource = noRipple, indication = null) { closeOverlay() }
-            )
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset(lerp(startX, targetX, t).roundToInt(), lerp(startY, targetY, t).roundToInt()) }
-                    .size(
-                        width = with(density) { lerp(iconBounds.width, targetW, t).toDp() },
-                        height = with(density) { lerp(iconBounds.height, targetH, t).toDp() }
-                    )
-                    .clip(RoundedCornerShape(lerp(10f, 24f, t).dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = t))
-                    // Taps inside the panel must not reach the scrim
-                    .clickable(interactionSource = noRipple, indication = null) { },
-                contentAlignment = Alignment.Center
-            ) {
-                CaliforniaOutlineIcon(
-                    fill = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                    stroke = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(lerp(0f, 32f, t).dp)
-                        .alpha((1f - t * 2f).coerceAtLeast(0f))
-                )
-                if (t > 0.5f) {
-                    CaliforniaRegionPickerPanel(
-                        pendingRegionId = pendingRegionId,
-                        onPickRegion = { pendingRegionId = it },
-                        onConfirm = {
-                            if (pendingRegionId != selectedRegionId) onSelectRegion(pendingRegionId)
-                            closeOverlay()
-                        },
-                        onClose = { closeOverlay() },
-                        modifier = Modifier
-                            .requiredSize(
-                                width = with(density) { targetW.toDp() },
-                                height = with(density) { targetH.toDp() }
-                            )
-                            .alpha(((t - 0.5f) / 0.5f).coerceIn(0f, 1f))
-                    )
-                }
-            }
-        }
+        RegionPickerOverlay(
+            state = pickerState,
+            selectedRegionId = selectedRegionId,
+            onSelectRegion = onSelectRegion
+        )
         }
     }
 
