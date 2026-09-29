@@ -718,12 +718,21 @@ private fun SpatialMapCanvas(
             }
         }
 
+        // Areas taken by the fixed controls (compass, topo badge, scale bar) so labels stay clear of them
+        val placedRects = mutableListOf(
+            listOf(0f, 0f, 50f, 32f),
+            listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),
+            listOf(0f, heightDp.value - 46f, 130f, heightDp.value)
+        )
+        fun geoX(lon: Double) = with(density) { (paddingPx + ((lon - minLon) / lonSpan).toFloat() * widthPx).toDp() }
+        fun geoY(lat: Double) = with(density) { (paddingPx + (1f - ((lat - minLat) / latSpan).toFloat()) * heightPx).toDp() }
+
         if (hasArtwork) {
             // 9. Overlay Cartographic Typography & Landmark Badges
             // Regional Watermark Labels
             Box(
                 modifier = Modifier
-                    .offset(x = 36.dp, y = 140.dp)
+                    .offset(x = geoX(-121.85) - 55.dp, y = geoY(38.95))
             ) {
                 Text(
                     text = "SACRAMENTO VALLEY",
@@ -736,7 +745,7 @@ private fun SpatialMapCanvas(
 
             Box(
                 modifier = Modifier
-                    .offset(x = (widthDp * 0.58f), y = 60.dp)
+                    .offset(x = geoX(-120.55) - 42.dp, y = geoY(39.10))
             ) {
                 Text(
                     text = "SIERRA NEVADA",
@@ -749,7 +758,7 @@ private fun SpatialMapCanvas(
 
             Box(
                 modifier = Modifier
-                    .offset(x = 10.dp, y = (heightDp * 0.76f))
+                    .offset(x = geoX(-121.65) - 27.dp, y = geoY(38.05))
             ) {
                 Text(
                     text = "THE DELTA",
@@ -763,7 +772,7 @@ private fun SpatialMapCanvas(
             // Folsom Lake label
             Box(
                 modifier = Modifier
-                    .offset(x = (widthDp * 0.52f), y = (heightDp * 0.44f))
+                    .offset(x = geoX(-121.10) - 25.dp, y = geoY(38.72))
             ) {
                 Text(
                     text = "Folsom Lake",
@@ -776,7 +785,7 @@ private fun SpatialMapCanvas(
             // Sutter Buttes label
             Box(
                 modifier = Modifier
-                    .offset(x = (widthDp * 0.14f), y = (heightDp * 0.12f))
+                    .offset(x = geoX(-121.82) - 25.dp, y = geoY(39.20))
             ) {
                 Text(
                     text = "Sutter Buttes",
@@ -787,12 +796,22 @@ private fun SpatialMapCanvas(
             }
 
             // Interactive Regional Cities & Landmarks
-            REGIONAL_MAP_CITIES.forEach { city ->
+            for (city in REGIONAL_MAP_CITIES.sortedByDescending { it.isCapital }) {
                 val ratioX = ((city.lon - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
                 val ratioY = (1f - ((city.lat - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
 
                 val xDp = with(density) { (paddingPx + ratioX * widthPx).toDp() } + city.xOffsetDp.dp
                 val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + city.yOffsetDp.dp
+
+                // Skip a label that would overlap one already placed (the capital is placed first)
+                val cityLabelWidth = (city.name.length + (city.elevationText?.length ?: 0) + 1) * 4.9f +
+                    12f + (if (city.isCapital) 10f else 0f)
+                val cityLeft = xDp.value
+                val cityTop = yDp.value
+                val cityRight = cityLeft + cityLabelWidth
+                val cityBottom = cityTop + 20f
+                if (placedRects.any { r -> cityLeft < r[2] && cityRight > r[0] && cityTop < r[3] && cityBottom > r[1] }) continue
+                placedRects.add(listOf(cityLeft, cityTop, cityRight, cityBottom))
 
                 val isSelected = city.targetStationId == selectedStationId
 
@@ -846,7 +865,6 @@ private fun SpatialMapCanvas(
             }
         } else {
             // Place labels picked from the loaded stations
-            val placedRects = mutableListOf<List<Float>>()
             var shownLabels = 0
             for (station in landmarks) {
                 if (shownLabels >= MAP_LABEL_COUNT) break
@@ -857,7 +875,7 @@ private fun SpatialMapCanvas(
                     .let { if (it.length > 18) it.take(17) + "\u2026" else it }
                 val elevText = "%,d".format(station.elevationMeters) + "m"
                 // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
-                val labelWidthDp = ((city.length + elevText.length + 1) * 4.6f + 10f).dp
+                val labelWidthDp = ((city.length + elevText.length + 1) * 4.9f + 12f).dp
                 val pinXDp = with(density) { (paddingPx + ratioX * widthPx).toDp() }
                 val xDp = if (pinXDp + labelWidthDp > widthDp - 6.dp) pinXDp - labelWidthDp else pinXDp
                 val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + (if (ratioY < 0.12f) 8.dp else (-16).dp)
@@ -866,7 +884,7 @@ private fun SpatialMapCanvas(
                 val left = xDp.value
                 val top = yDp.value
                 val right = left + labelWidthDp.value
-                val bottom = top + 16f
+                val bottom = top + 20f
                 if (placedRects.any { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }) continue
                 placedRects.add(listOf(left, top, right, bottom))
                 shownLabels++
