@@ -123,6 +123,8 @@ private fun landingEntries(
 fun LandingScreen(
     selectedRegionId: String,
     dataset: StationDatasetInfo?,
+    fullDataRegions: Int,
+    totalRegions: Int,
     onNavigateTo: (AppScreen) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -142,6 +144,7 @@ fun LandingScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showLimitedDataDialog by remember { mutableStateOf(false) }
 
     // Hero expand: the CA icon grows from the header corner to fill the screen, then
     // opens the Regional Sections screen.
@@ -303,6 +306,47 @@ fun LandingScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
+                    // This region has no full station list in this build (built-in sample or none)
+                    if (dataset == null || dataset.isSample) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    onClickLabel = "About limited station data",
+                                    role = Role.Button
+                                ) { showLimitedDataDialog = true }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Limited station data",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Surface(
+                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.15f),
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            text = "i",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                     if (!hasStationData) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
@@ -372,6 +416,26 @@ fun LandingScreen(
             }
         }
         }
+    }
+
+    if (showLimitedDataDialog) {
+        AlertDialog(
+            onDismissRequest = { showLimitedDataDialog = false },
+            title = { Text("Limited station data") },
+            text = {
+                Text(
+                    "$fullDataRegions of $totalRegions regions have full station lists in " +
+                        "this build. The rest show no stations, and Bay Area / Sacramento shows a " +
+                        "small built-in sample. Readings for the stations that are shown are live " +
+                        "from the National Weather Service.\n\n" +
+                        "To load all station lists, add the station files (stations_<regionId>.csv) to " +
+                        "app/src/debug/assets and rebuild."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showLimitedDataDialog = false }) { Text("OK") }
+            }
+        )
     }
 
     if (showAboutDialog) {
