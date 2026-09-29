@@ -1,9 +1,14 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,12 +43,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
+import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
 import io.github.genesjc.microclimatefinder.ui.components.DemoNavigationCard
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private data class LandingEntry(
     val title: String,
@@ -93,6 +111,22 @@ fun LandingScreen(
     val scope = rememberCoroutineScope()
     var showAboutDialog by remember { mutableStateOf(false) }
 
+    // Hero expand: the CA icon grows from the header corner to fill the screen, then
+    // opens the Regional Sections screen.
+    val expand = remember { Animatable(0f) }
+    var expanding by remember { mutableStateOf(false) }
+    var iconBounds by remember { mutableStateOf(Rect.Zero) }
+    var containerOrigin by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var containerWidth by remember { mutableStateOf(0f) }
+    var containerHeight by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(expanding) {
+        if (expanding) {
+            expand.animateTo(1f, tween(durationMillis = 700, easing = FastOutSlowInEasing))
+            onNavigateTo(AppScreen.CALIFORNIA_REGIONS)
+        }
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -132,6 +166,15 @@ fun LandingScreen(
             }
         }
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .onGloballyPositioned {
+                    containerOrigin = it.positionInRoot()
+                    containerWidth = it.size.width.toFloat()
+                    containerHeight = it.size.height.toFloat()
+                }
+        ) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = modifier
@@ -174,7 +217,20 @@ fun LandingScreen(
                             text = "Micro Climate Finder",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        CaliforniaOutlineIcon(
+                            fill = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.18f),
+                            stroke = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .onGloballyPositioned { iconBounds = Rect(it.positionInRoot(), it.size.toSize()) }
+                                .alpha(if (expanding) 0f else 1f)
+                                .clickable(enabled = !expanding) { expanding = true }
                         )
                     }
                 }
@@ -188,6 +244,34 @@ fun LandingScreen(
                     onClick = { onNavigateTo(entry.target) }
                 )
             }
+        }
+
+        if (expanding) {
+            val t = expand.value
+            val density = LocalDensity.current
+            val startX = iconBounds.left - containerOrigin.x
+            val startY = iconBounds.top - containerOrigin.y
+            val widthPx = lerp(iconBounds.width, containerWidth, t)
+            val heightPx = lerp(iconBounds.height, containerHeight, t)
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(lerp(startX, 0f, t).roundToInt(), lerp(startY, 0f, t).roundToInt()) }
+                    .size(
+                        width = with(density) { widthPx.toDp() },
+                        height = with(density) { heightPx.toDp() }
+                    )
+                    .clip(RoundedCornerShape(lerp(10f, 0f, t).dp))
+                    .background(Color(0xFFF4EBD0).copy(alpha = t))
+            ) {
+                CaliforniaOutlineIcon(
+                    fill = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                    stroke = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding((lerp(0f, 32f, t)).dp)
+                )
+            }
+        }
         }
     }
 
