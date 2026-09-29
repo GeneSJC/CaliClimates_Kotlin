@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
+import io.github.genesjc.microclimatefinder.BuildInfo
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.TransectConfig
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
@@ -178,6 +179,12 @@ fun LandingScreen(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                    Text(
+                        text = "Build ${BuildInfo.LABEL}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 2.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider()
