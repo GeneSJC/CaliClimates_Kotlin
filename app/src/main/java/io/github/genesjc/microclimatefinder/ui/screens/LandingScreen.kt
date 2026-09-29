@@ -434,10 +434,8 @@ fun LandingScreen(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
@@ -555,18 +553,20 @@ fun LandingScreen(
                             }
                         }
                     }
-                }
-            }
-
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Column {
+                    // App title, under the region name (menu button 36dp + 14dp gap = 50dp in)
                     Text(
                         text = appName,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        modifier = Modifier.padding(start = 50.dp, top = 2.dp)
                     )
+                    }
+                }
+            }
+
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Column {
                     // This region has no full station list in this build (built-in sample or none)
                     if (dataset == null || dataset.isSample) {
                         Spacer(modifier = Modifier.height(10.dp))
