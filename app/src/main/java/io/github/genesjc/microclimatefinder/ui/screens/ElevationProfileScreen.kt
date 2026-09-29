@@ -726,7 +726,18 @@ private fun ElevationProfileCanvas(
         ZoomSlider(
             value = zoom,
             onValueChange = { newZoom ->
-                pan = panForZoom(pan, zoom, newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX)
+                // Zoom about the point on the line nearest the middle of the view, not the (often empty) middle itself
+                val middle = Offset(canvasW / 2f, canvasH / 2f)
+                val anchor = sorted.indices
+                    .map { i ->
+                        val elevRatio = sorted[i].elevationMeters / maxElevation
+                        Offset(
+                            viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
+                            viewY(paddingPx + (1f - elevRatio) * heightPx)
+                        )
+                    }
+                    .minByOrNull { (it - middle).getDistance() } ?: middle
+                pan = panForZoom(pan, zoom, newZoom, anchor, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX)
                 zoom = newZoom
             },
             modifier = Modifier
