@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import io.github.genesjc.microclimatefinder.data.local.StationDatasets
+import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import io.github.genesjc.microclimatefinder.ui.screens.AnimationPreviewsScreen
@@ -54,6 +55,8 @@ fun AppNavigation() {
     var previousScreen by remember { mutableStateOf(AppScreen.LANDING) }
     var selectedNewsStory by remember { mutableStateOf<LocalNewsStory?>(null) }
     var selectedNewsCity by remember { mutableStateOf("") }
+    // App-wide CA region; the Regional Sections screen is its only writer
+    var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
 
     // Intercept hardware/gesture back press when not on Landing
     if (currentScreen != AppScreen.LANDING) {
@@ -145,6 +148,8 @@ fun AppNavigation() {
         }
         AppScreen.CALIFORNIA_REGIONS -> {
             CaliforniaRegionsMapScreen(
+                selectedRegionId = selectedRegionId,
+                onSelectRegion = { selectedRegionId = it },
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 },
