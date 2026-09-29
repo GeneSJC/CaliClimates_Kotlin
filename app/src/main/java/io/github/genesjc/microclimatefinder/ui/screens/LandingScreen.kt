@@ -1,28 +1,48 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import io.github.genesjc.microclimatefinder.BuildConfig
+import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.ui.components.DemoNavigationCard
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
+import kotlinx.coroutines.launch
 
 private data class LandingEntry(
     val title: String,
@@ -32,12 +52,6 @@ private data class LandingEntry(
 )
 
 private val LANDING_ENTRIES = listOf(
-    LandingEntry(
-        title = "Demos & Previews",
-        description = "Component/feature demos: Station Card Preview, Draggable Topo Map, and Animation Previews.",
-        iconChar = "▦",
-        target = AppScreen.DEMOS_AND_PREVIEWS
-    ),
     LandingEntry(
         title = "Sacramento Station Feed (CSV)",
         description = "21 verified NOAA stations (5m to 1406m elev) loaded from assets via StationListScreen.",
@@ -69,73 +83,131 @@ fun LandingScreen(
     onNavigateTo: (AppScreen) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val flavorTitle = if (BuildConfig.IS_COMMERCIAL) {
-        "Micro Climate Finder • Commercial Edition"
-    } else {
-        "Micro Climate Finder • FOSS Edition"
-    }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    var showAboutDialog by remember { mutableStateOf(false) }
 
-    val mapProvider = if (BuildConfig.IS_COMMERCIAL) {
-        "Google Maps SDK & Premium Radar"
-    } else {
-        "OpenStreetMap / OsmDroid"
-    }
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp),
-        contentPadding = PaddingValues(top = 20.dp, bottom = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            // App Header Banner
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Column(modifier = Modifier.padding(vertical = 24.dp)) {
                     Text(
                         text = "Micro Climate Finder",
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 24.dp)
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = flavorTitle,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    NavigationDrawerItem(
+                        label = { Text("Demos & Previews") },
+                        icon = { Text(text = "▦", fontSize = 18.sp) },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            onNavigateTo(AppScreen.DEMOS_AND_PREVIEWS)
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
                     )
-                    Text(
-                        text = "Active Engine: $mapProvider",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    NavigationDrawerItem(
+                        label = { Text("About") },
+                        icon = { Text(text = "ℹ", fontSize = 18.sp) },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            showAboutDialog = true
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
                     )
                 }
             }
         }
+    ) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp),
+            contentPadding = PaddingValues(top = 20.dp, bottom = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                // App Header Banner
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Row(
+                        modifier = Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable { scope.launch { drawerState.open() } }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "☰",
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
 
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Text(
-                text = "Component & Feature Demos",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
+                        Spacer(modifier = Modifier.width(14.dp))
 
-        items(LANDING_ENTRIES) { entry ->
-            DemoNavigationCard(
-                title = entry.title,
-                description = entry.description,
-                iconChar = entry.iconChar,
-                onClick = { onNavigateTo(entry.target) }
-            )
+                        Text(
+                            text = "Micro Climate Finder",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
+
+            items(LANDING_ENTRIES) { entry ->
+                DemoNavigationCard(
+                    title = entry.title,
+                    description = entry.description,
+                    iconChar = entry.iconChar,
+                    onClick = { onNavigateTo(entry.target) }
+                )
+            }
         }
+    }
+
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) {
+                    Text("Close")
+                }
+            },
+            title = {
+                Text(
+                    text = "About Micro Climate Finder",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Micro Climate Finder is an interactive explorer for California's " +
+                        "microclimates — combining live NOAA station data, topographic maps, and " +
+                        "regional climate visualizations across the state, from coastal fog belts to " +
+                        "alpine Sierra ridgelines.\n\nCurrent scope: CA Climate Finder. The app is " +
+                        "focused on California for now."
+                )
+            }
+        )
     }
 }
