@@ -11,14 +11,19 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
+import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
+import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
@@ -73,6 +78,15 @@ fun AppNavigation() {
     val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
     val defaultDataset = remember { store.defaultDataset() }
 
+    // Fetch live readings for the region's featured stations when a region loads; switching region
+    // cancels this and starts the new region's.
+    LaunchedEffect(regionDataset) {
+        regionDataset?.let { dataset ->
+            val stations = withContext(Dispatchers.IO) { StationCsvParser(context).loadStations(dataset) }
+            LiveObservationCache.prefetch(stations)
+        }
+    }
+
     // Intercept hardware/gesture back press when not on Landing
     if (currentScreen != AppScreen.LANDING) {
         BackHandler {
@@ -96,13 +110,14 @@ fun AppNavigation() {
     if (showLimitedDataNotice) {
         AlertDialog(
             onDismissRequest = { showLimitedDataNotice = false },
-            title = { Text("Limited data set") },
+            title = { Text("Limited station data") },
             text = {
                 Text(
-                    "You are running with a limited data set: $fullDataRegions of " +
-                        "${store.totalRegionCount()} regions have full station data. The rest show " +
-                        "no stations, and Bay Area / Sacramento shows a small built-in sample.\n\n" +
-                        "To load all regions, add the station files (stations_<regionId>.csv) to " +
+                    "$fullDataRegions of ${store.totalRegionCount()} regions have full station lists in " +
+                        "this build. The rest show no stations, and Bay Area / Sacramento shows a " +
+                        "small built-in sample. Readings for the stations that are shown are live " +
+                        "from the National Weather Service.\n\n" +
+                        "To load all station lists, add the station files (stations_<regionId>.csv) to " +
                         "app/src/debug/assets and rebuild."
                 )
             },
