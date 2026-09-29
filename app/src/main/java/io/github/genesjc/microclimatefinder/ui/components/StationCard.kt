@@ -55,7 +55,8 @@ fun StationCard(
     isSelected: Boolean = false,
     onSelect: () -> Unit = {},
     modifier: Modifier = Modifier,
-    onOpenStory: ((LocalNewsStory) -> Unit)? = null
+    onOpenStory: ((LocalNewsStory) -> Unit)? = null,
+    showLiveProbe: Boolean = false
 ) {
     val context = LocalContext.current
     var showNewsDialog by remember { mutableStateOf(false) }
@@ -181,6 +182,10 @@ fun StationCard(
                     MetricPill(label = "Wind", value = String.format(Locale.US, "%.1f km/h", station.currentReading.windSpeedKmh))
                     MetricPill(label = "Solar", value = String.format(Locale.US, "%.0f W/m²", station.currentReading.solarIrradianceWm2))
                 }
+            }
+
+            if (showLiveProbe) {
+                NwsProbeLine(stationId = station.id)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
