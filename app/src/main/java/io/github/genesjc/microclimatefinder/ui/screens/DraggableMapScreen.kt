@@ -154,7 +154,7 @@ fun DraggableMapScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Sacramento 60-Mile Group • Pan & Zoom",
+                        text = "${dataset.title} • Pan & Zoom",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -203,13 +203,16 @@ fun StationCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
                             text = "📰",
                             fontSize = 14.sp,
                             modifier = Modifier.padding(end = 8.dp)
                         )
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Local News",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -218,6 +221,8 @@ fun StationCard(
                             )
                             Text(
                                 text = "$cleanCity • What's happening in this location",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -234,6 +239,8 @@ fun StationCard(
                                 text = "${newsStories.size} stories",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                softWrap = false,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )

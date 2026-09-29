@@ -115,7 +115,7 @@ fun ElevationProfileScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${dataset.title} • 60-Mile Grid",
+                    text = "${dataset.title} • ${dataset.stationCount} stations",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -163,7 +163,7 @@ fun ElevationProfileScreen(
             LegendItem(color = Color(0xFF7C3AED), label = "Ridge (>500m)")
             LegendItem(color = Color(0xFFEA580C), label = "Valley Basin")
             LegendItem(color = Color(0xFF0284C7), label = "Delta / Coast")
-            LegendItem(color = Color(0xFF166534), label = "Sierra Relief")
+            LegendItem(color = Color(0xFF166534), label = "Mountain Relief")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
