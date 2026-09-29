@@ -188,9 +188,15 @@ fun AppNavigation() {
             )
         }
         AppScreen.CALIFORNIA_REGIONS -> {
+            // Opened from Demos & Previews the screen is a standalone demo with its own region
+            // state; opened from the Home button it still sets the app-wide region.
+            val isDemo = regionsReturnScreen == AppScreen.DEMOS_AND_PREVIEWS
+            var demoRegionId by remember {
+                mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
+            }
             CaliforniaRegionsMapScreen(
-                selectedRegionId = selectedRegionId,
-                onSelectRegion = { selectedRegionId = it },
+                selectedRegionId = if (isDemo) demoRegionId else selectedRegionId,
+                onSelectRegion = { if (isDemo) demoRegionId = it else selectedRegionId = it },
                 onNavigateBack = {
                     currentScreen = regionsReturnScreen
                 },
