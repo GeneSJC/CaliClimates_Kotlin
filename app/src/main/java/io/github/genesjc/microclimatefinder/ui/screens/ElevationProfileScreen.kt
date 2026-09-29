@@ -284,7 +284,10 @@ private fun ElevationProfileCanvas(
     val maxElevation = remember(sorted) { (sorted.maxOfOrNull { it.elevationMeters } ?: 1500).toFloat() }
     val landmarks = remember(sorted) { buildLandmarks(sorted) }
 
-    val currentStation = sorted.find { it.id == selectedStationId } ?: sorted.firstOrNull()
+    // Nothing selected: start on the lowest station that has a live reading, so the first view is not blank
+    val currentStation = sorted.find { it.id == selectedStationId }
+        ?: sorted.firstOrNull { LiveObservationCache.peek(it.id) is ObservationResult.Reading }
+        ?: sorted.firstOrNull()
     // Real NWS temperature for the selected station; null while loading or when it has no reading
     var live by remember(currentStation?.id) {
         mutableStateOf(currentStation?.let { LiveObservationCache.peek(it.id) })
