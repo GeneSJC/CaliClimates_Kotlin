@@ -60,6 +60,8 @@ fun AppNavigation() {
     var previousScreen by remember { mutableStateOf(AppScreen.LANDING) }
     var selectedNewsStory by remember { mutableStateOf<LocalNewsStory?>(null) }
     var selectedNewsCity by remember { mutableStateOf("") }
+    // Where Back returns to from Regional Sections (Home icon or Demos & Previews)
+    var regionsReturnScreen by remember { mutableStateOf(AppScreen.LANDING) }
     // App-wide CA region; the Regional Sections screen is its only writer
     var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
 
@@ -78,6 +80,8 @@ fun AppNavigation() {
                 currentScreen = previousScreen
             } else if (currentScreen == AppScreen.ANIMATION_FIXED_CLOUD_V1 || currentScreen == AppScreen.ANIMATION_MOVING_CLOUDS_V2) {
                 currentScreen = AppScreen.ANIMATION_PREVIEWS
+            } else if (currentScreen == AppScreen.CALIFORNIA_REGIONS) {
+                currentScreen = regionsReturnScreen
             } else if (currentScreen == AppScreen.STATION_CARD_PREVIEW ||
                 currentScreen == AppScreen.DRAGGABLE_MAP ||
                 currentScreen == AppScreen.ANIMATION_PREVIEWS
@@ -114,6 +118,7 @@ fun AppNavigation() {
                 selectedRegionId = selectedRegionId,
                 dataset = regionDataset,
                 onNavigateTo = { targetScreen ->
+                    if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.LANDING
                     currentScreen = targetScreen
                 }
             )
@@ -121,6 +126,7 @@ fun AppNavigation() {
         AppScreen.DEMOS_AND_PREVIEWS -> {
             DemosAndPreviewsScreen(
                 onNavigateTo = { targetScreen ->
+                    if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.DEMOS_AND_PREVIEWS
                     currentScreen = targetScreen
                 },
                 onNavigateBack = {
@@ -186,7 +192,7 @@ fun AppNavigation() {
                 selectedRegionId = selectedRegionId,
                 onSelectRegion = { selectedRegionId = it },
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = regionsReturnScreen
                 },
                 onNavigateToActiveTransect = {
                     currentScreen = AppScreen.UNIFIED_DRAGGABLE_MAP

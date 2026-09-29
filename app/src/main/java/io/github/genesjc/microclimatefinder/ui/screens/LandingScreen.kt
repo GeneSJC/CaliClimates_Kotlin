@@ -112,12 +112,6 @@ private fun landingEntries(
             )
         }
     }
-    entries += LandingEntry(
-        title = "California Regional Sections",
-        description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
-        iconChar = "🧭",
-        target = AppScreen.CALIFORNIA_REGIONS
-    )
     return entries
 }
 
@@ -307,7 +301,7 @@ fun LandingScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Station data isn't included in this build for this region. " +
-                                    "Use California Regional Sections to switch regions.",
+                                    "Tap the California icon at the top right to switch regions.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

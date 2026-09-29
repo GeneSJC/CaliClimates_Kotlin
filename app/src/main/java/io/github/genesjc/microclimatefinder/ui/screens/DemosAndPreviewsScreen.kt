@@ -53,13 +53,20 @@ private val DEMOS_AND_PREVIEWS_ENTRIES = listOf(
         description = "Interactive atmospheric and weather animation prototypes: fixed hero cloud v1.0, moving clouds v2.0, and offline web vector preview.",
         iconChar = "✨",
         target = AppScreen.ANIMATION_PREVIEWS
+    ),
+    DemoEntry(
+        title = "California Regional Sections",
+        description = "Interactive map of CA's 6 macro climatic sections: San Diego, LA, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
+        iconChar = "🧭",
+        target = AppScreen.CALIFORNIA_REGIONS
     )
 )
 
 /**
  * Demos & Previews Hub Screen
  * Two-column grid housing the component/feature demo cards moved off the Landing list:
- * Station Card Preview, Draggable Topo Map, and Animation Previews.
+ * Station Card Preview, Draggable Topo Map, Animation Previews, and California Regional Sections
+ * (also reachable from the California icon on Home).
  */
 @Composable
 fun DemosAndPreviewsScreen(
