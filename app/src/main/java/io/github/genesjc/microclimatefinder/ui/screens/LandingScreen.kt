@@ -107,7 +107,7 @@ private fun landingEntries(
         )
         if (transect != null) {
             entries += LandingEntry(
-                title = "California Transect Map",
+                title = "${transect.displayName} Transect Map",
                 description = "Continuous 4-way pan & zoom from ${transect.routeLabel} across $transectStationCount regional stations with expandable Local News panel & story viewer.",
                 iconChar = "🗺️",
                 target = AppScreen.UNIFIED_DRAGGABLE_MAP
