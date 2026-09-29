@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,10 +35,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Slider
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.ln
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,7 +90,7 @@ fun StationMapScreen(
     var selectedStationId by remember {
         mutableStateOf(stations.firstOrNull()?.id)
     }
-    var pinScale by remember { mutableStateOf(1.0f) }
+    var pinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
 
@@ -152,34 +159,18 @@ fun StationMapScreen(
                 .fillMaxWidth()
                 .height(300.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // Left 85%: Map Canvas
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    SpatialMapCanvas(
-                        stations = stations,
-                        hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
-                        selectedStationId = selectedStationId,
-                        pinScale = pinScale,
-                        onSelectStation = { selectedStationId = it.id }
-                    )
-                }
-
-                // Right 15%: Vertical Dot Size Slider
-                VerticalPinSizeSlider(
-                    value = pinScale,
-                    onValueChange = { pinScale = it },
-                    modifier = Modifier
-                        .width(50.dp)
-                        .fillMaxHeight()
-                )
-            }
+            SpatialMapCanvas(
+                stations = stations,
+                hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
+                selectedStationId = selectedStationId,
+                pinScale = pinScale,
+                onSelectStation = { selectedStationId = it.id }
+            )
         }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        PinSizeSlider(value = pinScale, onValueChange = { pinScale = it })
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -231,8 +222,86 @@ fun StationMapScreen(
     }
 }
 
+/** Dots start a little larger than the base size so they are easy to see and tap. */
+private const val DEFAULT_PIN_SCALE = 1.3f
+
+/** Dots grow about 25% per zoom step, up to double, on top of the user's dot-size setting. */
+private fun zoomDotGrowth(zoom: Float): Float = (1f + (zoom - 1f) * 0.25f).coerceAtMost(2f)
+
+/** Highest zoom on the Topo Map. */
+private const val MAX_MAP_ZOOM = 8f
+
+/** Keeps the zoomed map covering the whole viewport: pan can never expose an empty edge. */
+private fun clampPan(pan: Offset, zoom: Float, width: Float, height: Float): Offset {
+    val maxX = (zoom - 1f) * width / 2f
+    val maxY = (zoom - 1f) * height / 2f
+    return Offset(pan.x.coerceIn(-maxX, maxX), pan.y.coerceIn(-maxY, maxY))
+}
+
+/** The pan that keeps the map point under [anchor] where it is while zoom goes from [oldZoom] to [newZoom]. */
+private fun panForZoom(pan: Offset, oldZoom: Float, newZoom: Float, anchor: Offset, width: Float, height: Float): Offset {
+    val center = Offset(width / 2f, height / 2f)
+    val moved = anchor - center - (anchor - center - pan) * (newZoom / oldZoom)
+    return clampPan(moved, newZoom, width, height)
+}
+
+/** Horizontal dot-size control under the map: small dot to large dot. */
+@OptIn(ExperimentalMaterial3Api::class) // custom slider thumb
 @Composable
-private fun VerticalPinSizeSlider(
+private fun PinSizeSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Dot size",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.size(5.dp)
+        ) {}
+        Slider(
+            value = value,
+            onValueChange = { onValueChange((it * 10f).roundToInt() / 10f) },
+            valueRange = 1.0f..2.5f,
+            thumb = {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    shadowElevation = 2.dp,
+                    modifier = Modifier.size(20.dp)
+                ) {}
+            },
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 6.dp)
+        )
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(13.dp)
+        ) {}
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = "${(value * 10).toInt() / 10f}x",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun ZoomSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier
@@ -245,29 +314,34 @@ private fun VerticalPinSizeSlider(
     val thumbWidth = 32.dp
     val thumbHeight = 18.dp
 
+    // Zoom is logarithmic so each part of the rail feels like an equal step
+    fun zoomFromRatio(ratio: Float) = MAX_MAP_ZOOM.pow(ratio.coerceIn(0f, 1f))
+    fun ratioFromZoom(zoom: Float) = (ln(zoom.coerceAtLeast(1f)) / ln(MAX_MAP_ZOOM)).coerceIn(0f, 1f)
+
     Surface(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
-        shape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+        shape = RoundedCornerShape(12.dp),
+        shadowElevation = 2.dp,
         modifier = modifier
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(vertical = 12.dp, horizontal = 2.dp),
+                .padding(vertical = 8.dp, horizontal = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Indicator: Large Dot icon (tap to set max 2.5x)
-            Surface(
-                shape = CircleShape,
+            // Top: zoom in fully
+            Text(
+                text = "+",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(13.dp)
-                    .clickable { currentOnValueChange(2.5f) }
-            ) {}
+                modifier = Modifier.clickable { currentOnValueChange(MAX_MAP_ZOOM) }
+            )
 
             Text(
-                text = "SIZE",
+                text = "ZOOM",
                 fontSize = 8.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -282,7 +356,7 @@ private fun VerticalPinSizeSlider(
                 contentAlignment = Alignment.Center
             ) {
                 val trackHeight = maxHeight
-                val normalizedRatio = ((value - 1.0f) / 1.5f).coerceIn(0f, 1f)
+                val normalizedRatio = ratioFromZoom(value)
 
                 val thumbHeightPx = with(density) { thumbHeight.toPx() }
                 val trackHeightPx = with(density) { trackHeight.toPx() }
@@ -332,7 +406,7 @@ private fun VerticalPinSizeSlider(
                             detectTapGestures { tapOffset ->
                                 val relativeY = (tapOffset.y - thumbHeightPx / 2f).coerceIn(0f, usableHeightPx)
                                 val ratio = 1f - (relativeY / usableHeightPx)
-                                val newScale = (1.0f + ratio * 1.5f).coerceIn(1.0f, 2.5f)
+                                val newScale = zoomFromRatio(ratio)
                                 currentOnValueChange((newScale * 10f).roundToInt() / 10f)
                             }
                         }
@@ -341,7 +415,7 @@ private fun VerticalPinSizeSlider(
                                 onDragStart = { startOffset ->
                                     val relativeY = (startOffset.y - thumbHeightPx / 2f).coerceIn(0f, usableHeightPx)
                                     val ratio = 1f - (relativeY / usableHeightPx)
-                                    val newScale = (1.0f + ratio * 1.5f).coerceIn(1.0f, 2.5f)
+                                    val newScale = zoomFromRatio(ratio)
                                     currentOnValueChange((newScale * 10f).roundToInt() / 10f)
                                 },
                                 onVerticalDrag = { change, _ ->
@@ -349,7 +423,7 @@ private fun VerticalPinSizeSlider(
                                     val touchY = change.position.y
                                     val relativeY = (touchY - thumbHeightPx / 2f).coerceIn(0f, usableHeightPx)
                                     val ratio = 1f - (relativeY / usableHeightPx)
-                                    val newScale = (1.0f + ratio * 1.5f).coerceIn(1.0f, 2.5f)
+                                    val newScale = zoomFromRatio(ratio)
                                     currentOnValueChange((newScale * 10f).roundToInt() / 10f)
                                 }
                             )
@@ -357,14 +431,14 @@ private fun VerticalPinSizeSlider(
                 )
             }
 
-            // Bottom Indicator: Small Dot icon (tap to set min 1.0x)
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier
-                    .size(5.dp)
-                    .clickable { currentOnValueChange(1.0f) }
-            ) {}
+            // Bottom: back to the full map
+            Text(
+                text = "\u2212",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.clickable { currentOnValueChange(1.0f) }
+            )
 
             Text(
                 text = "${(value * 10).toInt() / 10f}x",
@@ -425,9 +499,43 @@ private fun SpatialMapCanvas(
     val lonSpan = (maxLon - minLon)
 
     val textMeasurer = rememberTextMeasurer()
-    val landmarks = remember(stations) { pickMapLandmarks(stations) }
+    // Ranked by spread, so the first few are the most useful; more fade in as the map zooms
+    val landmarks = remember(stations) { pickMapLandmarks(stations, minOf(stations.size, MAP_LABEL_COUNT * 8)) }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    // View transform: zoom about the map centre plus a pan in pixels
+    var zoom by remember(stations) { mutableStateOf(1f) }
+    var pan by remember(stations) { mutableStateOf(Offset.Zero) }
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .clipToBounds()
+            .pointerInput(Unit) {
+                // Pinch to zoom, drag to pan
+                detectTransformGestures { centroid, panChange, zoomChange, _ ->
+                    val w = size.width.toFloat()
+                    val h = size.height.toFloat()
+                    val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
+                    pan = clampPan(panForZoom(pan, zoom, newZoom, centroid, w, h) + panChange, newZoom, w, h)
+                    zoom = newZoom
+                }
+            }
+            .pointerInput(Unit) {
+                // Double-tap: zoom in on the spot, and back out to the full map once fully zoomed
+                detectTapGestures(onDoubleTap = { spot ->
+                    val w = size.width.toFloat()
+                    val h = size.height.toFloat()
+                    if (zoom >= MAX_MAP_ZOOM * 0.99f) {
+                        zoom = 1f
+                        pan = Offset.Zero
+                    } else {
+                        val newZoom = (zoom * 2f).coerceAtMost(MAX_MAP_ZOOM)
+                        pan = panForZoom(pan, zoom, newZoom, spot, w, h)
+                        zoom = newZoom
+                    }
+                })
+            }
+    ) {
         val widthDp = maxWidth
         val heightDp = maxHeight
         val density = LocalDensity.current
@@ -435,6 +543,10 @@ private fun SpatialMapCanvas(
         val paddingPx = with(density) { 20.dp.toPx() }
         val widthPx = with(density) { widthDp.toPx() } - (paddingPx * 2)
         val heightPx = with(density) { heightDp.toPx() } - (paddingPx * 2)
+        val canvasW = with(density) { widthDp.toPx() }
+        val canvasH = with(density) { heightDp.toPx() }
+        fun viewX(baseX: Float) = canvasW / 2f + (baseX - canvasW / 2f) * zoom + pan.x
+        fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
 
         Canvas(
             modifier = Modifier
@@ -444,15 +556,18 @@ private fun SpatialMapCanvas(
                         val padding = 20f
                         val w = size.width - (padding * 2)
                         val h = size.height - (padding * 2)
+                        val cx = size.width / 2f
+                        val cy = size.height / 2f
 
                         var closestStation: MicroclimateStation? = null
                         var closestDist = Float.MAX_VALUE
 
-                        val maxTouchDist = 2000f * (pinScale * pinScale).coerceAtLeast(1f)
+                        val dotScale = pinScale * zoomDotGrowth(zoom)
+                        val maxTouchDist = 2000f * (dotScale * dotScale).coerceAtLeast(1f)
 
                         stations.forEach { station ->
-                            val x = padding + ((station.longitude - minLon) / lonSpan).toFloat() * w
-                            val y = padding + (1f - ((station.latitude - minLat) / latSpan).toFloat()) * h
+                            val x = cx + (padding + ((station.longitude - minLon) / lonSpan).toFloat() * w - cx) * zoom + pan.x
+                            val y = cy + (padding + (1f - ((station.latitude - minLat) / latSpan).toFloat()) * h - cy) * zoom + pan.y
 
                             val dx = tapOffset.x - x
                             val dy = tapOffset.y - y
@@ -470,8 +585,12 @@ private fun SpatialMapCanvas(
             val w = size.width - (padding * 2)
             val h = size.height - (padding * 2)
 
-            fun mapX(lon: Double): Float = padding + ((lon - minLon) / lonSpan).toFloat() * w
-            fun mapY(lat: Double): Float = padding + (1f - ((lat - minLat) / latSpan).toFloat()) * h
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            fun mapX(lon: Double): Float =
+                cx + (padding + ((lon - minLon) / lonSpan).toFloat() * w - cx) * zoom + pan.x
+            fun mapY(lat: Double): Float =
+                cy + (padding + (1f - ((lat - minLat) / latSpan).toFloat()) * h - cy) * zoom + pan.y
 
             if (hasArtwork) {
                 // 1. Base Alluvial Sacramento Valley Floor
@@ -655,14 +774,14 @@ private fun SpatialMapCanvas(
 
                 // 7. Subtle Geographic Reference Grid
                 for (i in 1..3) {
-                    val gridY = padding + (h * i / 4f)
+                    val gridY = cy + (padding + (h * i / 4f) - cy) * zoom + pan.y
                     drawLine(
                         color = Color.DarkGray.copy(alpha = 0.08f),
                         start = Offset(padding, gridY),
                         end = Offset(size.width - padding, gridY),
                         strokeWidth = 1f
                     )
-                    val gridX = padding + (w * i / 4f)
+                    val gridX = cx + (padding + (w * i / 4f) - cx) * zoom + pan.x
                     drawLine(
                         color = Color.DarkGray.copy(alpha = 0.08f),
                         start = Offset(gridX, padding),
@@ -674,11 +793,12 @@ private fun SpatialMapCanvas(
                 drawNeutralBase(
                     minLon = minLon, maxLon = maxLon, minLat = minLat, maxLat = maxLat,
                     padding = padding, mapX = ::mapX, mapY = ::mapY,
-                    textMeasurer = textMeasurer
+                    zoom = zoom, textMeasurer = textMeasurer
                 )
             }
 
-            // 8. Station Pins with dynamic pinScale
+            // 8. Station Pins: dot-size setting times the growth from zoom
+            val dotScale = pinScale * zoomDotGrowth(zoom)
             stations.forEach { station ->
                 val x = mapX(station.longitude)
                 val y = mapY(station.latitude)
@@ -694,25 +814,25 @@ private fun SpatialMapCanvas(
                 if (isSelected) {
                     drawCircle(
                         color = pinColor.copy(alpha = 0.35f),
-                        radius = 20f * pinScale,
+                        radius = 20f * dotScale,
                         center = Offset(x, y)
                     )
                     drawCircle(
                         color = pinColor,
-                        radius = 16f * pinScale,
+                        radius = 16f * dotScale,
                         center = Offset(x, y),
-                        style = Stroke(width = 3f * pinScale)
+                        style = Stroke(width = 3f * dotScale)
                     )
                 }
 
                 drawCircle(
                     color = Color.White,
-                    radius = if (isSelected) 9f * pinScale else 7f * pinScale,
+                    radius = if (isSelected) 9f * dotScale else 7f * dotScale,
                     center = Offset(x, y)
                 )
                 drawCircle(
                     color = pinColor,
-                    radius = if (isSelected) 7f * pinScale else 5.5f * pinScale,
+                    radius = if (isSelected) 7f * dotScale else 5.5f * dotScale,
                     center = Offset(x, y)
                 )
             }
@@ -722,10 +842,11 @@ private fun SpatialMapCanvas(
         val placedRects = mutableListOf(
             listOf(0f, 0f, 50f, 32f),
             listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),
-            listOf(0f, heightDp.value - 46f, 130f, heightDp.value)
+            listOf(0f, heightDp.value - 46f, 130f, heightDp.value),
+            listOf(widthDp.value - 46f, 0f, widthDp.value, heightDp.value)
         )
-        fun geoX(lon: Double) = with(density) { (paddingPx + ((lon - minLon) / lonSpan).toFloat() * widthPx).toDp() }
-        fun geoY(lat: Double) = with(density) { (paddingPx + (1f - ((lat - minLat) / latSpan).toFloat()) * heightPx).toDp() }
+        fun geoX(lon: Double) = with(density) { viewX(paddingPx + ((lon - minLon) / lonSpan).toFloat() * widthPx).toDp() }
+        fun geoY(lat: Double) = with(density) { viewY(paddingPx + (1f - ((lat - minLat) / latSpan).toFloat()) * heightPx).toDp() }
 
         if (hasArtwork) {
             // 9. Overlay Cartographic Typography & Landmark Badges
@@ -865,20 +986,26 @@ private fun SpatialMapCanvas(
             }
         } else {
             // Place labels picked from the loaded stations
+            // More labels as the map zooms; the newest one fades in instead of popping
+            val labelBudget = MAP_LABEL_COUNT + (zoom - 1f) * 3f
             var shownLabels = 0
             for (station in landmarks) {
-                if (shownLabels >= MAP_LABEL_COUNT) break
-                val ratioX = ((station.longitude - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
-                val ratioY = (1f - ((station.latitude - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
+                val fade = (labelBudget - shownLabels).coerceIn(0f, 1f)
+                if (fade <= 0.02f) break
+                val ratioX = ((station.longitude - minLon) / lonSpan).toFloat()
+                val ratioY = (1f - ((station.latitude - minLat) / latSpan).toFloat())
                 val isSelected = station.id == selectedStationId
                 val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
                     .let { if (it.length > 18) it.take(17) + "\u2026" else it }
                 val elevText = "%,d".format(station.elevationMeters) + "m"
                 // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
                 val labelWidthDp = ((city.length + elevText.length + 1) * 4.9f + 12f).dp
-                val pinXDp = with(density) { (paddingPx + ratioX * widthPx).toDp() }
+                val pinXDp = with(density) { viewX(paddingPx + ratioX * widthPx).toDp() }
+                val pinYDp = with(density) { viewY(paddingPx + ratioY * heightPx).toDp() }
+                // Stations panned out of view get no label
+                if (pinXDp < 0.dp || pinXDp > widthDp || pinYDp < 0.dp || pinYDp > heightDp) continue
                 val xDp = if (pinXDp + labelWidthDp > widthDp - 6.dp) pinXDp - labelWidthDp else pinXDp
-                val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + (if (ratioY < 0.12f) 8.dp else (-16).dp)
+                val yDp = pinYDp + (if (pinYDp < 30.dp) 8.dp else (-16).dp)
 
                 // Skip a label that would overlap one already placed
                 val left = xDp.value
@@ -895,6 +1022,7 @@ private fun SpatialMapCanvas(
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color.DarkGray.copy(alpha = 0.25f)),
                     modifier = Modifier
                         .offset(x = xDp, y = yDp)
+                        .alpha(fade)
                         .clickable { onSelectStation(station) }
                 ) {
                     Row(
@@ -941,8 +1069,8 @@ private fun SpatialMapCanvas(
 
         // Map Scale Bar (Bottom-Left): a bar drawn to the map's real scale
         val midLat = (minLat + maxLat) / 2
-        val mapWidthKm = lonSpan * 111.32 * cos(midLat * PI / 180)
-        val scaleKm = listOf(5, 10, 20, 25, 50, 100, 200).lastOrNull { it <= mapWidthKm * 0.4 } ?: 5
+        val mapWidthKm = lonSpan * 111.32 * cos(midLat * PI / 180) / zoom
+        val scaleKm = listOf(1, 2, 5, 10, 20, 25, 50, 100, 200).lastOrNull { it <= mapWidthKm * 0.4 } ?: 5
         val scaleMiles = (scaleKm * 0.621371).roundToInt()
         val scaleBarDp = with(density) { (scaleKm / mapWidthKm * widthPx).toFloat().toDp() }
         Surface(
@@ -986,6 +1114,20 @@ private fun SpatialMapCanvas(
                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
             )
         }
+
+        // Floating zoom slider on the right edge
+        ZoomSlider(
+            value = zoom,
+            onValueChange = { newZoom ->
+                pan = panForZoom(pan, zoom, newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH)
+                zoom = newZoom
+            },
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 4.dp)
+                .width(40.dp)
+                .fillMaxHeight(0.6f)
+        )
     }
 }
 
@@ -1002,6 +1144,7 @@ private fun DrawScope.drawNeutralBase(
     padding: Float,
     mapX: (Double) -> Float,
     mapY: (Double) -> Float,
+    zoom: Float,
     textMeasurer: TextMeasurer
 ) {
     val far = 5000f
@@ -1039,8 +1182,8 @@ private fun DrawScope.drawNeutralBase(
         val steps = listOf(0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0)
         return steps.firstOrNull { it / spanDegrees * lengthPx >= minGapPx } ?: steps.last()
     }
-    val lonStep = niceStep(maxLon - minLon, size.width - padding * 2, 64.dp.toPx())
-    val latStep = niceStep(maxLat - minLat, size.height - padding * 2, 44.dp.toPx())
+    val lonStep = niceStep((maxLon - minLon) / zoom, size.width - padding * 2, 64.dp.toPx())
+    val latStep = niceStep((maxLat - minLat) / zoom, size.height - padding * 2, 44.dp.toPx())
     fun degrees(value: Double): String = "%.2f".format(value).trimEnd('0').trimEnd('.')
     val labelStyle = TextStyle(fontSize = 8.sp, color = Color(0xFF64748B))
     var lon = ceil(minLon / lonStep) * lonStep
