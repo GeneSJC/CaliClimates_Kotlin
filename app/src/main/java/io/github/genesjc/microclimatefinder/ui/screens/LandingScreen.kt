@@ -19,10 +19,8 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.BlurEffect
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
@@ -445,8 +443,7 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
 /** How long the info sheet takes to slide in and out. */
 private const val SHEET_OPEN_MS = 420
 private const val SHEET_CLOSE_MS = 320
-/** How much the page behind the sheet is blurred (Android 12 and up), and dimmed (0 = not at all). */
-private val SHEET_BLUR = 1.dp
+/** How much the page behind the sheet is dimmed (0 = not at all; the layer still catches taps). */
 private const val SHEET_DIM = 0f
 
 /** The sheet is solid at its top and fades toward its bottom, where the start screen shows through. */
@@ -466,18 +463,16 @@ private fun sheetBrush(): Brush {
 @Composable
 private fun sheetCardColor(): Color = MaterialTheme.colorScheme.surface
 
-/** Space above the sheet's first row; the sheet starts this far above the Info link. */
-private val SHEET_TOP_PAD = 12.dp
 
 /**
- * A panel that slides in from the right edge, over the page. The page behind it is lightly blurred, and
+ * A panel that slides in from the right edge, over the page. The page behind it stays sharp, and
  * the panel itself fades from solid at the top to mostly see-through at the bottom. Tap outside,
  * swipe it to the right, or press Back to close.
  */
 @Composable
 private fun BoxScope.InfoSideSheet(
     reveal: Animatable<Float, AnimationVector1D>,
-    handleTopPx: Float,
+    topPx: Float,
     onOpen: () -> Unit,
     onClose: () -> Unit,
     content: @Composable () -> Unit
@@ -505,8 +500,8 @@ private fun BoxScope.InfoSideSheet(
             .matchParentSize()
             .onGloballyPositioned { originY = it.positionInRoot().y }
     ) {
-        // The sheet's "Info »" lines up with the "« Info" link that opened it
-        val topPx = (handleTopPx - originY - with(density) { SHEET_TOP_PAD.toPx() }).coerceAtLeast(0f)
+        // The sheet's top edge lines up with the top of the cards in the start screen's first row
+        val topPx = (topPx - originY).coerceAtLeast(0f)
         val panelWidth = maxWidth * 0.9f
         val panelWidthPx = with(density) { panelWidth.toPx() }
         val dragState = rememberDraggableState { delta ->
@@ -518,7 +513,7 @@ private fun BoxScope.InfoSideSheet(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                // Level with the Info link, and only as tall as its content
+                // Level with the first row of cards, and only as tall as its content
                 .offset { IntOffset(0, topPx.roundToInt()) }
                 .width(panelWidth)
                 .heightIn(max = maxHeight - with(density) { topPx.toDp() } - 20.dp)
@@ -548,7 +543,7 @@ private fun RegionInfoContent(
     onClose: () -> Unit
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
-    Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = SHEET_TOP_PAD)) {
+    Column(modifier = Modifier.padding(16.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "Region Info",
@@ -624,8 +619,10 @@ fun LandingScreen(
     // Region info sheet: slides in from the right over the start screen
     val infoReveal = remember { Animatable(0f) }
     var infoOpen by remember { mutableStateOf(false) }
-    // Where the "« Info" link sits, so the sheet can line up with it
-    var infoHandleTopPx by remember { mutableStateOf(0f) }
+    // Where the sheet starts: the top of the Map / Elevation cards (or, with no cards, just under the link)
+    var navCardsTopPx by remember { mutableStateOf(0f) }
+    var infoHandleBottomPx by remember { mutableStateOf(0f) }
+    val sheetTopPx = if (navCardsTopPx > 0f) navCardsTopPx else infoHandleBottomPx
     val openInfo: () -> Unit = {
         infoOpen = true
         scope.launch { infoReveal.animateTo(1f, tween(SHEET_OPEN_MS, easing = FastOutSlowInEasing)) }
@@ -635,15 +632,6 @@ fun LandingScreen(
         scope.launch { infoReveal.animateTo(0f, tween(SHEET_CLOSE_MS, easing = FastOutSlowInEasing)) }
     }
     BackHandler(enabled = infoOpen) { closeInfo() }
-    val blurPx = with(LocalDensity.current) { SHEET_BLUR.toPx() }
-    // Blurring needs Android 12 (API 31); older versions keep the page sharp
-    val blurPage = if (Build.VERSION.SDK_INT >= 31) {
-        Modifier.graphicsLayer {
-            val radius = blurPx * infoReveal.value
-            renderEffect = if (radius > 0.5f) BlurEffect(radius, radius, TileMode.Clamp) else null
-        }
-    } else Modifier
-
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -694,7 +682,6 @@ fun LandingScreen(
             columns = GridCells.Fixed(2),
             modifier = modifier
                 .fillMaxSize()
-                .then(blurPage)
                 .padding(horizontal = 20.dp),
             contentPadding = PaddingValues(top = 20.dp, bottom = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -828,7 +815,9 @@ fun LandingScreen(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
-                                .onGloballyPositioned { infoHandleTopPx = it.positionInRoot().y }
+                                .onGloballyPositioned {
+                                    infoHandleBottomPx = it.positionInRoot().y + it.size.height
+                                }
                                 .clickable(onClickLabel = "Open the region info", role = Role.Button) { openInfo() }
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         )
@@ -900,17 +889,20 @@ fun LandingScreen(
                 }
             }
 
-            items(entries) { entry ->
+            itemsIndexed(entries) { index, entry ->
                 DemoNavigationCard(
                     title = entry.title,
                     description = entry.description,
                     iconChar = entry.iconChar,
-                    onClick = { onNavigateTo(entry.target) }
+                    onClick = { onNavigateTo(entry.target) },
+                    modifier = if (index == 0) {
+                        Modifier.onGloballyPositioned { navCardsTopPx = it.positionInRoot().y }
+                    } else Modifier
                 )
             }
         }
 
-        InfoSideSheet(reveal = infoReveal, handleTopPx = infoHandleTopPx, onOpen = openInfo, onClose = closeInfo) {
+        InfoSideSheet(reveal = infoReveal, topPx = sheetTopPx, onOpen = openInfo, onClose = closeInfo) {
             RegionInfoContent(
                 region = region,
                 hasStationData = hasStationData,

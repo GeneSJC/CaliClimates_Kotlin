@@ -32,10 +32,11 @@ fun DemoNavigationCard(
     title: String,
     description: String,
     iconChar: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
