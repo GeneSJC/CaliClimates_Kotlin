@@ -207,7 +207,12 @@ private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
 
 /** The selected station as a half-width tile that grows into the full compact station card. */
 @Composable
-private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int, regionStations: List<MicroclimateStation>) {
+private fun StationHeroTile(
+    station: MicroclimateStation,
+    fullWidthPx: Int,
+    regionStations: List<MicroclimateStation>,
+    regionId: String
+) {
     HeroTile(
         fullWidthPx = fullWidthPx,
         // The same colour as the open card: its tint over the page colour, not over the backdrop
@@ -228,6 +233,7 @@ private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int, regi
                 // Tapping the card folds it back, like Less
                 onSelect = close,
                 compact = true,
+                elevationNote = Elevation.note(station.elevationMeters, regionId),
                 // Inside the card's border: the region's elevation range, and the way to fold it back
                 compactFooter = {
                     Row(
@@ -793,7 +799,7 @@ fun LandingScreen(
                         .fillMaxHeight()
                         .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y }
                 ) {
-                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations)
+                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id)
                 }
             }
 

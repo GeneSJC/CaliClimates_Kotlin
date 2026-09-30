@@ -67,7 +67,9 @@ fun StationCard(
     // A tighter layout for the Station Inspector under the maps: no description, one-line metrics
     compact: Boolean = false,
     // Compact only: a line at the bottom of the card, inside its border
-    compactFooter: (@Composable () -> Unit)? = null
+    compactFooter: (@Composable () -> Unit)? = null,
+    // Compact only: a sentence about the height, shown under the terrain row
+    elevationNote: String? = null
 ) {
     val context = LocalContext.current
     var showNewsDialog by remember { mutableStateOf(false) }
@@ -109,7 +111,7 @@ fun StationCard(
             }
         )
     ) {
-        if (compact) CompactStationBody(station, terrainBadgeColor, display, compactFooter) else Column(modifier = Modifier.padding(16.dp)) {
+        if (compact) CompactStationBody(station, terrainBadgeColor, display, compactFooter, elevationNote) else Column(modifier = Modifier.padding(16.dp)) {
             // Header row: Terrain Badge & Elevation
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -526,7 +528,8 @@ private fun CompactStationBody(
     station: MicroclimateStation,
     badgeColor: Color,
     display: CardDisplay,
-    footer: (@Composable () -> Unit)? = null
+    footer: (@Composable () -> Unit)? = null,
+    elevationNote: String? = null
 ) {
     Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
         // Row 1: name and temperature
@@ -593,6 +596,15 @@ private fun CompactStationBody(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+        if (elevationNote != null) {
+            Text(
+                text = elevationNote,
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp)
+            )
         }
         if (footer != null) footer()
     }
