@@ -551,12 +551,12 @@ private fun CaliforniaClassicMapCanvas(
                 detectTapGestures { offset ->
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
-                    val lonMin = -124.5f
-                    val lonMax = -114.1f
+                    val lonMin = -124.45f
+                    val lonMax = -114.15f
                     val latMin = 32.4f
                     val latMax = 42.1f
                     // True shape: one scale for both axes (a degree of longitude is about 0.8 of a degree of latitude), centred
-                    val k = minOf(w * 0.94f / ((lonMax - lonMin) * 0.8f), h * 0.94f / (latMax - latMin))
+                    val k = minOf(w * 0.985f / ((lonMax - lonMin) * 0.8f), h * 0.985f / (latMax - latMin))
                     val availW = (lonMax - lonMin) * 0.8f * k
                     val availH = (latMax - latMin) * k
                     val padX = (w - availW) / 2f
@@ -728,12 +728,12 @@ private fun CaliforniaClassicMapCanvas(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
-            val lonMin = -124.5f
-            val lonMax = -114.1f
+            val lonMin = -124.45f
+            val lonMax = -114.15f
             val latMin = 32.4f
             val latMax = 42.1f
             // True shape: one scale for both axes (a degree of longitude is about 0.8 of a degree of latitude), centred
-            val k = minOf(w * 0.94f / ((lonMax - lonMin) * 0.8f), h * 0.94f / (latMax - latMin))
+            val k = minOf(w * 0.985f / ((lonMax - lonMin) * 0.8f), h * 0.985f / (latMax - latMin))
             val availW = (lonMax - lonMin) * 0.8f * k
             val availH = (latMax - latMin) * k
             val padX = (w - availW) / 2f
@@ -957,7 +957,7 @@ private fun CaliforniaClassicMapCanvas(
                 drawImage(
                     image = t.image,
                     dstOffset = androidx.compose.ui.unit.IntOffset(px(-124.5f).toInt(), py(42.1f).toInt()),
-                    dstSize = androidx.compose.ui.unit.IntSize(availW.toInt(), availH.toInt())
+                    dstSize = androidx.compose.ui.unit.IntSize((availW * 10.4f / (lonMax - lonMin)).toInt(), availH.toInt())
                 )
             }
 
