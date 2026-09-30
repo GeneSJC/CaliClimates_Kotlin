@@ -64,7 +64,9 @@ fun StationCard(
     // Demos pass true to keep the built-in sample numbers; the real app shows live NWS readings.
     useMockReadings: Boolean = false,
     // A tighter layout for the Station Inspector under the maps: no description, one-line metrics
-    compact: Boolean = false
+    compact: Boolean = false,
+    // Compact only: the region's elevation range, shown beside the station's own elevation
+    regionElevationRange: String? = null
 ) {
     val context = LocalContext.current
     var showNewsDialog by remember { mutableStateOf(false) }
@@ -106,7 +108,7 @@ fun StationCard(
             }
         )
     ) {
-        if (compact) CompactStationBody(station, terrainBadgeColor, display) else Column(modifier = Modifier.padding(16.dp)) {
+        if (compact) CompactStationBody(station, terrainBadgeColor, display, regionElevationRange) else Column(modifier = Modifier.padding(16.dp)) {
             // Header row: Terrain Badge & Elevation
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -519,7 +521,12 @@ fun StationCard(
  * height of the full card.
  */
 @Composable
-private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, display: CardDisplay) {
+private fun CompactStationBody(
+    station: MicroclimateStation,
+    badgeColor: Color,
+    display: CardDisplay,
+    regionElevationRange: String? = null
+) {
     Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
         // Row 1: name and temperature
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -571,7 +578,8 @@ private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, 
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "${station.elevationMeters}m elev.",
+                    text = "${station.elevationMeters}m elev." +
+                        (regionElevationRange?.let { " \u00B7 region $it" } ?: ""),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

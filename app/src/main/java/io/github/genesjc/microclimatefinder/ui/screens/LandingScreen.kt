@@ -245,17 +245,14 @@ private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int, regi
         tile = { StationSummaryTile(station) },
         panel = {
             Column {
-                StationCard(station = station, isSelected = true, onSelect = {}, compact = true)
-                if (regionStations.isNotEmpty()) {
-                    val minElev = regionStations.minOf { it.elevationMeters }
-                    val maxElev = regionStations.maxOf { it.elevationMeters }
-                    Text(
-                        text = "Region elevation range: ${"%,d".format(minElev)}\u2013${"%,d".format(maxElev)} m",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 16.dp, top = 6.dp)
-                    )
-                }
+                StationCard(
+                    station = station,
+                    isSelected = true,
+                    onSelect = {},
+                    compact = true,
+                    regionElevationRange = if (regionStations.isEmpty()) null else
+                        "${"%,d".format(regionStations.minOf { it.elevationMeters })}\u2013${"%,d".format(regionStations.maxOf { it.elevationMeters })} m"
+                )
                 // A clear way to fold it back
                 Text(
                     text = "Less \u25B2",
@@ -549,7 +546,7 @@ fun LandingScreen(
     var mapTopPx by remember { mutableStateOf(0f) }
     var rowWidthPx by remember { mutableStateOf(0) }
     var infoHandleBottomPx by remember { mutableStateOf(0f) }
-    val sheetTopPx = if (mapTopPx > 0f) mapTopPx else infoHandleBottomPx
+    val sheetTopPx = infoHandleBottomPx
     val openInfo: () -> Unit = {
         onInfoOpenChange(true)
         scope.launch { infoReveal.animateTo(1f, tween(SHEET_OPEN_MS, easing = FastOutSlowInEasing)) }
@@ -767,9 +764,9 @@ fun LandingScreen(
                 Column(
                     modifier = Modifier.fillMaxHeight(),
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.Bottom
+                    verticalArrangement = Arrangement.Top
                 ) {
-                    // Region Info, at the bottom of the row. The sheet slides in from the right. A fixed
+                    // Region Info, at the top of the row, level with the top of the station tile. The sheet slides in from the right. A fixed
                     // height, so the row does not change when the link swaps with the X
                     Row(
                         // Always as wide as the link, so the tile does not change width when it becomes the X

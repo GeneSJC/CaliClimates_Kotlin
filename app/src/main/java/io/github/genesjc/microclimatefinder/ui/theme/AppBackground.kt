@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * The backdrop behind every screen: a soft gradient with a faint glow and a light dot grid, so the
- * page is not one flat colour. Deep slate with an indigo glow in dark mode; in light mode a warm cream-to-coral wash, darkest in the bottom left.
+ * page is not one flat colour. Deep slate with an indigo glow in dark mode; in light mode a warm orange-yellow-coral wash, darkest in the bottom left.
  */
 @Composable
 fun AppBackground(darkTheme: Boolean, content: @Composable () -> Unit) {
@@ -24,16 +24,16 @@ fun AppBackground(darkTheme: Boolean, content: @Composable () -> Unit) {
                     Brush.verticalGradient(listOf(Color(0xFF0A101E), Color(0xFF0F172A), Color(0xFF111B33)))
                 } else {
                     Brush.linearGradient(
-                        // Warm, so it stands apart from the blue widgets: cream at the top right,
-                        // deepening to a soft coral in the bottom left corner
-                        listOf(Color(0xFFFFF8EC), Color(0xFFFFE0BE), Color(0xFFF3A583)),
+                        // Warm, so it stands apart from the blue widgets: a soft orange at the top right,
+                        // fading to yellow in the middle, then deepening to coral in the bottom left corner
+                        listOf(Color(0xFFFFD9B0), Color(0xFFFFF0C2), Color(0xFFF3A583)),
                         start = Offset(size.width, 0f),
                         end = Offset(0f, size.height)
                     )
                 }
                 val glowRadius = size.width * 1.0f
                 val glowA = Brush.radialGradient(
-                    listOf((if (darkTheme) Color(0xFF4F46E5) else Color(0xFFFFF1C9)).copy(alpha = if (darkTheme) 0.30f else 0.55f), Color.Transparent),
+                    listOf((if (darkTheme) Color(0xFF4F46E5) else Color(0xFFFFB98A)).copy(alpha = if (darkTheme) 0.30f else 0.35f), Color.Transparent),
                     center = Offset(size.width * 0.95f, size.height * 0.20f),
                     radius = glowRadius
                 )
