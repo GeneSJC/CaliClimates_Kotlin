@@ -821,7 +821,7 @@ fun LandingScreen(
                     // Handle for the region info sheet, which slides in from the right
                     // A fixed height, so the row does not change when the link swaps with the X
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(36.dp),
+                        modifier = Modifier.fillMaxWidth().height(30.dp),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -836,8 +836,8 @@ fun LandingScreen(
                         val handleColor = MaterialTheme.colorScheme.primary
                         if (infoOpen) {
                             // A bold X, drawn so its weight and size are exact
-                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 5.dp).size(18.dp)) {
-                                val stroke = 3.dp.toPx()
+                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 5.dp).size(14.4.dp)) {
+                                val stroke = 2.4.dp.toPx()
                                 val inset = stroke / 2f
                                 drawLine(
                                     color = handleColor,
@@ -858,6 +858,7 @@ fun LandingScreen(
                             Text(
                                 text = "\u00AB Region Info",
                                 style = MaterialTheme.typography.titleLarge,
+                                fontSize = 17.6.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = handleColor,
                                 modifier = handleModifier.padding(horizontal = 8.dp, vertical = 4.dp)
