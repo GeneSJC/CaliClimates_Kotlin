@@ -114,7 +114,7 @@ fun RegionPickerButton(
                 regionColors = regionPickerColors(),
                 selectedRegionId = selectedRegionId,
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(31.dp)
                     .onGloballyPositioned { state.buttonBounds = Rect(it.positionInRoot(), it.size.toSize()) }
                     .alpha(if (state.visible) 0f else 1f)
             )

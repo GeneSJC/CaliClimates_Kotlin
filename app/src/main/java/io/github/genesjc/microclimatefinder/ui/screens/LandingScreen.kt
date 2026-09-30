@@ -746,29 +746,27 @@ fun LandingScreen(
                         // Change-region button: the California outline on a bordered chip like the menu button
                         Column(horizontalAlignment = Alignment.End) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            // The (i) button: opens the same About dialog as the menu
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)),
+                            // The (i) button: opens the same About dialog as the menu. No chip behind it: it is a
+                            // supporting control next to the region picker, which is the main one.
+                            Box(
                                 modifier = Modifier
                                     .size(44.dp)
-                                    .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true }
+                                    .clip(CircleShape)
+                                    .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true },
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(26.dp)
-                                            .border(2.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "i",
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
+                                Box(
+                                    modifier = Modifier
+                                        .size(23.dp)
+                                        .border(2.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "i",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
                                 }
                             }
                             Spacer(modifier = Modifier.width(8.dp))
