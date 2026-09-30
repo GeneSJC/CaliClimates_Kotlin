@@ -108,6 +108,7 @@ fun AppNavigation() {
                 currentScreen = regionsReturnScreen
             } else if (currentScreen == AppScreen.STATION_CARD_PREVIEW ||
                 currentScreen == AppScreen.DRAGGABLE_MAP ||
+                currentScreen == AppScreen.UNIFIED_DRAGGABLE_MAP ||
                 currentScreen == AppScreen.ANIMATION_PREVIEWS
             ) {
                 currentScreen = AppScreen.DEMOS_AND_PREVIEWS
@@ -188,9 +189,10 @@ fun AppNavigation() {
         }
         AppScreen.UNIFIED_DRAGGABLE_MAP -> {
             UnifiedDraggableMapScreen(
-                config = TransectConfigs.forRegion(selectedRegionId) ?: TransectConfigs.DEFAULT,
+                // A demo: always the Bay Area transect, whichever region the app is on
+                config = TransectConfigs.DEFAULT,
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 },
                 onOpenNewsStory = { story, city ->
                     selectedNewsStory = story
