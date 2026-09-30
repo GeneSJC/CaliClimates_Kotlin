@@ -19,6 +19,10 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.BlurEffect
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
@@ -441,16 +445,22 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
 /** How long the info sheet takes to slide in and out. */
 private const val SHEET_OPEN_MS = 420
 private const val SHEET_CLOSE_MS = 320
-/** How much the page behind the sheet is dimmed (0 = not at all; the layer still catches taps). */
+/** How much the page behind the sheet is blurred (Android 12 and up), and dimmed (0 = not at all). */
+private val SHEET_BLUR = 3.dp
 private const val SHEET_DIM = 0f
 
-/** How opaque the sheet is: the start screen shows through the rest. */
-private const val SHEET_OPACITY = 0.8f
+/** The sheet is solid at its top and fades toward its bottom, where the start screen shows through. */
+private const val SHEET_OPACITY_TOP = 1f
+private const val SHEET_OPACITY_BOTTOM = 0.2f
 
-/** The sheet's tint: a pastel green in light mode, a deep green in dark mode. */
+/** The sheet's fill: a pastel green in light mode, a deep green in dark mode, fading downward. */
 @Composable
-private fun sheetColor(): Color =
-    (if (isSystemInDarkTheme()) Color(0xFF1F3A2A) else Color(0xFFA8D5B0)).copy(alpha = SHEET_OPACITY)
+private fun sheetBrush(): Brush {
+    val tint = if (isSystemInDarkTheme()) Color(0xFF1F3A2A) else Color(0xFFA8D5B0)
+    return Brush.verticalGradient(
+        listOf(tint.copy(alpha = SHEET_OPACITY_TOP), tint.copy(alpha = SHEET_OPACITY_BOTTOM))
+    )
+}
 
 /** The cards on the sheet: fully opaque, in a lighter tone than the tint, so they stand out from it. */
 @Composable
@@ -460,9 +470,9 @@ private fun sheetCardColor(): Color = MaterialTheme.colorScheme.surface
 private val SHEET_TOP_PAD = 12.dp
 
 /**
- * A panel that slides in from the right edge, over the page. The page behind it stays sharp, and
- * the panel itself is translucent so it shows through. Tap outside, swipe it to the right, or
- * press Back to close.
+ * A panel that slides in from the right edge, over the page. The page behind it is lightly blurred, and
+ * the panel itself fades from solid at the top to mostly see-through at the bottom. Tap outside,
+ * swipe it to the right, or press Back to close.
  */
 @Composable
 private fun BoxScope.InfoSideSheet(
@@ -504,7 +514,7 @@ private fun BoxScope.InfoSideSheet(
         }
         Surface(
             shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp),
-            color = sheetColor(),
+            color = Color.Transparent,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -521,7 +531,9 @@ private fun BoxScope.InfoSideSheet(
                     }
                 )
         ) {
-            Box(modifier = Modifier.verticalScroll(rememberScrollState())) { content() }
+            Box(modifier = Modifier.background(sheetBrush())) {
+                Box(modifier = Modifier.verticalScroll(rememberScrollState())) { content() }
+            }
         }
     }
 }
@@ -623,6 +635,15 @@ fun LandingScreen(
         scope.launch { infoReveal.animateTo(0f, tween(SHEET_CLOSE_MS, easing = FastOutSlowInEasing)) }
     }
     BackHandler(enabled = infoOpen) { closeInfo() }
+    val blurPx = with(LocalDensity.current) { SHEET_BLUR.toPx() }
+    // Blurring needs Android 12 (API 31); older versions keep the page sharp
+    val blurPage = if (Build.VERSION.SDK_INT >= 31) {
+        Modifier.graphicsLayer {
+            val radius = blurPx * infoReveal.value
+            renderEffect = if (radius > 0.5f) BlurEffect(radius, radius, TileMode.Clamp) else null
+        }
+    } else Modifier
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -673,6 +694,7 @@ fun LandingScreen(
             columns = GridCells.Fixed(2),
             modifier = modifier
                 .fillMaxSize()
+                .then(blurPage)
                 .padding(horizontal = 20.dp),
             contentPadding = PaddingValues(top = 20.dp, bottom = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
