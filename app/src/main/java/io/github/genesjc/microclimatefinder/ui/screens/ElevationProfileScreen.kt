@@ -492,6 +492,22 @@ private fun ElevationProfileCanvas(
     // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
     var zoom by remember(sorted) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
+
+    // First visits: a pulse runs up the line once and a hint says the line can be tapped
+    val hintContext = LocalContext.current
+    val hintPrefs = remember { io.github.genesjc.microclimatefinder.data.local.ElevationHintPreferences(hintContext) }
+    var showHint by remember { mutableStateOf(false) }
+    val pulse = remember { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        hintPrefs.countLaunch()
+        if (hintPrefs.shouldShow()) {
+            showHint = true
+            kotlinx.coroutines.delay(700)
+            pulse.animateTo(1f, tween(2000, easing = androidx.compose.animation.core.LinearEasing))
+            kotlinx.coroutines.delay(2500)
+            showHint = false
+        }
+    }
     var pan by remember(sorted) { mutableStateOf(Offset.Zero) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
     val zoomScope = rememberCoroutineScope()
@@ -707,7 +723,11 @@ private fun ElevationProfileCanvas(
                                 closestStation = station
                             }
                         }
-                        closestStation?.let { onSelectStation(it) }
+                        closestStation?.let {
+                            onSelectStation(it)
+                            hintPrefs.markLineTapped()
+                            showHint = false
+                        }
                     }
                 }
         ) {
@@ -1023,6 +1043,43 @@ private fun ElevationProfileCanvas(
                     color = if (isSelected) skyTheme.accent else pinColor,
                     radius = (if (isSelected) 6f else (if (isLandmark) 4.8f else 3.2f)) * dotGrowth,
                     center = Offset(x, y)
+                )
+
+                // The one-off pulse: a ring that runs up the line, low dots first
+                val pulseValue = pulse.value
+                if (pulseValue > 0f && pulseValue < 1f) {
+                    val ring = (pulseValue * (sorted.size + 8f) - index) / 8f
+                    if (ring in 0f..1f) {
+                        drawCircle(
+                            color = Color.White.copy(alpha = (1f - ring) * 0.85f),
+                            radius = (9f + 26f * ring) * dotGrowth,
+                            center = Offset(x, y),
+                            style = Stroke(width = 3f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // The hint, in the ocean: fades away after a few seconds or at the first tap on the line
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showHint,
+            enter = androidx.compose.animation.fadeIn(tween(500)),
+            exit = androidx.compose.animation.fadeOut(tween(700)),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = heightDp * 0.045f + 6.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = Color(0xCC0F172A)
+            ) {
+                Text(
+                    text = "Tap anywhere on the line to pick a station",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                 )
             }
         }
