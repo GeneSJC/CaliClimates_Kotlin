@@ -285,7 +285,7 @@ fun StationMapScreen(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     // Just left of the top of the zoom slider
-                    .padding(end = 50.dp, top = 42.dp)
+                    .padding(end = 50.dp, top = 46.dp)
             )
         }
 
@@ -534,12 +534,12 @@ private fun SpatialMapCanvas(
 
         // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
-            listOf(0f, 0f, 50f, 32f),                                   // compass
-            listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),       // data credit
+            listOf(0f, 0f, 58f, 40f),                                   // compass
+            listOf(widthDp.value - 150f, 0f, widthDp.value, 40f),       // data credit
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
-            listOf(widthDp.value - 46f, 42f, widthDp.value, heightDp.value),  // zoom slider
-            if (embedded) listOf(50f, 0f, 190f, 32f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
-            listOf(widthDp.value - 126f, 38f, widthDp.value - 46f, 70f)  // expand / shrink toggle
+            listOf(widthDp.value - 46f, 46f, widthDp.value, heightDp.value),  // zoom slider
+            if (embedded) listOf(54f, 0f, 196f, 40f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+            listOf(widthDp.value - 126f, 42f, widthDp.value - 46f, 74f)  // expand / shrink toggle
         )
 
         // Which labels have room right now. Only the target (shown or hidden) is decided here; the
@@ -628,7 +628,7 @@ private fun SpatialMapCanvas(
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(6.dp)
+                .padding(start = 12.dp, top = 12.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -679,7 +679,7 @@ private fun SpatialMapCanvas(
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC)),
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(end = 6.dp, top = 6.dp)
+                .padding(end = 12.dp, top = 12.dp)
         ) {
             Text(
                 text = if (terrain != null) "Terrain: USGS · NASA data" else "Base map: coast and border only",
@@ -702,7 +702,7 @@ private fun SpatialMapCanvas(
             // Its top stays under the data credit whatever the map's height; the bottom follows the map
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 42.dp, end = 4.dp, bottom = 4.dp)
+                .padding(top = 46.dp, end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
                 .fillMaxHeight()
         )

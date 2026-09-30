@@ -265,7 +265,7 @@ fun ElevationProfileScreen(
                     onExpandedChange?.invoke(!chartExpanded)
                 },
                 // Just left of the top of the zoom slider, as on the Topography map
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 50.dp, top = 42.dp)
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 50.dp, top = 46.dp)
             )
         }
 
@@ -607,10 +607,10 @@ private fun ElevationProfileCanvas(
         val placedLabels = run {
             val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
             val taken = mutableListOf(
-                listOf(widthDp.value - 46f, 42f, widthDp.value, heightDp.value), // zoom slider
-                if (embedded) listOf(50f, 0f, 190f, 32f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
-                listOf(widthDp.value - 126f, 38f, widthDp.value - 46f, 70f),  // expand toggle
-                listOf(10f, 45f, 180f, 92f)               // weather badge
+                listOf(widthDp.value - 46f, 46f, widthDp.value, heightDp.value), // zoom slider
+                if (embedded) listOf(54f, 0f, 196f, 40f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+                listOf(widthDp.value - 126f, 42f, widthDp.value - 46f, 74f),  // expand toggle
+                listOf(20f, 50f, 190f, 97f)               // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
             fun plan(idx: Int, allow: Boolean, force: Boolean): PlacedLabel? {
@@ -986,7 +986,7 @@ private fun ElevationProfileCanvas(
             color = skyTheme.badgeBg.copy(alpha = 0.85f),
             border = BorderStroke(1.dp, skyTheme.accent.copy(alpha = 0.45f)),
             modifier = Modifier
-                .offset(x = 10.dp, y = 45.dp)
+                .offset(x = 20.dp, y = 50.dp)
                 .clickable {
                     // Tap to cycle landmarks
                     if (cycleIds.isNotEmpty()) {
@@ -1088,7 +1088,7 @@ private fun ElevationProfileCanvas(
             // The same spot as on the Topography map: its top stays put, the bottom follows the chart
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 42.dp, end = 4.dp, bottom = 4.dp)
+                .padding(top = 46.dp, end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
                 .fillMaxHeight()
         )
