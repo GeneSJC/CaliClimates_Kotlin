@@ -481,7 +481,8 @@ private fun BoxScope.InfoSideSheet(
     content: @Composable () -> Unit
 ) {
     val visible by remember { derivedStateOf { reveal.value > 0f } }
-    if (!visible) return
+    // Wait until the anchor is measured (it is not on the first frame after coming back to Home)
+    if (!visible || topPx <= 0f) return
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
@@ -583,6 +584,8 @@ fun LandingScreen(
     regionOptions: List<RegionOption>,
     onSelectRegion: (String) -> Unit,
     onNavigateTo: (AppScreen) -> Unit,
+    infoOpen: Boolean,
+    onInfoOpenChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val region = remember(selectedRegionId) {
@@ -607,18 +610,18 @@ fun LandingScreen(
     val pickerState = rememberRegionPickerState()
 
     // Region info sheet: slides in from the right over the start screen
-    val infoReveal = remember { Animatable(0f) }
-    var infoOpen by remember { mutableStateOf(false) }
+    // The open state lives with the caller, so the sheet is still open when Back returns from the Station List
+    val infoReveal = remember { Animatable(if (infoOpen) 1f else 0f) }
     // Where the sheet starts: the top of the Map / Elevation cards (or, with no cards, just under the link)
     var navCardsTopPx by remember { mutableStateOf(0f) }
     var infoHandleBottomPx by remember { mutableStateOf(0f) }
     val sheetTopPx = if (navCardsTopPx > 0f) navCardsTopPx else infoHandleBottomPx
     val openInfo: () -> Unit = {
-        infoOpen = true
+        onInfoOpenChange(true)
         scope.launch { infoReveal.animateTo(1f, tween(SHEET_OPEN_MS, easing = FastOutSlowInEasing)) }
     }
     val closeInfo: () -> Unit = {
-        infoOpen = false
+        onInfoOpenChange(false)
         scope.launch { infoReveal.animateTo(0f, tween(SHEET_CLOSE_MS, easing = FastOutSlowInEasing)) }
     }
     BackHandler(enabled = infoOpen) { closeInfo() }
