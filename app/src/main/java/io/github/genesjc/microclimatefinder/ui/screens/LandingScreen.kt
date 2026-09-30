@@ -175,7 +175,7 @@ private fun TerrainMixCard(stations: List<MicroclimateStation>) {
     }
 }
 
-/** The Station List link, then the station count and the elevation range, in one column. */
+/** The Station List link, with the elevation range below it. */
 @Composable
 private fun RegionStatsCard(stations: List<MicroclimateStation>, onOpenList: () -> Unit) {
     Surface(
@@ -199,11 +199,6 @@ private fun RegionStatsCard(stations: List<MicroclimateStation>, onOpenList: () 
             if (stations.isNotEmpty()) {
                 val minElev = stations.minOf { it.elevationMeters }
                 val maxElev = stations.maxOf { it.elevationMeters }
-                Text(
-                    text = "${stations.size}",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
                 Column {
                     Text(
                         text = "${"%,d".format(minElev)}\u2013${"%,d".format(maxElev)} m",
