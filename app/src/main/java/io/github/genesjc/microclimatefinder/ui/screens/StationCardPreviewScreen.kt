@@ -1,6 +1,8 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,6 +54,7 @@ fun StationCardPreviewScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
         // Top App Bar with back button (zero extra icon dependencies)
         Row(
@@ -93,7 +96,23 @@ fun StationCardPreviewScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Render the station card component
+        // Render the station card component: the full card, then the compact one used as the
+        // Station Inspector under the Topo Map and the Elevation Profile
+        Text(
+            text = "Full card (Station Feed)",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
         StationCard(station = sampleStation, useMockReadings = true)
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Compact card (Station Inspector)",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        StationCard(station = sampleStation, useMockReadings = true, compact = true)
     }
 }

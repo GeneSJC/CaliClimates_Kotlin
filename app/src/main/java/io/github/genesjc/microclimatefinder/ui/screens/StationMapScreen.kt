@@ -225,7 +225,8 @@ fun StationMapScreen(
             StationCard(
                 station = selectedStation,
                 isSelected = true,
-                onSelect = { /* Already selected */ }
+                onSelect = { /* Already selected */ },
+                compact = true
             )
         } else {
             Surface(

@@ -61,7 +61,9 @@ fun StationCard(
     modifier: Modifier = Modifier,
     onOpenStory: ((LocalNewsStory) -> Unit)? = null,
     // Demos pass true to keep the built-in sample numbers; the real app shows live NWS readings.
-    useMockReadings: Boolean = false
+    useMockReadings: Boolean = false,
+    // A tighter layout for the Station Inspector under the maps: no description, one-line metrics
+    compact: Boolean = false
 ) {
     val context = LocalContext.current
     var showNewsDialog by remember { mutableStateOf(false) }
@@ -103,7 +105,7 @@ fun StationCard(
             }
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        if (compact) CompactStationBody(station, terrainBadgeColor, display) else Column(modifier = Modifier.padding(16.dp)) {
             // Header row: Terrain Badge & Elevation
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -507,6 +509,91 @@ fun StationCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * The tighter card body: terrain, elevation and name on the left, temperature on the right, the
+ * three metrics on one line, and the reading's age underneath. About half the height of the full card.
+ */
+@Composable
+private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, display: CardDisplay) {
+    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = badgeColor.copy(alpha = 0.14f)
+                    ) {
+                        Text(
+                            text = station.terrain.label,
+                            color = badgeColor,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "${station.elevationMeters}m elev.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = station.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) } ?: "—",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = display.tempC?.let { String.format(Locale.US, "%.1f°F", it * 9.0 / 5.0 + 32.0) }
+                        ?: display.status.orEmpty(),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            CompactMetric("Humidity", display.humidity)
+            CompactMetric("Wind", display.wind)
+            CompactMetric(display.thirdLabel, display.thirdValue)
+        }
+        if (display.tempC != null && display.status != null) {
+            Text(
+                text = display.status,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompactMetric(label: String, value: String) {
+    Row {
+        Text(text = label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = value,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
