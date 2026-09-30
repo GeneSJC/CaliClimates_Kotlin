@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -44,6 +45,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import io.github.genesjc.microclimatefinder.ui.components.MapExpandToggle
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -108,24 +114,47 @@ private fun rankLandmarkIndexes(sorted: List<MicroclimateStation>): List<Int> {
 fun ElevationProfileScreen(
     dataset: StationDatasetInfo,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** True when shown inside another screen (the Home tabs): no app bar of its own. */
+    embedded: Boolean = false,
+    /** A station selected elsewhere (the other Home tab), and a way to report selections back. */
+    sharedSelectedStationId: String? = null,
+    onStationSelected: ((String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
     val stations = remember(dataset) { parser.loadStations(dataset) }
 
-    var selectedStationId by remember {
-        mutableStateOf(stations.firstOrNull()?.id)
-    }
+    // The selected station can be shared with another screen (Home keeps it across its two tabs)
+    var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
+    val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
 
+    // The chart starts at its regular height; the toggle on it stretches it, slowly, to fill the screen
+    var chartExpanded by remember { mutableStateOf(false) }
+    var aboveChartPx by remember { mutableStateOf(0) }
+    var belowChartPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+    val verticalPadding = if (embedded) 16.dp else 32.dp
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    // Expanded height: the screen less the padding and everything above and below the chart
+    val expandedHeight = with(density) {
+        ((maxHeight - verticalPadding).roundToPx() - aboveChartPx - belowChartPx).toDp()
+    }.coerceAtLeast(CHART_REGULAR_HEIGHT)
+    val chartHeight by animateDpAsState(
+        targetValue = if (chartExpanded) expandedHeight else CHART_REGULAR_HEIGHT,
+        animationSpec = tween(CHART_RESIZE_MS, easing = FastOutSlowInEasing),
+        label = "chartHeight"
+    )
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 16.dp) else PaddingValues(16.dp))
             .verticalScroll(rememberScrollState())
     ) {
+        Column(modifier = Modifier.onSizeChanged { aboveChartPx = it.height }) {
+        if (!embedded) {
         // App Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -176,27 +205,41 @@ fun ElevationProfileScreen(
         }
 
         Spacer(modifier = Modifier.height(14.dp))
+        }
+        }
 
-        // Elevation Canvas Container
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-        ) {
-            ElevationProfileCanvas(
-                stations = stations,
-                selectedStationId = selectedStationId,
-                onSelectStation = { selectedStationId = it.id }
+        // Elevation chart, with its Expand / Shrink toggle
+        Box(modifier = Modifier.fillMaxWidth().height(chartHeight)) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                ElevationProfileCanvas(
+                    stations = stations,
+                    selectedStationId = selectedStationId,
+                    onSelectStation = {
+                        localSelectedId = it.id
+                        onStationSelected?.invoke(it.id)
+                    }
+                )
+            }
+            MapExpandToggle(
+                expanded = chartExpanded,
+                onToggle = { chartExpanded = !chartExpanded },
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 6.dp, top = 6.dp)
             )
         }
 
+        Column(modifier = Modifier.onSizeChanged { belowChartPx = it.height }) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Terrain legend: one line until opened, then this region's terrain types with counts
-        TerrainLegend(stations = stations)
+        // Terrain legend: one line until opened, then this region's terrain types with counts.
+        // Embedded, Home shows it beside the Region Info link.
+        if (!embedded) TerrainLegend(stations = stations)
 
+        // The selected station card; embedded, Home shows it above the tabs
+        if (!embedded) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Selected station card (the Station Inspector)
@@ -223,8 +266,17 @@ fun ElevationProfileScreen(
                 }
             }
         }
+        }
+        }
+    }
     }
 }
+
+/** The chart's regular height, before it is expanded to fill the screen. */
+private val CHART_REGULAR_HEIGHT = 300.dp
+
+/** How long the chart takes to grow to full height and back. */
+private const val CHART_RESIZE_MS = 700
 
 // Data class for atmospheric sky gradient & weather condition above the elevation profile
 private data class SkyAtmosphereTheme(
@@ -386,8 +438,9 @@ private fun ElevationProfileCanvas(
         val placedLabels = run {
             val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
             val taken = mutableListOf(
-                listOf(0f, 0f, 46f, heightDp.value),      // zoom slider
-                listOf(45f, 45f, 215f, 92f)               // weather badge
+                listOf(widthDp.value - 46f, heightDp.value * 0.14f, widthDp.value, heightDp.value), // zoom slider
+                listOf(0f, 0f, 80f, 38f),                 // expand toggle
+                listOf(10f, 45f, 180f, 92f)               // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
             fun plan(idx: Int, allow: Boolean, force: Boolean): PlacedLabel? {
@@ -647,13 +700,13 @@ private fun ElevationProfileCanvas(
             }
         }
 
-        // 4. Atmospheric Sky Micro-Display in the blank space to the left of the graph (15px margin from top & left)
+        // 4. Atmospheric Sky Micro-Display in the blank space to the left of the graph, below the expand toggle
         Surface(
             shape = RoundedCornerShape(8.dp),
             color = skyTheme.badgeBg.copy(alpha = 0.85f),
             border = BorderStroke(1.dp, skyTheme.accent.copy(alpha = 0.45f)),
             modifier = Modifier
-                .offset(x = 45.dp, y = 45.dp)
+                .offset(x = 10.dp, y = 45.dp)
                 .clickable {
                     // Tap to cycle landmarks
                     if (cycleIds.isNotEmpty()) {
@@ -730,7 +783,7 @@ private fun ElevationProfileCanvas(
             }
         }
 
-        // Floating zoom slider on the left edge (the steep ridge is on the right)
+        // Floating zoom slider on the right edge, where the Topo Map has it
         fun nearestLinePoint(): Offset {
             val middle = Offset(canvasW / 2f, canvasH / 2f)
             return sorted.indices
@@ -752,11 +805,12 @@ private fun ElevationProfileCanvas(
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) },
+            // The same spot as on the Topo Map: bottom right, most of the height
             modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 4.dp)
+                .align(Alignment.BottomEnd)
+                .padding(end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
-                .fillMaxHeight(0.9f)
+                .fillMaxHeight(0.86f)
         )
     }
 }

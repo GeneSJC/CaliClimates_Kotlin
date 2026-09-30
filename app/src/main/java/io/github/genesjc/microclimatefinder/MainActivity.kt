@@ -31,6 +31,7 @@ import io.github.genesjc.microclimatefinder.ui.screens.DemosAndPreviewsScreen
 import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.ElevationProfileScreen
 import io.github.genesjc.microclimatefinder.ui.screens.FixedCloudSplashScreen
+import io.github.genesjc.microclimatefinder.ui.screens.DEFAULT_PIN_SCALE
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.RegionOption
 import io.github.genesjc.microclimatefinder.ui.screens.MovingCloudsSplashScreen
@@ -68,6 +69,12 @@ fun AppNavigation() {
     var regionsReturnScreen by remember { mutableStateOf(AppScreen.LANDING) }
     // Whether Home's region info sheet is open; kept here so it survives a trip to the Station List
     var homeInfoOpen by remember { mutableStateOf(false) }
+    // Which map view Home shows: 0 = Topo Map, 1 = Elevation Profile
+    var homeTab by remember { mutableStateOf(0) }
+    // The station selected on Home, shared by both tabs and kept across a trip to the Station List
+    var homeStationId by remember { mutableStateOf<String?>(null) }
+    // The Topo Map's dot size, set in the Terrain Legend panel on Home
+    var homePinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
     val context = LocalContext.current
     // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
     val regionPrefs = remember { RegionPreferences(context) }
@@ -81,6 +88,7 @@ fun AppNavigation() {
     // Changes the app-wide region and remembers it (Home, Topo Map and Station Feed pickers use this)
     fun pickRegion(regionId: String) {
         selectedRegionId = regionId
+        homeStationId = null
         regionPrefs.save(regionId)
     }
     // Rows for the quick region picker on Home: every region with its station count
@@ -109,6 +117,8 @@ fun AppNavigation() {
             } else if (currentScreen == AppScreen.CALIFORNIA_REGIONS) {
                 currentScreen = regionsReturnScreen
             } else if (currentScreen == AppScreen.STATION_CARD_PREVIEW ||
+                currentScreen == AppScreen.STATION_MAP ||
+                currentScreen == AppScreen.ELEVATION_PROFILE ||
                 currentScreen == AppScreen.DRAGGABLE_MAP ||
                 currentScreen == AppScreen.UNIFIED_DRAGGABLE_MAP ||
                 currentScreen == AppScreen.ANIMATION_PREVIEWS
@@ -134,7 +144,13 @@ fun AppNavigation() {
                     currentScreen = targetScreen
                 },
                 infoOpen = homeInfoOpen,
-                onInfoOpenChange = { homeInfoOpen = it }
+                onInfoOpenChange = { homeInfoOpen = it },
+                homeTab = homeTab,
+                onHomeTabChange = { homeTab = it },
+                selectedStationId = homeStationId,
+                onStationSelected = { homeStationId = it },
+                pinScale = homePinScale,
+                onPinScaleChange = { homePinScale = it }
             )
         }
         AppScreen.DEMOS_AND_PREVIEWS -> {
@@ -171,7 +187,7 @@ fun AppNavigation() {
                 selectedRegionId = selectedRegionId,
                 onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 }
             )
         }
@@ -179,7 +195,7 @@ fun AppNavigation() {
             ElevationProfileScreen(
                 dataset = regionDataset ?: defaultDataset,
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 }
             )
         }

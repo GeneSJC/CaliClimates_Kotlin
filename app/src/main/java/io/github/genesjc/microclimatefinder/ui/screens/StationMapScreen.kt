@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -81,6 +82,7 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefin
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
+import io.github.genesjc.microclimatefinder.ui.components.MapExpandToggle
 import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
@@ -104,16 +106,24 @@ fun StationMapScreen(
     selectedRegionId: String,
     onSelectRegion: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** True when shown inside another screen (the Home tabs): no app bar and no region picker of its own. */
+    embedded: Boolean = false,
+    /** A station selected elsewhere (the other Home tab), and a way to report selections back. */
+    sharedSelectedStationId: String? = null,
+    onStationSelected: ((String) -> Unit)? = null,
+    /** The dot size, when Home owns it (its Terrain Legend panel holds the slider). */
+    sharedPinScale: Float? = null
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
     val stations = remember(dataset) { parser.loadStations(dataset) }
 
-    var selectedStationId by remember {
-        mutableStateOf(stations.firstOrNull()?.id)
-    }
-    var pinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
+    // The selected station can be shared with another screen (Home keeps it across its two tabs)
+    var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
+    val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
+    var localPinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
+    val pinScale = sharedPinScale ?: localPinScale
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
     val pickerState = rememberRegionPickerState()
@@ -123,10 +133,12 @@ fun StationMapScreen(
     val density = LocalDensity.current
     var aboveMapPx by remember { mutableStateOf(0) }
 
+    // Top and bottom padding of the page: the embedded map has no app bar, so less above it
+    val mapVerticalPadding = if (embedded) 16.dp else 32.dp
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     // Expanded height: the screen less the padding and everything above the map
     val expandedMapHeight = with(density) {
-        ((maxHeight - 32.dp).roundToPx() - aboveMapPx).toDp()
+        ((maxHeight - mapVerticalPadding).roundToPx() - aboveMapPx).toDp()
     }.coerceAtLeast(MAP_REGULAR_HEIGHT)
     val mapHeight by animateDpAsState(
         targetValue = if (mapExpanded) expandedMapHeight else MAP_REGULAR_HEIGHT,
@@ -136,10 +148,11 @@ fun StationMapScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 16.dp) else PaddingValues(16.dp))
             .verticalScroll(pageScroll)
     ) {
       Column(modifier = Modifier.onSizeChanged { aboveMapPx = it.height }) {
+        if (!embedded) {
         // App Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -179,8 +192,10 @@ fun StationMapScreen(
         }
 
         Spacer(modifier = Modifier.height(14.dp))
+        }
 
-        // 1. The selected station (the Station Inspector)
+        // The selected station card; embedded, Home shows it above the tabs
+        if (!embedded) {
         if (selectedStation != null) {
             StationCard(
                 station = selectedStation,
@@ -206,15 +221,20 @@ fun StationMapScreen(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // 2. Terrain legend: one line until opened, then this region's terrain types with counts
+        }
+
+        // 2. Terrain legend: one line until opened, then this region's terrain types with counts.
+        // Embedded, Home shows it beside the Region Info link.
+        if (!embedded) {
         TerrainLegend(
             stations = stations,
             showRelief = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
             // Dot size lives here, out of the way, instead of in a row under the map
-            extra = { PinSizeSlider(value = pinScale, onValueChange = { pinScale = it }) }
+            extra = { PinSizeSlider(value = pinScale, onValueChange = { localPinScale = it }) }
         )
 
         Spacer(modifier = Modifier.height(6.dp))
+        }
       }
 
         // 3. The map with its dot-size slider: regular height, or the rest of the screen when expanded
@@ -233,38 +253,30 @@ fun StationMapScreen(
                     hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
                     selectedStationId = selectedStationId,
                     pinScale = pinScale,
-                    onSelectStation = { selectedStationId = it.id }
+                    onSelectStation = {
+                    localSelectedId = it.id
+                    onStationSelected?.invoke(it.id)
+                }
                 )
             }
             // Expand / shrink toggle, under the compass in the top-left corner
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = Color.White.copy(alpha = 0.90f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+            MapExpandToggle(
+                expanded = mapExpanded,
+                onToggle = { mapExpanded = !mapExpanded },
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(start = 6.dp, top = 44.dp)
-                    .clickable(
-                        onClickLabel = if (mapExpanded) "Shrink the map" else "Expand the map",
-                        role = Role.Button
-                    ) { mapExpanded = !mapExpanded }
-            ) {
-                Text(
-                    text = if (mapExpanded) "\u2195 Shrink" else "\u2195 Expand",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF334155),
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
-                )
-            }
+            )
         }
 
     }
-    RegionPickerOverlay(
-        state = pickerState,
-        selectedRegionId = selectedRegionId,
-        onSelectRegion = onSelectRegion
-    )
+    if (!embedded) {
+        RegionPickerOverlay(
+            state = pickerState,
+            selectedRegionId = selectedRegionId,
+            onSelectRegion = onSelectRegion
+        )
+    }
     }
 }
 
@@ -278,12 +290,12 @@ private const val MAP_RESIZE_MS = 700
 private const val MAP_OVERSCROLL = 0.12f
 
 /** Dots start at the largest size the Dot size slider allows, so they are easy to see and tap. */
-private const val DEFAULT_PIN_SCALE = 2.5f
+internal const val DEFAULT_PIN_SCALE = 2.5f
 
 /** Horizontal dot-size control under the map: small dot to large dot. */
 @OptIn(ExperimentalMaterial3Api::class) // custom slider thumb
 @Composable
-private fun PinSizeSlider(
+internal fun PinSizeSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier
@@ -729,39 +741,9 @@ private fun SpatialMapCanvas(
             stations.forEach { station ->
                 val x = mapX(station.longitude)
                 val y = mapY(station.latitude)
-                val isSelected = station.id == selectedStationId
-
-                val pinColor = when (station.terrain) {
-                    TerrainType.COASTAL -> Color(0xFF0284C7)
-                    TerrainType.RIDGE -> Color(0xFF7C3AED)
-                    TerrainType.VALLEY_BASIN -> Color(0xFFEA580C)
-                    TerrainType.URBAN_CANYON -> Color(0xFF475569)
-                }
-
-                if (isSelected) {
-                    drawCircle(
-                        color = pinColor.copy(alpha = 0.35f),
-                        radius = 20f * dotScale,
-                        center = Offset(x, y)
-                    )
-                    drawCircle(
-                        color = pinColor,
-                        radius = 16f * dotScale,
-                        center = Offset(x, y),
-                        style = Stroke(width = 3f * dotScale)
-                    )
-                }
-
-                drawCircle(
-                    color = Color.White,
-                    radius = if (isSelected) 9f * dotScale else 7f * dotScale,
-                    center = Offset(x, y)
-                )
-                drawCircle(
-                    color = pinColor,
-                    radius = if (isSelected) 7f * dotScale else 5.5f * dotScale,
-                    center = Offset(x, y)
-                )
+                // The selected station is drawn last, above the labels, by the overlay below
+                if (station.id == selectedStationId) return@forEach
+                drawStationPin(x, y, pinColor(station.terrain), dotScale, selected = false)
             }
         }
 
@@ -959,6 +941,21 @@ private fun SpatialMapCanvas(
             }
         }
 
+        // The selected station's marker, above every label and city name, so nothing hides it. The
+        // canvas takes no touches; taps fall through to the map below.
+        stations.firstOrNull { it.id == selectedStationId }?.let { station ->
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val padding = 20f
+                val w = size.width - (padding * 2)
+                val h = size.height - (padding * 2)
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val x = cx + (padding + ((station.longitude - minLon) / lonSpan).toFloat() * w - cx) * zoom + pan.x
+                val y = cy + (padding + (1f - ((station.latitude - minLat) / latSpan).toFloat()) * h - cy) * zoom + pan.y
+                drawStationPin(x, y, pinColor(station.terrain), pinScale * zoomDotGrowth(zoom), selected = true)
+            }
+        }
+
         // Compass Rose (Top-Left)
         Surface(
             shape = RoundedCornerShape(6.dp),
@@ -1048,6 +1045,29 @@ private fun SpatialMapCanvas(
     }
 }
 
+
+/** The dot colour for a terrain type; the same colours as the legend. */
+private fun pinColor(terrain: TerrainType): Color = when (terrain) {
+    TerrainType.COASTAL -> Color(0xFF0284C7)
+    TerrainType.RIDGE -> Color(0xFF7C3AED)
+    TerrainType.VALLEY_BASIN -> Color(0xFFEA580C)
+    TerrainType.URBAN_CANYON -> Color(0xFF475569)
+}
+
+/** One station dot; the selected one gets a halo and a ring, and is slightly larger. */
+private fun DrawScope.drawStationPin(x: Float, y: Float, color: Color, dotScale: Float, selected: Boolean) {
+    if (selected) {
+        drawCircle(color = color.copy(alpha = 0.35f), radius = 20f * dotScale, center = Offset(x, y))
+        drawCircle(
+            color = color,
+            radius = 16f * dotScale,
+            center = Offset(x, y),
+            style = Stroke(width = 3f * dotScale)
+        )
+    }
+    drawCircle(color = Color.White, radius = if (selected) 9f * dotScale else 7f * dotScale, center = Offset(x, y))
+    drawCircle(color = color, radius = if (selected) 7f * dotScale else 5.5f * dotScale, center = Offset(x, y))
+}
 
 // Maximum number of place labels drawn on the neutral base map
 private const val MAP_LABEL_COUNT = 6

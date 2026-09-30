@@ -13,6 +13,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
+import io.github.genesjc.microclimatefinder.ui.components.StationCard
+import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
@@ -74,6 +76,8 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
@@ -586,6 +590,12 @@ fun LandingScreen(
     onNavigateTo: (AppScreen) -> Unit,
     infoOpen: Boolean,
     onInfoOpenChange: (Boolean) -> Unit,
+    homeTab: Int,
+    onHomeTabChange: (Int) -> Unit,
+    selectedStationId: String?,
+    onStationSelected: (String) -> Unit,
+    pinScale: Float,
+    onPinScaleChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val region = remember(selectedRegionId) {
@@ -612,10 +622,11 @@ fun LandingScreen(
     // Region info sheet: slides in from the right over the start screen
     // The open state lives with the caller, so the sheet is still open when Back returns from the Station List
     val infoReveal = remember { Animatable(if (infoOpen) 1f else 0f) }
-    // Where the sheet starts: the top of the Map / Elevation cards (or, with no cards, just under the link)
-    var navCardsTopPx by remember { mutableStateOf(0f) }
+    // Where the sheet starts: the top of the tab row (or, with no tabs, just under the link)
+    var tabsTopPx by remember { mutableStateOf(0f) }
+    var linkRowWidthPx by remember { mutableStateOf(0) }
     var infoHandleBottomPx by remember { mutableStateOf(0f) }
-    val sheetTopPx = if (navCardsTopPx > 0f) navCardsTopPx else infoHandleBottomPx
+    val sheetTopPx = if (tabsTopPx > 0f) tabsTopPx else infoHandleBottomPx
     val openInfo: () -> Unit = {
         onInfoOpenChange(true)
         scope.launch { infoReveal.animateTo(1f, tween(SHEET_OPEN_MS, easing = FastOutSlowInEasing)) }
@@ -646,7 +657,7 @@ fun LandingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(8.dp))
-                    // The same screens as the cards on the start screen
+                    // The same views as the tabs on the start screen
                     entries.forEach { entry ->
                         NavigationDrawerItem(
                             label = { Text(entry.title) },
@@ -654,7 +665,7 @@ fun LandingScreen(
                             selected = false,
                             onClick = {
                                 scope.launch { drawerState.close() }
-                                onNavigateTo(entry.target)
+                                onHomeTabChange(if (entry.target == AppScreen.ELEVATION_PROFILE) 1 else 0)
                             },
                             modifier = Modifier.padding(horizontal = 12.dp)
                         )
@@ -689,16 +700,13 @@ fun LandingScreen(
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+        Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(top = 20.dp, bottom = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
+            run {
                 // App Header Banner
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -816,15 +824,41 @@ fun LandingScreen(
                 }
             }
 
-            item(span = { GridItemSpan(maxLineSpan) }) {
+            // The selected station (the Station Inspector), shared by both tabs, above the Region Info link
+            if (dataset != null) {
+                val shown = snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
+                if (shown != null) {
+                    StationCard(station = shown, isSelected = true, onSelect = {}, compact = true)
+                }
+            }
+
+            run {
                 Column {
                     // Handle for the region info sheet, which slides in from the right
                     // A fixed height, so the row does not change when the link swaps with the X
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(30.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp)
+                            .onSizeChanged { linkRowWidthPx = it.width },
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // The Terrain Legend, on the left of the same line; it opens as a full-width
+                        // panel over the tabs
+                        Box(modifier = Modifier.weight(1f)) {
+                            if (dataset != null && snapshotStations.isNotEmpty()) {
+                                TerrainLegend(
+                                    stations = snapshotStations,
+                                    showRelief = homeTab == 0 &&
+                                        dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
+                                    // The dot-size slider belongs to the map, so only the Topo Map tab has it
+                                    extra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) },
+                                    headerFontSize = 15.84.sp,
+                                    expandedWidthPx = linkRowWidthPx
+                                )
+                            }
+                        }
                         val handleModifier = Modifier
                             .onGloballyPositioned {
                                 infoHandleBottomPx = it.positionInRoot().y + it.size.height
@@ -836,8 +870,8 @@ fun LandingScreen(
                         val handleColor = MaterialTheme.colorScheme.primary
                         if (infoOpen) {
                             // A bold X, drawn so its weight and size are exact
-                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 5.dp).size(14.4.dp)) {
-                                val stroke = 2.4.dp.toPx()
+                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 5.dp).size(13.dp)) {
+                                val stroke = 2.2.dp.toPx()
                                 val inset = stroke / 2f
                                 drawLine(
                                     color = handleColor,
@@ -858,7 +892,8 @@ fun LandingScreen(
                             Text(
                                 text = "\u00AB Region Info",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontSize = 17.6.sp,
+                                fontSize = 15.84.sp,
+                                lineHeight = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = handleColor,
                                 modifier = handleModifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -932,16 +967,47 @@ fun LandingScreen(
                 }
             }
 
-            itemsIndexed(entries) { index, entry ->
-                DemoNavigationCard(
-                    title = entry.title,
-                    description = entry.description,
-                    iconChar = entry.iconChar,
-                    onClick = { onNavigateTo(entry.target) },
-                    modifier = if (index == 0) {
-                        Modifier.onGloballyPositioned { navCardsTopPx = it.positionInRoot().y }
-                    } else Modifier
-                )
+            // The map views, as two tabs. The standalone screens are unchanged; these are the same
+            // screens without their own app bar.
+            if (dataset != null) {
+                TabRow(
+                    selectedTabIndex = homeTab,
+                    containerColor = Color.Transparent,
+                    modifier = Modifier.onGloballyPositioned { tabsTopPx = it.positionInRoot().y }
+                ) {
+                    Tab(
+                        selected = homeTab == 0,
+                        onClick = { onHomeTabChange(0) },
+                        text = { Text("Topo Map", fontSize = 18.2.sp, fontWeight = FontWeight.Bold) }
+                    )
+                    Tab(
+                        selected = homeTab == 1,
+                        onClick = { onHomeTabChange(1) },
+                        text = { Text("Elevation Profile", fontSize = 18.2.sp, fontWeight = FontWeight.Bold) }
+                    )
+                }
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    if (homeTab == 0) {
+                        StationMapScreen(
+                            dataset = dataset,
+                            selectedRegionId = selectedRegionId,
+                            onSelectRegion = onSelectRegion,
+                            onNavigateBack = {},
+                            embedded = true,
+                            sharedSelectedStationId = selectedStationId,
+                            onStationSelected = onStationSelected,
+                            sharedPinScale = pinScale
+                        )
+                    } else {
+                        ElevationProfileScreen(
+                            dataset = dataset,
+                            onNavigateBack = {},
+                            embedded = true,
+                            sharedSelectedStationId = selectedStationId,
+                            onStationSelected = onStationSelected
+                        )
+                    }
+                }
             }
         }
 

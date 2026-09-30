@@ -37,6 +37,18 @@ private data class DemoEntry(
 
 private val DEMOS_AND_PREVIEWS_ENTRIES = listOf(
     DemoEntry(
+        title = "Topographical Map (standalone)",
+        description = "The Topo Map as its own screen, with its own header. The same map now lives in the Topo Map tab on Home.",
+        iconChar = "▲",
+        target = AppScreen.STATION_MAP
+    ),
+    DemoEntry(
+        title = "Elevation Profile (standalone)",
+        description = "The Elevation Profile as its own screen, with its own header. The same view now lives in the Elevation Profile tab on Home.",
+        iconChar = "⛰️",
+        target = AppScreen.ELEVATION_PROFILE
+    ),
+    DemoEntry(
         title = "Station Card Preview",
         description = "Interactive single station card with elevation badge, dual C/F temps, wind, and terrain styling.",
         iconChar = "▦",
