@@ -283,9 +283,9 @@ fun StationMapScreen(
                     onExpandedChange?.invoke(!mapExpanded)
                 },
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    // Embedded, Home's view buttons sit in the top-left corner, so the toggle goes under them
-                    .padding(start = 6.dp, top = if (embedded) 36.dp else 44.dp)
+                    .align(Alignment.TopEnd)
+                    // Just left of the top of the zoom slider
+                    .padding(end = 50.dp, top = 34.dp)
             )
         }
 
@@ -534,13 +534,12 @@ private fun SpatialMapCanvas(
 
         // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
-            // Compass; embedded, it sits right of Home's two view buttons
-            if (embedded) listOf(140f, 0f, 190f, 32f) else listOf(0f, 0f, 50f, 32f),
-            listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),
-            listOf(0f, heightDp.value - 46f, 130f, heightDp.value),
-            listOf(widthDp.value - 46f, 0f, widthDp.value, heightDp.value),
-            if (embedded) listOf(0f, 0f, 140f, 32f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
-            if (embedded) listOf(0f, 34f, 76f, 68f) else listOf(0f, 40f, 76f, 74f)  // expand / shrink toggle
+            listOf(0f, 0f, 50f, 32f),                                   // compass
+            listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),       // data credit
+            listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
+            listOf(widthDp.value - 46f, 34f, widthDp.value, heightDp.value),  // zoom slider
+            if (embedded) listOf(50f, 0f, 190f, 32f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+            listOf(widthDp.value - 126f, 30f, widthDp.value - 46f, 62f)  // expand / shrink toggle
         )
 
         // Which labels have room right now. Only the target (shown or hidden) is decided here; the
@@ -629,7 +628,7 @@ private fun SpatialMapCanvas(
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = if (embedded) 146.dp else 6.dp, top = 6.dp)
+                .padding(6.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -700,12 +699,12 @@ private fun SpatialMapCanvas(
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH) },
-            // Most of the map's height, below the top-right badge
+            // Its top stays under the data credit whatever the map's height; the bottom follows the map
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 4.dp, bottom = 4.dp)
+                .align(Alignment.TopEnd)
+                .padding(top = 34.dp, end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
-                .fillMaxHeight(0.86f)
+                .fillMaxHeight()
         )
     }
 }
