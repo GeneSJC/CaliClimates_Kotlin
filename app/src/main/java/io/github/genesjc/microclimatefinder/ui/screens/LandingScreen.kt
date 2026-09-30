@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import io.github.genesjc.microclimatefinder.domain.Elevation
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -235,7 +236,7 @@ private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int, regi
                     ) {
                         Text(
                             text = if (regionStations.isEmpty()) "" else
-                                "Region elevation ${"%,d".format(regionStations.minOf { it.elevationMeters })}\u2013${"%,d".format(regionStations.maxOf { it.elevationMeters })} m",
+                                "Region elevation ${Elevation.rangeFeet(regionStations.minOf { it.elevationMeters }, regionStations.maxOf { it.elevationMeters })}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)

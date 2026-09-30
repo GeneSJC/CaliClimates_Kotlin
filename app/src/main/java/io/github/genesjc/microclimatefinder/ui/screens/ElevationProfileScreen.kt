@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import io.github.genesjc.microclimatefinder.domain.Elevation
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -704,7 +705,7 @@ private fun ElevationProfileCanvas(
                 val pinY = with(density) { viewY(paddingPx + profileFrac(elevRatio) * heightPx).toDp().value }
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
                 val text = LocalNewsRepository.getCleanCityName(station.id, station.name) +
-                    " ${"%,d".format(station.elevationMeters)}m"
+                    " ${Elevation.formatFeet(station.elevationMeters)}"
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
                 val labelW = text.length * 5.4f + 10f
                 val left = (if (pinX - 24f + labelW > widthDp.value * 0.97f) pinX - labelW else pinX - 24f).coerceAtLeast(2f)
@@ -1205,7 +1206,7 @@ private fun ElevationProfileCanvas(
                         )
                     }
                     Text(
-                        text = "${skyTheme.condition} • ${currentStation?.elevationMeters}m elev",
+                        text = "${skyTheme.condition} • ${currentStation?.let { Elevation.formatFeet(it.elevationMeters) }} elev",
                         fontSize = 8.sp,
                         color = skyTheme.accent,
                         fontWeight = FontWeight.SemiBold

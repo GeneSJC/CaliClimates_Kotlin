@@ -206,7 +206,7 @@ private fun LegendBody(stations: List<MicroclimateStation>, extra: (@Composable 
                 }
         }
         Text(
-            text = "Ridge / highland: ridge, foothill or mountain terrain, or above 500 m",
+            text = "Ridge / highland: ridge, foothill or mountain terrain, or above 1,640 ft",
             fontSize = 10.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp)

@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import io.github.genesjc.microclimatefinder.domain.Elevation
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -563,7 +564,7 @@ private fun SpatialMapCanvas(
             for (station in landmarks) {
                 val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
                     .let { if (it.length > 18) it.take(17) + "\u2026" else it }
-                val elevText = "%,d".format(station.elevationMeters) + "m"
+                val elevText = Elevation.formatFeet(station.elevationMeters)
                 // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
                 val labelWidthDp = ((city.length + elevText.length + 1) * 4.9f + 12f).dp
                 val pinXDp = with(density) { mapX(station.longitude).toDp() }

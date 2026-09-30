@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import io.github.genesjc.microclimatefinder.domain.Elevation
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
@@ -129,7 +130,7 @@ fun StationCard(
                 }
 
                 Text(
-                    text = "${station.elevationMeters}m elev.",
+                    text = "${Elevation.describe(station.elevationMeters)}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
@@ -578,8 +579,10 @@ private fun CompactStationBody(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "${station.elevationMeters}m elev.",
+                    text = Elevation.describe(station.elevationMeters),
                     fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
