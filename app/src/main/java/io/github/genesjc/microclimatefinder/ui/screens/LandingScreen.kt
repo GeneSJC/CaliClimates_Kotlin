@@ -96,13 +96,6 @@ private data class LandingEntry(
 private fun landingEntries(dataset: StationDatasetInfo?): List<LandingEntry> {
     val entries = mutableListOf<LandingEntry>()
     if (dataset != null) {
-        val kind = dataset.subtitle.substringBefore(" • ")
-        entries += LandingEntry(
-            title = "Station Feed (CSV)",
-            description = "Every station in the region, as a list. $kind.",
-            iconChar = "▤",
-            target = AppScreen.STATION_LIST
-        )
         entries += LandingEntry(
             title = "Topographical Map",
             description = "Stations on a map of the region. Zoom, pan and tap a station.",
@@ -135,14 +128,7 @@ private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Snapshot",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -169,13 +155,13 @@ private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Terrain mix",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -191,7 +177,7 @@ private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -502,6 +488,22 @@ fun LandingScreen(
 
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
+                    // Station list link, under the header (larger than the "More" link below)
+                    if (dataset != null) {
+                        Text(
+                            text = "Station list \u203A",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(top = 10.dp, start = 4.dp)
+                                .clickable(
+                                    onClickLabel = "Open the station list",
+                                    role = Role.Button
+                                ) { onNavigateTo(AppScreen.STATION_LIST) }
+                                .padding(vertical = 4.dp)
+                        )
+                    }
                     // This region has no station data in this build
                     if (dataset == null) {
                         Spacer(modifier = Modifier.height(10.dp))
