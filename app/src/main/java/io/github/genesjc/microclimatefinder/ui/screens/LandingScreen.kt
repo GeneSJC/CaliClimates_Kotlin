@@ -448,6 +448,9 @@ private val SHEET_BLUR = 14.dp
 /** How opaque the sheet is: the blurred start screen shows through the rest. */
 private const val SHEET_OPACITY = 0.5f
 
+/** Space above the sheet's first row; the sheet starts this far above the Info link. */
+private val SHEET_TOP_PAD = 12.dp
+
 /**
  * A panel that slides in from the right edge, over the page. The page behind it is blurred (on
  * Android 12 and up) and dimmed, and the panel itself is translucent so it shows through.
@@ -456,6 +459,7 @@ private const val SHEET_OPACITY = 0.5f
 @Composable
 private fun BoxScope.InfoSideSheet(
     reveal: Animatable<Float, AnimationVector1D>,
+    handleTopPx: Float,
     onOpen: () -> Unit,
     onClose: () -> Unit,
     content: @Composable () -> Unit
@@ -477,7 +481,14 @@ private fun BoxScope.InfoSideSheet(
                 onClickLabel = "Close the region info"
             ) { onClose() }
     )
-    BoxWithConstraints(modifier = Modifier.matchParentSize()) {
+    var originY by remember { mutableStateOf(0f) }
+    BoxWithConstraints(
+        modifier = Modifier
+            .matchParentSize()
+            .onGloballyPositioned { originY = it.positionInRoot().y }
+    ) {
+        // The sheet's "Info »" lines up with the "« Info" link that opened it
+        val topPx = (handleTopPx - originY - with(density) { SHEET_TOP_PAD.toPx() }).coerceAtLeast(0f)
         val panelWidth = maxWidth * 0.9f
         val panelWidthPx = with(density) { panelWidth.toPx() }
         val dragState = rememberDraggableState { delta ->
@@ -489,10 +500,10 @@ private fun BoxScope.InfoSideSheet(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                // Level with the header, and only as tall as its content
-                .padding(top = 20.dp)
+                // Level with the Info link, and only as tall as its content
+                .offset { IntOffset(0, topPx.roundToInt()) }
                 .width(panelWidth)
-                .heightIn(max = maxHeight - 40.dp)
+                .heightIn(max = maxHeight - with(density) { topPx.toDp() } - 20.dp)
                 .graphicsLayer { translationX = (1f - reveal.value) * panelWidthPx }
                 .draggable(
                     state = dragState,
@@ -517,7 +528,7 @@ private fun RegionInfoContent(
     onClose: () -> Unit
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = SHEET_TOP_PAD)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "Region info",
@@ -593,6 +604,8 @@ fun LandingScreen(
     // Region info sheet: slides in from the right over a blurred start screen
     val infoReveal = remember { Animatable(0f) }
     var infoOpen by remember { mutableStateOf(false) }
+    // Where the "« Info" link sits, so the sheet can line up with it
+    var infoHandleTopPx by remember { mutableStateOf(0f) }
     val openInfo: () -> Unit = {
         infoOpen = true
         scope.launch { infoReveal.animateTo(1f, tween(SHEET_OPEN_MS, easing = FastOutSlowInEasing)) }
@@ -795,6 +808,7 @@ fun LandingScreen(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
+                                .onGloballyPositioned { infoHandleTopPx = it.positionInRoot().y }
                                 .clickable(onClickLabel = "Open the region info", role = Role.Button) { openInfo() }
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         )
@@ -876,7 +890,7 @@ fun LandingScreen(
             }
         }
 
-        InfoSideSheet(reveal = infoReveal, onOpen = openInfo, onClose = closeInfo) {
+        InfoSideSheet(reveal = infoReveal, handleTopPx = infoHandleTopPx, onOpen = openInfo, onClose = closeInfo) {
             RegionInfoContent(
                 region = region,
                 hasStationData = hasStationData,
