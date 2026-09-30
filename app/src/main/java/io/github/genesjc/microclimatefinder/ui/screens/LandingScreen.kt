@@ -19,6 +19,14 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.window.Popup
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -205,78 +213,123 @@ private fun terrainShortName(type: TerrainType): String = when (type) {
     TerrainType.URBAN_CANYON -> "Urban"
 }
 
-/** About the current region: its subtitle and description, with traits and key cities on expand. */
+/**
+ * About the current region: its subtitle and description. "More" opens the full text as a panel
+ * floating over the content below, so nothing on the page moves.
+ */
 @Composable
 private fun RegionDetailsCard(region: CaliforniaRegion) {
     var expanded by remember(region.id) { mutableStateOf(false) }
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                onClickLabel = if (expanded) "Show less about ${region.name}" else "Show more about ${region.name}",
-                role = Role.Button
-            ) { expanded = !expanded }
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = region.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = region.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+    var cardWidthPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+    val pageColor = MaterialTheme.colorScheme.background
+    val cardColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+
+    // The collapsed card keeps its place in the layout
+    // The Box is the popup's anchor: it sits exactly on the collapsed card
+    Box {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = cardColor,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onSizeChanged { cardWidthPx = it.width }
+                .clickable(
+                    onClickLabel = "Show more about ${region.name}",
+                    role = Role.Button
+                ) { expanded = true }
+        ) {
+            RegionDetailsBody(region, expanded = false)
+        }
+
+        if (expanded) {
+            // Drawn over the page at the card's position. Tapping outside or pressing Back closes it.
+            Popup(
+                alignment = Alignment.TopStart,
+                onDismissRequest = { expanded = false },
+                properties = PopupProperties(focusable = true)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = cardColor.compositeOver(pageColor),
+                    shadowElevation = 12.dp,
+                    modifier = Modifier
+                        .width(with(density) { cardWidthPx.toDp() })
+                        .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.8f).dp)
+                        .clickable(
+                            onClickLabel = "Show less about ${region.name}",
+                            role = Role.Button
+                        ) { expanded = false }
+                ) {
+                    Box(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        RegionDetailsBody(region, expanded = true)
+                    }
                 }
+            }
+        }
+    }
+}
+
+/** The region card's text, collapsed (three lines) or expanded (traits and key places). */
+@Composable
+private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (expanded) "Less ▲" else "More ▼",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp)
+                    text = region.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = region.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = region.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = if (expanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis
+                text = if (expanded) "Less ▲" else "More ▼",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp)
             )
-            if (expanded) {
-                Spacer(modifier = Modifier.height(12.dp))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = region.description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = if (expanded) Int.MAX_VALUE else 3,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (expanded) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "What shapes the weather here",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+            region.microclimateTraits.forEach { trait ->
                 Text(
-                    text = "What shapes the weather here",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                region.microclimateTraits.forEach { trait ->
-                    Text(
-                        text = "\u2022 $trait",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Key places",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = region.keyCities.joinToString(" \u2022 "),
+                    text = "\u2022 $trait",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Key places",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = region.keyCities.joinToString(" \u2022 "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
