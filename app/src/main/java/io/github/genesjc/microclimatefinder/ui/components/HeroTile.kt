@@ -62,6 +62,8 @@ fun HeroTile(
     passThrough: Boolean = false,
     /** True: the panel folds if open and the tile does not open it (something above it is showing). */
     forceClosed: Boolean = false,
+    /** The collapsed tile's corner radius; the open panel rounds out to 16dp as it grows. */
+    tileCornerRadius: androidx.compose.ui.unit.Dp = 16.dp,
     tile: @Composable () -> Unit,
     /** The open panel's content; it is given a way to fold the panel back. */
     panel: @Composable (close: () -> Unit) -> Unit
@@ -72,7 +74,7 @@ fun HeroTile(
     val reveal = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(tileCornerRadius)
 
     fun openPanel() {
         if (forceClosed) return
@@ -111,6 +113,7 @@ fun HeroTile(
         if (open) {
             // Grows from the tile's size to the full row width, from the tile's top-left corner
             val p = reveal.value
+            val panelShape = RoundedCornerShape(lerp(tileCornerRadius, 16.dp, p))
             val startWidth = with(density) { cardWidthPx.toDp() }
             val fullWidth = with(density) { fullWidthPx.toDp() }
             Popup(
@@ -127,8 +130,8 @@ fun HeroTile(
                             val h = (cardHeightPx + (placeable.height - cardHeightPx) * p).toInt()
                             layout(placeable.width, h) { placeable.place(0, 0) }
                         }
-                        .shadow(12.dp * p, shape)
-                        .clip(shape)
+                        .shadow(12.dp * p, panelShape)
+                        .clip(panelShape)
                         .background(panelColor)
                         .clickable(onClickLabel = closeLabel, role = Role.Button) { closePanel() }
                 ) {
