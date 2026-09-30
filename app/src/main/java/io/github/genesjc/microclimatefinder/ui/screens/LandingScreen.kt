@@ -123,7 +123,7 @@ private fun landingEntries(dataset: StationDatasetInfo?): List<LandingEntry> {
 /** One row in the quick region picker. */
 data class RegionOption(val id: String, val name: String, val stationCount: Int?)
 
-/** At a glance: how many stations, their elevation range, and the mix of terrain types. */
+/** At a glance, as two cards: how many stations and their elevation range, then the mix of terrain types. */
 @Composable
 private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
     val minElev = stations.minOf { it.elevationMeters }
@@ -131,9 +131,10 @@ private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
     val mix = TerrainType.values()
         .map { type -> type to stations.count { it.terrain == type } }
         .filter { it.second > 0 }
+    val cardColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        color = cardColor,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
@@ -163,7 +164,15 @@ private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+    Spacer(modifier = Modifier.height(12.dp))
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = cardColor,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
             Text(
                 text = "Terrain mix",
                 style = MaterialTheme.typography.bodySmall,
