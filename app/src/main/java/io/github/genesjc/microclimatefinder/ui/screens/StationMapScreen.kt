@@ -191,30 +191,7 @@ fun StationMapScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Selected Station Inspector Card
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Station Inspector",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Text(
-                    text = "${stations.size} Plotted",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
+        // Selected station card (the Station Inspector)
 
         if (selectedStation != null) {
             StationCard(

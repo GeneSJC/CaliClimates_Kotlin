@@ -199,15 +199,7 @@ fun ElevationProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Selected Station Inspector Card
-        Text(
-            text = "Station Inspector",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
+        // Selected station card (the Station Inspector)
 
         if (selectedStation != null) {
             StationCard(

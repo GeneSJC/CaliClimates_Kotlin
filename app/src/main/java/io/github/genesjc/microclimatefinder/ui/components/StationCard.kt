@@ -513,35 +513,46 @@ fun StationCard(
 }
 
 /**
- * The tighter card body: terrain, elevation and name on the left, temperature on the right, the
- * three metrics on one line, and the reading's age underneath. About half the height of the full card.
+ * The tighter card body: terrain and elevation centered on top, then the "Climate Station" label
+ * and name on the left with the temperature on the right, the three metrics on one line, and the
+ * reading's age underneath. About half the height of the full card.
  */
 @Composable
 private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, display: CardDisplay) {
     Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+        // Terrain and elevation, centered across the card
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = badgeColor.copy(alpha = 0.14f)
+            ) {
+                Text(
+                    text = station.terrain.label,
+                    color = badgeColor,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "${station.elevationMeters}m elev.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = badgeColor.copy(alpha = 0.14f)
-                    ) {
-                        Text(
-                            text = station.terrain.label,
-                            color = badgeColor,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "${station.elevationMeters}m elev.",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Climate Station",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Text(
                     text = station.name,
                     style = MaterialTheme.typography.titleMedium,
