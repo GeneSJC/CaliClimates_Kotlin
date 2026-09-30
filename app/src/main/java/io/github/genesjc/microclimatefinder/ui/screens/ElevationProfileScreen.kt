@@ -134,7 +134,10 @@ fun ElevationProfileScreen(
     embedded: Boolean = false,
     /** A station selected elsewhere (the other Home tab), and a way to report selections back. */
     sharedSelectedStationId: String? = null,
-    onStationSelected: ((String) -> Unit)? = null
+    onStationSelected: ((String) -> Unit)? = null,
+    /** Whether the chart is stretched to fill the screen, when Home keeps that across its two views. */
+    sharedExpanded: Boolean? = null,
+    onExpandedChange: ((Boolean) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
@@ -152,7 +155,8 @@ fun ElevationProfileScreen(
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
 
     // The chart starts at its regular height; the toggle on it stretches it, slowly, to fill the screen
-    var chartExpanded by remember { mutableStateOf(false) }
+    var localExpanded by remember { mutableStateOf(false) }
+    val chartExpanded = sharedExpanded ?: localExpanded
     var aboveChartPx by remember { mutableStateOf(0) }
     var belowChartPx by remember { mutableStateOf(0) }
     val density = LocalDensity.current
@@ -239,6 +243,7 @@ fun ElevationProfileScreen(
                     stations = stations,
                     regionId = dataset.regionId,
                     terrain = terrain,
+                    embedded = embedded,
                     selectedStationId = selectedStationId,
                     onSelectStation = {
                         localSelectedId = it.id
@@ -248,8 +253,12 @@ fun ElevationProfileScreen(
             }
             MapExpandToggle(
                 expanded = chartExpanded,
-                onToggle = { chartExpanded = !chartExpanded },
-                modifier = Modifier.align(Alignment.TopStart).padding(start = 6.dp, top = 6.dp)
+                onToggle = {
+                    localExpanded = !chartExpanded
+                    onExpandedChange?.invoke(!chartExpanded)
+                },
+                // Embedded, Home's view buttons sit in the top-left corner, so the toggle goes under them
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 6.dp, top = if (embedded) 36.dp else 6.dp)
             )
         }
 
@@ -352,6 +361,7 @@ private fun ElevationProfileCanvas(
     stations: List<MicroclimateStation>,
     regionId: String,
     terrain: TerrainImage?,
+    embedded: Boolean,
     selectedStationId: String?,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
@@ -501,8 +511,9 @@ private fun ElevationProfileCanvas(
             val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
             val taken = mutableListOf(
                 listOf(widthDp.value - 46f, heightDp.value * 0.14f, widthDp.value, heightDp.value), // zoom slider
-                listOf(0f, 0f, 80f, 38f),                 // expand toggle
-                listOf(10f, 45f, 180f, 92f)               // weather badge
+                if (embedded) listOf(0f, 0f, 140f, 32f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+                if (embedded) listOf(0f, 34f, 80f, 68f) else listOf(0f, 0f, 80f, 38f),  // expand toggle
+                if (embedded) listOf(10f, 72f, 180f, 119f) else listOf(10f, 45f, 180f, 92f)  // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
             fun plan(idx: Int, allow: Boolean, force: Boolean): PlacedLabel? {
@@ -841,7 +852,7 @@ private fun ElevationProfileCanvas(
             color = skyTheme.badgeBg.copy(alpha = 0.85f),
             border = BorderStroke(1.dp, skyTheme.accent.copy(alpha = 0.45f)),
             modifier = Modifier
-                .offset(x = 10.dp, y = 45.dp)
+                .offset(x = 10.dp, y = if (embedded) 72.dp else 45.dp)
                 .clickable {
                     // Tap to cycle landmarks
                     if (cycleIds.isNotEmpty()) {

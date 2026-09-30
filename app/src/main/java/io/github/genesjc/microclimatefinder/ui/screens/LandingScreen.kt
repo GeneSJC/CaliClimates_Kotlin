@@ -14,6 +14,9 @@ import androidx.compose.material3.DropdownMenu
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
+import io.github.genesjc.microclimatefinder.ui.components.StationSummaryTile
+import io.github.genesjc.microclimatefinder.ui.components.MapViewSwitch
+import io.github.genesjc.microclimatefinder.ui.components.HeroTile
 import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
@@ -76,8 +79,6 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
@@ -249,109 +250,40 @@ private fun terrainShortName(type: TerrainType): String = when (type) {
     TerrainType.URBAN_CANYON -> "Urban"
 }
 
-/** How long the region panel takes to grow out of its tile, and to fold back. */
-private const val PANEL_OPEN_MS = 650
-private const val PANEL_CLOSE_MS = 500
-
 /**
  * About the current region, as a half-width tile. "More" grows it, in width and height, into a
  * full-width panel floating over the page, so nothing on the page moves.
  */
 @Composable
 private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
-    var open by remember(region.id) { mutableStateOf(false) }
-    var cardWidthPx by remember { mutableStateOf(0) }
-    var cardHeightPx by remember { mutableStateOf(0) }
-    val reveal = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-    val pageColor = MaterialTheme.colorScheme.background
     val cardColor = sheetCardColor()
-    val panelShape = RoundedCornerShape(16.dp)
+    HeroTile(
+        fullWidthPx = fullWidthPx,
+        tileColor = cardColor,
+        panelColor = cardColor.compositeOver(MaterialTheme.colorScheme.background),
+        openLabel = "Show more about ${region.name}",
+        closeLabel = "Show less about ${region.name}",
+        resetKey = region.id,
+        tile = { RegionDetailsTile(region) },
+        panel = { RegionDetailsBody(region, expanded = true) }
+    )
+}
 
-    fun openPanel() {
-        open = true
-        scope.launch { reveal.animateTo(1f, tween(PANEL_OPEN_MS, easing = FastOutSlowInEasing)) }
-    }
-    fun closePanel() {
-        scope.launch {
-            reveal.animateTo(0f, tween(PANEL_CLOSE_MS, easing = FastOutSlowInEasing))
-            open = false
-        }
-    }
-
-    // The Box is the popup's anchor: it sits exactly on the collapsed tile
-    Box(modifier = Modifier.fillMaxSize()) {
-        // The collapsed tile keeps its place in the layout
-        Surface(
-            shape = panelShape,
-            color = cardColor,
-            modifier = Modifier
-                .fillMaxSize()
-                .onSizeChanged {
-                    cardWidthPx = it.width
-                    cardHeightPx = it.height
-                }
-                .clickable(
-                    onClickLabel = "Show more about ${region.name}",
-                    role = Role.Button
-                ) { openPanel() }
-        ) {
-            RegionDetailsTile(region)
-        }
-
-        if (open) {
-            // Grows from the tile's size to the full row width, from the tile's top-left corner.
-            // Tapping it, tapping outside, or pressing Back folds it back.
-            val p = reveal.value
-            val startWidth = with(density) { cardWidthPx.toDp() }
-            val fullWidth = with(density) { fullWidthPx.toDp() }
-            Popup(
-                alignment = Alignment.TopStart,
-                onDismissRequest = { closePanel() },
-                properties = PopupProperties(focusable = true)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(lerp(startWidth, fullWidth, p))
-                        .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.8f).dp)
-                        .layout { measurable, constraints ->
-                            val placeable = measurable.measure(constraints)
-                            val h = (cardHeightPx + (placeable.height - cardHeightPx) * p).toInt()
-                            layout(placeable.width, h) { placeable.place(0, 0) }
-                        }
-                        .shadow(12.dp * p, panelShape)
-                        .clip(panelShape)
-                        .background(cardColor.compositeOver(pageColor))
-                        .clickable(
-                            onClickLabel = "Show less about ${region.name}",
-                            role = Role.Button
-                        ) { closePanel() }
-                ) {
-                    Box(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        // Laid out at full width and revealed as the panel grows; the tile's
-                        // own text fades out as the full text fades in
-                        Box(modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true)) {
-                            Box(
-                                modifier = Modifier
-                                    .width(fullWidth)
-                                    .graphicsLayer { alpha = ((p - 0.25f) / 0.5f).coerceIn(0f, 1f) }
-                            ) {
-                                RegionDetailsBody(region, expanded = true)
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .width(startWidth)
-                                    .graphicsLayer { alpha = (1f - p * 3f).coerceIn(0f, 1f) }
-                            ) {
-                                RegionDetailsTile(region)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+/** The selected station as a half-width tile that grows into the full compact station card. */
+@Composable
+private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int) {
+    HeroTile(
+        fullWidthPx = fullWidthPx,
+        tileColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+        tileBorder = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+        // The card draws its own tint and border; this backs it so nothing shows through
+        panelColor = MaterialTheme.colorScheme.background,
+        openLabel = "Show the full station card",
+        closeLabel = "Hide the full station card",
+        resetKey = station.id,
+        tile = { StationSummaryTile(station) },
+        panel = { StationCard(station = station, isSelected = true, onSelect = {}, compact = true) }
+    )
 }
 
 /** The half-width tile: title, a short summary, and the More link. */
@@ -596,6 +528,8 @@ fun LandingScreen(
     onStationSelected: (String) -> Unit,
     pinScale: Float,
     onPinScaleChange: (Float) -> Unit,
+    mapExpanded: Boolean,
+    onMapExpandedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val region = remember(selectedRegionId) {
@@ -622,11 +556,12 @@ fun LandingScreen(
     // Region info sheet: slides in from the right over the start screen
     // The open state lives with the caller, so the sheet is still open when Back returns from the Station List
     val infoReveal = remember { Animatable(if (infoOpen) 1f else 0f) }
-    // Where the sheet starts: the top of the tab row (or, with no tabs, just under the link)
-    var tabsTopPx by remember { mutableStateOf(0f) }
-    var linkRowWidthPx by remember { mutableStateOf(0) }
+    // Where the sheet starts: the top of the map (or, with no map, just under the link)
+    var mapTopPx by remember { mutableStateOf(0f) }
+    var rowWidthPx by remember { mutableStateOf(0) }
+    var rowLeftPx by remember { mutableStateOf(0f) }
     var infoHandleBottomPx by remember { mutableStateOf(0f) }
-    val sheetTopPx = if (tabsTopPx > 0f) tabsTopPx else infoHandleBottomPx
+    val sheetTopPx = if (mapTopPx > 0f) mapTopPx else infoHandleBottomPx
     val openInfo: () -> Unit = {
         onInfoOpenChange(true)
         scope.launch { infoReveal.animateTo(1f, tween(SHEET_OPEN_MS, easing = FastOutSlowInEasing)) }
@@ -824,39 +759,34 @@ fun LandingScreen(
                 }
             }
 
-            // The selected station (the Station Inspector), shared by both tabs, above the Region Info link
-            if (dataset != null) {
-                val shown = snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
-                if (shown != null) {
-                    StationCard(station = shown, isSelected = true, onSelect = {}, compact = true)
+            // Row 1: the selected station as a half-width tile (it grows into the full card), and
+            // Region Info with the Terrain Legend under it, beside it
+            val shown = if (dataset != null) {
+                snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
+            } else null
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .onSizeChanged { rowWidthPx = it.width }
+                    .onGloballyPositioned { rowLeftPx = it.positionInRoot().x },
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx)
                 }
-            }
-
-            run {
-                Column {
-                    // Handle for the region info sheet, which slides in from the right
-                    // A fixed height, so the row does not change when the link swaps with the X
+                Column(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    // Handle for the region info sheet, which slides in from the right. A fixed
+                    // height, so the row does not change when the link swaps with the X
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(32.dp)
-                            .onSizeChanged { linkRowWidthPx = it.width },
+                        modifier = Modifier.fillMaxWidth().height(30.dp),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // The Terrain Legend, on the left of the same line; it opens as a full-width
-                        // panel over the tabs
-                        Box(modifier = Modifier.weight(1f)) {
-                            if (dataset != null && snapshotStations.isNotEmpty()) {
-                                TerrainLegend(
-                                    stations = snapshotStations,
-                                    // The dot-size slider belongs to the map, so only the Topo Map tab has it
-                                    extra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) },
-                                    headerFontSize = 15.84.sp,
-                                    expandedWidthPx = linkRowWidthPx
-                                )
-                            }
-                        }
                         val handleModifier = Modifier
                             .onGloballyPositioned {
                                 infoHandleBottomPx = it.positionInRoot().y + it.size.height
@@ -898,6 +828,24 @@ fun LandingScreen(
                             )
                         }
                     }
+                    // The Terrain Legend under it, also at the right; it opens as a full-width panel over the map
+                    if (dataset != null && snapshotStations.isNotEmpty()) {
+                        TerrainLegend(
+                            stations = snapshotStations,
+                            modifier = Modifier.padding(end = 8.dp),
+                            // The dot-size slider belongs to the map, so only the Topography view has it
+                            extra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) },
+                            headerFontSize = 15.84.sp,
+                            expandedWidthPx = rowWidthPx,
+                            panelLeftPx = rowLeftPx,
+                            headerAlignment = Alignment.TopEnd
+                        )
+                    }
+                }
+            }
+
+            run {
+                Column {
                     // This region has no station data in this build
                     if (dataset == null) {
                         Spacer(modifier = Modifier.height(6.dp))
@@ -965,26 +913,15 @@ fun LandingScreen(
                 }
             }
 
-            // The map views, as two tabs. The standalone screens are unchanged; these are the same
-            // screens without their own app bar.
+            // The map, with small buttons on it to switch between its Topography and Elevation views.
+            // The standalone screens are unchanged; these are the same screens without their own app bar.
             if (dataset != null) {
-                TabRow(
-                    selectedTabIndex = homeTab,
-                    containerColor = Color.Transparent,
-                    modifier = Modifier.onGloballyPositioned { tabsTopPx = it.positionInRoot().y }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .onGloballyPositioned { mapTopPx = it.positionInRoot().y }
                 ) {
-                    Tab(
-                        selected = homeTab == 0,
-                        onClick = { onHomeTabChange(0) },
-                        text = { Text("Topography", fontSize = 18.2.sp, fontWeight = FontWeight.Bold) }
-                    )
-                    Tab(
-                        selected = homeTab == 1,
-                        onClick = { onHomeTabChange(1) },
-                        text = { Text("Elevation", fontSize = 18.2.sp, fontWeight = FontWeight.Bold) }
-                    )
-                }
-                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     if (homeTab == 0) {
                         StationMapScreen(
                             dataset = dataset,
@@ -994,7 +931,9 @@ fun LandingScreen(
                             embedded = true,
                             sharedSelectedStationId = selectedStationId,
                             onStationSelected = onStationSelected,
-                            sharedPinScale = pinScale
+                            sharedPinScale = pinScale,
+                            sharedExpanded = mapExpanded,
+                            onExpandedChange = onMapExpandedChange
                         )
                     } else {
                         ElevationProfileScreen(
@@ -1002,9 +941,16 @@ fun LandingScreen(
                             onNavigateBack = {},
                             embedded = true,
                             sharedSelectedStationId = selectedStationId,
-                            onStationSelected = onStationSelected
+                            onStationSelected = onStationSelected,
+                            sharedExpanded = mapExpanded,
+                            onExpandedChange = onMapExpandedChange
                         )
                     }
+                    MapViewSwitch(
+                        selected = homeTab,
+                        onSelect = onHomeTabChange,
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = 6.dp, top = 6.dp)
+                    )
                 }
             }
         }

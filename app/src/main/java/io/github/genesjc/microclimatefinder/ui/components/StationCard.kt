@@ -601,6 +601,53 @@ private fun CompactMetric(label: String, value: String) {
     }
 }
 
+/**
+ * The half-width summary of a station for the Home row: name, temperature in °F with °C beside it,
+ * and how old the reading is. The full compact card opens from it.
+ */
+@Composable
+fun StationSummaryTile(station: MicroclimateStation) {
+    val display = liveDisplay(station)
+    Column(modifier = Modifier.padding(12.dp)) {
+        Text(
+            text = station.name,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "—",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) }.orEmpty(),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+        Text(
+            text = display.status.orEmpty(),
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "More \u25BC",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
 /** What the card shows for the current conditions. Null temperature means no reading to show. */
 private class CardDisplay(
     val tempC: Double?,

@@ -121,7 +121,10 @@ fun StationMapScreen(
     sharedSelectedStationId: String? = null,
     onStationSelected: ((String) -> Unit)? = null,
     /** The dot size, when Home owns it (its Terrain Legend panel holds the slider). */
-    sharedPinScale: Float? = null
+    sharedPinScale: Float? = null,
+    /** Whether the map is stretched to fill the screen, when Home keeps that across its two views. */
+    sharedExpanded: Boolean? = null,
+    onExpandedChange: ((Boolean) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
@@ -140,7 +143,8 @@ fun StationMapScreen(
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
     val pickerState = rememberRegionPickerState()
     // The map starts at its regular height; the toggle on the map stretches it, slowly, to fill the screen
-    var mapExpanded by remember { mutableStateOf(false) }
+    var localExpanded by remember { mutableStateOf(false) }
+    val mapExpanded = sharedExpanded ?: localExpanded
     val pageScroll = rememberScrollState()
     val density = LocalDensity.current
     var aboveMapPx by remember { mutableStateOf(0) }
@@ -262,6 +266,7 @@ fun StationMapScreen(
                 SpatialMapCanvas(
                     stations = stations,
                     terrain = terrain,
+                    embedded = embedded,
                     selectedStationId = selectedStationId,
                     pinScale = pinScale,
                     onSelectStation = {
@@ -273,10 +278,14 @@ fun StationMapScreen(
             // Expand / shrink toggle, under the compass in the top-left corner
             MapExpandToggle(
                 expanded = mapExpanded,
-                onToggle = { mapExpanded = !mapExpanded },
+                onToggle = {
+                    localExpanded = !mapExpanded
+                    onExpandedChange?.invoke(!mapExpanded)
+                },
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 6.dp, top = 44.dp)
+                    // Embedded, Home's view buttons sit in the top-left corner, so the toggle goes under them
+                    .padding(start = 6.dp, top = if (embedded) 36.dp else 44.dp)
             )
         }
 
@@ -373,6 +382,7 @@ private data class StationLabelPlan(
 private fun SpatialMapCanvas(
     stations: List<MicroclimateStation>,
     terrain: TerrainImage?,
+    embedded: Boolean,
     selectedStationId: String?,
     pinScale: Float = 1.0f,
     onSelectStation: (MicroclimateStation) -> Unit
@@ -524,11 +534,13 @@ private fun SpatialMapCanvas(
 
         // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
-            listOf(0f, 0f, 50f, 32f),
+            // Compass; embedded, it sits right of Home's two view buttons
+            if (embedded) listOf(140f, 0f, 190f, 32f) else listOf(0f, 0f, 50f, 32f),
             listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),
             listOf(widthDp.value - 46f, 0f, widthDp.value, heightDp.value),
-            listOf(0f, 40f, 76f, 74f)  // expand / shrink toggle
+            if (embedded) listOf(0f, 0f, 140f, 32f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+            if (embedded) listOf(0f, 34f, 76f, 68f) else listOf(0f, 40f, 76f, 74f)  // expand / shrink toggle
         )
 
         // Which labels have room right now. Only the target (shown or hidden) is decided here; the
@@ -617,7 +629,7 @@ private fun SpatialMapCanvas(
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(6.dp)
+                .padding(start = if (embedded) 146.dp else 6.dp, top = 6.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

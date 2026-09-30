@@ -12,8 +12,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import kotlin.math.roundToInt
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.unit.TextUnit
 import kotlinx.coroutines.launch
 import androidx.compose.ui.window.PopupProperties
@@ -69,11 +73,16 @@ fun TerrainLegend(
     extra: (@Composable () -> Unit)? = null,
     headerFontSize: TextUnit = 17.6.sp,
     /** When set, the panel grows to this width (Home gives it the full row); else to the header's width. */
-    expandedWidthPx: Int = 0
+    expandedWidthPx: Int = 0,
+    /** The screen x of the left edge the panel grows to, when the header is not at that edge (else NaN). */
+    panelLeftPx: Float = Float.NaN,
+    headerAlignment: Alignment = Alignment.TopStart
 ) {
     var open by remember { mutableStateOf(false) }
     var widthPx by remember { mutableStateOf(0) }
     var headerHeightPx by remember { mutableStateOf(0) }
+    var boxRootX by remember { mutableStateOf(0f) }
+    var headerRootX by remember { mutableStateOf(0f) }
     val reveal = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -97,12 +106,21 @@ fun TerrainLegend(
     }
 
     // The header keeps its place in the layout; the panel floats over what is below it
-    Box(modifier = modifier.fillMaxWidth().onSizeChanged { widthPx = it.width }) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .onSizeChanged { widthPx = it.width }
+            .onGloballyPositioned { boxRootX = it.positionInRoot().x }
+    ) {
         LegendHeader(
             expanded = false,
             fontSize = headerFontSize,
             modifier = Modifier
-                .onSizeChanged { headerHeightPx = it.height }
+                .align(headerAlignment)
+                .onGloballyPositioned {
+                    headerRootX = it.positionInRoot().x
+                    headerHeightPx = it.size.height
+                }
                 .clickable(onClickLabel = "Show the Terrain Legend", role = Role.Button) { openPanel() }
         )
         if (open) {
@@ -111,7 +129,12 @@ fun TerrainLegend(
             val endWidth = if (expandedWidthPx > 0) with(density) { expandedWidthPx.toDp() } + padX * 2 else startWidth
             Popup(
                 alignment = Alignment.TopStart,
-                offset = IntOffset(-padXPx, 0),
+                // From the header's left edge to the row's left edge as it grows
+                offset = IntOffset(
+                    if (panelLeftPx.isNaN()) -padXPx
+                    else (lerp(headerRootX - boxRootX, panelLeftPx - boxRootX, p) - padXPx).roundToInt(),
+                    0
+                ),
                 onDismissRequest = { closePanel() },
                 properties = PopupProperties(focusable = true)
             ) {

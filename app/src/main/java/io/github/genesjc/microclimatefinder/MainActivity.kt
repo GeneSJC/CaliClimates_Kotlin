@@ -75,6 +75,8 @@ fun AppNavigation() {
     var homeStationId by remember { mutableStateOf<String?>(null) }
     // The Topo Map's dot size, set in the Terrain Legend panel on Home
     var homePinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
+    // Whether the Home map is stretched to fill the screen; both views share it
+    var homeMapExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
     val regionPrefs = remember { RegionPreferences(context) }
@@ -150,7 +152,9 @@ fun AppNavigation() {
                 selectedStationId = homeStationId,
                 onStationSelected = { homeStationId = it },
                 pinScale = homePinScale,
-                onPinScaleChange = { homePinScale = it }
+                onPinScaleChange = { homePinScale = it },
+                mapExpanded = homeMapExpanded,
+                onMapExpandedChange = { homeMapExpanded = it }
             )
         }
         AppScreen.DEMOS_AND_PREVIEWS -> {
