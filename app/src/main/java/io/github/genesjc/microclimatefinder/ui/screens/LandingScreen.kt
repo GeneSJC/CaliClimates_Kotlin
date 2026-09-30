@@ -13,6 +13,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
+import io.github.genesjc.microclimatefinder.ui.components.StationCard
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
@@ -819,12 +820,20 @@ fun LandingScreen(
                 }
             }
 
+            // The selected station (the Station Inspector), shared by both tabs, above the Region Info link
+            if (dataset != null) {
+                val shown = snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
+                if (shown != null) {
+                    StationCard(station = shown, isSelected = true, onSelect = {}, compact = true)
+                }
+            }
+
             run {
                 Column {
                     // Handle for the region info sheet, which slides in from the right
                     // A fixed height, so the row does not change when the link swaps with the X
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(30.dp),
+                        modifier = Modifier.fillMaxWidth().height(32.dp),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -839,8 +848,8 @@ fun LandingScreen(
                         val handleColor = MaterialTheme.colorScheme.primary
                         if (infoOpen) {
                             // A bold X, drawn so its weight and size are exact
-                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 5.dp).size(14.4.dp)) {
-                                val stroke = 2.4.dp.toPx()
+                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 5.dp).size(13.dp)) {
+                                val stroke = 2.2.dp.toPx()
                                 val inset = stroke / 2f
                                 drawLine(
                                     color = handleColor,
@@ -861,7 +870,8 @@ fun LandingScreen(
                             Text(
                                 text = "\u00AB Region Info",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontSize = 17.6.sp,
+                                fontSize = 15.84.sp,
+                                lineHeight = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = handleColor,
                                 modifier = handleModifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -946,12 +956,12 @@ fun LandingScreen(
                     Tab(
                         selected = homeTab == 0,
                         onClick = { onHomeTabChange(0) },
-                        text = { Text("Topo Map", fontWeight = FontWeight.Bold) }
+                        text = { Text("Topo Map", fontSize = 18.2.sp, fontWeight = FontWeight.Bold) }
                     )
                     Tab(
                         selected = homeTab == 1,
                         onClick = { onHomeTabChange(1) },
-                        text = { Text("Elevation Profile", fontWeight = FontWeight.Bold) }
+                        text = { Text("Elevation Profile", fontSize = 18.2.sp, fontWeight = FontWeight.Bold) }
                     )
                 }
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {

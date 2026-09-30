@@ -208,6 +208,8 @@ fun ElevationProfileScreen(
         // Terrain legend: one line until opened, then this region's terrain types with counts
         TerrainLegend(stations = stations)
 
+        // The selected station card; embedded, Home shows it above the tabs
+        if (!embedded) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Selected station card (the Station Inspector)
@@ -233,6 +235,7 @@ fun ElevationProfileScreen(
                     )
                 }
             }
+        }
         }
     }
 }

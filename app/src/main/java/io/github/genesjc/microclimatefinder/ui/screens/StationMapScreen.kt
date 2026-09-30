@@ -190,7 +190,8 @@ fun StationMapScreen(
         Spacer(modifier = Modifier.height(14.dp))
         }
 
-        // 1. The selected station (the Station Inspector)
+        // The selected station card; embedded, Home shows it above the tabs
+        if (!embedded) {
         if (selectedStation != null) {
             StationCard(
                 station = selectedStation,
@@ -215,6 +216,8 @@ fun StationMapScreen(
         }
 
         Spacer(modifier = Modifier.height(6.dp))
+
+        }
 
         // 2. Terrain legend: one line until opened, then this region's terrain types with counts
         TerrainLegend(
