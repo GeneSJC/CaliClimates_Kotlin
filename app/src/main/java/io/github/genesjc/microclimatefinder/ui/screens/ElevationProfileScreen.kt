@@ -265,7 +265,7 @@ fun ElevationProfileScreen(
                     onExpandedChange?.invoke(!chartExpanded)
                 },
                 // Just left of the top of the zoom slider, as on the Topography map
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 50.dp, top = 34.dp)
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 50.dp, top = 42.dp)
             )
         }
 
@@ -607,9 +607,9 @@ private fun ElevationProfileCanvas(
         val placedLabels = run {
             val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
             val taken = mutableListOf(
-                listOf(widthDp.value - 46f, 34f, widthDp.value, heightDp.value), // zoom slider
+                listOf(widthDp.value - 46f, 42f, widthDp.value, heightDp.value), // zoom slider
                 if (embedded) listOf(50f, 0f, 190f, 32f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
-                listOf(widthDp.value - 126f, 30f, widthDp.value - 46f, 62f),  // expand toggle
+                listOf(widthDp.value - 126f, 38f, widthDp.value - 46f, 70f),  // expand toggle
                 listOf(10f, 45f, 180f, 92f)               // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
@@ -1088,7 +1088,7 @@ private fun ElevationProfileCanvas(
             // The same spot as on the Topography map: its top stays put, the bottom follows the chart
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 34.dp, end = 4.dp, bottom = 4.dp)
+                .padding(top = 42.dp, end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
                 .fillMaxHeight()
         )

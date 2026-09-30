@@ -285,7 +285,7 @@ fun StationMapScreen(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     // Just left of the top of the zoom slider
-                    .padding(end = 50.dp, top = 34.dp)
+                    .padding(end = 50.dp, top = 42.dp)
             )
         }
 
@@ -537,9 +537,9 @@ private fun SpatialMapCanvas(
             listOf(0f, 0f, 50f, 32f),                                   // compass
             listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),       // data credit
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
-            listOf(widthDp.value - 46f, 34f, widthDp.value, heightDp.value),  // zoom slider
+            listOf(widthDp.value - 46f, 42f, widthDp.value, heightDp.value),  // zoom slider
             if (embedded) listOf(50f, 0f, 190f, 32f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
-            listOf(widthDp.value - 126f, 30f, widthDp.value - 46f, 62f)  // expand / shrink toggle
+            listOf(widthDp.value - 126f, 38f, widthDp.value - 46f, 70f)  // expand / shrink toggle
         )
 
         // Which labels have room right now. Only the target (shown or hidden) is decided here; the
@@ -702,7 +702,7 @@ private fun SpatialMapCanvas(
             // Its top stays under the data credit whatever the map's height; the bottom follows the map
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 34.dp, end = 4.dp, bottom = 4.dp)
+                .padding(top = 42.dp, end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
                 .fillMaxHeight()
         )

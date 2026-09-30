@@ -782,7 +782,8 @@ fun LandingScreen(
                             headerFontSize = 15.84.sp,
                             expandedWidthPx = rowWidthPx,
                             panelLeftPx = rowLeftPx,
-                            headerAlignment = Alignment.TopEnd
+                            headerAlignment = Alignment.TopEnd,
+                            headerEndInset = 8.dp
                         )
                     }
                     // Region Info at the very bottom of the column, level with the tile's last line. The sheet slides in from the right. A fixed

@@ -16,6 +16,7 @@ import kotlin.math.roundToInt
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.unit.TextUnit
@@ -52,8 +53,8 @@ import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 
 /** How long the legend panel takes to grow out of its header, and to fold back. */
-private const val LEGEND_OPEN_MS = 650
-private const val LEGEND_CLOSE_MS = 500
+private const val LEGEND_OPEN_MS = 900
+private const val LEGEND_CLOSE_MS = 650
 
 /**
  * Colour key for the map dots, built from the region's own stations and kept to one line until
@@ -62,8 +63,9 @@ private const val LEGEND_CLOSE_MS = 500
  * count. Tap the header, tap outside, or press Back to close. A station is "ridge / highland" when
  * its data says ridge, foothill or mountain, or when it sits above 500 m.
  * [extra] is more content shown in the panel, under the key (the Topo Map puts its dot-size
- * slider there). [headerFontSize] sets the header's size; [expandedWidthPx] lets the panel grow
- * wider than the header, for a header that sits in part of a row.
+ * slider there). [headerFontSize] sets the header's size; [expandedWidthPx] makes the panel wider
+ * than the header, for a header that sits in part of a row. The panel opens downward from the header
+ * and folds back up into it.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -76,7 +78,9 @@ fun TerrainLegend(
     expandedWidthPx: Int = 0,
     /** The screen x of the left edge the panel grows to, when the header is not at that edge (else NaN). */
     panelLeftPx: Float = Float.NaN,
-    headerAlignment: Alignment = Alignment.TopStart
+    headerAlignment: Alignment = Alignment.TopStart,
+    /** Space to the right of the header when it is right-aligned, so it does not move when the panel opens. */
+    headerEndInset: Dp = 0.dp
 ) {
     var open by remember { mutableStateOf(false) }
     var widthPx by remember { mutableStateOf(0) }
@@ -125,14 +129,13 @@ fun TerrainLegend(
         )
         if (open) {
             val p = reveal.value
-            val startWidth = with(density) { widthPx.toDp() } + padX * 2
-            val endWidth = if (expandedWidthPx > 0) with(density) { expandedWidthPx.toDp() } + padX * 2 else startWidth
+            val panelWidth = if (expandedWidthPx > 0) with(density) { expandedWidthPx.toDp() } + padX * 2
+            else with(density) { widthPx.toDp() } + padX * 2
             Popup(
                 alignment = Alignment.TopStart,
-                // From the header's left edge to the row's left edge as it grows
+                // At the row's left edge (or the header's), full width from the start; only the height animates
                 offset = IntOffset(
-                    if (panelLeftPx.isNaN()) -padXPx
-                    else (lerp(headerRootX - boxRootX, panelLeftPx - boxRootX, p) - padXPx).roundToInt(),
+                    if (panelLeftPx.isNaN()) -padXPx else (panelLeftPx - boxRootX - padXPx).roundToInt(),
                     0
                 ),
                 onDismissRequest = { closePanel() },
@@ -140,7 +143,9 @@ fun TerrainLegend(
             ) {
                 Box(
                     modifier = Modifier
-                        .width(lerp(startWidth, endWidth, p))
+                        .width(panelWidth)
+                        // The wide bar fades in over the start, so it does not pop
+                        .graphicsLayer { alpha = (p / 0.12f).coerceIn(0f, 1f) }
                         .layout { measurable, constraints ->
                             val placeable = measurable.measure(constraints)
                             val closedHeight = headerHeightPx + padBottomPx
@@ -152,17 +157,23 @@ fun TerrainLegend(
                         .background(MaterialTheme.colorScheme.surface)
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, panelShape)
                 ) {
-                    // Laid out at the full width and revealed as the panel grows
+                    // Laid out at its full height and revealed downward as the panel grows
                     Box(modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true)) {
-                    Column(modifier = Modifier.width(endWidth).padding(start = padX, end = padX, bottom = padBottom)) {
-                        LegendHeader(
-                            expanded = true,
-                            fontSize = headerFontSize,
-                            modifier = Modifier.clickable(
-                                onClickLabel = "Hide the Terrain Legend",
-                                role = Role.Button
-                            ) { closePanel() }
-                        )
+                    Column(modifier = Modifier.width(panelWidth).padding(start = padX, end = padX, bottom = padBottom)) {
+                        // The header stays where it was in the collapsed legend (same side of the row)
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            LegendHeader(
+                                expanded = true,
+                                fontSize = headerFontSize,
+                                modifier = Modifier
+                                    .align(headerAlignment)
+                                    .padding(end = headerEndInset)
+                                    .clickable(
+                                        onClickLabel = "Hide the Terrain Legend",
+                                        role = Role.Button
+                                    ) { closePanel() }
+                            )
+                        }
                         Column(modifier = Modifier.graphicsLayer { alpha = ((p - 0.25f) / 0.5f).coerceIn(0f, 1f) }) {
                             FlowRow(
                                 modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
