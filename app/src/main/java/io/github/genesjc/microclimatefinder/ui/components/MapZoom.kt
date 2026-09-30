@@ -24,6 +24,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -52,12 +61,6 @@ fun zoomDotGrowth(zoom: Float): Float = (1f + (zoom - 1f) * 0.25f).coerceAtMost(
 fun labelBudget(base: Int, zoom: Float, perStep: Float): Float = base + (zoom - 1f) * perStep
 
 /**
- * Opacity for the label at [rank] (0 for the most important) given the budget: labels inside the
- * budget are solid, the next one eases in, and the rest are hidden.
- */
-fun labelFade(budget: Float, rank: Int): Float = (budget - rank).coerceIn(0f, 1f)
-
-/**
  * Keeps the zoomed content covering the viewport: pan can never expose an empty edge. The inset is the
  * margin around the content that stays put (content edges stop at the inset instead of the viewport edge).
  */
@@ -81,6 +84,40 @@ fun panForZoom(
     val center = Offset(width / 2f, height / 2f)
     val moved = anchor - center - (anchor - center - pan) * (newZoom / oldZoom)
     return clampPan(moved, newZoom, width, height, insetX, insetY)
+}
+
+/**
+ * Per-label fade for the maps. [targets] says which labels should be showing (1) or hidden (0) right
+ * now, keyed by label id; the returned map holds each label's current opacity, which eases toward
+ * its target over [fadeSeconds] on its own clock. So a label fades in or out smoothly however the
+ * zoom changed (a jump, a pinch, a pan), and the animation stops when nothing is changing.
+ * A label absent from the returned map is fully hidden.
+ */
+@Composable
+fun rememberLabelFades(targets: Map<String, Float>, fadeSeconds: Float = 0.18f): Map<String, Float> {
+    val alphas = remember { mutableStateMapOf<String, Float>() }
+    var latest by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
+    SideEffect { if (latest != targets) latest = targets.toMap() }
+    LaunchedEffect(Unit) {
+        snapshotFlow { latest }.collectLatest { wanted ->
+            var lastFrame = 0L
+            while (true) {
+                val pending = (alphas.keys + wanted.keys).filter { id -> (alphas[id] ?: 0f) != (wanted[id] ?: 0f) }
+                if (pending.isEmpty()) break
+                val now = withFrameNanos { it }
+                val dt = if (lastFrame == 0L) 0f else ((now - lastFrame) / 1_000_000_000f).coerceIn(0f, 0.05f)
+                lastFrame = now
+                val step = dt / fadeSeconds
+                pending.forEach { id ->
+                    val current = alphas[id] ?: 0f
+                    val goal = wanted[id] ?: 0f
+                    val next = if (current < goal) minOf(current + step, goal) else maxOf(current - step, goal)
+                    if (next <= 0.001f && goal == 0f) alphas.remove(id) else alphas[id] = next
+                }
+            }
+        }
+    }
+    return alphas
 }
 
 /** How much one tap on the zoom slider's + or - changes the zoom. */

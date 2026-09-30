@@ -65,6 +65,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
@@ -86,8 +87,8 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import io.github.genesjc.microclimatefinder.ui.components.clampPan
 import io.github.genesjc.microclimatefinder.ui.components.labelBudget
-import io.github.genesjc.microclimatefinder.ui.components.labelFade
 import io.github.genesjc.microclimatefinder.ui.components.panForZoom
+import io.github.genesjc.microclimatefinder.ui.components.rememberLabelFades
 import io.github.genesjc.microclimatefinder.ui.components.zoomDotGrowth
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
 
@@ -326,6 +327,19 @@ private val BAY_AREA_AREA_LABELS = listOf(
     MapAreaLabel("THE DELTA", -121.65, 38.05, -27, 9f, FontWeight.Bold, 1f, Color(0xFF0284C7).copy(alpha = 0.55f)),
     MapAreaLabel("Folsom Lake", -121.10, 38.72, -25, 8f, FontWeight.Bold, 0f, Color(0xFF0369A1)),
     MapAreaLabel("Sutter Buttes", -121.82, 39.20, -25, 8f, FontWeight.Medium, 0f, Color(0xFF4B6349).copy(alpha = 0.70f))
+)
+
+/** Where a Bay Area city badge would go (its opacity comes from the label fades). */
+private data class CityLabelPlan(val city: RegionalMapCity, val xDp: Dp, val yDp: Dp)
+
+private data class AreaLabelPlan(val label: MapAreaLabel, val xDp: Dp, val yDp: Dp)
+
+private data class StationLabelPlan(
+    val station: MicroclimateStation,
+    val city: String,
+    val elevText: String,
+    val xDp: Dp,
+    val yDp: Dp
 )
 
 private data class RegionalMapCity(
@@ -732,35 +746,91 @@ private fun SpatialMapCanvas(
         fun geoX(lon: Double) = with(density) { viewX(paddingPx + ((lon - minLon) / lonSpan).toFloat() * widthPx).toDp() }
         fun geoY(lat: Double) = with(density) { viewY(paddingPx + (1f - ((lat - minLat) / latSpan).toFloat()) * heightPx).toDp() }
 
+        // Which labels have room right now. Only the target (shown or hidden) is decided here; the
+        // opacity eases toward it on its own, so labels fade in and out however the zoom changed.
+        val labelTargets = mutableMapOf<String, Float>()
+        val cityPlans = mutableListOf<CityLabelPlan>()
+        val areaPlans = mutableListOf<AreaLabelPlan>()
+        val stationPlans = mutableListOf<StationLabelPlan>()
+
         if (hasArtwork) {
-            // 9. City badges first; area names (watermarks, lake, buttes) are placed after them so they
-            // never sit under a badge.
-            // Interactive Regional Cities & Landmarks
-            // The capital first, then more places as the map zooms; the newest one fades in
-            val cityBudget = labelBudget(5, zoom, 2f)
+            // City badges first; area names (watermarks, lake, buttes) are placed after them so they
+            // never sit under a badge. The capital first, then more places as the map zooms.
+            val cityBudget = labelBudget(5, zoom, 2f).toInt()
             var shownCities = 0
             for (city in REGIONAL_MAP_CITIES.sortedByDescending { it.isCapital }) {
-                val cityFade = labelFade(cityBudget, shownCities)
-                if (cityFade <= 0.02f) break
                 val ratioX = ((city.lon - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
                 val ratioY = (1f - ((city.lat - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
-
                 val xDp = with(density) { (paddingPx + ratioX * widthPx).toDp() } + city.xOffsetDp.dp
                 val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + city.yOffsetDp.dp
-
-                // Skip a label that would overlap one already placed (the capital is placed first)
                 val cityLabelWidth = (city.name.length + (city.elevationText?.length ?: 0) + 1) * 4.9f +
                     12f + (if (city.isCapital) 10f else 0f)
-                val cityLeft = xDp.value
-                val cityTop = yDp.value
-                val cityRight = cityLeft + cityLabelWidth
-                val cityBottom = cityTop + 20f
-                if (placedRects.any { r -> cityLeft < r[2] && cityRight > r[0] && cityTop < r[3] && cityBottom > r[1] }) continue
-                placedRects.add(listOf(cityLeft, cityTop, cityRight, cityBottom))
-                shownCities++
+                val left = xDp.value
+                val top = yDp.value
+                val right = left + cityLabelWidth
+                val bottom = top + 20f
+                val hasRoom = shownCities < cityBudget &&
+                    placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
+                if (hasRoom) {
+                    placedRects.add(listOf(left, top, right, bottom))
+                    shownCities++
+                }
+                labelTargets["c:${city.name}"] = if (hasRoom) 1f else 0f
+                cityPlans.add(CityLabelPlan(city, xDp, yDp))
+            }
+            // Area names: shown only where they do not overlap a badge or the controls
+            BAY_AREA_AREA_LABELS.forEach { label ->
+                val x = geoX(label.lon) + label.xOffsetDp.dp
+                val y = geoY(label.lat)
+                val left = x.value
+                val top = y.value
+                val right = left + label.text.length * (label.fontSizeSp * 0.6f + label.letterSpacingSp)
+                val bottom = top + label.fontSizeSp + 6f
+                val free = placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
+                if (free) placedRects.add(listOf(left, top, right, bottom))
+                labelTargets["a:${label.text}"] = if (free) 1f else 0f
+                areaPlans.add(AreaLabelPlan(label, x, y))
+            }
+        } else {
+            // Labels for stations picked from the loaded stations: more as the map zooms
+            val stationBudget = labelBudget(MAP_LABEL_COUNT, zoom, 3f).toInt()
+            var shownLabels = 0
+            for (station in landmarks) {
+                val ratioX = ((station.longitude - minLon) / lonSpan).toFloat()
+                val ratioY = (1f - ((station.latitude - minLat) / latSpan).toFloat())
+                val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
+                    .let { if (it.length > 18) it.take(17) + "\u2026" else it }
+                val elevText = "%,d".format(station.elevationMeters) + "m"
+                // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
+                val labelWidthDp = ((city.length + elevText.length + 1) * 4.9f + 12f).dp
+                val pinXDp = with(density) { viewX(paddingPx + ratioX * widthPx).toDp() }
+                val pinYDp = with(density) { viewY(paddingPx + ratioY * heightPx).toDp() }
+                // Stations panned out of view get no label
+                if (pinXDp < 0.dp || pinXDp > widthDp || pinYDp < 0.dp || pinYDp > heightDp) continue
+                val xDp = if (pinXDp + labelWidthDp > widthDp - 6.dp) pinXDp - labelWidthDp else pinXDp
+                val yDp = pinYDp + (if (pinYDp < 30.dp) 8.dp else (-16).dp)
+                val left = xDp.value
+                val top = yDp.value
+                val right = left + labelWidthDp.value
+                val bottom = top + 20f
+                val hasRoom = shownLabels < stationBudget &&
+                    placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
+                if (hasRoom) {
+                    placedRects.add(listOf(left, top, right, bottom))
+                    shownLabels++
+                }
+                labelTargets[station.id] = if (hasRoom) 1f else 0f
+                stationPlans.add(StationLabelPlan(station, city, elevText, xDp, yDp))
+            }
+        }
+        val labelFades = rememberLabelFades(labelTargets)
 
+        // Draw every label that is at least partly visible, at its current opacity
+        cityPlans.forEach { plan ->
+            val city = plan.city
+            val fade = labelFades["c:${city.name}"] ?: 0f
+            if (fade > 0.01f) {
                 val isSelected = city.targetStationId == selectedStationId
-
                 Surface(
                     shape = RoundedCornerShape(4.dp),
                     color = if (city.isCapital) {
@@ -773,8 +843,8 @@ private fun SpatialMapCanvas(
                         color = if (city.isCapital) Color(0xFFD97706) else Color.DarkGray.copy(alpha = 0.25f)
                     ),
                     modifier = Modifier
-                        .offset(x = xDp, y = yDp)
-                        .alpha(cityFade)
+                        .offset(x = plan.xDp, y = plan.yDp)
+                        .alpha(fade)
                         .clickable {
                             city.targetStationId?.let { targetId ->
                                 stations.find { it.id == targetId }?.let { onSelectStation(it) }
@@ -810,81 +880,47 @@ private fun SpatialMapCanvas(
                     }
                 }
             }
-
-            // Area names: shown only where they do not overlap a badge or the controls
-            BAY_AREA_AREA_LABELS.forEach { label ->
-                val x = geoX(label.lon) + label.xOffsetDp.dp
-                val y = geoY(label.lat)
-                val left = x.value
-                val top = y.value
-                val right = left + label.text.length * (label.fontSizeSp * 0.6f + label.letterSpacingSp)
-                val bottom = top + label.fontSizeSp + 6f
-                val free = placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
-                if (free) {
-                    placedRects.add(listOf(left, top, right, bottom))
-                    Text(
-                        text = label.text,
-                        fontSize = label.fontSizeSp.sp,
-                        fontWeight = label.weight,
-                        letterSpacing = label.letterSpacingSp.sp,
-                        color = label.color,
-                        modifier = Modifier.offset(x = x, y = y)
-                    )
-                }
+        }
+        areaPlans.forEach { plan ->
+            val fade = labelFades["a:${plan.label.text}"] ?: 0f
+            if (fade > 0.01f) {
+                Text(
+                    text = plan.label.text,
+                    fontSize = plan.label.fontSizeSp.sp,
+                    fontWeight = plan.label.weight,
+                    letterSpacing = plan.label.letterSpacingSp.sp,
+                    color = plan.label.color,
+                    modifier = Modifier
+                        .offset(x = plan.xDp, y = plan.yDp)
+                        .alpha(fade)
+                )
             }
-        } else {
-            // Place labels picked from the loaded stations
-            // More labels as the map zooms; the newest one fades in instead of popping
-            val labelBudget = labelBudget(MAP_LABEL_COUNT, zoom, 3f)
-            var shownLabels = 0
-            for (station in landmarks) {
-                val fade = labelFade(labelBudget, shownLabels)
-                if (fade <= 0.02f) break
-                val ratioX = ((station.longitude - minLon) / lonSpan).toFloat()
-                val ratioY = (1f - ((station.latitude - minLat) / latSpan).toFloat())
-                val isSelected = station.id == selectedStationId
-                val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
-                    .let { if (it.length > 18) it.take(17) + "\u2026" else it }
-                val elevText = "%,d".format(station.elevationMeters) + "m"
-                // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
-                val labelWidthDp = ((city.length + elevText.length + 1) * 4.9f + 12f).dp
-                val pinXDp = with(density) { viewX(paddingPx + ratioX * widthPx).toDp() }
-                val pinYDp = with(density) { viewY(paddingPx + ratioY * heightPx).toDp() }
-                // Stations panned out of view get no label
-                if (pinXDp < 0.dp || pinXDp > widthDp || pinYDp < 0.dp || pinYDp > heightDp) continue
-                val xDp = if (pinXDp + labelWidthDp > widthDp - 6.dp) pinXDp - labelWidthDp else pinXDp
-                val yDp = pinYDp + (if (pinYDp < 30.dp) 8.dp else (-16).dp)
-
-                // Skip a label that would overlap one already placed
-                val left = xDp.value
-                val top = yDp.value
-                val right = left + labelWidthDp.value
-                val bottom = top + 20f
-                if (placedRects.any { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }) continue
-                placedRects.add(listOf(left, top, right, bottom))
-                shownLabels++
-
+        }
+        stationPlans.forEach { plan ->
+            val fade = labelFades[plan.station.id] ?: 0f
+            if (fade > 0.01f) {
+                val isSelected = plan.station.id == selectedStationId
                 Surface(
                     shape = RoundedCornerShape(4.dp),
                     color = Color.White.copy(alpha = 0.88f),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color.DarkGray.copy(alpha = 0.25f)),
                     modifier = Modifier
-                        .offset(x = xDp, y = yDp)
+                        .offset(x = plan.xDp, y = plan.yDp)
                         .alpha(fade)
-                        .clickable { onSelectStation(station) }
+                        .clickable { onSelectStation(plan.station) }
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
                     ) {
                         Text(
-                            text = city,
+                            text = plan.city,
                             fontSize = 8.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = Color(0xFF1E293B)
                         )
                         Text(
-                            text = " $elevText",
+                            text = " ${plan.elevText}",
                             fontSize = 7.sp,
                             color = Color(0xFF64748B)
                         )
