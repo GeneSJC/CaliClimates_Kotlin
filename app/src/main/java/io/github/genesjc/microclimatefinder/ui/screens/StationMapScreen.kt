@@ -59,6 +59,10 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -113,18 +117,30 @@ fun StationMapScreen(
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
     val pickerState = rememberRegionPickerState()
-    // The map starts at its regular height; the toggle on the map stretches it to fill the screen
+    // The map starts at its regular height; the toggle on the map stretches it, slowly, to fill the screen
     var mapExpanded by remember { mutableStateOf(false) }
     val pageScroll = rememberScrollState()
+    val density = LocalDensity.current
+    var aboveMapPx by remember { mutableStateOf(0) }
+    var belowMapPx by remember { mutableStateOf(0) }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    // Expanded height: the screen less the padding and everything above and below the map
+    val expandedMapHeight = with(density) {
+        ((maxHeight - 32.dp).roundToPx() - aboveMapPx - belowMapPx).toDp()
+    }.coerceAtLeast(MAP_REGULAR_HEIGHT)
+    val mapHeight by animateDpAsState(
+        targetValue = if (mapExpanded) expandedMapHeight else MAP_REGULAR_HEIGHT,
+        animationSpec = tween(MAP_RESIZE_MS, easing = FastOutSlowInEasing),
+        label = "mapHeight"
+    )
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            // Only the regular-height layout scrolls; the expanded map fills the screen exactly
-            .then(if (mapExpanded) Modifier else Modifier.verticalScroll(pageScroll))
+            .verticalScroll(pageScroll)
     ) {
+      Column(modifier = Modifier.onSizeChanged { aboveMapPx = it.height }) {
         // App Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -198,12 +214,13 @@ fun StationMapScreen(
         )
 
         Spacer(modifier = Modifier.height(6.dp))
+      }
 
         // 3. The map with its dot-size slider: regular height, or the rest of the screen when expanded
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (mapExpanded) Modifier.weight(1f) else Modifier.height(MAP_REGULAR_HEIGHT))
+                .height(mapHeight)
         ) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -241,9 +258,11 @@ fun StationMapScreen(
             }
         }
 
+      Column(modifier = Modifier.onSizeChanged { belowMapPx = it.height }) {
         Spacer(modifier = Modifier.height(4.dp))
 
         PinSizeSlider(value = pinScale, onValueChange = { pinScale = it })
+      }
     }
     RegionPickerOverlay(
         state = pickerState,
@@ -255,6 +274,9 @@ fun StationMapScreen(
 
 /** The map's regular height, before it is expanded to fill the screen. */
 private val MAP_REGULAR_HEIGHT = 300.dp
+
+/** How long the map takes to grow to full height and back. */
+private const val MAP_RESIZE_MS = 700
 
 /** How far the map can be dragged past its edge, as a fraction of the map's size, at any zoom. */
 private const val MAP_OVERSCROLL = 0.12f

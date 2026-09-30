@@ -19,6 +19,20 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.window.Popup
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -96,13 +110,6 @@ private data class LandingEntry(
 private fun landingEntries(dataset: StationDatasetInfo?): List<LandingEntry> {
     val entries = mutableListOf<LandingEntry>()
     if (dataset != null) {
-        val kind = dataset.subtitle.substringBefore(" • ")
-        entries += LandingEntry(
-            title = "Station Feed (CSV)",
-            description = "Every station in the region, as a list. $kind.",
-            iconChar = "▤",
-            target = AppScreen.STATION_LIST
-        )
         entries += LandingEntry(
             title = "Topographical Map",
             description = "Stations on a map of the region. Zoom, pan and tap a station.",
@@ -122,11 +129,9 @@ private fun landingEntries(dataset: StationDatasetInfo?): List<LandingEntry> {
 /** One row in the quick region picker. */
 data class RegionOption(val id: String, val name: String, val stationCount: Int?)
 
-/** At a glance: how many stations, their elevation range, and the mix of terrain types. */
+/** The mix of terrain types in the region, as a bar with counts. */
 @Composable
-private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
-    val minElev = stations.minOf { it.elevationMeters }
-    val maxElev = stations.maxOf { it.elevationMeters }
+private fun TerrainMixCard(stations: List<MicroclimateStation>) {
     val mix = TerrainType.values()
         .map { type -> type to stations.count { it.terrain == type } }
         .filter { it.second > 0 }
@@ -135,47 +140,13 @@ private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Snapshot",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${stations.size}",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "stations",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${"%,d".format(minElev)}\u2013${"%,d".format(maxElev)} m",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "elevation range",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(14.dp))
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
             Text(
                 text = "Terrain mix",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -191,13 +162,55 @@ private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 mix.forEach { (type, count) ->
                     LegendItem(color = terrainColor(type), label = "${terrainShortName(type)} $count")
+                }
+            }
+        }
+    }
+}
+
+/** The Station List link, with the elevation range below it. */
+@Composable
+private fun RegionStatsCard(stations: List<MicroclimateStation>, onOpenList: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Station List \u203A",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenList() }
+                    .padding(vertical = 4.dp)
+            )
+            if (stations.isNotEmpty()) {
+                val minElev = stations.minOf { it.elevationMeters }
+                val maxElev = stations.maxOf { it.elevationMeters }
+                Column {
+                    Text(
+                        text = "${"%,d".format(minElev)}\u2013${"%,d".format(maxElev)} m",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "elevation range",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -219,78 +232,200 @@ private fun terrainShortName(type: TerrainType): String = when (type) {
     TerrainType.URBAN_CANYON -> "Urban"
 }
 
-/** About the current region: its subtitle and description, with traits and key cities on expand. */
+/** How long the region panel takes to grow out of its tile, and to fold back. */
+private const val PANEL_OPEN_MS = 650
+private const val PANEL_CLOSE_MS = 500
+
+/**
+ * About the current region, as a half-width tile. "More" grows it, in width and height, into a
+ * full-width panel floating over the page, so nothing on the page moves.
+ */
 @Composable
-private fun RegionDetailsCard(region: CaliforniaRegion) {
-    var expanded by remember(region.id) { mutableStateOf(false) }
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                onClickLabel = if (expanded) "Show less about ${region.name}" else "Show more about ${region.name}",
-                role = Role.Button
-            ) { expanded = !expanded }
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = region.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = region.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
+    var open by remember(region.id) { mutableStateOf(false) }
+    var cardWidthPx by remember { mutableStateOf(0) }
+    var cardHeightPx by remember { mutableStateOf(0) }
+    val reveal = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val pageColor = MaterialTheme.colorScheme.background
+    val cardColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+    val panelShape = RoundedCornerShape(16.dp)
+
+    fun openPanel() {
+        open = true
+        scope.launch { reveal.animateTo(1f, tween(PANEL_OPEN_MS, easing = FastOutSlowInEasing)) }
+    }
+    fun closePanel() {
+        scope.launch {
+            reveal.animateTo(0f, tween(PANEL_CLOSE_MS, easing = FastOutSlowInEasing))
+            open = false
+        }
+    }
+
+    // The Box is the popup's anchor: it sits exactly on the collapsed tile
+    Box(modifier = Modifier.fillMaxSize()) {
+        // The collapsed tile keeps its place in the layout
+        Surface(
+            shape = panelShape,
+            color = cardColor,
+            modifier = Modifier
+                .fillMaxSize()
+                .onSizeChanged {
+                    cardWidthPx = it.width
+                    cardHeightPx = it.height
                 }
+                .clickable(
+                    onClickLabel = "Show more about ${region.name}",
+                    role = Role.Button
+                ) { openPanel() }
+        ) {
+            RegionDetailsTile(region)
+        }
+
+        if (open) {
+            // Grows from the tile's size to the full row width, from the tile's top-left corner.
+            // Tapping it, tapping outside, or pressing Back folds it back.
+            val p = reveal.value
+            val startWidth = with(density) { cardWidthPx.toDp() }
+            val fullWidth = with(density) { fullWidthPx.toDp() }
+            Popup(
+                alignment = Alignment.TopStart,
+                onDismissRequest = { closePanel() },
+                properties = PopupProperties(focusable = true)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(lerp(startWidth, fullWidth, p))
+                        .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.8f).dp)
+                        .layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            val h = (cardHeightPx + (placeable.height - cardHeightPx) * p).toInt()
+                            layout(placeable.width, h) { placeable.place(0, 0) }
+                        }
+                        .shadow(12.dp * p, panelShape)
+                        .clip(panelShape)
+                        .background(cardColor.compositeOver(pageColor))
+                        .clickable(
+                            onClickLabel = "Show less about ${region.name}",
+                            role = Role.Button
+                        ) { closePanel() }
+                ) {
+                    Box(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        // Laid out at full width and revealed as the panel grows; the tile's
+                        // own text fades out as the full text fades in
+                        Box(modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true)) {
+                            Box(
+                                modifier = Modifier
+                                    .width(fullWidth)
+                                    .graphicsLayer { alpha = ((p - 0.25f) / 0.5f).coerceIn(0f, 1f) }
+                            ) {
+                                RegionDetailsBody(region, expanded = true)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .width(startWidth)
+                                    .graphicsLayer { alpha = (1f - p * 3f).coerceIn(0f, 1f) }
+                            ) {
+                                RegionDetailsTile(region)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** The half-width tile: title, a short summary, and the More link. */
+@Composable
+private fun RegionDetailsTile(region: CaliforniaRegion) {
+    Column(modifier = Modifier.padding(12.dp)) {
+        Text(
+            text = region.title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = region.description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "More \u25BC",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+/** The expanded region panel: title, description, traits and key places. */
+@Composable
+private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (expanded) "Less ▲" else "More ▼",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp)
+                    text = region.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = region.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = region.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = if (expanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis
+                text = if (expanded) "Less ▲" else "More ▼",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp)
             )
-            if (expanded) {
-                Spacer(modifier = Modifier.height(12.dp))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = region.description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = if (expanded) Int.MAX_VALUE else 3,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (expanded) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "What shapes the weather here",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+            region.microclimateTraits.forEach { trait ->
                 Text(
-                    text = "What shapes the weather here",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                region.microclimateTraits.forEach { trait ->
-                    Text(
-                        text = "\u2022 $trait",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Key places",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = region.keyCities.joinToString(" \u2022 "),
+                    text = "\u2022 $trait",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Key places",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = region.keyCities.joinToString(" \u2022 "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
@@ -311,6 +446,7 @@ fun LandingScreen(
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
     }
     val hasStationData = dataset != null
+    var topRowWidthPx by remember { mutableStateOf(0) }
     val context = LocalContext.current
     val snapshotStations = remember(dataset) {
         dataset?.let { StationCsvParser(context).loadStations(it) } ?: emptyList()
@@ -544,10 +680,26 @@ fun LandingScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    RegionDetailsCard(region)
+                    // Top row: the region tile on the left; Station List, count and elevation on the right
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
+                            .onSizeChanged { topRowWidthPx = it.width },
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            RegionDetailsCard(region, fullWidthPx = topRowWidthPx)
+                        }
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            if (dataset != null) {
+                                RegionStatsCard(snapshotStations) { onNavigateTo(AppScreen.STATION_LIST) }
+                            }
+                        }
+                    }
                     if (snapshotStations.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        RegionSnapshotCard(snapshotStations)
+                        TerrainMixCard(snapshotStations)
                     }
                     if (!hasStationData) {
                         Spacer(modifier = Modifier.height(12.dp))
