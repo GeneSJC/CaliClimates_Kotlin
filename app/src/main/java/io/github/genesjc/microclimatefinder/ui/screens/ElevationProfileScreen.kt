@@ -38,6 +38,21 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlin.math.abs
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.BlendMode
+import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
+import io.github.genesjc.microclimatefinder.data.local.TerrainImage
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -124,6 +139,11 @@ fun ElevationProfileScreen(
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
     val stations = remember(dataset) { parser.loadStations(dataset) }
+
+    // The region's terrain picture (the one the Topography map draws), used as a faint texture in the ground
+    val terrain by produceState<TerrainImage?>(null, dataset.regionId) {
+        value = withContext(Dispatchers.IO) { TerrainMaps.load(context, dataset.regionId) }
+    }
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
@@ -217,6 +237,8 @@ fun ElevationProfileScreen(
             ) {
                 ElevationProfileCanvas(
                     stations = stations,
+                    regionId = dataset.regionId,
+                    terrain = terrain,
                     selectedStationId = selectedStationId,
                     onSelectStation = {
                         localSelectedId = it.id
@@ -278,6 +300,44 @@ private val CHART_REGULAR_HEIGHT = 300.dp
 /** How long the chart takes to grow to full height and back. */
 private const val CHART_RESIZE_MS = 700
 
+/** One distant range behind the profile: where it sits, how tall, how fast it drifts, and how hazy. */
+private data class RidgeLayer(
+    val base: Float,        // baseline, as a fraction of the chart height from the top
+    val amplitude: Float,   // tallest peak, as a fraction of the chart height
+    val spread: Float,      // how many peaks fit across the chart
+    val follow: Float,      // how much of the pan and zoom it follows (less = farther away)
+    val depthShade: Float,  // how far it is pushed toward slate from the horizon colour
+    val alpha: Float
+)
+
+private val RIDGE_LAYERS = listOf(
+    RidgeLayer(base = 0.52, amplitude = 0.20, spread = 1.3f, follow = 0.25f, depthShade = 0.25f, alpha = 0.32f),
+    RidgeLayer(base = 0.66, amplitude = 0.19, spread = 1.8f, follow = 0.40f, depthShade = 0.35f, alpha = 0.40f),
+    RidgeLayer(base = 0.80, amplitude = 0.15, spread = 2.4f, follow = 0.55f, depthShade = 0.45f, alpha = 0.50f)
+)
+
+/** A ridgeline's height from 0 to 1 at position [t]; a fixed pattern for a given region and layer. */
+private fun ridgeHeight(t: Float, seed: Int, layer: Int): Float {
+    val a = ((seed * 31 + layer * 17) and 0xFF) / 40f
+    val b = ((seed * 57 + layer * 29) and 0xFF) / 40f
+    val c = ((seed * 91 + layer * 43) and 0xFF) / 40f
+    val v = 0.60f * (1f - abs(sin(t * 4.3f + a))) + 0.30f * (1f - abs(sin(t * 9.1f + b))) + 0.10f * (0.5f + 0.5f * sin(t * 21f + c))
+    return v.coerceIn(0f, 1f)
+}
+
+/** The ground colour at [elevationMeters]: green lowlands, tan hills, pale high country. Matches the terrain pictures. */
+private fun heightTint(elevationMeters: Float): Color {
+    val stops = listOf(
+        0f to Color(0xFFE2EDD6), 300f to Color(0xFFDEE4C8), 900f to Color(0xFFD9D1B2),
+        1800f to Color(0xFFCDC4AA), 3000f to Color(0xFFD6D2C8), 4200f to Color(0xFFF0F0F0)
+    )
+    val e = elevationMeters.coerceIn(0f, 4200f)
+    val upper = stops.indexOfFirst { it.first >= e }.coerceAtLeast(1)
+    val (e0, c0) = stops[upper - 1]
+    val (e1, c1) = stops[upper]
+    return lerp(c0, c1, if (e1 > e0) (e - e0) / (e1 - e0) else 0f)
+}
+
 // Data class for atmospheric sky gradient & weather condition above the elevation profile
 private data class SkyAtmosphereTheme(
     val colors: List<Color>,
@@ -290,6 +350,8 @@ private data class SkyAtmosphereTheme(
 @Composable
 private fun ElevationProfileCanvas(
     stations: List<MicroclimateStation>,
+    regionId: String,
+    terrain: TerrainImage?,
     selectedStationId: String?,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
@@ -553,6 +615,32 @@ private fun ElevationProfileCanvas(
                 )
             )
 
+            // 1b. Distant ranges behind the profile, for depth. Decoration, not data: each layer is a
+            // made-up skyline (the same every time for a region) that drifts slower than the profile
+            // when you pan and zoom, and fades toward the sky colour the farther away it is.
+            val horizon = skyTheme.colors.last()
+            clipPath(skyPath) {
+            RIDGE_LAYERS.forEachIndexed { layer, spec ->
+                val ridge = Path()
+                val steps = 90
+                val startX = -size.width
+                val endX = size.width * 2f
+                for (i in 0..steps) {
+                    val bx = startX + (endX - startX) * i / steps
+                    val t = (bx / size.width) * spec.spread
+                    val by = padding + h * spec.base - h * spec.amplitude * ridgeHeight(t, regionId.hashCode(), layer)
+                    val lx = size.width / 2f + (bx - size.width / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.x * spec.follow
+                    val ly = size.height / 2f + (by - size.height / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.y * spec.follow
+                    if (i == 0) ridge.moveTo(lx, ly) else ridge.lineTo(lx, ly)
+                }
+                val bottom = size.height * 3f
+                ridge.lineTo(size.width * 4f, bottom)
+                ridge.lineTo(-size.width * 3f, bottom)
+                ridge.close()
+                drawPath(ridge, color = lerp(horizon, Color(0xFF334155), spec.depthShade).copy(alpha = spec.alpha))
+            }
+            }
+
             // 2. DYNAMIC WEATHER VISUALS (Clouds / Sun corona in the upper-left quadrant)
             if (tempF == null) {
                 // No live reading: plain sky, no weather visuals
@@ -628,16 +716,63 @@ private fun ElevationProfileCanvas(
             terrainPath.lineTo(viewX(size.width - padding), viewY(size.height - padding))
             terrainPath.close()
 
-            // Gradient under the elevation curve (Warm valley 28°C -> Cool Ridge 18°C)
+            // The ground: tinted by height with the same ramp as the Topography map (data), so a given
+            // height has the same colour in both views
+            val groundTop = viewY(padding)
+            val groundBottom = viewY(padding + h)
             drawPath(
                 path = terrainPath,
                 brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF7C3AED).copy(alpha = 0.35f), // High ridge cool air
-                        Color(0xFF0284C7).copy(alpha = 0.20f), // Mid
-                        Color(0xFFEA580C).copy(alpha = 0.12f)  // Valley basin heat
-                    )
+                    colorStops = (0..10).map { step ->
+                        val fraction = step / 10f
+                        fraction to heightTint((1f - fraction) * maxElevation)
+                    }.toTypedArray(),
+                    startY = groundTop,
+                    endY = groundBottom
                 )
+            )
+
+            // A faint relief texture from the region's own terrain picture (decoration, not data). It
+            // drifts slower than the profile when you pan and zoom, which gives the ground some depth.
+            if (terrain != null) {
+                val b = terrain.bounds
+                val lonSpan = b.maxLon - b.minLon
+                val latSpan = b.maxLat - b.minLat
+                // The part of the picture that holds the stations
+                val sLeft = ((stations.minOf { it.longitude } - b.minLon) / lonSpan).coerceIn(0.0, 1.0)
+                val sRight = ((stations.maxOf { it.longitude } - b.minLon) / lonSpan).coerceIn(0.0, 1.0)
+                val sTop = ((b.maxLat - stations.maxOf { it.latitude }) / latSpan).coerceIn(0.0, 1.0)
+                val sBottom = ((b.maxLat - stations.minOf { it.latitude }) / latSpan).coerceIn(0.0, 1.0)
+                val img = terrain.image
+                val srcX = (sLeft * img.width).toInt()
+                val srcY = (sTop * img.height).toInt()
+                val srcW = ((sRight - sLeft) * img.width).toInt().coerceAtLeast(1)
+                val srcH = ((sBottom - sTop) * img.height).toInt().coerceAtLeast(1)
+                val follow = 0.6f
+                val scale = 1f + (zoom - 1f) * follow
+                val dstW = size.width * 1.6f * scale
+                val dstH = dstW * srcH / srcW
+                val dstX = size.width / 2f - dstW / 2f + pan.x * follow
+                val dstY = size.height / 2f - dstH / 2f + pan.y * follow
+                clipPath(terrainPath) {
+                    drawImage(
+                        image = img,
+                        srcOffset = IntOffset(srcX, srcY),
+                        srcSize = IntSize(srcW, srcH),
+                        dstOffset = IntOffset(dstX.roundToInt(), dstY.roundToInt()),
+                        dstSize = IntSize(dstW.roundToInt(), dstH.roundToInt()),
+                        alpha = 0.5f,
+                        colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
+                        blendMode = BlendMode.Multiply
+                    )
+                }
+            }
+
+            // A lit edge along the profile, like the sun catching the ridge
+            drawPath(
+                path = linePath,
+                color = Color.White.copy(alpha = 0.30f),
+                style = Stroke(width = 10f, cap = StrokeCap.Round)
             )
 
             // Top ridge line
