@@ -122,12 +122,11 @@ fun StationMapScreen(
     val pageScroll = rememberScrollState()
     val density = LocalDensity.current
     var aboveMapPx by remember { mutableStateOf(0) }
-    var belowMapPx by remember { mutableStateOf(0) }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-    // Expanded height: the screen less the padding and everything above and below the map
+    // Expanded height: the screen less the padding and everything above the map
     val expandedMapHeight = with(density) {
-        ((maxHeight - 32.dp).roundToPx() - aboveMapPx - belowMapPx).toDp()
+        ((maxHeight - 32.dp).roundToPx() - aboveMapPx).toDp()
     }.coerceAtLeast(MAP_REGULAR_HEIGHT)
     val mapHeight by animateDpAsState(
         targetValue = if (mapExpanded) expandedMapHeight else MAP_REGULAR_HEIGHT,
@@ -210,7 +209,9 @@ fun StationMapScreen(
         // 2. Terrain legend: one line until opened, then this region's terrain types with counts
         TerrainLegend(
             stations = stations,
-            showRelief = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id
+            showRelief = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
+            // Dot size lives here, out of the way, instead of in a row under the map
+            extra = { PinSizeSlider(value = pinScale, onValueChange = { pinScale = it }) }
         )
 
         Spacer(modifier = Modifier.height(6.dp))
@@ -258,11 +259,6 @@ fun StationMapScreen(
             }
         }
 
-      Column(modifier = Modifier.onSizeChanged { belowMapPx = it.height }) {
-        Spacer(modifier = Modifier.height(4.dp))
-
-        PinSizeSlider(value = pinScale, onValueChange = { pinScale = it })
-      }
     }
     RegionPickerOverlay(
         state = pickerState,
@@ -281,8 +277,8 @@ private const val MAP_RESIZE_MS = 700
 /** How far the map can be dragged past its edge, as a fraction of the map's size, at any zoom. */
 private const val MAP_OVERSCROLL = 0.12f
 
-/** Dots start a little larger than the base size so they are easy to see and tap. */
-private const val DEFAULT_PIN_SCALE = 1.3f
+/** Dots start at the largest size the Dot size slider allows, so they are easy to see and tap. */
+private const val DEFAULT_PIN_SCALE = 2.5f
 
 /** Horizontal dot-size control under the map: small dot to large dot. */
 @OptIn(ExperimentalMaterial3Api::class) // custom slider thumb
