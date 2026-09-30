@@ -79,6 +79,9 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Surface
+import io.github.genesjc.microclimatefinder.ui.components.TerrainLegendCard
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
@@ -392,7 +395,7 @@ private const val SHEET_OPACITY_BOTTOM = 0.2f
 /** The sheet's fill: a pastel green in light mode, a deep green in dark mode, fading downward. */
 @Composable
 private fun sheetBrush(): Brush {
-    val tint = if (isSystemInDarkTheme()) Color(0xFF1F3A2A) else Color(0xFFA8D5B0)
+    val tint = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color(0xFF1F3A2A) else Color(0xFFA8D5B0)
     return Brush.verticalGradient(
         listOf(tint.copy(alpha = SHEET_OPACITY_TOP), tint.copy(alpha = SHEET_OPACITY_BOTTOM))
     )
@@ -479,7 +482,8 @@ private fun RegionInfoContent(
     region: CaliforniaRegion,
     hasStationData: Boolean,
     stations: List<MicroclimateStation>,
-    onOpenStationList: () -> Unit
+    onOpenStationList: () -> Unit,
+    legendExtra: (@Composable () -> Unit)? = null
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
     Column(modifier = Modifier.padding(16.dp)) {
@@ -507,6 +511,9 @@ private fun RegionInfoContent(
         if (stations.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
             TerrainMixCard(stations)
+            // The Terrain Legend, at the bottom
+            Spacer(modifier = Modifier.height(12.dp))
+            TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), extra = legendExtra)
         }
     }
 }
@@ -528,8 +535,8 @@ fun LandingScreen(
     onStationSelected: (String) -> Unit,
     pinScale: Float,
     onPinScaleChange: (Float) -> Unit,
-    mapExpanded: Boolean,
-    onMapExpandedChange: (Boolean) -> Unit,
+    darkMode: Boolean,
+    onDarkModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val region = remember(selectedRegionId) {
@@ -559,7 +566,6 @@ fun LandingScreen(
     // Where the sheet starts: the top of the map (or, with no map, just under the link)
     var mapTopPx by remember { mutableStateOf(0f) }
     var rowWidthPx by remember { mutableStateOf(0) }
-    var rowLeftPx by remember { mutableStateOf(0f) }
     var infoHandleBottomPx by remember { mutableStateOf(0f) }
     val sheetTopPx = if (mapTopPx > 0f) mapTopPx else infoHandleBottomPx
     val openInfo: () -> Unit = {
@@ -618,6 +624,14 @@ fun LandingScreen(
                             scope.launch { drawerState.close() }
                             onNavigateTo(AppScreen.DEMOS_AND_PREVIEWS)
                         },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Dark mode") },
+                        icon = { Text(text = "\u25D0", fontSize = 18.sp) },
+                        badge = { Switch(checked = darkMode, onCheckedChange = onDarkModeChange) },
+                        selected = false,
+                        onClick = { onDarkModeChange(!darkMode) },
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                     NavigationDrawerItem(
@@ -752,8 +766,8 @@ fun LandingScreen(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            // Row 1: the selected station as a half-width tile (it grows into the full card), and
-            // the Terrain Legend and Region Info, stacked at the bottom beside it
+            // Row 1: the selected station as a tile that fills the width (it grows into the full card),
+            // with Region Info at the right
             val shown = if (dataset != null) {
                 snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
             } else null
@@ -761,36 +775,23 @@ fun LandingScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
-                    .onSizeChanged { rowWidthPx = it.width }
-                    .onGloballyPositioned { rowLeftPx = it.positionInRoot().x },
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .onSizeChanged { rowWidthPx = it.width },
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Box(modifier = Modifier.weight(1.4f).fillMaxHeight()) {
+                // The station tile takes all the width Region Info does not use
+                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx)
                 }
                 Column(
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    modifier = Modifier.fillMaxHeight(),
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.Bottom
                 ) {
-                    // The Terrain Legend at the top of the column, at the right; it opens as a full-width panel over the map
-                    if (dataset != null && snapshotStations.isNotEmpty()) {
-                        TerrainLegend(
-                            stations = snapshotStations,
-                            modifier = Modifier.padding(end = 8.dp),
-                            // The dot-size slider belongs to the map, so only the Topography view has it
-                            extra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) },
-                            headerFontSize = 15.84.sp,
-                            expandedWidthPx = rowWidthPx,
-                            panelLeftPx = rowLeftPx,
-                            headerAlignment = Alignment.TopEnd,
-                            headerEndInset = 8.dp
-                        )
-                    }
-                    // Region Info at the very bottom of the column, level with the tile's last line. The sheet slides in from the right. A fixed
+                    // Region Info, at the bottom of the row. The sheet slides in from the right. A fixed
                     // height, so the row does not change when the link swaps with the X
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(26.dp),
+                        // Always as wide as the link, so the tile does not change width when it becomes the X
+                        modifier = Modifier.height(26.dp).widthIn(min = 116.dp),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -927,9 +928,7 @@ fun LandingScreen(
                             embedded = true,
                             sharedSelectedStationId = selectedStationId,
                             onStationSelected = onStationSelected,
-                            sharedPinScale = pinScale,
-                            sharedExpanded = mapExpanded,
-                            onExpandedChange = onMapExpandedChange
+                            sharedPinScale = pinScale
                         )
                     } else {
                         ElevationProfileScreen(
@@ -937,9 +936,7 @@ fun LandingScreen(
                             onNavigateBack = {},
                             embedded = true,
                             sharedSelectedStationId = selectedStationId,
-                            onStationSelected = onStationSelected,
-                            sharedExpanded = mapExpanded,
-                            onExpandedChange = onMapExpandedChange
+                            onStationSelected = onStationSelected
                         )
                     }
                     MapViewSwitch(
@@ -956,7 +953,9 @@ fun LandingScreen(
                 region = region,
                 hasStationData = hasStationData,
                 stations = snapshotStations,
-                onOpenStationList = { onNavigateTo(AppScreen.STATION_LIST) }
+                onOpenStationList = { onNavigateTo(AppScreen.STATION_LIST) },
+                // The dot-size slider belongs to the map, so only the Topography view has it
+                legendExtra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) }
             )
         }
 

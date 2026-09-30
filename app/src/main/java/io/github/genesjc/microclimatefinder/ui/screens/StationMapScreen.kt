@@ -122,9 +122,6 @@ fun StationMapScreen(
     onStationSelected: ((String) -> Unit)? = null,
     /** The dot size, when Home owns it (its Terrain Legend panel holds the slider). */
     sharedPinScale: Float? = null,
-    /** Whether the map is stretched to fill the screen, when Home keeps that across its two views. */
-    sharedExpanded: Boolean? = null,
-    onExpandedChange: ((Boolean) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
@@ -144,7 +141,8 @@ fun StationMapScreen(
     val pickerState = rememberRegionPickerState()
     // The map starts at its regular height; the toggle on the map stretches it, slowly, to fill the screen
     var localExpanded by remember { mutableStateOf(false) }
-    val mapExpanded = sharedExpanded ?: localExpanded
+    // On Home the map always fills the space; the standalone screen keeps the Expand / Shrink toggle
+    val mapExpanded = embedded || localExpanded
     val pageScroll = rememberScrollState()
     val density = LocalDensity.current
     var aboveMapPx by remember { mutableStateOf(0) }
@@ -275,18 +273,19 @@ fun StationMapScreen(
                 }
                 )
             }
-            // Expand / shrink toggle, under the compass in the top-left corner
+            // Expand / shrink toggle, just left of the top of the zoom slider (not on Home, where the map always fills the space)
+            if (!embedded) {
             MapExpandToggle(
                 expanded = mapExpanded,
                 onToggle = {
                     localExpanded = !mapExpanded
-                    onExpandedChange?.invoke(!mapExpanded)
                 },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     // Just left of the top of the zoom slider
                     .padding(end = 50.dp, top = 46.dp)
             )
+            }
         }
 
     }

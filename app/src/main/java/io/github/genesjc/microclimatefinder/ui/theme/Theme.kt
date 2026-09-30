@@ -1,53 +1,72 @@
 package io.github.genesjc.microclimatefinder.ui.theme
 
 import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = DarkPrimary,
+    onPrimary = Color(0xFF1E1B4B),
+    primaryContainer = DarkPrimaryContainer,
+    onPrimaryContainer = DarkOnPrimaryContainer,
+    secondary = Color(0xFFB8C0DC),
+    secondaryContainer = Color(0xFF2B3553),
+    onSecondaryContainer = Color(0xFFDDE3F7),
+    tertiary = Color(0xFFF0B8C8),
+    tertiaryContainer = Color(0xFF4A2A3A),
+    onTertiaryContainer = Color(0xFFFFD9E3),
+    background = DarkBackground,
+    onBackground = Color(0xFFE2E8F0),
+    surface = DarkSurface,
+    onSurface = Color(0xFFE2E8F0),
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    outline = Color(0xFF64748B),
+    outlineVariant = Color(0xFF334155)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+    primary = LightPrimary,
     onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primaryContainer = LightPrimaryContainer,
+    onPrimaryContainer = LightOnPrimaryContainer,
+    secondary = Color(0xFF5B5F7A),
+    secondaryContainer = Color(0xFFDFE1F7),
+    tertiary = Color(0xFF7D5260),
+    tertiaryContainer = Color(0xFFFFD9E3),
+    onTertiaryContainer = Color(0xFF31111D),
+    background = LightBackground,
+    surface = LightSurface,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = LightOnSurfaceVariant,
+    outline = Color(0xFF777680),
+    outlineVariant = Color(0xFFC7C5D0)
 )
 
+/**
+ * The app's look. The colours are the app's own (no wallpaper-based colours), so it looks the same on
+ * every phone. [darkTheme] is the user's choice in the menu, not the system setting.
+ */
 @Composable
 fun MicroClimateFinderTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    // Light or dark status-bar icons to match
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
     }
 
     MaterialTheme(

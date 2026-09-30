@@ -7,6 +7,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.ui.graphics.Color
+import io.github.genesjc.microclimatefinder.ui.theme.AppBackground
+import io.github.genesjc.microclimatefinder.data.local.ThemePreferences
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,12 +50,23 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MicroClimateFinderTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    AppNavigation()
+            // Dark mode is the default; the menu switches it, and the choice is remembered
+            val themePrefs = remember { ThemePreferences(applicationContext) }
+            var darkMode by remember { mutableStateOf(themePrefs.darkMode()) }
+            MicroClimateFinderTheme(darkTheme = darkMode) {
+                AppBackground(darkTheme = darkMode) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = Color.Transparent
+                    ) {
+                        AppNavigation(
+                            darkMode = darkMode,
+                            onDarkModeChange = {
+                                darkMode = it
+                                themePrefs.saveDarkMode(it)
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -60,7 +74,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(darkMode: Boolean, onDarkModeChange: (Boolean) -> Unit) {
     var currentScreen by remember { mutableStateOf(AppScreen.LANDING) }
     var previousScreen by remember { mutableStateOf(AppScreen.LANDING) }
     var selectedNewsStory by remember { mutableStateOf<LocalNewsStory?>(null) }
@@ -75,8 +89,6 @@ fun AppNavigation() {
     var homeStationId by remember { mutableStateOf<String?>(null) }
     // The Topo Map's dot size, set in the Terrain Legend panel on Home
     var homePinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
-    // Whether the Home map is stretched to fill the screen; both views share it
-    var homeMapExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
     val regionPrefs = remember { RegionPreferences(context) }
@@ -153,8 +165,8 @@ fun AppNavigation() {
                 onStationSelected = { homeStationId = it },
                 pinScale = homePinScale,
                 onPinScaleChange = { homePinScale = it },
-                mapExpanded = homeMapExpanded,
-                onMapExpandedChange = { homeMapExpanded = it }
+                darkMode = darkMode,
+                onDarkModeChange = onDarkModeChange
             )
         }
         AppScreen.DEMOS_AND_PREVIEWS -> {

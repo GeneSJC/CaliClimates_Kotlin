@@ -602,8 +602,9 @@ private fun CompactMetric(label: String, value: String) {
 }
 
 /**
- * The half-width summary of a station for the Home row: name, temperature in °F with °C beside it,
- * and how old the reading is. The full compact card opens from it.
+ * The summary of a station for the Home row: the name, then the temperature in °F with °C beside it
+ * and a More link on the right. The age of the reading is in the full card that More opens. When
+ * there is no reading, the reason shows where the °C would be.
  */
 @Composable
 fun StationSummaryTile(station: MicroclimateStation) {
@@ -616,7 +617,7 @@ fun StationSummaryTile(station: MicroclimateStation) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        Row(verticalAlignment = Alignment.Bottom) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Text(
                 text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "—",
                 // A little smaller than the station name
@@ -626,21 +627,12 @@ fun StationSummaryTile(station: MicroclimateStation) {
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) }.orEmpty(),
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) } ?: display.status.orEmpty(),
                 fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-        }
-        // The age of the reading on the left, the More link on the right
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = display.status.orEmpty(),
-                fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).padding(bottom = 1.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(

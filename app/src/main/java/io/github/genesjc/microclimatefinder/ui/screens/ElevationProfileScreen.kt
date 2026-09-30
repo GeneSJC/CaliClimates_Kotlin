@@ -136,9 +136,6 @@ fun ElevationProfileScreen(
     /** A station selected elsewhere (the other Home tab), and a way to report selections back. */
     sharedSelectedStationId: String? = null,
     onStationSelected: ((String) -> Unit)? = null,
-    /** Whether the chart is stretched to fill the screen, when Home keeps that across its two views. */
-    sharedExpanded: Boolean? = null,
-    onExpandedChange: ((Boolean) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
@@ -162,7 +159,8 @@ fun ElevationProfileScreen(
 
     // The chart starts at its regular height; the toggle on it stretches it, slowly, to fill the screen
     var localExpanded by remember { mutableStateOf(false) }
-    val chartExpanded = sharedExpanded ?: localExpanded
+    // On Home the chart always fills the space; the standalone screen keeps the Expand / Shrink toggle
+    val chartExpanded = embedded || localExpanded
     var aboveChartPx by remember { mutableStateOf(0) }
     var belowChartPx by remember { mutableStateOf(0) }
     val density = LocalDensity.current
@@ -258,19 +256,20 @@ fun ElevationProfileScreen(
                     }
                 )
             }
+            if (!embedded) {
             MapExpandToggle(
                 expanded = chartExpanded,
                 onToggle = {
                     localExpanded = !chartExpanded
-                    onExpandedChange?.invoke(!chartExpanded)
                 },
                 // Just left of the top of the zoom slider, as on the Topography map
                 modifier = Modifier.align(Alignment.TopEnd).padding(end = 50.dp, top = 46.dp)
             )
+            }
         }
 
         Column(modifier = Modifier.onSizeChanged { belowChartPx = it.height }) {
-        Spacer(modifier = Modifier.height(12.dp))
+        if (!embedded) Spacer(modifier = Modifier.height(12.dp))
 
         // Terrain legend: one line until opened, then this region's terrain types with counts.
         // Embedded, Home shows it beside the Region Info link.

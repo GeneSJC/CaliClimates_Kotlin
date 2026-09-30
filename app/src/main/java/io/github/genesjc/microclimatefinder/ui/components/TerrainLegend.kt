@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.Surface
 import kotlin.math.roundToInt
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -175,29 +178,64 @@ fun TerrainLegend(
                             )
                         }
                         Column(modifier = Modifier.graphicsLayer { alpha = ((p - 0.25f) / 0.5f).coerceIn(0f, 1f) }) {
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                listOf(TerrainType.RIDGE, TerrainType.VALLEY_BASIN, TerrainType.COASTAL, TerrainType.URBAN_CANYON)
-                                    .forEach { type ->
-                                        val count = stations.count { it.terrain == type }
-                                        if (count > 0) LegendItem(color = legendColor(type), label = "${legendName(type)} $count")
-                                    }
-                            }
-                            Text(
-                                text = "Ridge / highland: ridge, foothill or mountain terrain, or above 500 m",
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                            if (extra != null) extra()
+                            LegendBody(stations, extra)
                         }
                     }
                     }
                 }
             }
+        }
+    }
+}
+
+/** The colour key: the terrain types the region has with counts, the rule for "ridge / highland", and [extra]. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LegendBody(stations: List<MicroclimateStation>, extra: (@Composable () -> Unit)?) {
+    Column {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            listOf(TerrainType.RIDGE, TerrainType.VALLEY_BASIN, TerrainType.COASTAL, TerrainType.URBAN_CANYON)
+                .forEach { type ->
+                    val count = stations.count { it.terrain == type }
+                    if (count > 0) LegendItem(color = legendColor(type), label = "${legendName(type)} $count")
+                }
+        }
+        Text(
+            text = "Ridge / highland: ridge, foothill or mountain terrain, or above 500 m",
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        if (extra != null) extra()
+    }
+}
+
+/** The Terrain Legend as a card that is always open, for the Region Info sheet. */
+@Composable
+fun TerrainLegendCard(
+    stations: List<MicroclimateStation>,
+    containerColor: Color,
+    modifier: Modifier = Modifier,
+    extra: (@Composable () -> Unit)? = null
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = containerColor,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Text(
+                text = "Terrain Legend",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            LegendBody(stations, extra)
         }
     }
 }
