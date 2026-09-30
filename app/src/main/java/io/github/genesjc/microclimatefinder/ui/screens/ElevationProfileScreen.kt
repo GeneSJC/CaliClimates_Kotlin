@@ -205,8 +205,9 @@ fun ElevationProfileScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Terrain legend: one line until opened, then this region's terrain types with counts
-        TerrainLegend(stations = stations)
+        // Terrain legend: one line until opened, then this region's terrain types with counts.
+        // Embedded, Home shows it beside the Region Info link.
+        if (!embedded) TerrainLegend(stations = stations)
 
         // The selected station card; embedded, Home shows it above the tabs
         if (!embedded) {

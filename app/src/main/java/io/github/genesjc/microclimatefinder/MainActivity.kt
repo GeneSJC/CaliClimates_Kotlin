@@ -31,6 +31,7 @@ import io.github.genesjc.microclimatefinder.ui.screens.DemosAndPreviewsScreen
 import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.ElevationProfileScreen
 import io.github.genesjc.microclimatefinder.ui.screens.FixedCloudSplashScreen
+import io.github.genesjc.microclimatefinder.ui.screens.DEFAULT_PIN_SCALE
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.RegionOption
 import io.github.genesjc.microclimatefinder.ui.screens.MovingCloudsSplashScreen
@@ -72,6 +73,8 @@ fun AppNavigation() {
     var homeTab by remember { mutableStateOf(0) }
     // The station selected on Home, shared by both tabs and kept across a trip to the Station List
     var homeStationId by remember { mutableStateOf<String?>(null) }
+    // The Topo Map's dot size, set in the Terrain Legend panel on Home
+    var homePinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
     val context = LocalContext.current
     // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
     val regionPrefs = remember { RegionPreferences(context) }
@@ -145,7 +148,9 @@ fun AppNavigation() {
                 homeTab = homeTab,
                 onHomeTabChange = { homeTab = it },
                 selectedStationId = homeStationId,
-                onStationSelected = { homeStationId = it }
+                onStationSelected = { homeStationId = it },
+                pinScale = homePinScale,
+                onPinScaleChange = { homePinScale = it }
             )
         }
         AppScreen.DEMOS_AND_PREVIEWS -> {

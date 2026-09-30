@@ -110,7 +110,9 @@ fun StationMapScreen(
     embedded: Boolean = false,
     /** A station selected elsewhere (the other Home tab), and a way to report selections back. */
     sharedSelectedStationId: String? = null,
-    onStationSelected: ((String) -> Unit)? = null
+    onStationSelected: ((String) -> Unit)? = null,
+    /** The dot size, when Home owns it (its Terrain Legend panel holds the slider). */
+    sharedPinScale: Float? = null
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
@@ -119,7 +121,8 @@ fun StationMapScreen(
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
     val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
-    var pinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
+    var localPinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
+    val pinScale = sharedPinScale ?: localPinScale
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
     val pickerState = rememberRegionPickerState()
@@ -219,15 +222,18 @@ fun StationMapScreen(
 
         }
 
-        // 2. Terrain legend: one line until opened, then this region's terrain types with counts
+        // 2. Terrain legend: one line until opened, then this region's terrain types with counts.
+        // Embedded, Home shows it beside the Region Info link.
+        if (!embedded) {
         TerrainLegend(
             stations = stations,
             showRelief = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
             // Dot size lives here, out of the way, instead of in a row under the map
-            extra = { PinSizeSlider(value = pinScale, onValueChange = { pinScale = it }) }
+            extra = { PinSizeSlider(value = pinScale, onValueChange = { localPinScale = it }) }
         )
 
         Spacer(modifier = Modifier.height(6.dp))
+        }
       }
 
         // 3. The map with its dot-size slider: regular height, or the rest of the screen when expanded
@@ -296,12 +302,12 @@ private const val MAP_RESIZE_MS = 700
 private const val MAP_OVERSCROLL = 0.12f
 
 /** Dots start at the largest size the Dot size slider allows, so they are easy to see and tap. */
-private const val DEFAULT_PIN_SCALE = 2.5f
+internal const val DEFAULT_PIN_SCALE = 2.5f
 
 /** Horizontal dot-size control under the map: small dot to large dot. */
 @OptIn(ExperimentalMaterial3Api::class) // custom slider thumb
 @Composable
-private fun PinSizeSlider(
+internal fun PinSizeSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier

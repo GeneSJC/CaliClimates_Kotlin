@@ -14,6 +14,7 @@ import androidx.compose.material3.DropdownMenu
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
+import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
@@ -593,6 +594,8 @@ fun LandingScreen(
     onHomeTabChange: (Int) -> Unit,
     selectedStationId: String?,
     onStationSelected: (String) -> Unit,
+    pinScale: Float,
+    onPinScaleChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val region = remember(selectedRegionId) {
@@ -621,6 +624,7 @@ fun LandingScreen(
     val infoReveal = remember { Animatable(if (infoOpen) 1f else 0f) }
     // Where the sheet starts: the top of the tab row (or, with no tabs, just under the link)
     var tabsTopPx by remember { mutableStateOf(0f) }
+    var linkRowWidthPx by remember { mutableStateOf(0) }
     var infoHandleBottomPx by remember { mutableStateOf(0f) }
     val sheetTopPx = if (tabsTopPx > 0f) tabsTopPx else infoHandleBottomPx
     val openInfo: () -> Unit = {
@@ -833,10 +837,28 @@ fun LandingScreen(
                     // Handle for the region info sheet, which slides in from the right
                     // A fixed height, so the row does not change when the link swaps with the X
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(32.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp)
+                            .onSizeChanged { linkRowWidthPx = it.width },
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // The Terrain Legend, on the left of the same line; it opens as a full-width
+                        // panel over the tabs
+                        Box(modifier = Modifier.weight(1f)) {
+                            if (dataset != null && snapshotStations.isNotEmpty()) {
+                                TerrainLegend(
+                                    stations = snapshotStations,
+                                    showRelief = homeTab == 0 &&
+                                        dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
+                                    // The dot-size slider belongs to the map, so only the Topo Map tab has it
+                                    extra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) },
+                                    headerFontSize = 15.84.sp,
+                                    expandedWidthPx = linkRowWidthPx
+                                )
+                            }
+                        }
                         val handleModifier = Modifier
                             .onGloballyPositioned {
                                 infoHandleBottomPx = it.positionInRoot().y + it.size.height
@@ -973,7 +995,8 @@ fun LandingScreen(
                             onNavigateBack = {},
                             embedded = true,
                             sharedSelectedStationId = selectedStationId,
-                            onStationSelected = onStationSelected
+                            onStationSelected = onStationSelected,
+                            sharedPinScale = pinScale
                         )
                     } else {
                         ElevationProfileScreen(

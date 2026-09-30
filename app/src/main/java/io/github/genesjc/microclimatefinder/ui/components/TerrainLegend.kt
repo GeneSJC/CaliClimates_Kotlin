@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.unit.TextUnit
 import kotlinx.coroutines.launch
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.window.Popup
@@ -57,7 +60,8 @@ private const val LEGEND_CLOSE_MS = 500
  * [showRelief] adds the green "Mountain relief" entry, used only by the Bay Area map, whose
  * hand-drawn terrain has green relief bands.
  * [extra] is more content shown in the panel, under the key (the Topo Map puts its dot-size
- * slider there).
+ * slider there). [headerFontSize] sets the header's size; [expandedWidthPx] lets the panel grow
+ * wider than the header, for a header that sits in part of a row.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -65,7 +69,10 @@ fun TerrainLegend(
     stations: List<MicroclimateStation>,
     modifier: Modifier = Modifier,
     showRelief: Boolean = false,
-    extra: (@Composable () -> Unit)? = null
+    extra: (@Composable () -> Unit)? = null,
+    headerFontSize: TextUnit = 17.6.sp,
+    /** When set, the panel grows to this width (Home gives it the full row); else to the header's width. */
+    expandedWidthPx: Int = 0
 ) {
     var open by remember { mutableStateOf(false) }
     var widthPx by remember { mutableStateOf(0) }
@@ -96,12 +103,15 @@ fun TerrainLegend(
     Box(modifier = modifier.fillMaxWidth().onSizeChanged { widthPx = it.width }) {
         LegendHeader(
             expanded = false,
+            fontSize = headerFontSize,
             modifier = Modifier
                 .onSizeChanged { headerHeightPx = it.height }
                 .clickable(onClickLabel = "Show the Terrain Legend", role = Role.Button) { openPanel() }
         )
         if (open) {
             val p = reveal.value
+            val startWidth = with(density) { widthPx.toDp() } + padX * 2
+            val endWidth = if (expandedWidthPx > 0) with(density) { expandedWidthPx.toDp() } + padX * 2 else startWidth
             Popup(
                 alignment = Alignment.TopStart,
                 offset = IntOffset(-padXPx, 0),
@@ -110,7 +120,7 @@ fun TerrainLegend(
             ) {
                 Box(
                     modifier = Modifier
-                        .width(with(density) { widthPx.toDp() } + padX * 2)
+                        .width(lerp(startWidth, endWidth, p))
                         .layout { measurable, constraints ->
                             val placeable = measurable.measure(constraints)
                             val closedHeight = headerHeightPx + padBottomPx
@@ -122,9 +132,12 @@ fun TerrainLegend(
                         .background(MaterialTheme.colorScheme.surface)
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, panelShape)
                 ) {
-                    Column(modifier = Modifier.padding(start = padX, end = padX, bottom = padBottom)) {
+                    // Laid out at the full width and revealed as the panel grows
+                    Box(modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true)) {
+                    Column(modifier = Modifier.width(endWidth).padding(start = padX, end = padX, bottom = padBottom)) {
                         LegendHeader(
                             expanded = true,
+                            fontSize = headerFontSize,
                             modifier = Modifier.clickable(
                                 onClickLabel = "Hide the Terrain Legend",
                                 role = Role.Button
@@ -152,6 +165,7 @@ fun TerrainLegend(
                             if (extra != null) extra()
                         }
                     }
+                    }
                 }
             }
         }
@@ -160,20 +174,20 @@ fun TerrainLegend(
 
 /** "Terrain Legend" with a chevron: the one line the legend shows until opened. */
 @Composable
-private fun LegendHeader(expanded: Boolean, modifier: Modifier = Modifier) {
+private fun LegendHeader(expanded: Boolean, fontSize: TextUnit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier.padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "Terrain Legend",
-            fontSize = 17.6.sp,
+            fontSize = fontSize,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary
         )
         Text(
             text = if (expanded) " ▴" else " ▾",
-            fontSize = 17.6.sp,
+            fontSize = fontSize,
             color = MaterialTheme.colorScheme.primary
         )
     }
