@@ -28,11 +28,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    flavorDimensions += "distribution"
+    // Two dimensions: the edition (what is in the app) and the distribution (who publishes it).
+    // The core edition is the app alone; the demo edition adds Demos & Previews and what is behind it.
+    // core and foss are the defaults, so a fresh checkout runs the clean app.
+    flavorDimensions += listOf("edition", "distribution")
 
     productFlavors {
+        create("core") {
+            dimension = "edition"
+            isDefault = true
+        }
+        create("demo") {
+            dimension = "edition"
+        }
         create("foss") {
             dimension = "distribution"
+            isDefault = true
             applicationId = "io.github.genesjc.microclimatefinder"
             versionNameSuffix = "-foss"
             buildConfigField("String", "FLAVOR_TYPE", "\"FOSS\"")

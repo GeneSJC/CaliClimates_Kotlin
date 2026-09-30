@@ -23,27 +23,14 @@ import kotlinx.coroutines.withContext
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.RegionPreferences
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
-import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
-import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
-import io.github.genesjc.microclimatefinder.ui.screens.AnimationPreviewsScreen
 import io.github.genesjc.microclimatefinder.ui.screens.CaliforniaRegionsMapScreen
-import io.github.genesjc.microclimatefinder.ui.screens.DemosAndPreviewsScreen
-import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
-import io.github.genesjc.microclimatefinder.ui.screens.ElevationProfileScreen
-import io.github.genesjc.microclimatefinder.ui.screens.FixedCloudSplashScreen
 import io.github.genesjc.microclimatefinder.ui.screens.DEFAULT_PIN_SCALE
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.RegionOption
-import io.github.genesjc.microclimatefinder.ui.screens.MovingCloudsSplashScreen
-import io.github.genesjc.microclimatefinder.ui.screens.NewsStoryViewerScreen
-import io.github.genesjc.microclimatefinder.ui.screens.StationCardPreviewScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationListScreen
-import io.github.genesjc.microclimatefinder.ui.screens.StationMapScreen
-import io.github.genesjc.microclimatefinder.ui.screens.UnifiedDraggableMapScreen
-import io.github.genesjc.microclimatefinder.ui.screens.WebSplashAnimationScreen
 import io.github.genesjc.microclimatefinder.ui.theme.MicroClimateFinderTheme
 
 class MainActivity : ComponentActivity() {
@@ -79,9 +66,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(darkMode: Boolean, onDarkModeChange: (Boolean) -> Unit) {
     var currentScreen by remember { mutableStateOf(AppScreen.LANDING) }
-    var previousScreen by remember { mutableStateOf(AppScreen.LANDING) }
-    var selectedNewsStory by remember { mutableStateOf<LocalNewsStory?>(null) }
-    var selectedNewsCity by remember { mutableStateOf("") }
     // Where Back returns to from Regional Sections (Home icon or Demos & Previews)
     var regionsReturnScreen by remember { mutableStateOf(AppScreen.LANDING) }
     // Whether Home's region info sheet is open; kept here so it survives a trip to the Station List
@@ -127,22 +111,9 @@ fun AppNavigation(darkMode: Boolean, onDarkModeChange: (Boolean) -> Unit) {
     // Intercept hardware/gesture back press when not on Landing
     if (currentScreen != AppScreen.LANDING) {
         BackHandler {
-            if (currentScreen == AppScreen.NEWS_STORY_VIEWER) {
-                currentScreen = previousScreen
-            } else if (currentScreen == AppScreen.ANIMATION_FIXED_CLOUD_V1 || currentScreen == AppScreen.ANIMATION_MOVING_CLOUDS_V2) {
-                currentScreen = AppScreen.ANIMATION_PREVIEWS
-            } else if (currentScreen == AppScreen.CALIFORNIA_REGIONS) {
-                currentScreen = regionsReturnScreen
-            } else if (currentScreen == AppScreen.STATION_CARD_PREVIEW ||
-                currentScreen == AppScreen.STATION_MAP ||
-                currentScreen == AppScreen.ELEVATION_PROFILE ||
-                currentScreen == AppScreen.DRAGGABLE_MAP ||
-                currentScreen == AppScreen.UNIFIED_DRAGGABLE_MAP ||
-                currentScreen == AppScreen.ANIMATION_PREVIEWS
-            ) {
-                currentScreen = AppScreen.DEMOS_AND_PREVIEWS
-            } else {
-                currentScreen = AppScreen.LANDING
+            currentScreen = when {
+                currentScreen == AppScreen.CALIFORNIA_REGIONS -> regionsReturnScreen
+                else -> editionBackTarget(currentScreen) ?: AppScreen.LANDING
             }
         }
     }
@@ -172,24 +143,6 @@ fun AppNavigation(darkMode: Boolean, onDarkModeChange: (Boolean) -> Unit) {
                 onDarkModeChange = onDarkModeChange
             )
         }
-        AppScreen.DEMOS_AND_PREVIEWS -> {
-            DemosAndPreviewsScreen(
-                onNavigateTo = { targetScreen ->
-                    if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.DEMOS_AND_PREVIEWS
-                    currentScreen = targetScreen
-                },
-                onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
-                }
-            )
-        }
-        AppScreen.STATION_CARD_PREVIEW -> {
-            StationCardPreviewScreen(
-                onNavigateBack = {
-                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
-                }
-            )
-        }
         AppScreen.STATION_LIST -> {
             StationListScreen(
                 dataset = regionDataset ?: defaultDataset,
@@ -197,47 +150,6 @@ fun AppNavigation(darkMode: Boolean, onDarkModeChange: (Boolean) -> Unit) {
                 onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
-                }
-            )
-        }
-        AppScreen.STATION_MAP -> {
-            StationMapScreen(
-                dataset = regionDataset ?: defaultDataset,
-                selectedRegionId = selectedRegionId,
-                onSelectRegion = { pickRegion(it) },
-                onNavigateBack = {
-                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
-                }
-            )
-        }
-        AppScreen.ELEVATION_PROFILE -> {
-            ElevationProfileScreen(
-                dataset = regionDataset ?: defaultDataset,
-                onNavigateBack = {
-                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
-                }
-            )
-        }
-        AppScreen.DRAGGABLE_MAP -> {
-            DraggableMapScreen(
-                dataset = defaultDataset,
-                onNavigateBack = {
-                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
-                }
-            )
-        }
-        AppScreen.UNIFIED_DRAGGABLE_MAP -> {
-            UnifiedDraggableMapScreen(
-                // A demo: always the Bay Area transect, whichever region the app is on
-                config = TransectConfigs.DEFAULT,
-                onNavigateBack = {
-                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
-                },
-                onOpenNewsStory = { story, city ->
-                    selectedNewsStory = story
-                    selectedNewsCity = city
-                    previousScreen = AppScreen.UNIFIED_DRAGGABLE_MAP
-                    currentScreen = AppScreen.NEWS_STORY_VIEWER
                 }
             )
         }
@@ -266,51 +178,17 @@ fun AppNavigation(darkMode: Boolean, onDarkModeChange: (Boolean) -> Unit) {
                 }
             )
         }
-        AppScreen.ANIMATION_PREVIEWS -> {
-            AnimationPreviewsScreen(
-                onNavigateBack = {
-                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
-                },
-                onSelectAnimation = { animScreen ->
-                    currentScreen = animScreen
-                }
+        // The screens an edition adds (the demo edition's Demos & Previews and what is behind it)
+        else -> EditionScreens(
+            EditionNavigation(
+                screen = currentScreen,
+                navigate = { currentScreen = it },
+                setRegionsReturn = { regionsReturnScreen = it },
+                regionDataset = regionDataset,
+                defaultDataset = defaultDataset,
+                selectedRegionId = selectedRegionId,
+                pickRegion = { pickRegion(it) }
             )
-        }
-        AppScreen.ANIMATION_FIXED_CLOUD_V1 -> {
-            FixedCloudSplashScreen(
-                onNavigateBack = {
-                    currentScreen = AppScreen.ANIMATION_PREVIEWS
-                }
-            )
-        }
-        AppScreen.ANIMATION_MOVING_CLOUDS_V2 -> {
-            MovingCloudsSplashScreen(
-                onNavigateBack = {
-                    currentScreen = AppScreen.ANIMATION_PREVIEWS
-                }
-            )
-        }
-        AppScreen.ANIMATION_WEB_VIEW -> {
-            WebSplashAnimationScreen(
-                onNavigateBack = {
-                    currentScreen = AppScreen.ANIMATION_PREVIEWS
-                }
-            )
-        }
-        AppScreen.NEWS_STORY_VIEWER -> {
-            selectedNewsStory?.let { story ->
-                NewsStoryViewerScreen(
-                    storyTitle = story.title,
-                    storyUrl = story.url,
-                    cityName = selectedNewsCity,
-                    source = story.source,
-                    onBackToApp = {
-                        currentScreen = previousScreen
-                    }
-                )
-            } ?: run {
-                currentScreen = AppScreen.LANDING
-            }
-        }
+        )
     }
 }

@@ -111,12 +111,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import io.github.genesjc.microclimatefinder.BuildInfo
+import io.github.genesjc.microclimatefinder.EditionConfig
 import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
-import io.github.genesjc.microclimatefinder.ui.components.DemoNavigationCard
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -573,16 +573,19 @@ fun LandingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(8.dp))
-                    NavigationDrawerItem(
-                        label = { Text("Demos & Previews") },
-                        icon = { Text(text = "▦", fontSize = 18.sp) },
-                        selected = false,
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            onNavigateTo(AppScreen.DEMOS_AND_PREVIEWS)
-                        },
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
+                    // Only the demo edition has the Demos & Previews hub
+                    if (EditionConfig.HAS_DEMOS) {
+                        NavigationDrawerItem(
+                            label = { Text("Demos & Previews") },
+                            icon = { Text(text = "▦", fontSize = 18.sp) },
+                            selected = false,
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                onNavigateTo(AppScreen.DEMOS_AND_PREVIEWS)
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                    }
                     NavigationDrawerItem(
                         label = { Text("Dark mode") },
                         icon = { Text(text = "\u25D0", fontSize = 18.sp) },
