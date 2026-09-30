@@ -639,7 +639,7 @@ fun LandingScreen(
             modifier = modifier
                 .fillMaxSize()
                 .padding(start = 20.dp, end = 20.dp, top = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             run {
                 // App Header Banner
@@ -751,6 +751,7 @@ fun LandingScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
             // Row 1: the selected station as a half-width tile (it grows into the full card), and
             // the Terrain Legend and Region Info, stacked at the bottom beside it
             val shown = if (dataset != null) {
@@ -837,6 +838,8 @@ fun LandingScreen(
                 }
             }
 
+            // A small gap between the first row and what is below it (the map)
+            Spacer(modifier = Modifier.height(4.dp))
             run {
                 Column {
                     // This region has no station data in this build

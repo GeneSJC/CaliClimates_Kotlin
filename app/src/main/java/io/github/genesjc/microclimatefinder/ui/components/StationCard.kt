@@ -611,7 +611,7 @@ fun StationSummaryTile(station: MicroclimateStation) {
     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
         Text(
             text = station.name,
-            style = MaterialTheme.typography.titleSmall,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -619,7 +619,8 @@ fun StationSummaryTile(station: MicroclimateStation) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "—",
-                fontSize = 24.sp,
+                // A little smaller than the station name
+                fontSize = 16.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
