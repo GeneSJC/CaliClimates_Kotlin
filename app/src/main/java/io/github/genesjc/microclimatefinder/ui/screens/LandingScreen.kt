@@ -924,7 +924,7 @@ fun LandingScreen(
                     MapViewSwitch(
                         selected = homeTab,
                         onSelect = onHomeTabChange,
-                        modifier = Modifier.align(Alignment.TopStart).padding(start = 54.dp, top = 12.dp)
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = 54.dp, top = if (homeTab == 0) 12.dp else 21.dp)
                     )
                 }
             }
