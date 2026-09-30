@@ -551,13 +551,13 @@ private fun RegionInfoContent(
     Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = SHEET_TOP_PAD)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Region info",
+                text = "Region Info",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = "Info \u00BB",
+                text = "\u00BB",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -823,7 +823,7 @@ fun LandingScreen(
                     // Handle for the region info sheet, which slides in from the right
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         Text(
-                            text = "\u00AB Info",
+                            text = "\u00AB Region Info",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
