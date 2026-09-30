@@ -107,15 +107,18 @@ fun StationMapScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     /** True when shown inside another screen (the Home tabs): no app bar and no region picker of its own. */
-    embedded: Boolean = false
+    embedded: Boolean = false,
+    /** A station selected elsewhere (the other Home tab), and a way to report selections back. */
+    sharedSelectedStationId: String? = null,
+    onStationSelected: ((String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
     val stations = remember(dataset) { parser.loadStations(dataset) }
 
-    var selectedStationId by remember {
-        mutableStateOf(stations.firstOrNull()?.id)
-    }
+    // The selected station can be shared with another screen (Home keeps it across its two tabs)
+    var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
+    val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
     var pinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
@@ -240,7 +243,10 @@ fun StationMapScreen(
                     hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
                     selectedStationId = selectedStationId,
                     pinScale = pinScale,
-                    onSelectStation = { selectedStationId = it.id }
+                    onSelectStation = {
+                    localSelectedId = it.id
+                    onStationSelected?.invoke(it.id)
+                }
                 )
             }
             // Expand / shrink toggle, under the compass in the top-left corner

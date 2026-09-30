@@ -590,6 +590,8 @@ fun LandingScreen(
     onInfoOpenChange: (Boolean) -> Unit,
     homeTab: Int,
     onHomeTabChange: (Int) -> Unit,
+    selectedStationId: String?,
+    onStationSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val region = remember(selectedRegionId) {
@@ -959,13 +961,17 @@ fun LandingScreen(
                             selectedRegionId = selectedRegionId,
                             onSelectRegion = onSelectRegion,
                             onNavigateBack = {},
-                            embedded = true
+                            embedded = true,
+                            sharedSelectedStationId = selectedStationId,
+                            onStationSelected = onStationSelected
                         )
                     } else {
                         ElevationProfileScreen(
                             dataset = dataset,
                             onNavigateBack = {},
-                            embedded = true
+                            embedded = true,
+                            sharedSelectedStationId = selectedStationId,
+                            onStationSelected = onStationSelected
                         )
                     }
                 }

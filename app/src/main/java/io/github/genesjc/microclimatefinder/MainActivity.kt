@@ -70,6 +70,8 @@ fun AppNavigation() {
     var homeInfoOpen by remember { mutableStateOf(false) }
     // Which map view Home shows: 0 = Topo Map, 1 = Elevation Profile
     var homeTab by remember { mutableStateOf(0) }
+    // The station selected on Home, shared by both tabs and kept across a trip to the Station List
+    var homeStationId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
     val regionPrefs = remember { RegionPreferences(context) }
@@ -83,6 +85,7 @@ fun AppNavigation() {
     // Changes the app-wide region and remembers it (Home, Topo Map and Station Feed pickers use this)
     fun pickRegion(regionId: String) {
         selectedRegionId = regionId
+        homeStationId = null
         regionPrefs.save(regionId)
     }
     // Rows for the quick region picker on Home: every region with its station count
@@ -140,7 +143,9 @@ fun AppNavigation() {
                 infoOpen = homeInfoOpen,
                 onInfoOpenChange = { homeInfoOpen = it },
                 homeTab = homeTab,
-                onHomeTabChange = { homeTab = it }
+                onHomeTabChange = { homeTab = it },
+                selectedStationId = homeStationId,
+                onStationSelected = { homeStationId = it }
             )
         }
         AppScreen.DEMOS_AND_PREVIEWS -> {
