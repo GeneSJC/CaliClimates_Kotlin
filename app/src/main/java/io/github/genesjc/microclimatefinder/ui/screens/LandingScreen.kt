@@ -653,6 +653,24 @@ fun LandingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(8.dp))
+                    // The same screens as the cards on the start screen
+                    entries.forEach { entry ->
+                        NavigationDrawerItem(
+                            label = { Text(entry.title) },
+                            icon = { Text(text = entry.iconChar, fontSize = 18.sp) },
+                            selected = false,
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                onNavigateTo(entry.target)
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                    }
+                    if (entries.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                     NavigationDrawerItem(
                         label = { Text("Demos & Previews") },
                         icon = { Text(text = "▦", fontSize = 18.sp) },
