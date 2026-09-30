@@ -66,6 +66,8 @@ fun AppNavigation() {
     var selectedNewsCity by remember { mutableStateOf("") }
     // Where Back returns to from Regional Sections (Home icon or Demos & Previews)
     var regionsReturnScreen by remember { mutableStateOf(AppScreen.LANDING) }
+    // Whether Home's region info sheet is open; kept here so it survives a trip to the Station List
+    var homeInfoOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
     // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
     val regionPrefs = remember { RegionPreferences(context) }
@@ -130,7 +132,9 @@ fun AppNavigation() {
                 onNavigateTo = { targetScreen ->
                     if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.LANDING
                     currentScreen = targetScreen
-                }
+                },
+                infoOpen = homeInfoOpen,
+                onInfoOpenChange = { homeInfoOpen = it }
             )
         }
         AppScreen.DEMOS_AND_PREVIEWS -> {

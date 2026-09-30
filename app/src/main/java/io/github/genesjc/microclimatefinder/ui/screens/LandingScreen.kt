@@ -19,6 +19,19 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
@@ -137,7 +150,7 @@ private fun TerrainMixCard(stations: List<MicroclimateStation>) {
         .filter { it.second > 0 }
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        color = sheetCardColor(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
@@ -180,7 +193,7 @@ private fun TerrainMixCard(stations: List<MicroclimateStation>) {
 private fun RegionStatsCard(stations: List<MicroclimateStation>, onOpenList: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        color = sheetCardColor(),
         modifier = Modifier.fillMaxSize()
     ) {
         Column(
@@ -249,7 +262,7 @@ private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val pageColor = MaterialTheme.colorScheme.background
-    val cardColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+    val cardColor = sheetCardColor()
     val panelShape = RoundedCornerShape(16.dp)
 
     fun openPanel() {
@@ -430,6 +443,138 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
     }
 }
 
+/** How long the info sheet takes to slide in and out. */
+private const val SHEET_OPEN_MS = 420
+private const val SHEET_CLOSE_MS = 320
+/** How much the page behind the sheet is dimmed (0 = not at all; the layer still catches taps). */
+private const val SHEET_DIM = 0f
+
+/** The sheet is solid at its top and fades toward its bottom, where the start screen shows through. */
+private const val SHEET_OPACITY_TOP = 1f
+private const val SHEET_OPACITY_BOTTOM = 0.2f
+
+/** The sheet's fill: a pastel green in light mode, a deep green in dark mode, fading downward. */
+@Composable
+private fun sheetBrush(): Brush {
+    val tint = if (isSystemInDarkTheme()) Color(0xFF1F3A2A) else Color(0xFFA8D5B0)
+    return Brush.verticalGradient(
+        listOf(tint.copy(alpha = SHEET_OPACITY_TOP), tint.copy(alpha = SHEET_OPACITY_BOTTOM))
+    )
+}
+
+/** The cards on the sheet: fully opaque, in a lighter tone than the tint, so they stand out from it. */
+@Composable
+private fun sheetCardColor(): Color = MaterialTheme.colorScheme.surface
+
+
+/**
+ * A panel that slides in from the right edge, over the page. The page behind it stays sharp, and
+ * the panel itself fades from solid at the top to mostly see-through at the bottom. Tap outside,
+ * swipe it to the right, or press Back to close.
+ */
+@Composable
+private fun BoxScope.InfoSideSheet(
+    reveal: Animatable<Float, AnimationVector1D>,
+    topPx: Float,
+    onOpen: () -> Unit,
+    onClose: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val visible by remember { derivedStateOf { reveal.value > 0f } }
+    // Wait until the anchor is measured (it is not on the first frame after coming back to Home)
+    if (!visible || topPx <= 0f) return
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+
+    // Invisible layer over the page; a tap on it closes the sheet
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .graphicsLayer { alpha = reveal.value }
+            .background(Color.Black.copy(alpha = SHEET_DIM))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClickLabel = "Close the region info"
+            ) { onClose() }
+    )
+    var originY by remember { mutableStateOf(0f) }
+    BoxWithConstraints(
+        modifier = Modifier
+            .matchParentSize()
+            .onGloballyPositioned { originY = it.positionInRoot().y }
+    ) {
+        // The sheet's top edge lines up with the top of the cards in the start screen's first row
+        val topPx = (topPx - originY).coerceAtLeast(0f)
+        val panelWidth = maxWidth * 0.9f
+        val panelWidthPx = with(density) { panelWidth.toPx() }
+        val dragState = rememberDraggableState { delta ->
+            scope.launch { reveal.snapTo((reveal.value - delta / panelWidthPx).coerceIn(0f, 1f)) }
+        }
+        Surface(
+            shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp),
+            color = Color.Transparent,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                // Level with the first row of cards, and only as tall as its content
+                .offset { IntOffset(0, topPx.roundToInt()) }
+                .width(panelWidth)
+                .heightIn(max = maxHeight - with(density) { topPx.toDp() } - 20.dp)
+                .graphicsLayer { translationX = (1f - reveal.value) * panelWidthPx }
+                .draggable(
+                    state = dragState,
+                    orientation = Orientation.Horizontal,
+                    onDragStopped = { velocity ->
+                        if (velocity > 800f || reveal.value < 0.6f) onClose() else onOpen()
+                    }
+                )
+        ) {
+            Box(modifier = Modifier.background(sheetBrush())) {
+                Box(modifier = Modifier.verticalScroll(rememberScrollState())) { content() }
+            }
+        }
+    }
+}
+
+/** What the info sheet holds: the region tile and stats, then the terrain mix. */
+@Composable
+private fun RegionInfoContent(
+    region: CaliforniaRegion,
+    hasStationData: Boolean,
+    stations: List<MicroclimateStation>,
+    onOpenStationList: () -> Unit
+) {
+    var topRowWidthPx by remember { mutableStateOf(0) }
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = "Region Info",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        // Top row: the region tile on the left; Station List and elevation on the right
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .onSizeChanged { topRowWidthPx = it.width },
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                RegionDetailsCard(region, fullWidthPx = topRowWidthPx)
+            }
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                if (hasStationData) RegionStatsCard(stations, onOpenStationList)
+            }
+        }
+        if (stations.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            TerrainMixCard(stations)
+        }
+    }
+}
+
 @Composable
 fun LandingScreen(
     selectedRegionId: String,
@@ -439,6 +584,8 @@ fun LandingScreen(
     regionOptions: List<RegionOption>,
     onSelectRegion: (String) -> Unit,
     onNavigateTo: (AppScreen) -> Unit,
+    infoOpen: Boolean,
+    onInfoOpenChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val region = remember(selectedRegionId) {
@@ -446,7 +593,6 @@ fun LandingScreen(
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
     }
     val hasStationData = dataset != null
-    var topRowWidthPx by remember { mutableStateOf(0) }
     val context = LocalContext.current
     val snapshotStations = remember(dataset) {
         dataset?.let { StationCsvParser(context).loadStations(it) } ?: emptyList()
@@ -463,6 +609,22 @@ fun LandingScreen(
 
     val pickerState = rememberRegionPickerState()
 
+    // Region info sheet: slides in from the right over the start screen
+    // The open state lives with the caller, so the sheet is still open when Back returns from the Station List
+    val infoReveal = remember { Animatable(if (infoOpen) 1f else 0f) }
+    // Where the sheet starts: the top of the Map / Elevation cards (or, with no cards, just under the link)
+    var navCardsTopPx by remember { mutableStateOf(0f) }
+    var infoHandleBottomPx by remember { mutableStateOf(0f) }
+    val sheetTopPx = if (navCardsTopPx > 0f) navCardsTopPx else infoHandleBottomPx
+    val openInfo: () -> Unit = {
+        onInfoOpenChange(true)
+        scope.launch { infoReveal.animateTo(1f, tween(SHEET_OPEN_MS, easing = FastOutSlowInEasing)) }
+    }
+    val closeInfo: () -> Unit = {
+        onInfoOpenChange(false)
+        scope.launch { infoReveal.animateTo(0f, tween(SHEET_CLOSE_MS, easing = FastOutSlowInEasing)) }
+    }
+    BackHandler(enabled = infoOpen) { closeInfo() }
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -484,6 +646,24 @@ fun LandingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(8.dp))
+                    // The same screens as the cards on the start screen
+                    entries.forEach { entry ->
+                        NavigationDrawerItem(
+                            label = { Text(entry.title) },
+                            icon = { Text(text = entry.iconChar, fontSize = 18.sp) },
+                            selected = false,
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                onNavigateTo(entry.target)
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                    }
+                    if (entries.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                     NavigationDrawerItem(
                         label = { Text("Demos & Previews") },
                         icon = { Text(text = "▦", fontSize = 18.sp) },
@@ -638,9 +818,56 @@ fun LandingScreen(
 
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
+                    // Handle for the region info sheet, which slides in from the right
+                    // A fixed height, so the row does not change when the link swaps with the X
+                    Row(
+                        modifier = Modifier.fillMaxWidth().height(30.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val handleModifier = Modifier
+                            .onGloballyPositioned {
+                                infoHandleBottomPx = it.positionInRoot().y + it.size.height
+                            }
+                            .clickable(
+                                onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
+                                role = Role.Button
+                            ) { if (infoOpen) closeInfo() else openInfo() }
+                        val handleColor = MaterialTheme.colorScheme.primary
+                        if (infoOpen) {
+                            // A bold X, drawn so its weight and size are exact
+                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 5.dp).size(14.4.dp)) {
+                                val stroke = 2.4.dp.toPx()
+                                val inset = stroke / 2f
+                                drawLine(
+                                    color = handleColor,
+                                    start = Offset(inset, inset),
+                                    end = Offset(size.width - inset, size.height - inset),
+                                    strokeWidth = stroke,
+                                    cap = StrokeCap.Round
+                                )
+                                drawLine(
+                                    color = handleColor,
+                                    start = Offset(size.width - inset, inset),
+                                    end = Offset(inset, size.height - inset),
+                                    strokeWidth = stroke,
+                                    cap = StrokeCap.Round
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "\u00AB Region Info",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontSize = 17.6.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = handleColor,
+                                modifier = handleModifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
                     // This region has no station data in this build
                     if (dataset == null) {
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f),
@@ -679,28 +906,6 @@ fun LandingScreen(
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    // Top row: the region tile on the left; Station List, count and elevation on the right
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(IntrinsicSize.Min)
-                            .onSizeChanged { topRowWidthPx = it.width },
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                            RegionDetailsCard(region, fullWidthPx = topRowWidthPx)
-                        }
-                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                            if (dataset != null) {
-                                RegionStatsCard(snapshotStations) { onNavigateTo(AppScreen.STATION_LIST) }
-                            }
-                        }
-                    }
-                    if (snapshotStations.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        TerrainMixCard(snapshotStations)
-                    }
                     if (!hasStationData) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
@@ -727,14 +932,26 @@ fun LandingScreen(
                 }
             }
 
-            items(entries) { entry ->
+            itemsIndexed(entries) { index, entry ->
                 DemoNavigationCard(
                     title = entry.title,
                     description = entry.description,
                     iconChar = entry.iconChar,
-                    onClick = { onNavigateTo(entry.target) }
+                    onClick = { onNavigateTo(entry.target) },
+                    modifier = if (index == 0) {
+                        Modifier.onGloballyPositioned { navCardsTopPx = it.positionInRoot().y }
+                    } else Modifier
                 )
             }
+        }
+
+        InfoSideSheet(reveal = infoReveal, topPx = sheetTopPx, onOpen = openInfo, onClose = closeInfo) {
+            RegionInfoContent(
+                region = region,
+                hasStationData = hasStationData,
+                stations = snapshotStations,
+                onOpenStationList = { onNavigateTo(AppScreen.STATION_LIST) }
+            )
         }
 
         RegionPickerOverlay(
