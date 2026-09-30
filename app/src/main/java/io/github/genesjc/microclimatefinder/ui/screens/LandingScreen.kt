@@ -5,6 +5,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -743,12 +745,40 @@ fun LandingScreen(
 
                         // Change-region button: the California outline on a bordered chip like the menu button
                         Column(horizontalAlignment = Alignment.End) {
-                        RegionPickerButton(
-                            state = pickerState,
-                            selectedRegionId = selectedRegionId,
-                            background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
-                            content = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // The (i) button: opens the same About dialog as the menu
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)),
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(26.dp)
+                                            .border(2.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "i",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            RegionPickerButton(
+                                state = pickerState,
+                                selectedRegionId = selectedRegionId,
+                                background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                                content = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
                         // Region Info, under the picker. The sheet slides in from the right; the X takes the link's place
                     Row(
                         // A fixed height, so nothing moves when the link becomes the X
