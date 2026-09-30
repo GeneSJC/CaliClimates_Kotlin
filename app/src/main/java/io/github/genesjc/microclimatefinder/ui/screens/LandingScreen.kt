@@ -121,32 +121,6 @@ import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-private data class LandingEntry(
-    val title: String,
-    val description: String,
-    val iconChar: String,
-    val target: AppScreen
-)
-
-private fun landingEntries(dataset: StationDatasetInfo?): List<LandingEntry> {
-    val entries = mutableListOf<LandingEntry>()
-    if (dataset != null) {
-        entries += LandingEntry(
-            title = "Topography",
-            description = "Stations on a map of the region. Zoom, pan and tap a station.",
-            iconChar = "▲",
-            target = AppScreen.STATION_MAP
-        )
-        entries += LandingEntry(
-            title = "Elevation",
-            description = "Stations sorted by elevation, from lowest to highest, with live sky/weather theming.",
-            iconChar = "⛰️",
-            target = AppScreen.ELEVATION_PROFILE
-        )
-    }
-    return entries
-}
-
 /** One row in the quick region picker. */
 data class RegionOption(val id: String, val name: String, val stationCount: Int?)
 
@@ -548,9 +522,6 @@ fun LandingScreen(
     val snapshotStations = remember(dataset) {
         dataset?.let { StationCsvParser(context).loadStations(it) } ?: emptyList()
     }
-    val entries = remember(region.id, dataset) {
-        landingEntries(dataset)
-    }
     val appName = stringResource(R.string.app_name)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -602,24 +573,6 @@ fun LandingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(8.dp))
-                    // The same views as the tabs on the start screen
-                    entries.forEach { entry ->
-                        NavigationDrawerItem(
-                            label = { Text(entry.title) },
-                            icon = { Text(text = entry.iconChar, fontSize = 18.sp) },
-                            selected = false,
-                            onClick = {
-                                scope.launch { drawerState.close() }
-                                onHomeTabChange(if (entry.target == AppScreen.ELEVATION_PROFILE) 1 else 0)
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
-                    }
-                    if (entries.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        HorizontalDivider()
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
                     NavigationDrawerItem(
                         label = { Text("Demos & Previews") },
                         icon = { Text(text = "▦", fontSize = 18.sp) },
