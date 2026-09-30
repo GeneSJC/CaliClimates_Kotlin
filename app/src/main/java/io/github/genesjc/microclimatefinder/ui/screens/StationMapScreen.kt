@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
@@ -112,12 +113,17 @@ fun StationMapScreen(
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
     val pickerState = rememberRegionPickerState()
+    // The map starts at its regular height; the toggle on the map stretches it to fill the screen
+    var mapExpanded by remember { mutableStateOf(false) }
+    val pageScroll = rememberScrollState()
 
     Box(modifier = modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
+            // Only the regular-height layout scrolls; the expanded map fills the screen exactly
+            .then(if (mapExpanded) Modifier else Modifier.verticalScroll(pageScroll))
     ) {
         // App Bar
         Row(
@@ -193,21 +199,46 @@ fun StationMapScreen(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // 3. The map with its dot-size slider fills the rest of the screen
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        // 3. The map with its dot-size slider: regular height, or the rest of the screen when expanded
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .then(if (mapExpanded) Modifier.weight(1f) else Modifier.height(MAP_REGULAR_HEIGHT))
         ) {
-            SpatialMapCanvas(
-                stations = stations,
-                hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
-                selectedStationId = selectedStationId,
-                pinScale = pinScale,
-                onSelectStation = { selectedStationId = it.id }
-            )
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                SpatialMapCanvas(
+                    stations = stations,
+                    hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
+                    selectedStationId = selectedStationId,
+                    pinScale = pinScale,
+                    onSelectStation = { selectedStationId = it.id }
+                )
+            }
+            // Expand / shrink toggle, under the compass in the top-left corner
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = Color.White.copy(alpha = 0.90f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 6.dp, top = 44.dp)
+                    .clickable(
+                        onClickLabel = if (mapExpanded) "Shrink the map" else "Expand the map",
+                        role = Role.Button
+                    ) { mapExpanded = !mapExpanded }
+            ) {
+                Text(
+                    text = if (mapExpanded) "\u2195 Shrink" else "\u2195 Expand",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF334155),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -221,6 +252,9 @@ fun StationMapScreen(
     )
     }
 }
+
+/** The map's regular height, before it is expanded to fill the screen. */
+private val MAP_REGULAR_HEIGHT = 300.dp
 
 /** How far the map can be dragged past its edge, as a fraction of the map's size, at any zoom. */
 private const val MAP_OVERSCROLL = 0.12f
@@ -713,12 +747,13 @@ private fun SpatialMapCanvas(
             }
         }
 
-        // Areas taken by the fixed controls (compass, topo badge, scale bar) so labels stay clear of them
+        // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
             listOf(0f, 0f, 50f, 32f),
             listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),
-            listOf(widthDp.value - 46f, 0f, widthDp.value, heightDp.value)
+            listOf(widthDp.value - 46f, 0f, widthDp.value, heightDp.value),
+            listOf(0f, 40f, 76f, 74f)  // expand / shrink toggle
         )
         fun geoX(lon: Double) = with(density) { viewX(paddingPx + ((lon - minLon) / lonSpan).toFloat() * widthPx).toDp() }
         fun geoY(lat: Double) = with(density) { viewY(paddingPx + (1f - ((lat - minLat) / latSpan).toFloat()) * heightPx).toDp() }
