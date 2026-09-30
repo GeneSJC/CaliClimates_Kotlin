@@ -614,6 +614,7 @@ fun StationSummaryTile(station: MicroclimateStation) {
             text = station.name,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )

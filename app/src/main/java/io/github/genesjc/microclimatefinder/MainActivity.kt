@@ -57,7 +57,10 @@ class MainActivity : ComponentActivity() {
                 AppBackground(darkTheme = darkMode) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = Color.Transparent
+                        color = Color.Transparent,
+                        // The default text colour for everything below, so text without its own colour is
+                        // dark on light and light on dark
+                        contentColor = MaterialTheme.colorScheme.onBackground
                     ) {
                         AppNavigation(
                             darkMode = darkMode,

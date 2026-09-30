@@ -285,7 +285,19 @@ private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int) {
         closeLabel = "Hide the full station card",
         resetKey = station.id,
         tile = { StationSummaryTile(station) },
-        panel = { StationCard(station = station, isSelected = true, onSelect = {}, compact = true) }
+        panel = {
+            Column {
+                StationCard(station = station, isSelected = true, onSelect = {}, compact = true)
+                // A clear way to fold it back
+                Text(
+                    text = "Less \u25B2",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.End).padding(top = 6.dp, end = 16.dp, bottom = 8.dp)
+                )
+            }
+        }
     )
 }
 

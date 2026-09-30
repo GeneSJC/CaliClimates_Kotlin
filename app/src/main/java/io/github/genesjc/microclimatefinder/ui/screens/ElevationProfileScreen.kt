@@ -894,8 +894,10 @@ private fun ElevationProfileCanvas(
                 val srcH = ((sBottom - sTop) * img.height).toInt().coerceAtLeast(1)
                 val follow = 0.6f
                 val scale = 1f + (zoom - 1f) * follow
-                val dstW = size.width * 1.6f * scale
-                val dstH = dstW * srcH / srcW
+                // Big enough to cover the whole chart, whatever its shape
+                val cover = maxOf(size.width * 1.6f / srcW, size.height * 1.4f / srcH)
+                val dstW = srcW * cover * scale
+                val dstH = srcH * cover * scale
                 val dstX = size.width / 2f - dstW / 2f + pan.x * follow
                 val dstY = size.height / 2f - dstH / 2f + pan.y * follow
                 clipPath(terrainPath) {
