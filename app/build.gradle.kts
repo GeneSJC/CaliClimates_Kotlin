@@ -1,3 +1,10 @@
+import javax.inject.Inject
+import org.gradle.api.flow.FlowAction
+import org.gradle.api.flow.FlowParameters
+import org.gradle.api.flow.FlowScope
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -75,17 +82,32 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
-// Prints the app's build label (BuildInfo.LABEL) in the build output, so it is clear which build ran.
-// Read as a file input so Gradle's configuration cache picks up label changes.
+// Prints the app's build label (BuildInfo.kt) as the last thing in the build output, once the whole
+// build has finished, so it is visible without scrolling. Uses Gradle's build-finished hook (works
+// with the configuration cache). The label is read as a file input so a label change is picked up.
 val buildLabel = providers.fileContents(
     layout.projectDirectory.file("src/main/java/io/github/genesjc/microclimatefinder/BuildInfo.kt")
 ).asText.map { text ->
     Regex("LABEL = \"([^\"]+)\"").find(text)?.groupValues?.get(1) ?: "unknown"
 }
 
-tasks.register("printBuildLabel") {
-    val label = buildLabel
-    doLast { println("Build label: ${label.get()}") }
+abstract class PrintBuildLabel : FlowAction<PrintBuildLabel.Params> {
+    interface Params : FlowParameters {
+        @get:Input
+        val label: Property<String>
+    }
+
+    override fun execute(parameters: Params) {
+        println("")
+        println("=== Build label: ${parameters.label.get()} ===")
+    }
 }
 
-tasks.matching { it.name == "preBuild" }.configureEach { dependsOn("printBuildLabel") }
+interface InjectedFlow {
+    @get:Inject
+    val flowScope: FlowScope
+}
+
+objects.newInstance<InjectedFlow>().flowScope.always(PrintBuildLabel::class.java) {
+    parameters.label.set(buildLabel)
+}
