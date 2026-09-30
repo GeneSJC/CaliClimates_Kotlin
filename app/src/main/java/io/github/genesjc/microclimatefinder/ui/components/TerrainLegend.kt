@@ -33,13 +33,16 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
  * ridge, foothill or mountain, or when it sits above 500 m.
  * [showRelief] adds the green "Mountain relief" entry, used only by the Bay Area map, whose
  * hand-drawn terrain has green relief bands.
+ * [extra] is more content shown when opened, under the key (the Topo Map puts its dot-size slider
+ * there); it also adds "& dot size" to the header so the control can be found.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TerrainLegend(
     stations: List<MicroclimateStation>,
     modifier: Modifier = Modifier,
-    showRelief: Boolean = false
+    showRelief: Boolean = false,
+    extra: (@Composable () -> Unit)? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
     Column(modifier = modifier.fillMaxWidth().animateContentSize()) {
@@ -53,7 +56,7 @@ fun TerrainLegend(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Terrain legend",
+                text = if (extra != null) "Terrain legend & dot size" else "Terrain legend",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary
@@ -83,6 +86,7 @@ fun TerrainLegend(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
             )
+            if (extra != null) extra()
         }
     }
 }
