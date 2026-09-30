@@ -259,6 +259,8 @@ fun StationMapScreen(
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                // A 1dp outline, for a crisper edge
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.fillMaxSize()
             ) {
                 SpatialMapCanvas(

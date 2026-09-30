@@ -235,7 +235,9 @@ private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
 private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int, regionStations: List<MicroclimateStation>) {
     HeroTile(
         fullWidthPx = fullWidthPx,
-        tileColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+        // The same colour as the open card: its tint over the page colour, not over the backdrop
+        tileColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            .compositeOver(MaterialTheme.colorScheme.background),
         tileBorder = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
         // The card draws its own tint and border; this backs it so nothing shows through
         panelColor = MaterialTheme.colorScheme.background,
@@ -244,24 +246,33 @@ private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int, regi
         resetKey = station.id,
         tile = { StationSummaryTile(station) },
         panel = {
-            Column {
-                StationCard(
-                    station = station,
-                    isSelected = true,
-                    onSelect = {},
-                    compact = true,
-                    regionElevationRange = if (regionStations.isEmpty()) null else
-                        "${"%,d".format(regionStations.minOf { it.elevationMeters })}\u2013${"%,d".format(regionStations.maxOf { it.elevationMeters })} m"
-                )
-                // A clear way to fold it back
-                Text(
-                    text = "Less \u25B2",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.End).padding(top = 6.dp, end = 16.dp, bottom = 8.dp)
-                )
-            }
+            StationCard(
+                station = station,
+                isSelected = true,
+                onSelect = {},
+                compact = true,
+                // Inside the card's border: the region's elevation range, and the way to fold it back
+                compactFooter = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (regionStations.isEmpty()) "" else
+                                "Region elevation ${"%,d".format(regionStations.minOf { it.elevationMeters })}\u2013${"%,d".format(regionStations.maxOf { it.elevationMeters })} m",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "Less \u25B2",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            )
         }
     )
 }
@@ -367,14 +378,17 @@ private const val SHEET_DIM = 0f
 
 /** The sheet is solid at its top and fades toward its bottom, where the start screen shows through. */
 private const val SHEET_OPACITY_TOP = 1f
-private const val SHEET_OPACITY_BOTTOM = 0.2f
+private const val SHEET_OPACITY_BOTTOM = 0.4f
 
 /** The sheet's fill: a pastel green in light mode, a deep green in dark mode, fading downward. */
 @Composable
 private fun sheetBrush(): Brush {
-    val tint = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color(0xFF1F3A2A) else Color(0xFFA8D5B0)
+    val tint = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color(0xFF1F3A2A) else Color(0xFF8CC79A)
+    // Fully solid through the title row, then fading down
     return Brush.verticalGradient(
-        listOf(tint.copy(alpha = SHEET_OPACITY_TOP), tint.copy(alpha = SHEET_OPACITY_BOTTOM))
+        0f to tint.copy(alpha = SHEET_OPACITY_TOP),
+        0.12f to tint.copy(alpha = SHEET_OPACITY_TOP),
+        1f to tint.copy(alpha = SHEET_OPACITY_BOTTOM)
     )
 }
 
@@ -464,24 +478,26 @@ private fun RegionInfoContent(
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
     Column(modifier = Modifier.padding(16.dp)) {
-        // The Station List link, above the title
-        if (hasStationData) {
+        // The title and the Station List link share one row, solid so both read clearly
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Station List \u203A",
+                text = "Region Info",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenStationList() }
-                    .padding(vertical = 4.dp)
+                modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            if (hasStationData) {
+                Text(
+                    text = "Station List \u203A",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenStationList() }
+                        .padding(vertical = 4.dp)
+                )
+            }
         }
-        Text(
-            text = "Region Info",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
         Spacer(modifier = Modifier.height(10.dp))
         // The region tile, the full width of the sheet
         Box(modifier = Modifier.fillMaxWidth().onSizeChanged { topRowWidthPx = it.width }) {
@@ -735,19 +751,17 @@ fun LandingScreen(
                         Spacer(modifier = Modifier.width(10.dp))
 
                         // Change-region button: the California outline on a bordered chip like the menu button
+                        Column(horizontalAlignment = Alignment.End) {
                         RegionPickerButton(
                             state = pickerState,
                             selectedRegionId = selectedRegionId,
                             background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
                             content = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                    }
-                    // Region Info, under the region name. The sheet slides in from the right; the X takes
-                    // the link's place. A fixed height, so the header does not change when they swap
-                    Box(modifier = Modifier.padding(start = 42.dp)) {
+                        // Region Info, under the picker. The sheet slides in from the right; the X takes the link's place
                     Row(
-                        // Always as wide as the link, so the tile does not change width when it becomes the X
-                        modifier = Modifier.height(26.dp).widthIn(min = 116.dp),
+                        // A fixed height, so nothing moves when the link becomes the X
+                        modifier = Modifier.height(26.dp),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -789,6 +803,7 @@ fun LandingScreen(
                             )
                         }
                     }
+                        }
                     }
                     }
                 }
