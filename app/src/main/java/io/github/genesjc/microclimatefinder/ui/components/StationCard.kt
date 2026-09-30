@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import io.github.genesjc.microclimatefinder.AppFeatures
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
@@ -72,7 +73,7 @@ fun StationCard(
     }
 
     val newsStories = remember(cleanCity) {
-        LocalNewsRepository.getLocalStories(cleanCity)
+        if (AppFeatures.LOCAL_NEWS) LocalNewsRepository.getLocalStories(cleanCity) else emptyList()
     }
 
     val borderColor = if (isSelected) {
@@ -200,6 +201,7 @@ fun StationCard(
                 )
             }
 
+            if (AppFeatures.LOCAL_NEWS) {
             Spacer(modifier = Modifier.height(12.dp))
 
             // =========================================================================
@@ -273,6 +275,7 @@ fun StationCard(
                     }
                 }
             }
+            }
         }
     }
 
@@ -280,7 +283,7 @@ fun StationCard(
     // 90% Full Screen Hero Dialog for Local News Stories
     // Translucent backdrop with solid opaque inner article post containers for 100% crisp readability
     // =========================================================================
-    if (showNewsDialog) {
+    if (AppFeatures.LOCAL_NEWS && showNewsDialog) {
         Dialog(
             onDismissRequest = { showNewsDialog = false },
             properties = DialogProperties(
