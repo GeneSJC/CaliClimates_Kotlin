@@ -19,6 +19,10 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.platform.LocalConfiguration
@@ -125,53 +129,15 @@ private fun landingEntries(dataset: StationDatasetInfo?): List<LandingEntry> {
 /** One row in the quick region picker. */
 data class RegionOption(val id: String, val name: String, val stationCount: Int?)
 
-/** At a glance, as two cards: how many stations and their elevation range, then the mix of terrain types. */
+/** The mix of terrain types in the region, as a bar with counts. */
 @Composable
-private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
-    val minElev = stations.minOf { it.elevationMeters }
-    val maxElev = stations.maxOf { it.elevationMeters }
+private fun TerrainMixCard(stations: List<MicroclimateStation>) {
     val mix = TerrainType.values()
         .map { type -> type to stations.count { it.terrain == type } }
         .filter { it.second > 0 }
-    val cardColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = cardColor,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${stations.size}",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "stations",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${"%,d".format(minElev)}\u2013${"%,d".format(maxElev)} m",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "elevation range",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-    Spacer(modifier = Modifier.height(12.dp))
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = cardColor,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
@@ -209,6 +175,53 @@ private fun RegionSnapshotCard(stations: List<MicroclimateStation>) {
     }
 }
 
+/** The Station List link, then the station count and the elevation range, in one column. */
+@Composable
+private fun RegionStatsCard(stations: List<MicroclimateStation>, onOpenList: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Station List \u203A",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenList() }
+                    .padding(vertical = 4.dp)
+            )
+            if (stations.isNotEmpty()) {
+                val minElev = stations.minOf { it.elevationMeters }
+                val maxElev = stations.maxOf { it.elevationMeters }
+                Text(
+                    text = "${stations.size}",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Column {
+                    Text(
+                        text = "${"%,d".format(minElev)}\u2013${"%,d".format(maxElev)} m",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "elevation range",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
 // Same colors as the map legends
 private fun terrainColor(type: TerrainType): Color = when (type) {
     TerrainType.RIDGE -> Color(0xFF7C3AED)
@@ -224,64 +237,102 @@ private fun terrainShortName(type: TerrainType): String = when (type) {
     TerrainType.URBAN_CANYON -> "Urban"
 }
 
+/** How long the region panel takes to grow out of its tile, and to fold back. */
+private const val PANEL_OPEN_MS = 650
+private const val PANEL_CLOSE_MS = 500
+
 /**
- * About the current region, as a half-width tile. "More" grows it into a full-width panel floating
- * over the page, so nothing on the page moves.
+ * About the current region, as a half-width tile. "More" grows it, in width and height, into a
+ * full-width panel floating over the page, so nothing on the page moves.
  */
 @Composable
 private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
-    var expanded by remember(region.id) { mutableStateOf(false) }
+    var open by remember(region.id) { mutableStateOf(false) }
     var cardWidthPx by remember { mutableStateOf(0) }
+    var cardHeightPx by remember { mutableStateOf(0) }
+    val reveal = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val pageColor = MaterialTheme.colorScheme.background
     val cardColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+    val panelShape = RoundedCornerShape(16.dp)
+
+    fun openPanel() {
+        open = true
+        scope.launch { reveal.animateTo(1f, tween(PANEL_OPEN_MS, easing = FastOutSlowInEasing)) }
+    }
+    fun closePanel() {
+        scope.launch {
+            reveal.animateTo(0f, tween(PANEL_CLOSE_MS, easing = FastOutSlowInEasing))
+            open = false
+        }
+    }
 
     // The Box is the popup's anchor: it sits exactly on the collapsed tile
-    Box {
+    Box(modifier = Modifier.fillMaxSize()) {
         // The collapsed tile keeps its place in the layout
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = panelShape,
             color = cardColor,
             modifier = Modifier
-                .fillMaxWidth()
-                .onSizeChanged { cardWidthPx = it.width }
+                .fillMaxSize()
+                .onSizeChanged {
+                    cardWidthPx = it.width
+                    cardHeightPx = it.height
+                }
                 .clickable(
                     onClickLabel = "Show more about ${region.name}",
                     role = Role.Button
-                ) { expanded = true }
+                ) { openPanel() }
         ) {
             RegionDetailsTile(region)
         }
 
-        if (expanded) {
-            // Grows from the tile's width to the full row, from the tile's left edge.
-            // Tapping it, tapping outside, or pressing Back closes it.
-            val reveal = remember { Animatable(0f) }
-            LaunchedEffect(Unit) { reveal.animateTo(1f, tween(260, easing = FastOutSlowInEasing)) }
+        if (open) {
+            // Grows from the tile's size to the full row width, from the tile's top-left corner.
+            // Tapping it, tapping outside, or pressing Back folds it back.
+            val p = reveal.value
             val startWidth = with(density) { cardWidthPx.toDp() }
             val fullWidth = with(density) { fullWidthPx.toDp() }
             Popup(
                 alignment = Alignment.TopStart,
-                onDismissRequest = { expanded = false },
+                onDismissRequest = { closePanel() },
                 properties = PopupProperties(focusable = true)
             ) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = cardColor.compositeOver(pageColor),
-                    shadowElevation = 12.dp,
+                Box(
                     modifier = Modifier
-                        .width(lerp(startWidth, fullWidth, reveal.value))
+                        .width(lerp(startWidth, fullWidth, p))
                         .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.8f).dp)
+                        .layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            val h = (cardHeightPx + (placeable.height - cardHeightPx) * p).toInt()
+                            layout(placeable.width, h) { placeable.place(0, 0) }
+                        }
+                        .shadow(12.dp * p, panelShape)
+                        .clip(panelShape)
+                        .background(cardColor.compositeOver(pageColor))
                         .clickable(
                             onClickLabel = "Show less about ${region.name}",
                             role = Role.Button
-                        ) { expanded = false }
+                        ) { closePanel() }
                 ) {
                     Box(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        // Laid out at full width and revealed as the panel widens
+                        // Laid out at full width and revealed as the panel grows; the tile's
+                        // own text fades out as the full text fades in
                         Box(modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true)) {
-                            Box(modifier = Modifier.width(fullWidth)) {
+                            Box(
+                                modifier = Modifier
+                                    .width(fullWidth)
+                                    .graphicsLayer { alpha = ((p - 0.25f) / 0.5f).coerceIn(0f, 1f) }
+                            ) {
                                 RegionDetailsBody(region, expanded = true)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .width(startWidth)
+                                    .graphicsLayer { alpha = (1f - p * 3f).coerceIn(0f, 1f) }
+                            ) {
+                                RegionDetailsTile(region)
                             }
                         }
                     }
@@ -634,37 +685,26 @@ fun LandingScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    // Top row: the region tile on the left, the Station List link on the right
+                    // Top row: the region tile on the left; Station List, count and elevation on the right
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
                             .onSizeChanged { topRowWidthPx = it.width },
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Box(modifier = Modifier.weight(1f)) {
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                             RegionDetailsCard(region, fullWidthPx = topRowWidthPx)
                         }
-                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                             if (dataset != null) {
-                                Text(
-                                    text = "Station List \u203A",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .clickable(
-                                            onClickLabel = "Open the Station List",
-                                            role = Role.Button
-                                        ) { onNavigateTo(AppScreen.STATION_LIST) }
-                                        .padding(horizontal = 8.dp, vertical = 12.dp)
-                                )
+                                RegionStatsCard(snapshotStations) { onNavigateTo(AppScreen.STATION_LIST) }
                             }
                         }
                     }
                     if (snapshotStations.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        RegionSnapshotCard(snapshotStations)
+                        TerrainMixCard(snapshotStations)
                     }
                     if (!hasStationData) {
                         Spacer(modifier = Modifier.height(12.dp))
