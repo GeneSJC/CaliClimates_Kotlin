@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -104,7 +105,9 @@ fun StationMapScreen(
     selectedRegionId: String,
     onSelectRegion: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** True when shown inside another screen (the Home tabs): no app bar and no region picker of its own. */
+    embedded: Boolean = false
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
@@ -123,10 +126,12 @@ fun StationMapScreen(
     val density = LocalDensity.current
     var aboveMapPx by remember { mutableStateOf(0) }
 
+    // Top and bottom padding of the page: the embedded map has no app bar, so less above it
+    val mapVerticalPadding = if (embedded) 16.dp else 32.dp
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     // Expanded height: the screen less the padding and everything above the map
     val expandedMapHeight = with(density) {
-        ((maxHeight - 32.dp).roundToPx() - aboveMapPx).toDp()
+        ((maxHeight - mapVerticalPadding).roundToPx() - aboveMapPx).toDp()
     }.coerceAtLeast(MAP_REGULAR_HEIGHT)
     val mapHeight by animateDpAsState(
         targetValue = if (mapExpanded) expandedMapHeight else MAP_REGULAR_HEIGHT,
@@ -136,10 +141,11 @@ fun StationMapScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 16.dp) else PaddingValues(16.dp))
             .verticalScroll(pageScroll)
     ) {
       Column(modifier = Modifier.onSizeChanged { aboveMapPx = it.height }) {
+        if (!embedded) {
         // App Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -179,6 +185,7 @@ fun StationMapScreen(
         }
 
         Spacer(modifier = Modifier.height(14.dp))
+        }
 
         // 1. The selected station (the Station Inspector)
         if (selectedStation != null) {
@@ -260,11 +267,13 @@ fun StationMapScreen(
         }
 
     }
-    RegionPickerOverlay(
-        state = pickerState,
-        selectedRegionId = selectedRegionId,
-        onSelectRegion = onSelectRegion
-    )
+    if (!embedded) {
+        RegionPickerOverlay(
+            state = pickerState,
+            selectedRegionId = selectedRegionId,
+            onSelectRegion = onSelectRegion
+        )
+    }
     }
 }
 

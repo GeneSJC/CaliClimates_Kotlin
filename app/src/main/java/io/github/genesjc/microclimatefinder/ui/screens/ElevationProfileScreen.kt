@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -108,7 +109,9 @@ private fun rankLandmarkIndexes(sorted: List<MicroclimateStation>): List<Int> {
 fun ElevationProfileScreen(
     dataset: StationDatasetInfo,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** True when shown inside another screen (the Home tabs): no app bar of its own. */
+    embedded: Boolean = false
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
@@ -123,9 +126,10 @@ fun ElevationProfileScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 16.dp) else PaddingValues(16.dp))
             .verticalScroll(rememberScrollState())
     ) {
+        if (!embedded) {
         // App Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -176,6 +180,7 @@ fun ElevationProfileScreen(
         }
 
         Spacer(modifier = Modifier.height(14.dp))
+        }
 
         // Elevation Canvas Container
         Surface(

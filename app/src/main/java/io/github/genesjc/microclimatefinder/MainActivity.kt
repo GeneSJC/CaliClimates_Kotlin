@@ -68,6 +68,8 @@ fun AppNavigation() {
     var regionsReturnScreen by remember { mutableStateOf(AppScreen.LANDING) }
     // Whether Home's region info sheet is open; kept here so it survives a trip to the Station List
     var homeInfoOpen by remember { mutableStateOf(false) }
+    // Which map view Home shows: 0 = Topo Map, 1 = Elevation Profile
+    var homeTab by remember { mutableStateOf(0) }
     val context = LocalContext.current
     // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
     val regionPrefs = remember { RegionPreferences(context) }
@@ -109,6 +111,8 @@ fun AppNavigation() {
             } else if (currentScreen == AppScreen.CALIFORNIA_REGIONS) {
                 currentScreen = regionsReturnScreen
             } else if (currentScreen == AppScreen.STATION_CARD_PREVIEW ||
+                currentScreen == AppScreen.STATION_MAP ||
+                currentScreen == AppScreen.ELEVATION_PROFILE ||
                 currentScreen == AppScreen.DRAGGABLE_MAP ||
                 currentScreen == AppScreen.UNIFIED_DRAGGABLE_MAP ||
                 currentScreen == AppScreen.ANIMATION_PREVIEWS
@@ -134,7 +138,9 @@ fun AppNavigation() {
                     currentScreen = targetScreen
                 },
                 infoOpen = homeInfoOpen,
-                onInfoOpenChange = { homeInfoOpen = it }
+                onInfoOpenChange = { homeInfoOpen = it },
+                homeTab = homeTab,
+                onHomeTabChange = { homeTab = it }
             )
         }
         AppScreen.DEMOS_AND_PREVIEWS -> {
@@ -171,7 +177,7 @@ fun AppNavigation() {
                 selectedRegionId = selectedRegionId,
                 onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 }
             )
         }
@@ -179,7 +185,7 @@ fun AppNavigation() {
             ElevationProfileScreen(
                 dataset = regionDataset ?: defaultDataset,
                 onNavigateBack = {
-                    currentScreen = AppScreen.LANDING
+                    currentScreen = AppScreen.DEMOS_AND_PREVIEWS
                 }
             )
         }
