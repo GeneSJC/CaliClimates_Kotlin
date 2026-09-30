@@ -819,7 +819,12 @@ fun LandingScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
                     // Handle for the region info sheet, which slides in from the right
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    // A fixed height, so the row does not change when the link swaps with the X
+                    Row(
+                        modifier = Modifier.fillMaxWidth().height(36.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         val handleModifier = Modifier
                             .onGloballyPositioned {
                                 infoHandleBottomPx = it.positionInRoot().y + it.size.height
@@ -852,7 +857,7 @@ fun LandingScreen(
                         } else {
                             Text(
                                 text = "\u00AB Region Info",
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = handleColor,
                                 modifier = handleModifier.padding(horizontal = 8.dp, vertical = 4.dp)
