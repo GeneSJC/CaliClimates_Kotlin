@@ -243,7 +243,8 @@ private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int, regi
         panelColor = MaterialTheme.colorScheme.background,
         openLabel = "Show the full station card",
         closeLabel = "Hide the full station card",
-        resetKey = station.id,
+        // Stays open when another station is picked from the map, and the map stays tappable behind it
+        passThrough = true,
         tile = { StationSummaryTile(station) },
         panel = {
             StationCard(

@@ -58,6 +58,8 @@ fun HeroTile(
     modifier: Modifier = Modifier,
     tileBorder: BorderStroke? = null,
     resetKey: Any? = null,
+    /** True: touches outside the open panel reach what is underneath (the map's dots) and do not fold it. */
+    passThrough: Boolean = false,
     tile: @Composable () -> Unit,
     panel: @Composable () -> Unit
 ) {
@@ -79,6 +81,8 @@ fun HeroTile(
             open = false
         }
     }
+
+    if (passThrough) androidx.activity.compose.BackHandler(enabled = open) { closePanel() }
 
     // The Box is the popup's anchor: it sits exactly on the collapsed tile
     Box(modifier = modifier.fillMaxSize()) {
@@ -106,7 +110,7 @@ fun HeroTile(
             Popup(
                 alignment = Alignment.TopStart,
                 onDismissRequest = { closePanel() },
-                properties = PopupProperties(focusable = true)
+                properties = PopupProperties(focusable = !passThrough, dismissOnClickOutside = !passThrough)
             ) {
                 Box(
                     modifier = Modifier

@@ -45,6 +45,7 @@ import kotlin.math.abs
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ColorFilter
@@ -103,6 +104,54 @@ private const val SEA_FRACTION = 0.14f
 
 /** Where (0 at the chart's top, 1 at its bottom) a height, as a share of the highest station, is drawn. */
 private fun profileFrac(elevRatio: Float): Float = PROFILE_HEAD + (1f - elevRatio) * (1f - PROFILE_HEAD - SEA_FRACTION)
+
+private class Fish(
+    val lengthDp: Float,
+    val color: Color,
+    val cycles: Int,
+    val offset: Float,
+    val depth: Float,
+    val rightward: Boolean
+)
+
+// Three fish of different sizes, each swimming across at its own pace
+private val FISH = listOf(
+    Fish(lengthDp = 16f, color = Color(0xFFFFA64D), cycles = 4, offset = 0.15f, depth = 0.28f, rightward = true),
+    Fish(lengthDp = 24f, color = Color(0xFFFFE08A), cycles = 3, offset = 0.60f, depth = 0.55f, rightward = false),
+    Fish(lengthDp = 34f, color = Color(0xFFD5E8F7), cycles = 2, offset = 0.35f, depth = 0.42f, rightward = true)
+)
+
+/** A little fish: an oval body, a tail that waggles with [wag] (-1 to 1) and an eye at the head. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawFish(
+    cx: Float, cy: Float, length: Float, color: Color, rightward: Boolean, wag: Float
+) {
+    val dir = if (rightward) 1f else -1f
+    val bodyW = length * 0.72f
+    val bodyH = length * 0.40f
+    // Body
+    drawOval(
+        color = color,
+        topLeft = Offset(cx - bodyW / 2f, cy - bodyH / 2f),
+        size = androidx.compose.ui.geometry.Size(bodyW, bodyH)
+    )
+    // Tail, behind the body
+    val tailBase = cx - dir * bodyW * 0.45f
+    val tailTip = cx - dir * length * 0.5f
+    val sway = wag * bodyH * 0.35f
+    val tail = Path().apply {
+        moveTo(tailBase, cy)
+        lineTo(tailTip, cy - bodyH * 0.55f + sway)
+        lineTo(tailTip, cy + bodyH * 0.55f + sway)
+        close()
+    }
+    drawPath(tail, color = color)
+    // Eye
+    drawCircle(
+        color = Color(0xFF0F2A44),
+        radius = length * 0.045f,
+        center = Offset(cx + dir * bodyW * 0.28f, cy - bodyH * 0.1f)
+    )
+}
 
 // Labels are about this tall (dp) when checking for overlaps
 private const val LABEL_HEIGHT_DP = 18f
@@ -1056,6 +1105,36 @@ private fun ElevationProfileCanvas(
                             center = Offset(x, y),
                             style = Stroke(width = 3f)
                         )
+                    }
+                }
+            }
+        }
+
+        // Three fish swimming in the ocean (decoration). They are drawn in their own layer, so only it
+        // redraws as they move, and they follow the ocean when the chart is zoomed or panned.
+        val swim = androidx.compose.animation.core.rememberInfiniteTransition(label = "fish")
+        val fishTime by swim.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                animation = tween(120_000, easing = androidx.compose.animation.core.LinearEasing)
+            ),
+            label = "fishTime"
+        )
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val seaTop = viewY(paddingPx + (1f - SEA_FRACTION) * heightPx)
+            val seaBottom = maxOf(size.height, viewY(size.height - paddingPx) + paddingPx)
+            val band = seaBottom - seaTop
+            if (seaTop < size.height && band > 40.dp.toPx()) {
+                clipRect(top = maxOf(0f, seaTop), bottom = size.height) {
+                    for (fish in FISH) {
+                        val length = fish.lengthDp.dp.toPx()
+                        val travel = size.width + 2f * length
+                        val phase = (fishTime * fish.cycles + fish.offset) % 1f
+                        val cx = if (fish.rightward) phase * travel - length else size.width + length - phase * travel
+                        val wobble = kotlin.math.sin((fishTime * 60f * fish.cycles + fish.offset) * 2f * Math.PI.toFloat())
+                        val cy = seaTop + band * fish.depth + wobble * 4.dp.toPx()
+                        drawFish(cx, cy, length, fish.color, fish.rightward, wobble)
                     }
                 }
             }
