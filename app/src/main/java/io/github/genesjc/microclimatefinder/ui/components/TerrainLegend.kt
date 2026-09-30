@@ -57,8 +57,6 @@ private const val LEGEND_CLOSE_MS = 500
  * does not move, showing only the terrain types the region actually has, each with its station
  * count. Tap the header, tap outside, or press Back to close. A station is "ridge / highland" when
  * its data says ridge, foothill or mountain, or when it sits above 500 m.
- * [showRelief] adds the green "Mountain relief" entry, used only by the Bay Area map, whose
- * hand-drawn terrain has green relief bands.
  * [extra] is more content shown in the panel, under the key (the Topo Map puts its dot-size
  * slider there). [headerFontSize] sets the header's size; [expandedWidthPx] lets the panel grow
  * wider than the header, for a header that sits in part of a row.
@@ -68,7 +66,6 @@ private const val LEGEND_CLOSE_MS = 500
 fun TerrainLegend(
     stations: List<MicroclimateStation>,
     modifier: Modifier = Modifier,
-    showRelief: Boolean = false,
     extra: (@Composable () -> Unit)? = null,
     headerFontSize: TextUnit = 17.6.sp,
     /** When set, the panel grows to this width (Home gives it the full row); else to the header's width. */
@@ -154,7 +151,6 @@ fun TerrainLegend(
                                         val count = stations.count { it.terrain == type }
                                         if (count > 0) LegendItem(color = legendColor(type), label = "${legendName(type)} $count")
                                     }
-                                if (showRelief) LegendItem(color = Color(0xFF166534), label = "Mountain relief")
                             }
                             Text(
                                 text = "Ridge / highland: ridge, foothill or mountain terrain, or above 500 m",

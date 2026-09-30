@@ -179,7 +179,7 @@ fun ElevationProfileScreen(
 
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                 Text(
-                    text = "Elevation Profile",
+                    text = "Elevation",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )

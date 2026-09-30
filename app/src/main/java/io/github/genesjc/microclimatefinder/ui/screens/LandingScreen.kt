@@ -128,13 +128,13 @@ private fun landingEntries(dataset: StationDatasetInfo?): List<LandingEntry> {
     val entries = mutableListOf<LandingEntry>()
     if (dataset != null) {
         entries += LandingEntry(
-            title = "Topographical Map",
+            title = "Topography",
             description = "Stations on a map of the region. Zoom, pan and tap a station.",
             iconChar = "▲",
             target = AppScreen.STATION_MAP
         )
         entries += LandingEntry(
-            title = "Elevation Profile",
+            title = "Elevation",
             description = "Stations sorted by elevation, from lowest to highest, with live sky/weather theming.",
             iconChar = "⛰️",
             target = AppScreen.ELEVATION_PROFILE
@@ -850,8 +850,6 @@ fun LandingScreen(
                             if (dataset != null && snapshotStations.isNotEmpty()) {
                                 TerrainLegend(
                                     stations = snapshotStations,
-                                    showRelief = homeTab == 0 &&
-                                        dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
                                     // The dot-size slider belongs to the map, so only the Topo Map tab has it
                                     extra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) },
                                     headerFontSize = 15.84.sp,
@@ -978,12 +976,12 @@ fun LandingScreen(
                     Tab(
                         selected = homeTab == 0,
                         onClick = { onHomeTabChange(0) },
-                        text = { Text("Topo Map", fontSize = 18.2.sp, fontWeight = FontWeight.Bold) }
+                        text = { Text("Topography", fontSize = 18.2.sp, fontWeight = FontWeight.Bold) }
                     )
                     Tab(
                         selected = homeTab == 1,
                         onClick = { onHomeTabChange(1) },
-                        text = { Text("Elevation Profile", fontSize = 18.2.sp, fontWeight = FontWeight.Bold) }
+                        text = { Text("Elevation", fontSize = 18.2.sp, fontWeight = FontWeight.Bold) }
                     )
                 }
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -1072,7 +1070,9 @@ fun LandingScreen(
                         "Live readings: temperature, humidity, wind and pressure come from the " +
                         "National Weather Service (weather.gov). Stations report about once an hour, " +
                         "so a reading can be up to an hour or more old; each card shows when it was " +
-                        "taken. Readings are for general interest, not for safety or aviation decisions."
+                        "taken. Readings are for general interest, not for safety or aviation decisions.\n\n" +
+                        "Terrain: the shading on the Topography map is drawn from public elevation data " +
+                        "(USGS 3DEP, NASA SRTM and other public sources), via AWS Open Data Terrain Tiles."
                 )
             }
         )
