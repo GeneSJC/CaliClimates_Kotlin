@@ -19,6 +19,7 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.derivedStateOf
@@ -144,7 +145,7 @@ private fun TerrainMixCard(stations: List<MicroclimateStation>) {
         .filter { it.second > 0 }
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        color = sheetCardColor(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
@@ -187,7 +188,7 @@ private fun TerrainMixCard(stations: List<MicroclimateStation>) {
 private fun RegionStatsCard(stations: List<MicroclimateStation>, onOpenList: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        color = sheetCardColor(),
         modifier = Modifier.fillMaxSize()
     ) {
         Column(
@@ -256,7 +257,7 @@ private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val pageColor = MaterialTheme.colorScheme.background
-    val cardColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+    val cardColor = sheetCardColor()
     val panelShape = RoundedCornerShape(16.dp)
 
     fun openPanel() {
@@ -443,8 +444,17 @@ private const val SHEET_CLOSE_MS = 320
 /** How much the page behind the sheet is dimmed (0 = not at all; the layer still catches taps). */
 private const val SHEET_DIM = 0f
 
-/** How opaque the sheet is: the blurred start screen shows through the rest. */
+/** How opaque the sheet is: the start screen shows through the rest. */
 private const val SHEET_OPACITY = 0.5f
+
+/** The sheet's tint: a pastel green in light mode, a deep green in dark mode. */
+@Composable
+private fun sheetColor(): Color =
+    (if (isSystemInDarkTheme()) Color(0xFF1F3A2A) else Color(0xFFA8D5B0)).copy(alpha = SHEET_OPACITY)
+
+/** The cards on the sheet: a lighter tone of the surface, so they stand out from the tint. */
+@Composable
+private fun sheetCardColor(): Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
 
 /** Space above the sheet's first row; the sheet starts this far above the Info link. */
 private val SHEET_TOP_PAD = 12.dp
@@ -494,7 +504,7 @@ private fun BoxScope.InfoSideSheet(
         }
         Surface(
             shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = SHEET_OPACITY),
+            color = sheetColor(),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
             modifier = Modifier
                 .align(Alignment.TopEnd)
