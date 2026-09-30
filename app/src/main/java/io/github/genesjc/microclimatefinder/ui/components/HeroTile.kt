@@ -61,7 +61,8 @@ fun HeroTile(
     /** True: touches outside the open panel reach what is underneath (the map's dots) and do not fold it. */
     passThrough: Boolean = false,
     tile: @Composable () -> Unit,
-    panel: @Composable () -> Unit
+    /** The open panel's content; it is given a way to fold the panel back. */
+    panel: @Composable (close: () -> Unit) -> Unit
 ) {
     var open by remember(resetKey) { mutableStateOf(false) }
     var cardWidthPx by remember { mutableStateOf(0) }
@@ -135,7 +136,7 @@ fun HeroTile(
                                     .width(fullWidth)
                                     .graphicsLayer { alpha = ((p - 0.25f) / 0.5f).coerceIn(0f, 1f) }
                             ) {
-                                panel()
+                                panel { closePanel() }
                             }
                             Box(
                                 modifier = Modifier

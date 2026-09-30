@@ -246,11 +246,12 @@ private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int, regi
         // Stays open when another station is picked from the map, and the map stays tappable behind it
         passThrough = true,
         tile = { StationSummaryTile(station) },
-        panel = {
+        panel = { close ->
             StationCard(
                 station = station,
                 isSelected = true,
-                onSelect = {},
+                // Tapping the card folds it back, like Less
+                onSelect = close,
                 compact = true,
                 // Inside the card's border: the region's elevation range, and the way to fold it back
                 compactFooter = {
@@ -269,7 +270,10 @@ private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int, regi
                             text = "Less \u25B2",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clickable(onClickLabel = "Hide the full station card", role = Role.Button) { close() }
+                                .padding(start = 12.dp, top = 4.dp, bottom = 2.dp)
                         )
                     }
                 }
