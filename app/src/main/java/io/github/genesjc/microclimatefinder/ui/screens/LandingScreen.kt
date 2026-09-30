@@ -545,8 +545,8 @@ fun LandingScreen(
     // Where the sheet starts: the top of the map (or, with no map, just under the link)
     var mapTopPx by remember { mutableStateOf(0f) }
     var rowWidthPx by remember { mutableStateOf(0) }
-    var infoHandleBottomPx by remember { mutableStateOf(0f) }
-    val sheetTopPx = infoHandleBottomPx
+    var stationTileTopPx by remember { mutableStateOf(0f) }
+    val sheetTopPx = stationTileTopPx
     val openInfo: () -> Unit = {
         onInfoOpenChange(true)
         scope.launch { infoReveal.animateTo(1f, tween(SHEET_OPEN_MS, easing = FastOutSlowInEasing)) }
@@ -740,34 +740,9 @@ fun LandingScreen(
                             content = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            // Row 1: the selected station as a tile that fills the width (it grows into the full card),
-            // with Region Info at the right
-            val shown = if (dataset != null) {
-                snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
-            } else null
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
-                    .onSizeChanged { rowWidthPx = it.width },
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // The station tile takes all the width Region Info does not use
-                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations)
-                }
-                Column(
-                    modifier = Modifier.fillMaxHeight(),
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.Top
-                ) {
-                    // Region Info, at the top of the row, level with the top of the station tile. The sheet slides in from the right. A fixed
-                    // height, so the row does not change when the link swaps with the X
+                    // Region Info, under the region name. The sheet slides in from the right; the X takes
+                    // the link's place. A fixed height, so the header does not change when they swap
+                    Box(modifier = Modifier.padding(start = 42.dp)) {
                     Row(
                         // Always as wide as the link, so the tile does not change width when it becomes the X
                         modifier = Modifier.height(26.dp).widthIn(min = 116.dp),
@@ -775,9 +750,6 @@ fun LandingScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val handleModifier = Modifier
-                            .onGloballyPositioned {
-                                infoHandleBottomPx = it.positionInRoot().y + it.size.height
-                            }
                             .clickable(
                                 onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
                                 role = Role.Button
@@ -815,6 +787,32 @@ fun LandingScreen(
                             )
                         }
                     }
+                    }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            // Row 1: the selected station as a tile that fills the width (it grows into the full card),
+            // with Region Info at the right
+            val shown = if (dataset != null) {
+                snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
+            } else null
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .onSizeChanged { rowWidthPx = it.width },
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // The station tile takes the whole width
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y }
+                ) {
+                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations)
                 }
             }
 

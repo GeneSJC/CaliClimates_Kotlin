@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -112,7 +113,8 @@ fun CaliforniaRegionPickerPanel(
         CaliforniaClassicMapCanvas(
             selectedRegionId = pendingRegionId,
             onSelectRegion = onPickRegion,
-            sizeModifier = Modifier.weight(1f)
+            // Only as tall as the state needs, so there is little empty space above and below it
+            sizeModifier = Modifier.aspectRatio(1f / 1.35f)
         )
         Spacer(modifier = Modifier.height(12.dp))
         Button(

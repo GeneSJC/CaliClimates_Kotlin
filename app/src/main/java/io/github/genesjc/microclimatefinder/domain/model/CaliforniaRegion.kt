@@ -54,7 +54,7 @@ object CaliforniaRegionalDefinitions {
         description = "South Coast transect spanning coastal ocean waters, inland mesas, alpine pine peaks, and dropping 5,000 feet into the Anza-Borrego desert rain shadow within a 50-mile drive.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#D97706"
+        colorHex = "#FFA726"
     )
 
     val LOS_ANGELES = CaliforniaRegion(
@@ -80,7 +80,7 @@ object CaliforniaRegionalDefinitions {
         description = "Dense coastal urban basin bounded by sheer transverse mountain walls that generate severe marine layer thermal capping and sharp 30°F gradients across individual ridgelines.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#DB2777"
+        colorHex = "#FF7A1A"
     )
 
     val CENTRAL_COAST = CaliforniaRegion(
@@ -106,7 +106,7 @@ object CaliforniaRegionalDefinitions {
         description = "World-renowned maritime upwelling zones and steep Santa Lucia coastal scarps channeling cold marine air deep into interior agricultural valleys.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#059669"
+        colorHex = "#DB2777"
     )
 
     val CENTRAL_VALLEY = CaliforniaRegion(
