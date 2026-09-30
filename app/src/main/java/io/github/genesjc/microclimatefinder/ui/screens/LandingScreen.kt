@@ -117,6 +117,7 @@ import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.ui.components.AboutDialog
 import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import kotlinx.coroutines.launch
@@ -966,33 +967,6 @@ fun LandingScreen(
     }
 
     if (showAboutDialog) {
-        AlertDialog(
-            onDismissRequest = { showAboutDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showAboutDialog = false }) {
-                    Text("Close")
-                }
-            },
-            title = {
-                Text(
-                    text = "About $appName",
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Text(
-                    text = "$appName is an interactive explorer for California's " +
-                        "microclimates — combining live NOAA station data, topographic maps, and " +
-                        "regional climate visualizations across the state, from coastal fog belts to " +
-                        "alpine Sierra ridgelines.\n\nCurrent scope: California.\n\n" +
-                        "Live readings: temperature, humidity, wind and pressure come from the " +
-                        "National Weather Service (weather.gov). Stations report about once an hour, " +
-                        "so a reading can be up to an hour or more old; each card shows when it was " +
-                        "taken. Readings are for general interest, not for safety or aviation decisions.\n\n" +
-                        "Terrain: the shading on the Topography map is drawn from public elevation data " +
-                        "(USGS 3DEP, NASA SRTM and other public sources), via AWS Open Data Terrain Tiles."
-                )
-            }
-        )
+        AboutDialog(appName = appName, buildLabel = BuildInfo.LABEL, onClose = { showAboutDialog = false })
     }
 }

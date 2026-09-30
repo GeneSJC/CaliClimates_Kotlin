@@ -124,7 +124,7 @@ fun RegionPickerButton(
 
 /** The regions' colours, the same ones the picker's map uses. */
 @Composable
-private fun regionPickerColors(): Map<String, Color> = remember {
+internal fun regionPickerColors(): Map<String, Color> = remember {
     CaliforniaRegionalDefinitions.ALL_REGIONS.associate { it.id to Color(android.graphics.Color.parseColor(it.colorHex)) }
 }
 
