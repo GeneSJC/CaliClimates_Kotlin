@@ -23,12 +23,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.Orientation
-import android.os.Build
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
@@ -440,10 +437,11 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
     }
 }
 
-/** How long the info sheet takes to slide in and out, and how much the page behind it blurs. */
+/** How long the info sheet takes to slide in and out. */
 private const val SHEET_OPEN_MS = 420
 private const val SHEET_CLOSE_MS = 320
-private val SHEET_BLUR = 14.dp
+/** How much the page behind the sheet is dimmed (0 = not at all; the layer still catches taps). */
+private const val SHEET_DIM = 0f
 
 /** How opaque the sheet is: the blurred start screen shows through the rest. */
 private const val SHEET_OPACITY = 0.5f
@@ -452,9 +450,9 @@ private const val SHEET_OPACITY = 0.5f
 private val SHEET_TOP_PAD = 12.dp
 
 /**
- * A panel that slides in from the right edge, over the page. The page behind it is blurred (on
- * Android 12 and up) and dimmed, and the panel itself is translucent so it shows through.
- * Tap outside, swipe it to the right, or press Back to close.
+ * A panel that slides in from the right edge, over the page. The page behind it stays sharp, and
+ * the panel itself is translucent so it shows through. Tap outside, swipe it to the right, or
+ * press Back to close.
  */
 @Composable
 private fun BoxScope.InfoSideSheet(
@@ -469,12 +467,12 @@ private fun BoxScope.InfoSideSheet(
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
 
-    // Dim layer; a tap on it closes the sheet
+    // Invisible layer over the page; a tap on it closes the sheet
     Box(
         modifier = Modifier
             .matchParentSize()
             .graphicsLayer { alpha = reveal.value }
-            .background(Color.Black.copy(alpha = 0.22f))
+            .background(Color.Black.copy(alpha = SHEET_DIM))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -601,7 +599,7 @@ fun LandingScreen(
 
     val pickerState = rememberRegionPickerState()
 
-    // Region info sheet: slides in from the right over a blurred start screen
+    // Region info sheet: slides in from the right over the start screen
     val infoReveal = remember { Animatable(0f) }
     var infoOpen by remember { mutableStateOf(false) }
     // Where the "« Info" link sits, so the sheet can line up with it
@@ -615,15 +613,6 @@ fun LandingScreen(
         scope.launch { infoReveal.animateTo(0f, tween(SHEET_CLOSE_MS, easing = FastOutSlowInEasing)) }
     }
     BackHandler(enabled = infoOpen) { closeInfo() }
-    val blurPx = with(LocalDensity.current) { SHEET_BLUR.toPx() }
-    // Blurring needs Android 12 (API 31); older versions just see the dimmed page
-    val blurPage = if (Build.VERSION.SDK_INT >= 31) {
-        Modifier.graphicsLayer {
-            val radius = blurPx * infoReveal.value
-            renderEffect = if (radius > 0.5f) BlurEffect(radius, radius, TileMode.Clamp) else null
-        }
-    } else Modifier
-
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -674,7 +663,6 @@ fun LandingScreen(
             columns = GridCells.Fixed(2),
             modifier = modifier
                 .fillMaxSize()
-                .then(blurPage)
                 .padding(horizontal = 20.dp),
             contentPadding = PaddingValues(top = 20.dp, bottom = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
