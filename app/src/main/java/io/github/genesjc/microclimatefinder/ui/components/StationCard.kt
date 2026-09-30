@@ -520,39 +520,45 @@ fun StationCard(
 @Composable
 private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, display: CardDisplay) {
     Column(modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 5.dp)) {
-        // Terrain and elevation, centered across the card
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = badgeColor.copy(alpha = 0.14f)
-            ) {
-                Text(
-                    text = station.terrain.label,
-                    color = badgeColor,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "${station.elevationMeters}m elev.",
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            Column(modifier = Modifier.weight(1f)) {
+        // Top band: "Climate Station" on the left, level with the terrain chip and elevation,
+        // which stay centered across the card
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                 Text(
                     text = "Climate Station",
                     fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Visible
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = badgeColor.copy(alpha = 0.14f)
+                ) {
+                    Text(
+                        text = station.terrain.label,
+                        color = badgeColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "${station.elevationMeters}m elev.",
+                    fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            // Left: the station name with Humidity and Wind under it
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = station.name,
                     style = MaterialTheme.typography.titleMedium,
@@ -560,8 +566,14 @@ private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, 
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    CompactMetric("Humidity", display.humidity)
+                    CompactMetric("Wind", display.wind)
+                }
             }
             Spacer(modifier = Modifier.width(8.dp))
+            // Right: temperature, then Pressure with the reading's age directly under it
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) } ?: "—",
@@ -575,18 +587,7 @@ private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, 
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-        }
-        Spacer(modifier = Modifier.height(3.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            CompactMetric("Humidity", display.humidity)
-            CompactMetric("Wind", display.wind)
-            // The reading's age sits directly under the last metric
-            Column(horizontalAlignment = Alignment.End) {
+                Spacer(modifier = Modifier.height(4.dp))
                 CompactMetric(display.thirdLabel, display.thirdValue)
                 if (display.tempC != null && display.status != null) {
                     Text(
