@@ -558,6 +558,8 @@ fun LandingScreen(
     BackHandler(enabled = infoOpen) { closeInfo() }
     ModalNavigationDrawer(
         drawerState = drawerState,
+        // The menu button opens it; a swipe must not compete with the map's drag to pan (it still closes by swipe)
+        gesturesEnabled = drawerState.isOpen,
         drawerContent = {
             ModalDrawerSheet {
                 Column(modifier = Modifier.padding(vertical = 24.dp)) {
