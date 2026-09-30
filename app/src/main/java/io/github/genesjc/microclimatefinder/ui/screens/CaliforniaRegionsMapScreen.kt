@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -536,6 +537,7 @@ private fun CaliforniaClassicMapCanvas(
         value = withContext(Dispatchers.IO) { TerrainMaps.loadState(context) }
     }
     val tintAlpha = if (terrain != null) 0.34f else 0.72f
+    val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -1044,6 +1046,48 @@ private fun CaliforniaClassicMapCanvas(
                     )
                 }
             }
+
+            // State lines beyond California's own edge: Oregon and Nevada share the 42°N line
+            val stateLine = PathEffect.dashPathEffect(floatArrayOf(10f, 7f), 0f)
+            drawLine(
+                color = Color(0xFF4A3728).copy(alpha = 0.45f),
+                start = Offset(px(-120.0f), py(42.0f)),
+                end = Offset(px(lonMax), py(42.0f)),
+                strokeWidth = 1.6f,
+                pathEffect = stateLine
+            )
+
+            // Names on the regions, and on Nevada to the east
+            val ink = Color(0xFF2A1B12)
+            fun label(text: String, lon: Float, lat: Float, style: androidx.compose.ui.text.TextStyle) {
+                val layout = textMeasurer.measure(text, style)
+                drawText(
+                    layout,
+                    topLeft = Offset(px(lon) - layout.size.width / 2f, py(lat) - layout.size.height / 2f)
+                )
+            }
+            val regionStyle = androidx.compose.ui.text.TextStyle(
+                color = ink,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                shadow = androidx.compose.ui.graphics.Shadow(Color.White.copy(alpha = 0.9f), blurRadius = 6f)
+            )
+            label("Northern\nCalifornia", -122.3f, 40.9f, regionStyle)
+            label("Bay Area", -121.9f, 38.45f, regionStyle)
+            label("Central\nValley", -119.6f, 36.9f, regionStyle)
+            label("Central\nCoast", -120.9f, 35.5f, regionStyle)
+            label("Los Angeles", -117.6f, 34.45f, regionStyle)
+            label("San Diego", -116.3f, 32.95f, regionStyle)
+            label(
+                "NEVADA", -116.9f, 39.3f,
+                androidx.compose.ui.text.TextStyle(
+                    color = Color(0xFF6B5636).copy(alpha = 0.8f),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 3.sp
+                )
+            )
 
             // Key anchor cities — warm ink-brown ring with bright core, matching the antique-map treatment
             val cityMarkers = listOf(
