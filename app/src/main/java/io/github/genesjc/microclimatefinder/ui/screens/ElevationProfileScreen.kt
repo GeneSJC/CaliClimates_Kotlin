@@ -57,6 +57,10 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
+import io.github.genesjc.microclimatefinder.ui.components.animateZoom
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import io.github.genesjc.microclimatefinder.ui.components.clampPan
 import io.github.genesjc.microclimatefinder.ui.components.labelBudget
 import io.github.genesjc.microclimatefinder.ui.components.labelFade
@@ -266,6 +270,15 @@ private fun ElevationProfileCanvas(
     // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
     var zoom by remember(sorted) { mutableStateOf(1f) }
     var pan by remember(sorted) { mutableStateOf(Offset.Zero) }
+    // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
+    val zoomScope = rememberCoroutineScope()
+    var zoomJob by remember { mutableStateOf<Job?>(null) }
+    fun animateZoomTo(newZoom: Float, anchor: Offset, w: Float, h: Float) {
+        zoomJob?.cancel()
+        zoomJob = zoomScope.launch {
+            animateZoom(zoom, pan, newZoom, anchor, w, h, CHART_PADDING_PX, CHART_PADDING_PX) { z, p -> zoom = z; pan = p }
+        }
+    }
 
     // Nothing selected: start on the lowest station that has a live reading, so the first view is not blank
     val currentStation = sorted.find { it.id == selectedStationId }
@@ -363,12 +376,9 @@ private fun ElevationProfileCanvas(
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     if (zoom >= MAX_MAP_ZOOM * 0.99f) {
-                        zoom = 1f
-                        pan = Offset.Zero
+                        animateZoomTo(1f, Offset(w / 2f, h / 2f), w, h)
                     } else {
-                        val newZoom = (zoom * 2f).coerceAtMost(MAX_MAP_ZOOM)
-                        pan = panForZoom(pan, zoom, newZoom, spot, w, h, CHART_PADDING_PX, CHART_PADDING_PX)
-                        zoom = newZoom
+                        animateZoomTo((zoom * 2f).coerceAtMost(MAX_MAP_ZOOM), spot, w, h)
                     }
                 })
             }
@@ -723,28 +733,32 @@ private fun ElevationProfileCanvas(
         }
 
         // Floating zoom slider on the left edge (the steep ridge is on the right)
+        fun nearestLinePoint(): Offset {
+            val middle = Offset(canvasW / 2f, canvasH / 2f)
+            return sorted.indices
+                .map { i ->
+                    val elevRatio = sorted[i].elevationMeters / maxElevation
+                    Offset(
+                        viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
+                        viewY(paddingPx + (1f - elevRatio) * heightPx)
+                    )
+                }
+                .minByOrNull { (it - middle).getDistance() } ?: middle
+        }
         ZoomSlider(
             value = zoom,
             onValueChange = { newZoom ->
                 // Zoom about the point on the line nearest the middle of the view, not the (often empty) middle itself
-                val middle = Offset(canvasW / 2f, canvasH / 2f)
-                val anchor = sorted.indices
-                    .map { i ->
-                        val elevRatio = sorted[i].elevationMeters / maxElevation
-                        Offset(
-                            viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
-                            viewY(paddingPx + (1f - elevRatio) * heightPx)
-                        )
-                    }
-                    .minByOrNull { (it - middle).getDistance() } ?: middle
-                pan = panForZoom(pan, zoom, newZoom, anchor, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX)
+                zoomJob?.cancel()
+                pan = panForZoom(pan, zoom, newZoom, nearestLinePoint(), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX)
                 zoom = newZoom
             },
+            onStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) },
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .padding(start = 4.dp)
                 .width(40.dp)
-                .fillMaxHeight(0.6f)
+                .fillMaxHeight(0.9f)
         )
     }
 }
