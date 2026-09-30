@@ -19,6 +19,16 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.Orientation
+import android.os.Build
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
@@ -430,6 +440,119 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
     }
 }
 
+/** How long the info sheet takes to slide in and out, and how much the page behind it blurs. */
+private const val SHEET_OPEN_MS = 420
+private const val SHEET_CLOSE_MS = 320
+private val SHEET_BLUR = 14.dp
+
+/**
+ * A panel that slides in from the right edge, over the page. The page behind it is blurred (on
+ * Android 12 and up) and dimmed, and the panel itself is translucent so it shows through.
+ * Tap outside, swipe it to the right, or press Back to close.
+ */
+@Composable
+private fun BoxScope.InfoSideSheet(
+    reveal: Animatable<Float, AnimationVector1D>,
+    onOpen: () -> Unit,
+    onClose: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val visible by remember { derivedStateOf { reveal.value > 0f } }
+    if (!visible) return
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+
+    // Dim layer; a tap on it closes the sheet
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .graphicsLayer { alpha = reveal.value }
+            .background(Color.Black.copy(alpha = 0.22f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClickLabel = "Close the region info"
+            ) { onClose() }
+    )
+    BoxWithConstraints(modifier = Modifier.matchParentSize()) {
+        val panelWidth = maxWidth * 0.9f
+        val panelWidthPx = with(density) { panelWidth.toPx() }
+        val dragState = rememberDraggableState { delta ->
+            scope.launch { reveal.snapTo((reveal.value - delta / panelWidthPx).coerceIn(0f, 1f)) }
+        }
+        Surface(
+            shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+            shadowElevation = 16.dp,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .width(panelWidth)
+                .fillMaxHeight()
+                .graphicsLayer { translationX = (1f - reveal.value) * panelWidthPx }
+                .draggable(
+                    state = dragState,
+                    orientation = Orientation.Horizontal,
+                    onDragStopped = { velocity ->
+                        if (velocity > 800f || reveal.value < 0.6f) onClose() else onOpen()
+                    }
+                )
+        ) {
+            Box(modifier = Modifier.verticalScroll(rememberScrollState())) { content() }
+        }
+    }
+}
+
+/** What the info sheet holds: the region tile and stats, then the terrain mix. */
+@Composable
+private fun RegionInfoContent(
+    region: CaliforniaRegion,
+    hasStationData: Boolean,
+    stations: List<MicroclimateStation>,
+    onOpenStationList: () -> Unit,
+    onClose: () -> Unit
+) {
+    var topRowWidthPx by remember { mutableStateOf(0) }
+    Column(modifier = Modifier.padding(16.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Region info",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "Info \u00BB",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable(onClickLabel = "Close the region info", role = Role.Button) { onClose() }
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        // Top row: the region tile on the left; Station List and elevation on the right
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .onSizeChanged { topRowWidthPx = it.width },
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                RegionDetailsCard(region, fullWidthPx = topRowWidthPx)
+            }
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                if (hasStationData) RegionStatsCard(stations, onOpenStationList)
+            }
+        }
+        if (stations.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            TerrainMixCard(stations)
+        }
+    }
+}
+
 @Composable
 fun LandingScreen(
     selectedRegionId: String,
@@ -446,7 +569,6 @@ fun LandingScreen(
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
     }
     val hasStationData = dataset != null
-    var topRowWidthPx by remember { mutableStateOf(0) }
     val context = LocalContext.current
     val snapshotStations = remember(dataset) {
         dataset?.let { StationCsvParser(context).loadStations(it) } ?: emptyList()
@@ -462,6 +584,27 @@ fun LandingScreen(
     var showRegionMenu by remember { mutableStateOf(false) }
 
     val pickerState = rememberRegionPickerState()
+
+    // Region info sheet: slides in from the right over a blurred start screen
+    val infoReveal = remember { Animatable(0f) }
+    var infoOpen by remember { mutableStateOf(false) }
+    val openInfo: () -> Unit = {
+        infoOpen = true
+        scope.launch { infoReveal.animateTo(1f, tween(SHEET_OPEN_MS, easing = FastOutSlowInEasing)) }
+    }
+    val closeInfo: () -> Unit = {
+        infoOpen = false
+        scope.launch { infoReveal.animateTo(0f, tween(SHEET_CLOSE_MS, easing = FastOutSlowInEasing)) }
+    }
+    BackHandler(enabled = infoOpen) { closeInfo() }
+    val blurPx = with(LocalDensity.current) { SHEET_BLUR.toPx() }
+    // Blurring needs Android 12 (API 31); older versions just see the dimmed page
+    val blurPage = if (Build.VERSION.SDK_INT >= 31) {
+        Modifier.graphicsLayer {
+            val radius = blurPx * infoReveal.value
+            renderEffect = if (radius > 0.5f) BlurEffect(radius, radius, TileMode.Clamp) else null
+        }
+    } else Modifier
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -513,6 +656,7 @@ fun LandingScreen(
             columns = GridCells.Fixed(2),
             modifier = modifier
                 .fillMaxSize()
+                .then(blurPage)
                 .padding(horizontal = 20.dp),
             contentPadding = PaddingValues(top = 20.dp, bottom = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -638,9 +782,21 @@ fun LandingScreen(
 
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
+                    // Handle for the region info sheet, which slides in from the right
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        Text(
+                            text = "\u00AB Info",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clickable(onClickLabel = "Open the region info", role = Role.Button) { openInfo() }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                     // This region has no station data in this build
                     if (dataset == null) {
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f),
@@ -679,28 +835,6 @@ fun LandingScreen(
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    // Top row: the region tile on the left; Station List, count and elevation on the right
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(IntrinsicSize.Min)
-                            .onSizeChanged { topRowWidthPx = it.width },
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                            RegionDetailsCard(region, fullWidthPx = topRowWidthPx)
-                        }
-                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                            if (dataset != null) {
-                                RegionStatsCard(snapshotStations) { onNavigateTo(AppScreen.STATION_LIST) }
-                            }
-                        }
-                    }
-                    if (snapshotStations.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        TerrainMixCard(snapshotStations)
-                    }
                     if (!hasStationData) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
@@ -735,6 +869,16 @@ fun LandingScreen(
                     onClick = { onNavigateTo(entry.target) }
                 )
             }
+        }
+
+        InfoSideSheet(reveal = infoReveal, onOpen = openInfo, onClose = closeInfo) {
+            RegionInfoContent(
+                region = region,
+                hasStationData = hasStationData,
+                stations = snapshotStations,
+                onOpenStationList = { onNavigateTo(AppScreen.STATION_LIST) },
+                onClose = closeInfo
+            )
         }
 
         RegionPickerOverlay(
