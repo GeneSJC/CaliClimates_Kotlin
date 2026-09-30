@@ -106,7 +106,7 @@ object CaliforniaRegionalDefinitions {
         description = "World-renowned maritime upwelling zones and steep Santa Lucia coastal scarps channeling cold marine air deep into interior agricultural valleys.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#DB2777"
+        colorHex = "#EC4899"
     )
 
     val CENTRAL_VALLEY = CaliforniaRegion(
@@ -132,7 +132,7 @@ object CaliforniaRegionalDefinitions {
         description = "Expansive 400-mile flat interior basin protected by coastal ranges and the Sierra Nevada, characterized by high thermal accumulation and severe winter radiation inversions.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#C2410C"
+        colorHex = "#EA580C"
     )
 
     val BAY_AREA_SACRAMENTO = CaliforniaRegion(
@@ -158,7 +158,7 @@ object CaliforniaRegionalDefinitions {
         description = "The primary baseline transect: fully unified draggable and zoomable coordinate space covering stations from Pacific tidepools to alpine ridge tops.",
         status = RegionStatus.ACTIVE_TRANSECT,
         activeStationCount = 36,
-        colorHex = "#0E7C86"
+        colorHex = "#0D9488"
     )
 
     val NORTHERN_CALIFORNIA = CaliforniaRegion(
@@ -184,7 +184,7 @@ object CaliforniaRegionalDefinitions {
         description = "Vast, rugged territory encompassing temperate coastal rainforests, volcanic Cascade peaks, high alpine passes, and extreme rain shadow transitions.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#6D28D9"
+        colorHex = "#7C3AED"
     )
 
     val ALL_REGIONS = listOf(

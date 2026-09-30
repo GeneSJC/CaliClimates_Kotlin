@@ -1,7 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
 import androidx.compose.foundation.BorderStroke
-import io.github.genesjc.microclimatefinder.data.local.TerrainImage
+import io.github.genesjc.microclimatefinder.data.local.StateTerrain
 import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -75,24 +75,9 @@ fun CaliforniaRegionPickerPanel(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val region = remember(pendingRegionId) {
-        CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == pendingRegionId }
-            ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
-    }
     Column(modifier = modifier.padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = region.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Tap the map to choose a region",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        // Just the close button: the regions are named on the map itself
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceVariant,
@@ -533,10 +518,10 @@ private fun CaliforniaClassicMapCanvas(
     sizeModifier: Modifier = Modifier.height(430.dp)
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val terrain by androidx.compose.runtime.produceState<TerrainImage?>(null) {
+    val terrain by androidx.compose.runtime.produceState<StateTerrain?>(null) {
         value = withContext(Dispatchers.IO) { TerrainMaps.loadState(context) }
     }
-    val tintAlpha = if (terrain != null) 0.34f else 0.72f
+    val tintAlpha = if (terrain != null) 0.58f else 0.72f
     val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
     Box(
         modifier = Modifier
@@ -557,8 +542,8 @@ private fun CaliforniaClassicMapCanvas(
                     val h = size.height.toFloat()
                     val lonMin = -124.45f
                     val lonMax = -114.15f
-                    val latMin = 32.4f
-                    val latMax = 42.1f
+                    val latMin = 31.9f
+                    val latMax = 43.0f
                     // True shape: one scale for both axes (a degree of longitude is about 0.8 of a degree of latitude), centred
                     val k = minOf(w * 0.985f / ((lonMax - lonMin) * 0.8f), h * 0.985f / (latMax - latMin))
                     val availW = (lonMax - lonMin) * 0.8f * k
@@ -734,8 +719,8 @@ private fun CaliforniaClassicMapCanvas(
             val h = size.height
             val lonMin = -124.45f
             val lonMax = -114.15f
-            val latMin = 32.4f
-            val latMax = 42.1f
+            val latMin = 31.9f
+            val latMax = 43.0f
             // True shape: one scale for both axes (a degree of longitude is about 0.8 of a degree of latitude), centred
             val k = minOf(w * 0.985f / ((lonMax - lonMin) * 0.8f), h * 0.985f / (latMax - latMin))
             val availW = (lonMax - lonMin) * 0.8f * k
@@ -811,6 +796,7 @@ private fun CaliforniaClassicMapCanvas(
             // Pacific Ocean coastal wash
             val oceanPath = Path().apply {
                 moveTo(0f, 0f)
+                lineTo(px(-124.45f), py(43.00f))
                 lineTo(px(-124.21f), py(42.00f))
                 lineTo(px(-124.41f), py(40.44f))
                 lineTo(pCoastMendoSonoma.x, pCoastMendoSonoma.y)
@@ -828,7 +814,9 @@ private fun CaliforniaClassicMapCanvas(
                 lineTo(pCoastSanOnofre.x, pCoastSanOnofre.y)
                 lineTo(px(-117.25f), py(32.72f))
                 lineTo(px(-117.12f), py(32.53f))
-                lineTo(px(-117.12f), h)
+                lineTo(px(-117.02f), py(32.20f))
+                lineTo(px(-116.70f), py(31.90f))
+                lineTo(px(-116.65f), h)
                 lineTo(0f, h)
                 close()
             }
@@ -958,11 +946,14 @@ private fun CaliforniaClassicMapCanvas(
 
             // The land itself: shaded relief of the whole state under translucent region tints
             terrain?.let { t ->
-                drawImage(
-                    image = t.image,
-                    dstOffset = androidx.compose.ui.unit.IntOffset(px(-124.5f).toInt(), py(42.1f).toInt()),
-                    dstSize = androidx.compose.ui.unit.IntSize((availW * 10.4f / (lonMax - lonMin)).toInt(), availH.toInt())
+                val dstOffset = androidx.compose.ui.unit.IntOffset(px(-124.5f).toInt(), py(43.0f).toInt())
+                val dstSize = androidx.compose.ui.unit.IntSize(
+                    (availW * 10.4f / (lonMax - lonMin)).toInt(),
+                    (availH * 11.1f / (latMax - latMin)).toInt()
                 )
+                // The neighbours first, quieter; then California over them
+                drawImage(image = t.surround, dstOffset = dstOffset, dstSize = dstSize)
+                drawImage(image = t.state, dstOffset = dstOffset, dstSize = dstSize)
             }
 
             // Fills lock together seamlessly — richer gradient fills instead of flat washed-out tints
@@ -973,7 +964,7 @@ private fun CaliforniaClassicMapCanvas(
                 drawPath(
                     path = path,
                     brush = Brush.linearGradient(
-                        colors = listOf(color.copy(alpha = if (isSelected) 0.55f else tintAlpha).lighten(0.18f), color.copy(alpha = if (isSelected) 0.55f else tintAlpha)),
+                        colors = listOf(color.copy(alpha = if (isSelected) 0.82f else tintAlpha).lighten(0.18f), color.copy(alpha = if (isSelected) 0.82f else tintAlpha)),
                         start = Offset(bounds.left, bounds.top),
                         end = Offset(bounds.right, bounds.bottom)
                     )
@@ -1026,8 +1017,8 @@ private fun CaliforniaClassicMapCanvas(
             for ((_, path) in regionPolys) {
                 drawPath(
                     path = path,
-                    color = Color(0xFF4A3728).copy(alpha = 0.55f),
-                    style = Stroke(width = 1.3f)
+                    color = Color(0xFF3A2A1E).copy(alpha = 0.8f),
+                    style = Stroke(width = 2.4f)
                 )
             }
 
@@ -1068,17 +1059,35 @@ private fun CaliforniaClassicMapCanvas(
             }
             val regionStyle = androidx.compose.ui.text.TextStyle(
                 color = ink,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                shadow = androidx.compose.ui.graphics.Shadow(Color.White.copy(alpha = 0.9f), blurRadius = 6f)
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
-            label("Northern\nCalifornia", -122.3f, 40.9f, regionStyle)
-            label("Bay Area", -121.9f, 38.45f, regionStyle)
-            label("Central\nValley", -119.6f, 36.9f, regionStyle)
-            label("Central\nCoast", -120.9f, 35.5f, regionStyle)
-            label("Los Angeles", -117.6f, 34.45f, regionStyle)
-            label("San Diego", -116.3f, 32.95f, regionStyle)
+            // A white outline under the dark letters keeps them crisp on the terrain
+            val outlineStyle = regionStyle.copy(
+                color = Color.White.copy(alpha = 0.95f),
+                drawStyle = Stroke(width = 5f, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+            )
+            fun regionLabel(text: String, lon: Float, lat: Float) {
+                label(text, lon, lat, outlineStyle)
+                label(text, lon, lat, regionStyle)
+            }
+            regionLabel("Northern\nCalifornia", -122.3f, 40.9f)
+            regionLabel("Bay Area", -122.2f, 38.45f)
+            regionLabel("Central\nValley", -119.6f, 36.9f)
+            regionLabel("Central\nCoast", -122.8f, 35.4f)
+            regionLabel("Los Angeles", -117.6f, 34.45f)
+            regionLabel("San Diego", -116.3f, 32.95f)
+            // The neighbours, quietly
+            val neighbourStyle = androidx.compose.ui.text.TextStyle(
+                color = Color(0xFF6B5636).copy(alpha = 0.75f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 2.sp
+            )
+            label("OREGON", -121.9f, 42.55f, neighbourStyle)
+            label("IDAHO", -115.3f, 42.55f, neighbourStyle)
+            label("MEXICO", -115.9f, 32.15f, neighbourStyle)
             label(
                 "NEVADA", -116.9f, 39.3f,
                 androidx.compose.ui.text.TextStyle(

@@ -65,14 +65,19 @@ object TerrainMaps {
         }
     }
 
-    /** The whole state for the California picker: land inside California only, the rest transparent. */
-    val STATE_BOUNDS = GeoBounds(-124.5, -114.1, 32.4, 42.1)
+    /** The whole state for the California picker, and its neighbours drawn quieter. Their pixels are linear in lon and lat. */
+    val STATE_BOUNDS = GeoBounds(-124.5, -114.1, 31.9, 43.0)
 
-    fun loadState(context: Context): TerrainImage? = try {
-        context.assets.open("terrain/california.webp").use { BitmapFactory.decodeStream(it) }
-            ?.let { TerrainImage(it.asImageBitmap(), STATE_BOUNDS) }
+    fun loadState(context: Context): StateTerrain? = try {
+        fun decode(name: String) = context.assets.open("terrain/$name").use { BitmapFactory.decodeStream(it) }
+        val state = decode("california.webp")
+        val surround = decode("california_surround.webp")
+        if (state != null && surround != null) StateTerrain(state.asImageBitmap(), surround.asImageBitmap()) else null
     } catch (e: Exception) {
         Log.w(TAG, "No statewide terrain picture", e)
         null
     }
 }
+
+/** The California picker's terrain: land inside California, and the neighbouring land (faded). Same bounds. */
+class StateTerrain(val state: ImageBitmap, val surround: ImageBitmap)

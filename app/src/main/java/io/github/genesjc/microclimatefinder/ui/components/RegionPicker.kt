@@ -148,7 +148,10 @@ fun RegionPickerOverlay(
     val containerW = size.width.toFloat()
     val containerH = size.height.toFloat()
     val targetW = containerW * 0.92f
-    val targetH = containerH * 0.75f
+    // As tall as the picker's content needs (the map is 1.35 times as tall as it is wide), with a little
+    // room under the Confirm button, and never more than 75% of the screen
+    val contentDp = 16f + 32f + 12f + (targetW / density.density - 32f) * 1.35f + 12f + 40f + 16f + 30f
+    val targetH = minOf(containerH * 0.75f, contentDp * density.density)
     val targetX = (containerW - targetW) / 2f
     val targetY = (containerH - targetH) / 2f
     val startX = state.buttonBounds.left - origin.x
@@ -177,7 +180,7 @@ fun RegionPickerOverlay(
                     height = with(density) { lerp(state.buttonBounds.height, targetH, t).toDp() }
                 )
                 .clip(RoundedCornerShape(lerp(10f, 24f, t).dp))
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = t))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f * t))
                 // Taps inside the panel must not reach the scrim
                 .clickable(interactionSource = noRipple, indication = null) { },
             contentAlignment = Alignment.Center
