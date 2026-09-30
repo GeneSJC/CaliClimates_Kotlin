@@ -71,7 +71,7 @@ fun AppNavigation() {
     val regionPrefs = remember { RegionPreferences(context) }
     var selectedRegionId by remember { mutableStateOf(regionPrefs.load()) }
 
-    // Station data: the full bundled files per region, or the built-in Bay Area sample
+    // Station data per region: a CSV override in assets, else the region's bundled pack
     val store = remember { StationDataStore(context) }
     val fullDataRegions = remember { store.fullDataRegionCount() }
     val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }

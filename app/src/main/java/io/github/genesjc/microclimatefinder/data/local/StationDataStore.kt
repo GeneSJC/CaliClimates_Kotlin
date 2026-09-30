@@ -3,23 +3,25 @@ package io.github.genesjc.microclimatefinder.data.local
 import android.content.Context
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 
-/** A station dataset for one CA region: a full bundled file, or the small built-in sample. */
+/** A station dataset for one CA region: its bundled station pack, or a CSV override. */
 data class StationDatasetInfo(
     val regionId: String,
     val fileName: String,
-    val isSample: Boolean,
     val title: String,
     val subtitle: String,
     val stationCount: Int,
     val minElevationMeters: Int,
-    val maxElevationMeters: Int
+    val maxElevationMeters: Int,
+    /** Set when the stations come from a station pack (a.txt to f.txt) instead of a CSV file. */
+    val packFileName: String? = null
 )
 
 /**
  * Finds station data per region, first match wins:
- *  1. a full file bundled at build time (stations_<regionId>.csv in assets, dropped into the
- *     gitignored app/src/debug/assets folder),
- *  2. the small built-in sample (stations_<regionId>_sample.csv), Bay Area only.
+ *  1. a raw CSV in assets (stations_<regionId>.csv, dropped into the gitignored app/src/debug/assets
+ *     folder): the developer override, so fresh data can be tried without rebuilding the packs,
+ *  2. the region's station pack (a.txt to f.txt in assets).
+ * A region neither can supply has no stations; the app shows its limited-data banner.
  */
 class StationDataStore(private val context: Context) {
 
@@ -31,56 +33,66 @@ class StationDataStore(private val context: Context) {
 
     private fun fileNameFor(regionId: String) = "stations_$regionId.csv"
 
-    private fun sampleFileNameFor(regionId: String) = "stations_${regionId}_sample.csv"
+    private fun hasCsvOverride(regionId: String) = fileNameFor(regionId) in assetNames
 
-    private fun hasFullFile(regionId: String) = fileNameFor(regionId) in assetNames
+    private fun packFileFor(regionId: String): String? =
+        PACK_FILES[regionId]?.takeIf { it in assetNames }
 
-    /** Number of regions with a full data file, not just the sample. */
+    /** Number of regions with full station data (a CSV override or a pack), not just the sample. */
     fun fullDataRegionCount(): Int =
-        CaliforniaRegionalDefinitions.ALL_REGIONS.count { hasFullFile(it.id) }
+        CaliforniaRegionalDefinitions.ALL_REGIONS.count { hasCsvOverride(it.id) || packFileFor(it.id) != null }
 
     fun totalRegionCount(): Int = CaliforniaRegionalDefinitions.ALL_REGIONS.size
 
     fun datasetFor(regionId: String): StationDatasetInfo? {
         val region = CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == regionId }
             ?: return null
-        if (hasFullFile(regionId)) {
-            build(region.id, region.name, fileNameFor(regionId), sample = false)?.let { return it }
+        if (hasCsvOverride(regionId)) {
+            build(region.id, region.name, fileNameFor(regionId), kind = "CSV override")
+                ?.let { return it }
         }
-        if (regionId in SAMPLE_REGION_IDS) {
-            return build(region.id, region.name, sampleFileNameFor(regionId), sample = true)
+        packFileFor(regionId)?.let { pack ->
+            build(region.id, region.name, pack, kind = "Bundled dataset", packFile = pack)
+                ?.let { return it }
         }
         return null
     }
 
-    /** Bay Area / Sacramento data: the full file when bundled, else the built-in sample. */
-    fun defaultDataset(): StationDatasetInfo =
-        datasetFor(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
+    /** Bay Area / Sacramento data, or an empty placeholder if it cannot be loaded (used by the demos). */
+    fun defaultDataset(): StationDatasetInfo {
+        val bayArea = CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
+        return datasetFor(bayArea.id)
             ?: StationDatasetInfo(
-                regionId = CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
-                fileName = sampleFileNameFor(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id),
-                isSample = true,
-                title = CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.name,
+                regionId = bayArea.id,
+                fileName = PACK_FILES.getValue(bayArea.id),
+                title = bayArea.name,
                 subtitle = "No stations found",
                 stationCount = 0,
                 minElevationMeters = 0,
-                maxElevationMeters = 0
+                maxElevationMeters = 0,
+                packFileName = PACK_FILES.getValue(bayArea.id)
             )
+    }
 
-    private fun build(regionId: String, regionName: String, fileName: String, sample: Boolean): StationDatasetInfo? {
+    private fun build(
+        regionId: String,
+        regionName: String,
+        fileName: String,
+        kind: String,
+        packFile: String? = null
+    ): StationDatasetInfo? {
         val base = StationDatasetInfo(
             regionId = regionId,
             fileName = fileName,
-            isSample = sample,
             title = regionName,
             subtitle = "",
             stationCount = 0,
             minElevationMeters = 0,
-            maxElevationMeters = 0
+            maxElevationMeters = 0,
+            packFileName = packFile
         )
         val stations = parser.loadStations(base)
         if (stations.isEmpty()) return null
-        val kind = if (sample) "Built-in sample" else "Bundled dataset"
         return base.copy(
             subtitle = "$kind • ${stations.size} stations",
             stationCount = stations.size,
@@ -90,7 +102,14 @@ class StationDataStore(private val context: Context) {
     }
 
     companion object {
-        // Regions whose small sample file ships in app/src/main/assets
-        private val SAMPLE_REGION_IDS = setOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
+        // Station pack per region, named by the app's region order: north to south, then west to east
+        private val PACK_FILES = mapOf(
+            CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id to "a.txt",
+            CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id to "b.txt",
+            CaliforniaRegionalDefinitions.CENTRAL_COAST.id to "c.txt",
+            CaliforniaRegionalDefinitions.CENTRAL_VALLEY.id to "d.txt",
+            CaliforniaRegionalDefinitions.LOS_ANGELES.id to "e.txt",
+            CaliforniaRegionalDefinitions.SAN_DIEGO.id to "f.txt"
+        )
     }
 }
