@@ -191,7 +191,7 @@ private fun terrainShortName(type: TerrainType): String = when (type) {
  * full-width panel floating over the page, so nothing on the page moves.
  */
 @Composable
-private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
+private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int, folded: Boolean) {
     val cardColor = sheetCardColor()
     HeroTile(
         fullWidthPx = fullWidthPx,
@@ -200,6 +200,7 @@ private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
         openLabel = "Show more about ${region.name}",
         closeLabel = "Show less about ${region.name}",
         resetKey = region.id,
+        forceClosed = folded,
         tile = { RegionDetailsTile(region) },
         panel = { RegionDetailsBody(region, expanded = true) }
     )
@@ -463,6 +464,7 @@ private fun RegionInfoContent(
     hasStationData: Boolean,
     stations: List<MicroclimateStation>,
     onOpenStationList: () -> Unit,
+    menuOpen: Boolean,
     legendExtra: (@Composable () -> Unit)? = null
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
@@ -490,7 +492,7 @@ private fun RegionInfoContent(
         Spacer(modifier = Modifier.height(10.dp))
         // The region tile, the full width of the sheet
         Box(modifier = Modifier.fillMaxWidth().onSizeChanged { topRowWidthPx = it.width }) {
-            RegionDetailsCard(region, fullWidthPx = topRowWidthPx)
+            RegionDetailsCard(region, fullWidthPx = topRowWidthPx, folded = menuOpen)
         }
         if (stations.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -534,6 +536,8 @@ fun LandingScreen(
     }
     val appName = stringResource(R.string.app_name)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    // The menu drawer is the top layer: while it is opening or open, the floating cards fold
+    val menuDrawerShowing = drawerState.targetValue != DrawerValue.Closed
     val scope = rememberCoroutineScope()
     var showAboutDialog by remember { mutableStateOf(false) }
     var showLimitedDataDialog by remember { mutableStateOf(false) }
@@ -802,7 +806,7 @@ fun LandingScreen(
                         .fillMaxHeight()
                         .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y }
                 ) {
-                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen)
+                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing)
                 }
             }
 
@@ -926,6 +930,7 @@ fun LandingScreen(
                 hasStationData = hasStationData,
                 stations = snapshotStations,
                 onOpenStationList = { onNavigateTo(AppScreen.STATION_LIST) },
+                menuOpen = menuDrawerShowing,
                 // The dot-size slider belongs to the map, so only the Topography view has it
                 legendExtra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) }
             )
