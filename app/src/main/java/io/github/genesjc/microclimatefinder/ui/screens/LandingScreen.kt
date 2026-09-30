@@ -520,8 +520,8 @@ fun LandingScreen(
 
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
-                    // This region has no full station list in this build (built-in sample or none)
-                    if (dataset == null || dataset.isSample) {
+                    // This region has no station data in this build
+                    if (dataset == null) {
                         Spacer(modifier = Modifier.height(10.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -617,11 +617,12 @@ fun LandingScreen(
             title = { Text("Limited station data") },
             text = {
                 Text(
-                    "$fullDataRegions of $totalRegions regions have full station lists in " +
-                        "this build. The rest show no stations, and Bay Area / Sacramento shows a " +
-                        "small built-in sample. Readings for the stations that are shown are live " +
-                        "from the National Weather Service.\n\n" +
-                        "To load all station lists, add the station files (stations_<regionId>.csv) to " +
+                    "$fullDataRegions of $totalRegions regions have station data in this build. " +
+                        "A region without it shows no stations. Readings for the stations that are " +
+                        "shown are live from the National Weather Service.\n\n" +
+                        "Each region's stations ship in a small data file in the app's assets " +
+                        "(a.txt to f.txt). A region with none has a missing or damaged file: check " +
+                        "Logcat (tag StationPack). To try other data, add stations_<regionId>.csv to " +
                         "app/src/debug/assets and rebuild."
                 )
             },

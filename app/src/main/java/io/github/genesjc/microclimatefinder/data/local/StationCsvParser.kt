@@ -10,7 +10,7 @@ import java.io.StringReader
 
 class StationCsvParser(private val context: Context) {
 
-    fun loadStationsFromCsv(fileName: String = "stations_bay_area_sacramento_sample.csv"): List<MicroclimateStation> =
+    fun loadStationsFromCsv(fileName: String): List<MicroclimateStation> =
         try {
             context.assets.open(fileName).use { parse(it.bufferedReader()) }
         } catch (e: Exception) {
