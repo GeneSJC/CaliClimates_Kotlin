@@ -33,6 +33,26 @@ object TerrainMaps {
 
     fun assetPath(regionId: String) = "terrain/$regionId.webp"
 
+    fun skylineAssetPath(regionId: String) = "terrain/skyline_$regionId.txt"
+
+    /**
+     * Real skylines of the region, for the Elevation view's distant ranges: three lines of 160 numbers
+     * (0 to 1), west to east, for the far, middle and near ranges (the highest ground, the 85th and the
+     * 60th percentile of each column). Null when the region has none.
+     */
+    fun loadSkyline(context: Context, regionId: String): List<FloatArray>? {
+        return try {
+            context.assets.open(skylineAssetPath(regionId)).bufferedReader().use { reader ->
+                reader.readLines().filter { it.isNotBlank() }.map { line ->
+                    line.split(",").map { it.trim().toFloat() / 255f }.toFloatArray()
+                }
+            }.takeIf { it.size == 3 && it.all { layer -> layer.size >= 2 } }
+        } catch (e: Exception) {
+            Log.w(TAG, "No skyline for $regionId", e)
+            null
+        }
+    }
+
     /** Loads the region's picture, or null when it has none (the map then falls back to a plain base). */
     fun load(context: Context, regionId: String): TerrainImage? {
         val bounds = BOUNDS[regionId] ?: return null

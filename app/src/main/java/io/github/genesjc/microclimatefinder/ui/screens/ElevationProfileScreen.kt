@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.abs
@@ -148,6 +149,11 @@ fun ElevationProfileScreen(
         value = withContext(Dispatchers.IO) { TerrainMaps.load(context, dataset.regionId) }
     }
 
+    // The region's real skylines, for the distant ranges
+    val skyline by produceState<List<FloatArray>?>(null, dataset.regionId) {
+        value = withContext(Dispatchers.IO) { TerrainMaps.loadSkyline(context, dataset.regionId) }
+    }
+
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
     val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
@@ -243,6 +249,7 @@ fun ElevationProfileScreen(
                     stations = stations,
                     regionId = dataset.regionId,
                     terrain = terrain,
+                    skyline = skyline,
                     embedded = embedded,
                     selectedStationId = selectedStationId,
                     onSelectStation = {
@@ -309,21 +316,110 @@ private val CHART_REGULAR_HEIGHT = 300.dp
 /** How long the chart takes to grow to full height and back. */
 private const val CHART_RESIZE_MS = 700
 
-/** One distant range behind the profile: where it sits, how tall, how fast it drifts, and how hazy. */
+/** One layer behind the profile: where it sits, how tall, how fast it drifts, how hazy, and its trees. */
 private data class RidgeLayer(
-    val base: Float,        // baseline, as a fraction of the chart height from the top
-    val amplitude: Float,   // tallest peak, as a fraction of the chart height
-    val spread: Float,      // how many peaks fit across the chart
+    val base: Float,        // baseline, as a fraction of the regular chart height from the top
+    val amplitude: Float,   // tallest peak, as a fraction of the regular chart height
+    val spread: Float,      // how many peaks fit across the chart (the made-up part of the outline)
     val follow: Float,      // how much of the pan and zoom it follows (less = farther away)
     val depthShade: Float,  // how far it is pushed toward slate from the horizon colour
-    val alpha: Float
+    val alpha: Float,
+    val anchor: Float,      // how much of the extra height of an expanded chart it moves down (0 = stays put, 1 = all of it)
+    val skylineIndex: Int,  // which real skyline gives its outline (0 far, 1 middle, 2 near), or -1 for a made-up one
+    val treeSizeDp: Float   // tree height, or 0 for none
 )
 
 private val RIDGE_LAYERS = listOf(
-    RidgeLayer(base = 0.52f, amplitude = 0.20f, spread = 1.3f, follow = 0.25f, depthShade = 0.25f, alpha = 0.32f),
-    RidgeLayer(base = 0.66f, amplitude = 0.19f, spread = 1.8f, follow = 0.40f, depthShade = 0.35f, alpha = 0.40f),
-    RidgeLayer(base = 0.80f, amplitude = 0.15f, spread = 2.4f, follow = 0.55f, depthShade = 0.45f, alpha = 0.50f)
+    RidgeLayer(0.50f, 0.22f, 1.3f, 0.22f, 0.20f, 0.30f, 0.00f, 0, 0f),
+    RidgeLayer(0.62f, 0.20f, 1.8f, 0.34f, 0.30f, 0.38f, 0.12f, 1, 0f),
+    RidgeLayer(0.74f, 0.16f, 2.4f, 0.46f, 0.40f, 0.46f, 0.30f, 2, 0f),
+    RidgeLayer(0.84f, 0.09f, 2.8f, 0.58f, 0.50f, 0.55f, 0.55f, -1, 0f),
+    RidgeLayer(0.92f, 0.05f, 3.6f, 0.70f, 0.58f, 0.70f, 0.80f, -1, 11f),
+    RidgeLayer(0.99f, 0.04f, 4.5f, 0.85f, 0.65f, 0.80f, 1.00f, -1, 18f)
 )
+
+/** A real skyline's height (0 to 1) at [t], where 0 to 1 is across the chart; it mirrors outside that. */
+private fun sampleSkyline(values: FloatArray, t: Float): Float {
+    val m = ((t % 2f) + 2f) % 2f
+    val u = if (m <= 1f) m else 2f - m
+    val pos = u * (values.size - 1)
+    val i = pos.toInt().coerceAtMost(values.size - 2)
+    return values[i] + (values[i + 1] - values[i]) * (pos - i)
+}
+
+private enum class TreeKind { CONIFER, OAK, PALM }
+
+/** The kinds of tree along the near hills, by region (repeats make a kind more common). */
+private val TREE_MIX = mapOf(
+    "northern_california" to listOf(TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.OAK),
+    "bay_area_sacramento" to listOf(TreeKind.CONIFER, TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),
+    "central_coast" to listOf(TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),
+    "central_valley" to listOf(TreeKind.OAK, TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),
+    "los_angeles" to listOf(TreeKind.PALM, TreeKind.OAK, TreeKind.OAK),
+    "san_diego" to listOf(TreeKind.PALM, TreeKind.PALM, TreeKind.OAK)
+)
+
+private fun pseudoRandom(i: Int, seed: Int): Float = (((i * 73856093) xor (seed * 19349663)) and 0xFFFF) / 65535f
+
+/** Little trees standing along a ridgeline ([points] run left to right, evenly spaced). Decoration. */
+private fun DrawScope.drawTrees(
+    points: List<Offset>,
+    regionId: String,
+    sizePx: Float,
+    color: Color,
+    seed: Int,
+    xMin: Float,
+    xMax: Float
+) {
+    val mix = TREE_MIX[regionId] ?: listOf(TreeKind.OAK, TreeKind.CONIFER)
+    val first = points.first().x
+    val last = points.last().x
+    if (last <= first) return
+    val step = (last - first) / (points.size - 1)
+    var index = 0
+    var x = first
+    while (x < last) {
+        val r = pseudoRandom(index, seed)
+        val tx = x + (r - 0.5f) * sizePx * 0.6f
+        if (tx in xMin..xMax) {
+            val pos = ((tx - first) / step).coerceIn(0f, (points.size - 1).toFloat() - 0.001f)
+            val k = pos.toInt()
+            val y = points[k].y + (points[k + 1].y - points[k].y) * (pos - k)
+            val s = sizePx * (0.7f + 0.6f * pseudoRandom(index + 7, seed))
+            when (mix[(pseudoRandom(index + 13, seed) * mix.size).toInt().coerceAtMost(mix.size - 1)]) {
+                TreeKind.CONIFER -> {
+                    val upper = Path().apply {
+                        moveTo(tx, y - s); lineTo(tx - s * 0.26f, y - s * 0.3f); lineTo(tx + s * 0.26f, y - s * 0.3f); close()
+                    }
+                    val lower = Path().apply {
+                        moveTo(tx, y - s * 0.7f); lineTo(tx - s * 0.34f, y); lineTo(tx + s * 0.34f, y); close()
+                    }
+                    drawPath(upper, color)
+                    drawPath(lower, color)
+                }
+                TreeKind.OAK -> {
+                    drawLine(color, Offset(tx, y), Offset(tx, y - s * 0.3f), strokeWidth = s * 0.09f)
+                    drawCircle(color, radius = s * 0.36f, center = Offset(tx, y - s * 0.6f))
+                    drawCircle(color, radius = s * 0.26f, center = Offset(tx - s * 0.22f, y - s * 0.45f))
+                }
+                TreeKind.PALM -> {
+                    val topPoint = Offset(tx + s * 0.06f, y - s * 0.85f)
+                    drawLine(color, Offset(tx, y), topPoint, strokeWidth = s * 0.08f)
+                    for (angle in listOf(-165f, -125f, -90f, -55f, -15f)) {
+                        val rad = Math.toRadians(angle.toDouble())
+                        drawLine(
+                            color, topPoint,
+                            Offset(topPoint.x + (kotlin.math.cos(rad) * s * 0.38f).toFloat(), topPoint.y + (kotlin.math.sin(rad) * s * 0.26f).toFloat() + s * 0.06f),
+                            strokeWidth = s * 0.06f
+                        )
+                    }
+                }
+            }
+        }
+        index++
+        x += sizePx * 0.85f
+    }
+}
 
 /** A ridgeline's height from 0 to 1 at position [t]; a fixed pattern for a given region and layer. */
 private fun ridgeHeight(t: Float, seed: Int, layer: Int): Float {
@@ -361,6 +457,7 @@ private fun ElevationProfileCanvas(
     stations: List<MicroclimateStation>,
     regionId: String,
     terrain: TerrainImage?,
+    skyline: List<FloatArray>?,
     embedded: Boolean,
     selectedStationId: String?,
     onSelectStation: (MicroclimateStation) -> Unit
@@ -626,34 +723,67 @@ private fun ElevationProfileCanvas(
                 )
             )
 
-            // 1b. Distant ranges behind the profile, for depth. Decoration, not data: each layer is a
-            // made-up skyline (the same every time for a region) that drifts slower than the profile
-            // when you pan and zoom, and fades toward the sky colour the farther away it is.
+            // 1b. Distant ranges, hills and trees behind the profile, for depth. Decoration: the three
+            // farthest ranges take their outline from the region's real skyline (the highest ground,
+            // looking north across the region); the nearer hills and trees are made up, the same every
+            // time for a region. Each layer drifts slower than the profile when you pan and zoom, and
+            // hazes toward the sky colour the farther away it is.
             val horizon = skyTheme.colors.last()
-            // The ranges keep the size and position they have in the regular-height chart, measured from
-            // the top, so expanding the chart leaves them as they are and the ground drops below them
-            // instead of stretching them
+            val seed = regionId.hashCode()
+            // The layers keep the size they have in the regular-height chart. When the chart is taller,
+            // the extra height is shared out between them (the far ranges stay near the top, the near
+            // hills sink toward the ground), so nothing stretches and the gaps fill with more layers.
             val ridgeH = CHART_REGULAR_HEIGHT.toPx() - padding * 2
+            val extra = (h - ridgeH).coerceAtLeast(0f)
             clipPath(skyPath) {
-            RIDGE_LAYERS.forEachIndexed { layer, spec ->
-                val ridge = Path()
-                val steps = 90
-                val startX = -size.width
-                val endX = size.width * 2f
-                for (i in 0..steps) {
-                    val bx = startX + (endX - startX) * i / steps
-                    val t = (bx / size.width) * spec.spread
-                    val by = padding + ridgeH * spec.base - ridgeH * spec.amplitude * ridgeHeight(t, regionId.hashCode(), layer)
-                    val lx = size.width / 2f + (bx - size.width / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.x * spec.follow
-                    val ly = size.height / 2f + (by - size.height / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.y * spec.follow
-                    if (i == 0) ridge.moveTo(lx, ly) else ridge.lineTo(lx, ly)
+                RIDGE_LAYERS.forEachIndexed { layer, spec ->
+                    val steps = 110
+                    val startX = -size.width
+                    val endX = size.width * 2f
+                    val points = ArrayList<Offset>(steps + 1)
+                    val realLayer = if (spec.skylineIndex >= 0) skyline?.getOrNull(spec.skylineIndex) else null
+                    for (i in 0..steps) {
+                        val bx = startX + (endX - startX) * i / steps
+                        val procedural = ridgeHeight((bx / size.width) * spec.spread, seed, layer)
+                        val height = if (realLayer != null) {
+                            0.85f * sampleSkyline(realLayer, bx / size.width) + 0.15f * procedural
+                        } else procedural
+                        val by = padding + ridgeH * spec.base - ridgeH * spec.amplitude * height + spec.anchor * extra
+                        val lx = size.width / 2f + (bx - size.width / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.x * spec.follow
+                        val ly = size.height / 2f + (by - size.height / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.y * spec.follow
+                        points.add(Offset(lx, ly))
+                    }
+                    val ridge = Path().apply {
+                        moveTo(points.first().x, points.first().y)
+                        for (k in 1 until points.size) lineTo(points[k].x, points[k].y)
+                        lineTo(size.width * 4f, size.height * 3f)
+                        lineTo(-size.width * 3f, size.height * 3f)
+                        close()
+                    }
+                    // Darker at the ridge, hazing lighter below it, so the gap to the next layer reads as mist
+                    val top = lerp(horizon, Color(0xFF334155), spec.depthShade)
+                    val topY = points.minOf { it.y }
+                    drawPath(
+                        ridge,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(top.copy(alpha = spec.alpha), lerp(top, horizon, 0.5f).copy(alpha = spec.alpha * 0.7f)),
+                            startY = topY,
+                            endY = topY + ridgeH * 0.45f * (1f + (zoom - 1f) * spec.follow)
+                        )
+                    )
+                    if (spec.treeSizeDp > 0f) {
+                        val treeScale = 1f + (zoom - 1f) * spec.follow
+                        drawTrees(
+                            points = points,
+                            regionId = regionId,
+                            sizePx = spec.treeSizeDp.dp.toPx() * treeScale,
+                            color = lerp(top, Color(0xFF0F2F2A), 0.55f).copy(alpha = (spec.alpha + 0.15f).coerceAtMost(0.95f)),
+                            seed = seed + layer * 101,
+                            xMin = -40f,
+                            xMax = size.width + 40f
+                        )
+                    }
                 }
-                val bottom = size.height * 3f
-                ridge.lineTo(size.width * 4f, bottom)
-                ridge.lineTo(-size.width * 3f, bottom)
-                ridge.close()
-                drawPath(ridge, color = lerp(horizon, Color(0xFF334155), spec.depthShade).copy(alpha = spec.alpha))
-            }
             }
 
             // 2. DYNAMIC WEATHER VISUALS (Clouds / Sun corona in the upper-left quadrant)

@@ -52,6 +52,22 @@ class TerrainMapsTest {
     }
 
     @Test
+    fun everyRegionHasASkyline() {
+        for ((_, regionId) in packs) {
+            val file = File("src/main/assets/${TerrainMaps.skylineAssetPath(regionId)}")
+            assertTrue("${file.path} is missing", file.exists())
+            // Three layers (far, middle, near) of 160 numbers from 0 to 255
+            val lines = file.readLines().filter { it.isNotBlank() }
+            assertEquals("$regionId skyline layers", 3, lines.size)
+            for (line in lines) {
+                val values = line.split(",").map { it.trim().toInt() }
+                assertEquals("$regionId skyline length", 160, values.size)
+                assertTrue("$regionId skyline has a value outside 0 to 255", values.all { it in 0..255 })
+            }
+        }
+    }
+
+    @Test
     fun everyPictureCoversItsStationsWithRoomAround() {
         for ((packFile, regionId) in packs) {
             val bounds = TerrainMaps.BOUNDS.getValue(regionId)
