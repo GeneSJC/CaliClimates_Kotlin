@@ -741,39 +741,9 @@ private fun SpatialMapCanvas(
             stations.forEach { station ->
                 val x = mapX(station.longitude)
                 val y = mapY(station.latitude)
-                val isSelected = station.id == selectedStationId
-
-                val pinColor = when (station.terrain) {
-                    TerrainType.COASTAL -> Color(0xFF0284C7)
-                    TerrainType.RIDGE -> Color(0xFF7C3AED)
-                    TerrainType.VALLEY_BASIN -> Color(0xFFEA580C)
-                    TerrainType.URBAN_CANYON -> Color(0xFF475569)
-                }
-
-                if (isSelected) {
-                    drawCircle(
-                        color = pinColor.copy(alpha = 0.35f),
-                        radius = 20f * dotScale,
-                        center = Offset(x, y)
-                    )
-                    drawCircle(
-                        color = pinColor,
-                        radius = 16f * dotScale,
-                        center = Offset(x, y),
-                        style = Stroke(width = 3f * dotScale)
-                    )
-                }
-
-                drawCircle(
-                    color = Color.White,
-                    radius = if (isSelected) 9f * dotScale else 7f * dotScale,
-                    center = Offset(x, y)
-                )
-                drawCircle(
-                    color = pinColor,
-                    radius = if (isSelected) 7f * dotScale else 5.5f * dotScale,
-                    center = Offset(x, y)
-                )
+                // The selected station is drawn last, above the labels, by the overlay below
+                if (station.id == selectedStationId) return@forEach
+                drawStationPin(x, y, pinColor(station.terrain), dotScale, selected = false)
             }
         }
 
@@ -971,6 +941,21 @@ private fun SpatialMapCanvas(
             }
         }
 
+        // The selected station's marker, above every label and city name, so nothing hides it. The
+        // canvas takes no touches; taps fall through to the map below.
+        stations.firstOrNull { it.id == selectedStationId }?.let { station ->
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val padding = 20f
+                val w = size.width - (padding * 2)
+                val h = size.height - (padding * 2)
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val x = cx + (padding + ((station.longitude - minLon) / lonSpan).toFloat() * w - cx) * zoom + pan.x
+                val y = cy + (padding + (1f - ((station.latitude - minLat) / latSpan).toFloat()) * h - cy) * zoom + pan.y
+                drawStationPin(x, y, pinColor(station.terrain), pinScale * zoomDotGrowth(zoom), selected = true)
+            }
+        }
+
         // Compass Rose (Top-Left)
         Surface(
             shape = RoundedCornerShape(6.dp),
@@ -1060,6 +1045,29 @@ private fun SpatialMapCanvas(
     }
 }
 
+
+/** The dot colour for a terrain type; the same colours as the legend. */
+private fun pinColor(terrain: TerrainType): Color = when (terrain) {
+    TerrainType.COASTAL -> Color(0xFF0284C7)
+    TerrainType.RIDGE -> Color(0xFF7C3AED)
+    TerrainType.VALLEY_BASIN -> Color(0xFFEA580C)
+    TerrainType.URBAN_CANYON -> Color(0xFF475569)
+}
+
+/** One station dot; the selected one gets a halo and a ring, and is slightly larger. */
+private fun DrawScope.drawStationPin(x: Float, y: Float, color: Color, dotScale: Float, selected: Boolean) {
+    if (selected) {
+        drawCircle(color = color.copy(alpha = 0.35f), radius = 20f * dotScale, center = Offset(x, y))
+        drawCircle(
+            color = color,
+            radius = 16f * dotScale,
+            center = Offset(x, y),
+            style = Stroke(width = 3f * dotScale)
+        )
+    }
+    drawCircle(color = Color.White, radius = if (selected) 9f * dotScale else 7f * dotScale, center = Offset(x, y))
+    drawCircle(color = color, radius = if (selected) 7f * dotScale else 5.5f * dotScale, center = Offset(x, y))
+}
 
 // Maximum number of place labels drawn on the neutral base map
 private const val MAP_LABEL_COUNT = 6
