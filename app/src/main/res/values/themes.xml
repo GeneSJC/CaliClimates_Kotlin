@@ -2,7 +2,7 @@
 <resources>
 
     <style name="Theme.MicroClimateFinder" parent="android:Theme.Material.Light.NoActionBar">
-        <!-- The dark look is the default, so start dark instead of flashing white -->
-        <item name="android:windowBackground">#FF0B1220</item>
+        <!-- The light look is the default: a warm colour at start, close to the backdrop, instead of flashing white -->
+        <item name="android:windowBackground">#FFFFE9CF</item>
     </style>
 </resources>
