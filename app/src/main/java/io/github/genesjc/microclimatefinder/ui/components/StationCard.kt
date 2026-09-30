@@ -608,7 +608,7 @@ private fun CompactMetric(label: String, value: String) {
 @Composable
 fun StationSummaryTile(station: MicroclimateStation) {
     val display = liveDisplay(station)
-    Column(modifier = Modifier.padding(12.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
         Text(
             text = station.name,
             style = MaterialTheme.typography.titleSmall,
@@ -631,20 +631,24 @@ fun StationSummaryTile(station: MicroclimateStation) {
                 modifier = Modifier.padding(bottom = 4.dp)
             )
         }
-        Text(
-            text = display.status.orEmpty(),
-            fontSize = 10.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "More \u25BC",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary
-        )
+        // The age of the reading on the left, the More link on the right
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = display.status.orEmpty(),
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "More \u25BC",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
     }
 }
 

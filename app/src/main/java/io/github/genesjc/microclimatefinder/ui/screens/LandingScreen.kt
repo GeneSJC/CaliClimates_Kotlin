@@ -648,7 +648,7 @@ fun LandingScreen(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
@@ -747,20 +747,12 @@ fun LandingScreen(
                             content = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
-                    // App title, under the region name (menu button 36dp + 14dp gap = 50dp in)
-                    Text(
-                        text = appName,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 50.dp, top = 2.dp)
-                    )
                     }
                 }
             }
 
             // Row 1: the selected station as a half-width tile (it grows into the full card), and
-            // the Terrain Legend and Region Info, stacked beside it
+            // the Terrain Legend and Region Info, stacked at the bottom beside it
             val shown = if (dataset != null) {
                 snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
             } else null
@@ -772,13 +764,13 @@ fun LandingScreen(
                     .onGloballyPositioned { rowLeftPx = it.positionInRoot().x },
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                Box(modifier = Modifier.weight(1.4f).fillMaxHeight()) {
                     if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx)
                 }
                 Column(
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.SpaceBetween
+                    verticalArrangement = Arrangement.Bottom
                 ) {
                     // The Terrain Legend at the top of the column, at the right; it opens as a full-width panel over the map
                     if (dataset != null && snapshotStations.isNotEmpty()) {
@@ -793,7 +785,7 @@ fun LandingScreen(
                             headerAlignment = Alignment.TopEnd
                         )
                     }
-                    // Region Info at the bottom of the column, level with the bottom of the station tile. The sheet slides in from the right. A fixed
+                    // Region Info at the very bottom of the column, level with the tile's last line. The sheet slides in from the right. A fixed
                     // height, so the row does not change when the link swaps with the X
                     Row(
                         modifier = Modifier.fillMaxWidth().height(26.dp),
