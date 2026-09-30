@@ -211,7 +211,8 @@ private fun StationHeroTile(
     station: MicroclimateStation,
     fullWidthPx: Int,
     regionStations: List<MicroclimateStation>,
-    regionId: String
+    regionId: String,
+    folded: Boolean
 ) {
     HeroTile(
         fullWidthPx = fullWidthPx,
@@ -225,6 +226,8 @@ private fun StationHeroTile(
         closeLabel = "Hide the full station card",
         // Stays open when another station is picked from the map, and the map stays tappable behind it
         passThrough = true,
+        // The Region Info sheet sits above this card: opening it folds the card
+        forceClosed = folded,
         tile = { StationSummaryTile(station) },
         panel = { close ->
             StationCard(
@@ -235,28 +238,28 @@ private fun StationHeroTile(
                 compact = true,
                 elevationNote = Elevation.note(station.elevationMeters, regionId),
                 // Inside the card's border: the region's elevation range, and the way to fold it back
+                // The region's elevation range at the foot of the card
                 compactFooter = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    if (regionStations.isNotEmpty()) {
                         Text(
-                            text = if (regionStations.isEmpty()) "" else
-                                "Region elevation ${Elevation.rangeFeet(regionStations.minOf { it.elevationMeters }, regionStations.maxOf { it.elevationMeters })}",
+                            text = "Region elevation ${Elevation.rangeFeet(regionStations.minOf { it.elevationMeters }, regionStations.maxOf { it.elevationMeters })}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = "Less \u25B2",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .clickable(onClickLabel = "Hide the full station card", role = Role.Button) { close() }
-                                .padding(start = 12.dp, top = 4.dp, bottom = 2.dp)
+                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
                         )
                     }
+                },
+                // Less at the right of the title row, where the other open cards have theirs
+                compactHeaderAction = {
+                    Text(
+                        text = "Less \u25B2",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clickable(onClickLabel = "Hide the full station card", role = Role.Button) { close() }
+                            .padding(start = 12.dp, top = 4.dp, bottom = 4.dp)
+                    )
                 }
             )
         }
@@ -799,7 +802,7 @@ fun LandingScreen(
                         .fillMaxHeight()
                         .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y }
                 ) {
-                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id)
+                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen)
                 }
             }
 

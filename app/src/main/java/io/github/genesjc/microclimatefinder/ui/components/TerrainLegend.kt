@@ -234,18 +234,30 @@ fun TerrainLegendCard(
                 .animateContentSize()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Text(
-                text = "Terrain Legend" + if (open) " \u25B4" else " \u25BE",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
+            // Title on the left, More / Less on the right, like the other expanding cards
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(
                         onClickLabel = if (open) "Fold the Terrain Legend" else "Open the Terrain Legend",
                         role = androidx.compose.ui.semantics.Role.Button
-                    ) { open = !open }
-            )
+                    ) { open = !open },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Terrain Legend",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = if (open) "Less \u25B2" else "More \u25BC",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
             if (open) {
                 Spacer(modifier = Modifier.height(4.dp))
                 LegendBody(stations, extra)

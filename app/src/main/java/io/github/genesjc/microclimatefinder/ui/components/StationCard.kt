@@ -68,6 +68,8 @@ fun StationCard(
     compact: Boolean = false,
     // Compact only: a line at the bottom of the card, inside its border
     compactFooter: (@Composable () -> Unit)? = null,
+    // Compact only: a control at the right end of the title row (the open card's Less link)
+    compactHeaderAction: (@Composable () -> Unit)? = null,
     // Compact only: a sentence about the height, shown under the terrain row
     elevationNote: String? = null
 ) {
@@ -111,7 +113,7 @@ fun StationCard(
             }
         )
     ) {
-        if (compact) CompactStationBody(station, terrainBadgeColor, display, compactFooter, elevationNote) else Column(modifier = Modifier.padding(16.dp)) {
+        if (compact) CompactStationBody(station, terrainBadgeColor, display, compactFooter, compactHeaderAction, elevationNote) else Column(modifier = Modifier.padding(16.dp)) {
             // Header row: Terrain Badge & Elevation
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -529,10 +531,11 @@ private fun CompactStationBody(
     badgeColor: Color,
     display: CardDisplay,
     footer: (@Composable () -> Unit)? = null,
+    headerAction: (@Composable () -> Unit)? = null,
     elevationNote: String? = null
 ) {
     Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
-        // Row 1: name and temperature
+        // Row 1: name, and the card's control (Less) at the right, like the other open cards
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = station.name,
@@ -542,30 +545,36 @@ private fun CompactStationBody(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            if (headerAction != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                headerAction()
+            }
+        }
+        // Row 2: the temperature in °F, with °C (or why there is no reading) beside it
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Text(
-                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "—",
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-        }
-        // Row 2: Humidity, Wind and Pressure on the left; °C (or why there is no reading) on the right
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CompactMetric("Humidity", display.humidity)
-                CompactMetric("Wind", display.wind)
-                CompactMetric(display.thirdLabel, display.thirdValue)
-            }
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) }
                     ?: display.status.orEmpty(),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
             )
         }
+        // Row 3: Humidity, Wind and Pressure
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            CompactMetric("Humidity", display.humidity)
+            CompactMetric("Wind", display.wind)
+            CompactMetric(display.thirdLabel, display.thirdValue)
+        }
         Spacer(modifier = Modifier.height(6.dp))
-        // Row 3: terrain chip and elevation on the left; the reading's age on the right
+        // Row 4: terrain chip and elevation on the left; the reading's age on the right
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Surface(

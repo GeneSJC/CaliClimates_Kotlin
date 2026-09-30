@@ -60,6 +60,8 @@ fun HeroTile(
     resetKey: Any? = null,
     /** True: touches outside the open panel reach what is underneath (the map's dots) and do not fold it. */
     passThrough: Boolean = false,
+    /** True: the panel folds if open and the tile does not open it (something above it is showing). */
+    forceClosed: Boolean = false,
     tile: @Composable () -> Unit,
     /** The open panel's content; it is given a way to fold the panel back. */
     panel: @Composable (close: () -> Unit) -> Unit
@@ -73,6 +75,7 @@ fun HeroTile(
     val shape = RoundedCornerShape(16.dp)
 
     fun openPanel() {
+        if (forceClosed) return
         open = true
         scope.launch { reveal.animateTo(1f, tween(HERO_OPEN_MS, easing = FastOutSlowInEasing)) }
     }
@@ -82,6 +85,8 @@ fun HeroTile(
             open = false
         }
     }
+
+    androidx.compose.runtime.LaunchedEffect(forceClosed) { if (forceClosed && open) closePanel() }
 
     if (passThrough) androidx.activity.compose.BackHandler(enabled = open) { closePanel() }
 
