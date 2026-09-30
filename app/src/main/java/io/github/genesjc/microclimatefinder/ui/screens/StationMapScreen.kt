@@ -122,6 +122,9 @@ fun StationMapScreen(
     onStationSelected: ((String) -> Unit)? = null,
     /** The dot size, when Home owns it (its Terrain Legend panel holds the slider). */
     sharedPinScale: Float? = null,
+    /** The zoom to start at, and a report of each change (Home keeps the zoom when it switches views). */
+    initialZoom: Float = 1f,
+    onZoomChange: ((Float) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
@@ -269,6 +272,8 @@ fun StationMapScreen(
                     embedded = embedded,
                     selectedStationId = selectedStationId,
                     pinScale = pinScale,
+                    initialZoom = initialZoom,
+                    onZoomChange = onZoomChange,
                     onSelectStation = {
                     localSelectedId = it.id
                     onStationSelected?.invoke(it.id)
@@ -386,6 +391,8 @@ private fun SpatialMapCanvas(
     embedded: Boolean,
     selectedStationId: String?,
     pinScale: Float = 1.0f,
+    initialZoom: Float = 1f,
+    onZoomChange: ((Float) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
@@ -409,7 +416,8 @@ private fun SpatialMapCanvas(
     val landmarks = remember(stations) { pickMapLandmarks(stations, minOf(stations.size, MAP_LABEL_COUNT * 8)) }
 
     // View transform: zoom about the map centre plus a pan in pixels
-    var zoom by remember(stations) { mutableStateOf(1f) }
+    var zoom by remember(stations) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
+    androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
     var pan by remember(stations) { mutableStateOf(Offset.Zero) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
     val zoomScope = rememberCoroutineScope()

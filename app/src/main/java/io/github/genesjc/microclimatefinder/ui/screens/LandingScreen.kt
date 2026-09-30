@@ -562,6 +562,8 @@ fun LandingScreen(
     var mapTopPx by remember { mutableStateOf(0f) }
     var rowWidthPx by remember { mutableStateOf(0) }
     var stationTileTopPx by remember { mutableStateOf(0f) }
+    // The map zoom, kept across the Topography and Elevation views (a plain holder: no recomposition as it changes; a new region starts at 1x)
+    val mapZoom = remember(selectedRegionId) { floatArrayOf(1f) }
     val sheetTopPx = stationTileTopPx
     val openInfo: () -> Unit = {
         onInfoOpenChange(true)
@@ -922,7 +924,9 @@ fun LandingScreen(
                             embedded = true,
                             sharedSelectedStationId = selectedStationId,
                             onStationSelected = onStationSelected,
-                            sharedPinScale = pinScale
+                            sharedPinScale = pinScale,
+                            initialZoom = mapZoom[0],
+                            onZoomChange = { mapZoom[0] = it }
                         )
                     } else {
                         ElevationProfileScreen(
@@ -930,7 +934,9 @@ fun LandingScreen(
                             onNavigateBack = {},
                             embedded = true,
                             sharedSelectedStationId = selectedStationId,
-                            onStationSelected = onStationSelected
+                            onStationSelected = onStationSelected,
+                            initialZoom = mapZoom[0],
+                            onZoomChange = { mapZoom[0] = it }
                         )
                     }
                     MapViewSwitch(

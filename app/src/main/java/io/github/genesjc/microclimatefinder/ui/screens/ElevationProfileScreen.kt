@@ -144,6 +144,9 @@ fun ElevationProfileScreen(
     /** A station selected elsewhere (the other Home tab), and a way to report selections back. */
     sharedSelectedStationId: String? = null,
     onStationSelected: ((String) -> Unit)? = null,
+    /** The zoom to start at, and a report of each change (Home keeps the zoom when it switches views). */
+    initialZoom: Float = 1f,
+    onZoomChange: ((Float) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
@@ -260,6 +263,8 @@ fun ElevationProfileScreen(
                     skyline = skyline,
                     embedded = embedded,
                     selectedStationId = selectedStationId,
+                    initialZoom = initialZoom,
+                    onZoomChange = onZoomChange,
                     onSelectStation = {
                         localSelectedId = it.id
                         onStationSelected?.invoke(it.id)
@@ -469,6 +474,8 @@ private fun ElevationProfileCanvas(
     skyline: List<FloatArray>?,
     embedded: Boolean,
     selectedStationId: String?,
+    initialZoom: Float = 1f,
+    onZoomChange: ((Float) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
@@ -483,7 +490,8 @@ private fun ElevationProfileCanvas(
     }
 
     // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
-    var zoom by remember(sorted) { mutableStateOf(1f) }
+    var zoom by remember(sorted) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
+    androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
     var pan by remember(sorted) { mutableStateOf(Offset.Zero) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
     val zoomScope = rememberCoroutineScope()
