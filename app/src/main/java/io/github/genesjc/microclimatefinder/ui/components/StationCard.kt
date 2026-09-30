@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -199,16 +200,15 @@ fun StationCard(
                     MetricPill(label = "Humidity", value = display.humidity)
                     MetricPill(label = "Wind", value = display.wind)
                     MetricPill(label = display.thirdLabel, value = display.thirdValue)
+                    // The age of the reading, as a fourth column (its value wraps if it must)
+                    if (display.tempC != null && display.status != null) {
+                        MetricPill(
+                            label = "Updated",
+                            value = display.status.removePrefix("Updated").removePrefix(":").trim(),
+                            modifier = Modifier.widthIn(max = 76.dp)
+                        )
+                    }
                 }
-            }
-
-            if (display.tempC != null && display.status != null) {
-                Text(
-                    text = display.status,
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
             }
 
             if (AppFeatures.LOCAL_NEWS) {
@@ -737,8 +737,8 @@ private fun liveDisplay(station: MicroclimateStation): CardDisplay {
 }
 
 @Composable
-private fun MetricPill(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun MetricPill(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,
             fontSize = 10.sp,
@@ -749,6 +749,7 @@ private fun MetricPill(label: String, value: String) {
             text = value,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface
         )
     }
