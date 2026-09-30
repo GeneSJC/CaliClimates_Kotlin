@@ -1,6 +1,10 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import io.github.genesjc.microclimatefinder.data.local.TerrainImage
+import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -525,6 +529,11 @@ private fun CaliforniaClassicMapCanvas(
     onSelectRegion: (String) -> Unit,
     sizeModifier: Modifier = Modifier.height(430.dp)
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val terrain by androidx.compose.runtime.produceState<TerrainImage?>(null) {
+        value = withContext(Dispatchers.IO) { TerrainMaps.loadState(context) }
+    }
+    val tintAlpha = if (terrain != null) 0.34f else 0.72f
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -542,14 +551,16 @@ private fun CaliforniaClassicMapCanvas(
                 detectTapGestures { offset ->
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
-                    val padX = w * 0.05f
-                    val padY = h * 0.05f
-                    val availW = w * 0.90f
-                    val availH = h * 0.90f
                     val lonMin = -124.5f
                     val lonMax = -114.1f
                     val latMin = 32.4f
                     val latMax = 42.1f
+                    // True shape: one scale for both axes (a degree of longitude is about 0.8 of a degree of latitude), centred
+                    val k = minOf(w * 0.94f / ((lonMax - lonMin) * 0.8f), h * 0.94f / (latMax - latMin))
+                    val availW = (lonMax - lonMin) * 0.8f * k
+                    val availH = (latMax - latMin) * k
+                    val padX = (w - availW) / 2f
+                    val padY = (h - availH) / 2f
 
                     fun px(lon: Float): Float = padX + ((lon - lonMin) / (lonMax - lonMin)) * availW
                     fun py(lat: Float): Float = padY + (1.0f - (lat - latMin) / (latMax - latMin)) * availH
@@ -717,14 +728,16 @@ private fun CaliforniaClassicMapCanvas(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
-            val padX = w * 0.05f
-            val padY = h * 0.05f
-            val availW = w * 0.90f
-            val availH = h * 0.90f
             val lonMin = -124.5f
             val lonMax = -114.1f
             val latMin = 32.4f
             val latMax = 42.1f
+            // True shape: one scale for both axes (a degree of longitude is about 0.8 of a degree of latitude), centred
+            val k = minOf(w * 0.94f / ((lonMax - lonMin) * 0.8f), h * 0.94f / (latMax - latMin))
+            val availW = (lonMax - lonMin) * 0.8f * k
+            val availH = (latMax - latMin) * k
+            val padX = (w - availW) / 2f
+            val padY = (h - availH) / 2f
 
             fun px(lon: Float): Float = padX + ((lon - lonMin) / (lonMax - lonMin)) * availW
             fun py(lat: Float): Float = padY + (1.0f - (lat - latMin) / (latMax - latMin)) * availH
@@ -939,6 +952,15 @@ private fun CaliforniaClassicMapCanvas(
                 }
             }
 
+            // The land itself: shaded relief of the whole state under translucent region tints
+            terrain?.let { t ->
+                drawImage(
+                    image = t.image,
+                    dstOffset = androidx.compose.ui.unit.IntOffset(px(-124.5f).toInt(), py(42.1f).toInt()),
+                    dstSize = androidx.compose.ui.unit.IntSize(availW.toInt(), availH.toInt())
+                )
+            }
+
             // Fills lock together seamlessly — richer gradient fills instead of flat washed-out tints
             for ((region, path) in regionPolys) {
                 val isSelected = selectedRegionId == region.id
@@ -947,7 +969,7 @@ private fun CaliforniaClassicMapCanvas(
                 drawPath(
                     path = path,
                     brush = Brush.linearGradient(
-                        colors = listOf(color.copy(alpha = if (isSelected) 1f else 0.72f).lighten(0.18f), color.copy(alpha = if (isSelected) 1f else 0.72f)),
+                        colors = listOf(color.copy(alpha = if (isSelected) 0.55f else tintAlpha).lighten(0.18f), color.copy(alpha = if (isSelected) 0.55f else tintAlpha)),
                         start = Offset(bounds.left, bounds.top),
                         end = Offset(bounds.right, bounds.bottom)
                     )
@@ -990,8 +1012,10 @@ private fun CaliforniaClassicMapCanvas(
                 Offset(px(-116.70f), py(33.20f)),
                 Offset(px(-116.50f), py(32.70f))
             )
-            for (ridge in listOf(klamathCascades, sierraNevada, coastRanges, transverseRanges, peninsularRanges)) {
-                drawHachureRidge(ridge)
+            if (terrain == null) {
+                for (ridge in listOf(klamathCascades, sierraNevada, coastRanges, transverseRanges, peninsularRanges)) {
+                    drawHachureRidge(ridge)
+                }
             }
 
             // Clean boundary strokes — warm ink-brown for an inked, hand-drawn map feel

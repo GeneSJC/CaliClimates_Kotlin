@@ -64,4 +64,15 @@ object TerrainMaps {
             null
         }
     }
+
+    /** The whole state for the California picker: land inside California only, the rest transparent. */
+    val STATE_BOUNDS = GeoBounds(-124.5, -114.1, 32.4, 42.1)
+
+    fun loadState(context: Context): TerrainImage? = try {
+        context.assets.open("terrain/california.webp").use { BitmapFactory.decodeStream(it) }
+            ?.let { TerrainImage(it.asImageBitmap(), STATE_BOUNDS) }
+    } catch (e: Exception) {
+        Log.w(TAG, "No statewide terrain picture", e)
+        null
+    }
 }
