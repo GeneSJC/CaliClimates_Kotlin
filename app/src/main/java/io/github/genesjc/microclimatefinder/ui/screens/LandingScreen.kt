@@ -19,6 +19,9 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -814,21 +817,44 @@ fun LandingScreen(
                 Column {
                     // Handle for the region info sheet, which slides in from the right
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        Text(
-                            text = if (infoOpen) "\u2715" else "\u00AB Region Info",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .onGloballyPositioned {
-                                    infoHandleBottomPx = it.positionInRoot().y + it.size.height
-                                }
-                                .clickable(
-                                    onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
-                                    role = Role.Button
-                                ) { if (infoOpen) closeInfo() else openInfo() }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                        val handleModifier = Modifier
+                            .onGloballyPositioned {
+                                infoHandleBottomPx = it.positionInRoot().y + it.size.height
+                            }
+                            .clickable(
+                                onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
+                                role = Role.Button
+                            ) { if (infoOpen) closeInfo() else openInfo() }
+                        val handleColor = MaterialTheme.colorScheme.primary
+                        if (infoOpen) {
+                            // A bold X, drawn so its weight and size are exact
+                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 5.dp).size(18.dp)) {
+                                val stroke = 3.dp.toPx()
+                                val inset = stroke / 2f
+                                drawLine(
+                                    color = handleColor,
+                                    start = Offset(inset, inset),
+                                    end = Offset(size.width - inset, size.height - inset),
+                                    strokeWidth = stroke,
+                                    cap = StrokeCap.Round
+                                )
+                                drawLine(
+                                    color = handleColor,
+                                    start = Offset(size.width - inset, inset),
+                                    end = Offset(inset, size.height - inset),
+                                    strokeWidth = stroke,
+                                    cap = StrokeCap.Round
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "\u00AB Region Info",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = handleColor,
+                                modifier = handleModifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
                     }
                     // This region has no station data in this build
                     if (dataset == null) {
