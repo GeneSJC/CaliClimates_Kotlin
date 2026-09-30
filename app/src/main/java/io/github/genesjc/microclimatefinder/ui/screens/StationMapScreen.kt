@@ -277,8 +277,8 @@ private const val MAP_RESIZE_MS = 700
 /** How far the map can be dragged past its edge, as a fraction of the map's size, at any zoom. */
 private const val MAP_OVERSCROLL = 0.12f
 
-/** Dots start a little larger than the base size so they are easy to see and tap. */
-private const val DEFAULT_PIN_SCALE = 1.3f
+/** Dots start at the largest size the Dot size slider allows, so they are easy to see and tap. */
+private const val DEFAULT_PIN_SCALE = 2.5f
 
 /** Horizontal dot-size control under the map: small dot to large dot. */
 @OptIn(ExperimentalMaterial3Api::class) // custom slider thumb
