@@ -96,6 +96,14 @@ private const val LANDMARK_COUNT = 6
 // Chart margin in pixels; the Canvas and the label overlay must use the same value
 private const val CHART_PADDING_PX = 32f
 
+// The profile sits between a little headroom and sea level; the bottom of the chart is ocean, so sea level
+// is in view and the cities spread over more of the height
+private const val PROFILE_HEAD = 0.05f
+private const val SEA_FRACTION = 0.14f
+
+/** Where (0 at the chart's top, 1 at its bottom) a height, as a share of the highest station, is drawn. */
+private fun profileFrac(elevRatio: Float): Float = PROFILE_HEAD + (1f - elevRatio) * (1f - PROFILE_HEAD - SEA_FRACTION)
+
 // Labels are about this tall (dp) when checking for overlaps
 private const val LABEL_HEIGHT_DP = 18f
 
@@ -619,7 +627,7 @@ private fun ElevationProfileCanvas(
                 val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
                 val elevRatio = station.elevationMeters / maxElevation
                 val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
-                val pinY = with(density) { viewY(paddingPx + (1f - elevRatio) * heightPx).toDp().value }
+                val pinY = with(density) { viewY(paddingPx + profileFrac(elevRatio) * heightPx).toDp().value }
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
                 val text = LocalNewsRepository.getCleanCityName(station.id, station.name) +
                     " ${"%,d".format(station.elevationMeters)}m"
@@ -681,7 +689,7 @@ private fun ElevationProfileCanvas(
                         sorted.forEachIndexed { index, station ->
                             val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                             val elevRatio = station.elevationMeters / maxElevation
-                            val y = viewY(padding + (1f - elevRatio) * h)
+                            val y = viewY(padding + profileFrac(elevRatio) * h)
 
                             val dx = tapOffset.x - x
                             val dy = tapOffset.y - y
@@ -704,12 +712,12 @@ private fun ElevationProfileCanvas(
                 moveTo(viewX(padding), viewY(padding))
                 lineTo(viewX(size.width - padding), viewY(padding))
                 val lastElevRatio = (sorted.lastOrNull()?.elevationMeters ?: 0) / maxElevation
-                lineTo(viewX(size.width - padding), viewY(padding + (1f - lastElevRatio) * h))
+                lineTo(viewX(size.width - padding), viewY(padding + profileFrac(lastElevRatio) * h))
                 for (i in (sorted.size - 1) downTo 0) {
                     val st = sorted[i]
                     val x = viewX(padding + (i.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                     val elevRatio = st.elevationMeters / maxElevation
-                    val y = viewY(padding + (1f - elevRatio) * h)
+                    val y = viewY(padding + profileFrac(elevRatio) * h)
                     lineTo(x, y)
                 }
                 close()
@@ -848,7 +856,7 @@ private fun ElevationProfileCanvas(
             sorted.forEachIndexed { index, station ->
                 val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                 val elevRatio = station.elevationMeters / maxElevation
-                val y = viewY(padding + (1f - elevRatio) * h)
+                val y = viewY(padding + profileFrac(elevRatio) * h)
 
                 if (index == 0) {
                     terrainPath.moveTo(x, viewY(size.height - padding))
@@ -871,7 +879,9 @@ private fun ElevationProfileCanvas(
                 brush = Brush.verticalGradient(
                     colorStops = (0..10).map { step ->
                         val fraction = step / 10f
-                        fraction to heightTint((1f - fraction) * maxElevation)
+                        // The height drawn at this share of the chart (clamped: above the top and below sea level)
+                        val ratio = (1f - (fraction - PROFILE_HEAD) / (1f - PROFILE_HEAD - SEA_FRACTION)).coerceIn(0f, 1f)
+                        fraction to heightTint(ratio * maxElevation)
                     }.toTypedArray(),
                     startY = groundTop,
                     endY = groundBottom
@@ -916,6 +926,32 @@ private fun ElevationProfileCanvas(
                 }
             }
 
+            // The ocean: the bottom of the chart, below sea level (decoration; the heights above it are data)
+            val seaY = viewY(padding + (1f - SEA_FRACTION) * h)
+            val oceanBottom = maxOf(size.height, viewY(size.height - padding) + padding)
+            if (seaY < oceanBottom) {
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        listOf(Color(0xFF7CC3E6), Color(0xFF3B8EC4), Color(0xFF1F5F99)),
+                        startY = seaY,
+                        endY = oceanBottom
+                    ),
+                    topLeft = Offset(0f, seaY),
+                    size = androidx.compose.ui.geometry.Size(size.width, oceanBottom - seaY)
+                )
+                // A light line at the waterline and a few soft wave crests
+                drawLine(Color.White.copy(alpha = 0.55f), Offset(0f, seaY), Offset(size.width, seaY), strokeWidth = 2.5f)
+                val crest = Color.White.copy(alpha = 0.22f)
+                for (row in 1..3) {
+                    val wy = seaY + (oceanBottom - seaY) * row / 4.5f
+                    var wx = -(row * 37f) % 90f
+                    while (wx < size.width) {
+                        drawLine(crest, Offset(wx, wy), Offset(wx + 26f, wy), strokeWidth = 2f, cap = StrokeCap.Round)
+                        wx += 90f
+                    }
+                }
+            }
+
             // A lit edge along the profile, like the sun catching the ridge
             drawPath(
                 path = linePath,
@@ -934,7 +970,7 @@ private fun ElevationProfileCanvas(
             sorted.forEachIndexed { index, station ->
                 val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                 val elevRatio = station.elevationMeters / maxElevation
-                val y = viewY(padding + (1f - elevRatio) * h)
+                val y = viewY(padding + profileFrac(elevRatio) * h)
                 val isSelected = station.id == selectedStationId
 
                 val isLandmark = station.id in placedIds
@@ -1074,7 +1110,7 @@ private fun ElevationProfileCanvas(
                     val elevRatio = sorted[i].elevationMeters / maxElevation
                     Offset(
                         viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
-                        viewY(paddingPx + (1f - elevRatio) * heightPx)
+                        viewY(paddingPx + profileFrac(elevRatio) * heightPx)
                     )
                 }
                 .minByOrNull { (it - middle).getDistance() } ?: middle
