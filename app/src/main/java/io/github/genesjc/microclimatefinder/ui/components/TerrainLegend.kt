@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -214,7 +215,7 @@ private fun LegendBody(stations: List<MicroclimateStation>, extra: (@Composable 
     }
 }
 
-/** The Terrain Legend as a card that is always open, for the Region Info sheet. */
+/** The Terrain Legend as a card that folds open from its header, for the Region Info sheet. */
 @Composable
 fun TerrainLegendCard(
     stations: List<MicroclimateStation>,
@@ -227,15 +228,28 @@ fun TerrainLegendCard(
         color = containerColor,
         modifier = modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+        Column(
+            modifier = Modifier
+                .animateContentSize()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
             Text(
-                text = "Terrain Legend",
+                text = "Terrain Legend" + if (open) " \u25B4" else " \u25BE",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        onClickLabel = if (open) "Fold the Terrain Legend" else "Open the Terrain Legend",
+                        role = androidx.compose.ui.semantics.Role.Button
+                    ) { open = !open }
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            LegendBody(stations, extra)
+            if (open) {
+                Spacer(modifier = Modifier.height(4.dp))
+                LegendBody(stations, extra)
+            }
         }
     }
 }

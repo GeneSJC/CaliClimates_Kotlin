@@ -196,48 +196,6 @@ private fun TerrainMixCard(stations: List<MicroclimateStation>) {
     }
 }
 
-/** The Station List link, with the elevation range below it. */
-@Composable
-private fun RegionStatsCard(stations: List<MicroclimateStation>, onOpenList: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = sheetCardColor(),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "Station List \u203A",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenList() }
-                    .padding(vertical = 4.dp)
-            )
-            if (stations.isNotEmpty()) {
-                val minElev = stations.minOf { it.elevationMeters }
-                val maxElev = stations.maxOf { it.elevationMeters }
-                Column {
-                    Text(
-                        text = "${"%,d".format(minElev)}\u2013${"%,d".format(maxElev)} m",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = "elevation range",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
 // Same colors as the map legends
 private fun terrainColor(type: TerrainType): Color = when (type) {
     TerrainType.RIDGE -> Color(0xFF7C3AED)
@@ -274,7 +232,7 @@ private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
 
 /** The selected station as a half-width tile that grows into the full compact station card. */
 @Composable
-private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int) {
+private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int, regionStations: List<MicroclimateStation>) {
     HeroTile(
         fullWidthPx = fullWidthPx,
         tileColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
@@ -288,6 +246,16 @@ private fun StationHeroTile(station: MicroclimateStation, fullWidthPx: Int) {
         panel = {
             Column {
                 StationCard(station = station, isSelected = true, onSelect = {}, compact = true)
+                if (regionStations.isNotEmpty()) {
+                    val minElev = regionStations.minOf { it.elevationMeters }
+                    val maxElev = regionStations.maxOf { it.elevationMeters }
+                    Text(
+                        text = "Region elevation range: ${"%,d".format(minElev)}\u2013${"%,d".format(maxElev)} m",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 16.dp, top = 6.dp)
+                    )
+                }
                 // A clear way to fold it back
                 Text(
                     text = "Less \u25B2",
@@ -317,7 +285,7 @@ private fun RegionDetailsTile(region: CaliforniaRegion) {
             text = region.description,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 3,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
         Spacer(modifier = Modifier.height(4.dp))
@@ -499,31 +467,33 @@ private fun RegionInfoContent(
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
     Column(modifier = Modifier.padding(16.dp)) {
+        // The Station List link, above the title
+        if (hasStationData) {
+            Text(
+                text = "Station List \u203A",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenStationList() }
+                    .padding(vertical = 4.dp)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+        }
         Text(
             text = "Region Info",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(10.dp))
-        // Top row: the region tile on the left; Station List and elevation on the right
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)
-                .onSizeChanged { topRowWidthPx = it.width },
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                RegionDetailsCard(region, fullWidthPx = topRowWidthPx)
-            }
-            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                if (hasStationData) RegionStatsCard(stations, onOpenStationList)
-            }
+        // The region tile, the full width of the sheet
+        Box(modifier = Modifier.fillMaxWidth().onSizeChanged { topRowWidthPx = it.width }) {
+            RegionDetailsCard(region, fullWidthPx = topRowWidthPx)
         }
         if (stations.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
             TerrainMixCard(stations)
-            // The Terrain Legend, at the bottom
+            // The Terrain Legend, at the bottom, folded until opened
             Spacer(modifier = Modifier.height(12.dp))
             TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), extra = legendExtra)
         }
@@ -792,7 +762,7 @@ fun LandingScreen(
             ) {
                 // The station tile takes all the width Region Info does not use
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx)
+                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations)
                 }
                 Column(
                     modifier = Modifier.fillMaxHeight(),
