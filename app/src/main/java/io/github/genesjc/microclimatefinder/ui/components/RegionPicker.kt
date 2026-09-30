@@ -1,5 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.border
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
@@ -144,6 +146,9 @@ fun RegionPickerOverlay(
     val t = state.expand.value
     val density = LocalDensity.current
     val noRipple = remember { MutableInteractionSource() }
+    val lightLook = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val panelTint = if (lightLook) Color(0xFFF1E2C4) else MaterialTheme.colorScheme.surface
+    val panelOutline = if (lightLook) Color(0xFF3A2A1E).copy(alpha = 0.7f) else Color.White.copy(alpha = 0.25f)
     var origin by remember { mutableStateOf(Offset.Zero) }
     var size by remember { mutableStateOf(IntSize.Zero) }
     val containerW = size.width.toFloat()
@@ -182,13 +187,16 @@ fun RegionPickerOverlay(
                 )
                 .clip(RoundedCornerShape(lerp(10f, 24f, t).dp))
                 .background(
-                    // Solid through the title row, then fading to half-see-through toward the bottom
+                    // Solid through the title row, then fading to half see-through toward the bottom. In light
+                    // mode a warm sand, to sit with the map's parchment and pills; in dark mode the surface colour
                     Brush.verticalGradient(
-                        0f to MaterialTheme.colorScheme.surface.copy(alpha = t),
-                        0.14f to MaterialTheme.colorScheme.surface.copy(alpha = t),
-                        1f to MaterialTheme.colorScheme.surface.copy(alpha = 0.5f * t)
+                        0f to panelTint.copy(alpha = t),
+                        0.14f to panelTint.copy(alpha = t),
+                        1f to panelTint.copy(alpha = 0.5f * t)
                     )
                 )
+                // A fine dark outline, so the panel reads against whatever is behind it
+                .border(1.dp, panelOutline.copy(alpha = panelOutline.alpha * t), RoundedCornerShape(lerp(10f, 24f, t).dp))
                 // Taps inside the panel must not reach the scrim
                 .clickable(interactionSource = noRipple, indication = null) { },
             contentAlignment = Alignment.Center
