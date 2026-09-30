@@ -553,14 +553,14 @@ fun LandingScreen(
                     // Station list link, under the header (larger than the "More" link below)
                     if (dataset != null) {
                         Text(
-                            text = "Station list \u203A",
+                            text = "Station List \u203A",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .padding(top = 10.dp, start = 4.dp)
                                 .clickable(
-                                    onClickLabel = "Open the station list",
+                                    onClickLabel = "Open the Station List",
                                     role = Role.Button
                                 ) { onNavigateTo(AppScreen.STATION_LIST) }
                                 .padding(vertical = 4.dp)
