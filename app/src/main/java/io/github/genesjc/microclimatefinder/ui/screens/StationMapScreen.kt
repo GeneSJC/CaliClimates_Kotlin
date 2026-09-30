@@ -82,6 +82,7 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefin
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
+import io.github.genesjc.microclimatefinder.ui.components.MapExpandToggle
 import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
@@ -259,26 +260,13 @@ fun StationMapScreen(
                 )
             }
             // Expand / shrink toggle, under the compass in the top-left corner
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = Color.White.copy(alpha = 0.90f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+            MapExpandToggle(
+                expanded = mapExpanded,
+                onToggle = { mapExpanded = !mapExpanded },
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(start = 6.dp, top = 44.dp)
-                    .clickable(
-                        onClickLabel = if (mapExpanded) "Shrink the map" else "Expand the map",
-                        role = Role.Button
-                    ) { mapExpanded = !mapExpanded }
-            ) {
-                Text(
-                    text = if (mapExpanded) "\u2195 Shrink" else "\u2195 Expand",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF334155),
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
-                )
-            }
+            )
         }
 
     }
