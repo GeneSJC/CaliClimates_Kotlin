@@ -63,7 +63,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import io.github.genesjc.microclimatefinder.ui.components.clampPan
 import io.github.genesjc.microclimatefinder.ui.components.labelBudget
-import io.github.genesjc.microclimatefinder.ui.components.labelFade
+import io.github.genesjc.microclimatefinder.ui.components.rememberLabelFades
 import io.github.genesjc.microclimatefinder.ui.components.panForZoom
 import io.github.genesjc.microclimatefinder.ui.components.zoomDotGrowth
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
@@ -76,13 +76,13 @@ private const val CHART_PADDING_PX = 32f
 // Labels are about this tall (dp) when checking for overlaps
 private const val LABEL_HEIGHT_DP = 18f
 
-/** A label that fits at the current zoom: its top-left corner in dp and how visible it is. */
+/** A label's spot (top-left corner in dp) and whether it has room at the current zoom. */
 private data class PlacedLabel(
     val station: MicroclimateStation,
     val text: String,
     val xDp: Float,
     val yDp: Float,
-    val fade: Float
+    val hasRoom: Boolean
 )
 
 /**
@@ -396,21 +396,22 @@ private fun ElevationProfileCanvas(
         fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
         val dotGrowth = zoomDotGrowth(zoom)
 
-        // Labels that fit at this zoom: more appear as the profile spreads out, the newest fades in
+        // Which labels have room at this zoom: more as the profile spreads out. Only the target (room
+        // or no room) is decided here; each label's opacity eases toward it on its own.
         val placedLabels = run {
-            val budget = labelBudget(LANDMARK_COUNT, zoom, 5f)
+            val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
             val taken = mutableListOf(
                 listOf(0f, 0f, 46f, heightDp.value),      // zoom slider
                 listOf(45f, 45f, 215f, 92f)               // weather badge
             )
-            val out = mutableListOf<PlacedLabel>()
-            fun tryPlace(idx: Int, fade: Float, force: Boolean): Boolean {
+            // Null when the station is out of view; otherwise its label spot, marked with or without room
+            fun plan(idx: Int, allow: Boolean, force: Boolean): PlacedLabel? {
                 val station = sorted[idx]
                 val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
                 val elevRatio = station.elevationMeters / maxElevation
                 val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
                 val pinY = with(density) { viewY(paddingPx + (1f - elevRatio) * heightPx).toDp().value }
-                if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return false
+                if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
                 val text = LocalNewsRepository.getCleanCityName(station.id, station.name) +
                     " ${"%,d".format(station.elevationMeters)}m"
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
@@ -418,32 +419,42 @@ private fun ElevationProfileCanvas(
                 val left = (if (pinX - 24f + labelW > widthDp.value * 0.97f) pinX - labelW else pinX - 24f).coerceAtLeast(2f)
                 // High pins stay on the lowest height so the label stays inside the chart
                 val maxLevel = if (elevRatio > 0.8f) 0 else 2
-                for (level in 0..maxLevel) {
-                    val top = pinY - 26f - 16f * level
-                    if (top < 0f) continue
-                    val right = left + labelW
-                    val bottom = top + LABEL_HEIGHT_DP
-                    val free = taken.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
-                    if (free || force) {
-                        taken.add(listOf(left, top, right, bottom))
-                        out.add(PlacedLabel(station, text, left, top, fade))
-                        return true
+                if (allow) {
+                    for (level in 0..maxLevel) {
+                        val top = pinY - 26f - 16f * level
+                        if (top < 0f) continue
+                        val right = left + labelW
+                        val bottom = top + LABEL_HEIGHT_DP
+                        val free = taken.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
+                        if (free || force) {
+                            taken.add(listOf(left, top, right, bottom))
+                            return PlacedLabel(station, text, left, top, hasRoom = true)
+                        }
                     }
                 }
-                return false
+                return PlacedLabel(station, text, left, pinY - 26f, hasRoom = false)
             }
+            val plans = mutableListOf<PlacedLabel>()
             var shown = 0
             for (idx in rankedLandmarks) {
-                val fade = labelFade(budget, shown)
-                if (fade <= 0.02f) break
-                if (tryPlace(idx, fade, force = false)) shown++
+                val p = plan(idx, allow = shown < budget, force = false) ?: continue
+                if (p.hasRoom) shown++
+                plans.add(p)
             }
             // The selected station always keeps its label
             val selectedIdx = sorted.indexOfFirst { it.id == selectedStationId }
-            if (selectedIdx >= 0 && out.none { it.station.id == selectedStationId }) tryPlace(selectedIdx, 1f, force = true)
-            out
+            if (selectedIdx >= 0) {
+                val existing = plans.indexOfFirst { it.station.id == selectedStationId }
+                if (existing < 0 || !plans[existing].hasRoom) {
+                    plan(selectedIdx, allow = true, force = true)?.let {
+                        if (existing >= 0) plans[existing] = it else plans.add(it)
+                    }
+                }
+            }
+            plans
         }
-        val placedIds = placedLabels.map { it.station.id }.toSet()
+        val placedIds = placedLabels.filter { it.hasRoom }.map { it.station.id }.toSet()
+        val labelFades = rememberLabelFades(placedLabels.associate { it.station.id to if (it.hasRoom) 1f else 0f })
 
         // Canvas drawing the dynamic sky, slope, shaded terrain, leader lines, and nodes
         Canvas(
@@ -705,6 +716,8 @@ private fun ElevationProfileCanvas(
         placedLabels.forEach { label ->
             val station = label.station
             val isSelected = station.id == selectedStationId
+            val fade = labelFades[station.id] ?: 0f
+            if (fade <= 0.01f) return@forEach
 
             Surface(
                 shape = RoundedCornerShape(6.dp),
@@ -719,7 +732,7 @@ private fun ElevationProfileCanvas(
                 ),
                 modifier = Modifier
                     .offset(x = label.xDp.dp, y = label.yDp.dp)
-                    .alpha(label.fade)
+                    .alpha(fade)
                     .clickable { onSelectStation(station) }
             ) {
                 Text(
