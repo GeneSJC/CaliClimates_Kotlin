@@ -1088,7 +1088,7 @@ private fun CaliforniaClassicMapCanvas(
             regionLabel("Northern California", -122.2f, 40.9f)
             regionLabel("Bay Area", -122.2f, 38.45f)
             regionLabel("Central Valley", -119.6f, 36.9f)
-            regionLabel("Central Coast", -122.6f, 35.4f)
+            regionLabel("Central Coast", -121.2f, 35.4f)
             regionLabel("Los Angeles", -117.0f, 34.45f)
             regionLabel("San Diego", -116.3f, 32.95f)
             // The neighbours, quietly
