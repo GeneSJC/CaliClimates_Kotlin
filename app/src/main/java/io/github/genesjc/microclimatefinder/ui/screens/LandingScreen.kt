@@ -19,6 +19,8 @@ import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.foundation.layout.heightIn
@@ -223,20 +225,20 @@ private fun terrainShortName(type: TerrainType): String = when (type) {
 }
 
 /**
- * About the current region: its subtitle and description. "More" opens the full text as a panel
- * floating over the content below, so nothing on the page moves.
+ * About the current region, as a half-width tile. "More" grows it into a full-width panel floating
+ * over the page, so nothing on the page moves.
  */
 @Composable
-private fun RegionDetailsCard(region: CaliforniaRegion) {
+private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int) {
     var expanded by remember(region.id) { mutableStateOf(false) }
     var cardWidthPx by remember { mutableStateOf(0) }
     val density = LocalDensity.current
     val pageColor = MaterialTheme.colorScheme.background
     val cardColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
 
-    // The collapsed card keeps its place in the layout
-    // The Box is the popup's anchor: it sits exactly on the collapsed card
+    // The Box is the popup's anchor: it sits exactly on the collapsed tile
     Box {
+        // The collapsed tile keeps its place in the layout
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = cardColor,
@@ -248,11 +250,16 @@ private fun RegionDetailsCard(region: CaliforniaRegion) {
                     role = Role.Button
                 ) { expanded = true }
         ) {
-            RegionDetailsBody(region, expanded = false)
+            RegionDetailsTile(region)
         }
 
         if (expanded) {
-            // Drawn over the page at the card's position. Tapping outside or pressing Back closes it.
+            // Grows from the tile's width to the full row, from the tile's left edge.
+            // Tapping it, tapping outside, or pressing Back closes it.
+            val reveal = remember { Animatable(0f) }
+            LaunchedEffect(Unit) { reveal.animateTo(1f, tween(260, easing = FastOutSlowInEasing)) }
+            val startWidth = with(density) { cardWidthPx.toDp() }
+            val fullWidth = with(density) { fullWidthPx.toDp() }
             Popup(
                 alignment = Alignment.TopStart,
                 onDismissRequest = { expanded = false },
@@ -263,7 +270,7 @@ private fun RegionDetailsCard(region: CaliforniaRegion) {
                     color = cardColor.compositeOver(pageColor),
                     shadowElevation = 12.dp,
                     modifier = Modifier
-                        .width(with(density) { cardWidthPx.toDp() })
+                        .width(lerp(startWidth, fullWidth, reveal.value))
                         .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.8f).dp)
                         .clickable(
                             onClickLabel = "Show less about ${region.name}",
@@ -271,7 +278,12 @@ private fun RegionDetailsCard(region: CaliforniaRegion) {
                         ) { expanded = false }
                 ) {
                     Box(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        RegionDetailsBody(region, expanded = true)
+                        // Laid out at full width and revealed as the panel widens
+                        Box(modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true)) {
+                            Box(modifier = Modifier.width(fullWidth)) {
+                                RegionDetailsBody(region, expanded = true)
+                            }
+                        }
                     }
                 }
             }
@@ -279,9 +291,38 @@ private fun RegionDetailsCard(region: CaliforniaRegion) {
     }
 }
 
-/** The region card's text, collapsed (three lines) or expanded (traits and key places). */
+/** The half-width tile: title, a short summary, and the More link. */
 @Composable
-private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean) {
+private fun RegionDetailsTile(region: CaliforniaRegion) {
+    Column(modifier = Modifier.padding(12.dp)) {
+        Text(
+            text = region.title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = region.description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "More \u25BC",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+/** The expanded region panel: title, description, traits and key places. */
+@Composable
+private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true) {
     Column(modifier = Modifier.padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
@@ -359,6 +400,7 @@ fun LandingScreen(
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
     }
     val hasStationData = dataset != null
+    var topRowWidthPx by remember { mutableStateOf(0) }
     val context = LocalContext.current
     val snapshotStations = remember(dataset) {
         dataset?.let { StationCsvParser(context).loadStations(it) } ?: emptyList()
@@ -550,22 +592,6 @@ fun LandingScreen(
 
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
-                    // Station list link, under the header (larger than the "More" link below)
-                    if (dataset != null) {
-                        Text(
-                            text = "Station List \u203A",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .padding(top = 10.dp, start = 4.dp)
-                                .clickable(
-                                    onClickLabel = "Open the Station List",
-                                    role = Role.Button
-                                ) { onNavigateTo(AppScreen.STATION_LIST) }
-                                .padding(vertical = 4.dp)
-                        )
-                    }
                     // This region has no station data in this build
                     if (dataset == null) {
                         Spacer(modifier = Modifier.height(10.dp))
@@ -608,7 +634,34 @@ fun LandingScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    RegionDetailsCard(region)
+                    // Top row: the region tile on the left, the Station List link on the right
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onSizeChanged { topRowWidthPx = it.width },
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            RegionDetailsCard(region, fullWidthPx = topRowWidthPx)
+                        }
+                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            if (dataset != null) {
+                                Text(
+                                    text = "Station List \u203A",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .clickable(
+                                            onClickLabel = "Open the Station List",
+                                            role = Role.Button
+                                        ) { onNavigateTo(AppScreen.STATION_LIST) }
+                                        .padding(horizontal = 8.dp, vertical = 12.dp)
+                                )
+                            }
+                        }
+                    }
                     if (snapshotStations.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(12.dp))
                         RegionSnapshotCard(snapshotStations)

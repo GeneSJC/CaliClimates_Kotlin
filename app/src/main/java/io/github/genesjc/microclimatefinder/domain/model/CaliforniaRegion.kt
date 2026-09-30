@@ -138,7 +138,7 @@ object CaliforniaRegionalDefinitions {
     val BAY_AREA_SACRAMENTO = CaliforniaRegion(
         id = "bay_area_sacramento",
         name = "Bay Area / Sacramento",
-        title = "Bay Area & Sacramento Transect",
+        title = "Bay Area & Sacramento",
         subtitle = "Golden Gate Gap to Sierra Foothills (Active Transect)",
         minLat = 36.60,
         maxLat = 39.20,
@@ -164,7 +164,7 @@ object CaliforniaRegionalDefinitions {
     val NORTHERN_CALIFORNIA = CaliforniaRegion(
         id = "northern_california",
         name = "Northern CA",
-        title = "Far Northern California & Cascades",
+        title = "Northern California & Cascades",
         subtitle = "Redwood Temperate Rainforest to Mt. Shasta",
         minLat = 39.00,
         maxLat = 42.00,
