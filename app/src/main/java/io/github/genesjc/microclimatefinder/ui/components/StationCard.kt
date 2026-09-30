@@ -51,6 +51,7 @@ import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
+import io.github.genesjc.microclimatefinder.domain.Units
 import java.util.Locale
 
 @Composable
@@ -160,13 +161,13 @@ fun StationCard(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) } ?: "—",
+                        text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "—",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = display.tempC?.let { String.format(Locale.US, "%.1f°F", it * 9.0 / 5.0 + 32.0) }
+                        text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) }
                             ?: display.status.orEmpty(),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -514,7 +515,7 @@ fun StationCard(
 
 /**
  * The tighter card body, in three rows: the name with the temperature; Humidity, Wind and Pressure
- * with the °F value; then the terrain chip and elevation with the reading's age. About half the
+ * with the °C value; then the terrain chip and elevation with the reading's age. About half the
  * height of the full card.
  */
 @Composable
@@ -532,13 +533,13 @@ private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, 
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) } ?: "—",
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "—",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        // Row 2: Humidity, Wind and Pressure on the left; °F (or why there is no reading) on the right
+        // Row 2: Humidity, Wind and Pressure on the left; °C (or why there is no reading) on the right
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 CompactMetric("Humidity", display.humidity)
@@ -546,7 +547,7 @@ private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, 
                 CompactMetric(display.thirdLabel, display.thirdValue)
             }
             Text(
-                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", it * 9.0 / 5.0 + 32.0) }
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) }
                     ?: display.status.orEmpty(),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -615,7 +616,7 @@ private fun mockDisplay(station: MicroclimateStation): CardDisplay {
     return CardDisplay(
         tempC = r.temperatureCelsius,
         humidity = "${r.humidityPercent}%",
-        wind = String.format(Locale.US, "%.1f km/h", r.windSpeedKmh),
+        wind = String.format(Locale.US, "%.1f mph", Units.mph(r.windSpeedKmh)),
         thirdLabel = "Solar",
         thirdValue = String.format(Locale.US, "%.0f W/m²", r.solarIrradianceWm2),
         status = null
@@ -636,9 +637,9 @@ private fun liveDisplay(station: MicroclimateStation): CardDisplay {
             CardDisplay(
                 tempC = o.temperatureCelsius,
                 humidity = o.humidityPercent?.let { String.format(Locale.US, "%.0f%%", it) } ?: "—",
-                wind = o.windSpeedKmh?.let { String.format(Locale.US, "%.1f km/h", it) } ?: "—",
+                wind = o.windSpeedKmh?.let { String.format(Locale.US, "%.1f mph", Units.mph(it)) } ?: "—",
                 thirdLabel = "Pressure",
-                thirdValue = o.pressureHpa?.let { String.format(Locale.US, "%.0f hPa", it) } ?: "—",
+                thirdValue = o.pressureHpa?.let { String.format(Locale.US, "%.2f inHg", Units.inHg(it)) } ?: "—",
                 status = when {
                     age == null -> "Updated: time unknown"
                     age < 90 -> "Updated $age min ago"
