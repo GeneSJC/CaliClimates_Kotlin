@@ -1,4 +1,6 @@
 import javax.inject.Inject
+import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.TaskAction
 import org.gradle.api.flow.FlowAction
 import org.gradle.api.flow.FlowParameters
 import org.gradle.api.flow.FlowScope
@@ -89,6 +91,28 @@ val buildLabel = providers.fileContents(
     layout.projectDirectory.file("src/main/java/io/github/genesjc/microclimatefinder/BuildInfo.kt")
 ).asText.map { text ->
     Regex("LABEL = \"([^\"]+)\"").find(text)?.groupValues?.get(1) ?: "unknown"
+}
+
+// Also prints the label at the START of every build, so it shows even when the build stops part
+// way (a compile error, say) and the end-of-build line never appears.
+abstract class PrintBuildLabelAtStart : DefaultTask() {
+    @get:Input
+    abstract val label: Property<String>
+
+    @TaskAction
+    fun print() {
+        println("")
+        println("=== Build label: ${label.get()} ===")
+    }
+}
+
+val printBuildLabelAtStart = tasks.register<PrintBuildLabelAtStart>("printBuildLabel") {
+    label.set(buildLabel)
+}
+
+// Every build of the app starts with preBuild, so hang the print there
+tasks.configureEach {
+    if (name == "preBuild") dependsOn(printBuildLabelAtStart)
 }
 
 abstract class PrintBuildLabel : FlowAction<PrintBuildLabel.Params> {

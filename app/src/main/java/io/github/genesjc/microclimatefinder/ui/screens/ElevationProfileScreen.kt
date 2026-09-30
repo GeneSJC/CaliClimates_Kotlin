@@ -320,9 +320,9 @@ private data class RidgeLayer(
 )
 
 private val RIDGE_LAYERS = listOf(
-    RidgeLayer(base = 0.52, amplitude = 0.20, spread = 1.3f, follow = 0.25f, depthShade = 0.25f, alpha = 0.32f),
-    RidgeLayer(base = 0.66, amplitude = 0.19, spread = 1.8f, follow = 0.40f, depthShade = 0.35f, alpha = 0.40f),
-    RidgeLayer(base = 0.80, amplitude = 0.15, spread = 2.4f, follow = 0.55f, depthShade = 0.45f, alpha = 0.50f)
+    RidgeLayer(base = 0.52f, amplitude = 0.20f, spread = 1.3f, follow = 0.25f, depthShade = 0.25f, alpha = 0.32f),
+    RidgeLayer(base = 0.66f, amplitude = 0.19f, spread = 1.8f, follow = 0.40f, depthShade = 0.35f, alpha = 0.40f),
+    RidgeLayer(base = 0.80f, amplitude = 0.15f, spread = 2.4f, follow = 0.55f, depthShade = 0.45f, alpha = 0.50f)
 )
 
 /** A ridgeline's height from 0 to 1 at position [t]; a fixed pattern for a given region and layer. */
