@@ -118,7 +118,6 @@ fun StationMapScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .verticalScroll(rememberScrollState())
     ) {
         // App Bar
         Row(
@@ -160,39 +159,7 @@ fun StationMapScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Interactive Spatial Map Canvas Container
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-        ) {
-            SpatialMapCanvas(
-                stations = stations,
-                hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
-                selectedStationId = selectedStationId,
-                pinScale = pinScale,
-                onSelectStation = { selectedStationId = it.id }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        PinSizeSlider(value = pinScale, onValueChange = { pinScale = it })
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Terrain legend: one line until opened, then this region's terrain types with counts
-        TerrainLegend(
-            stations = stations,
-            showRelief = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Selected station card (the Station Inspector)
-
+        // 1. The selected station (the Station Inspector)
         if (selectedStation != null) {
             StationCard(
                 station = selectedStation,
@@ -215,6 +182,37 @@ fun StationMapScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // 2. Terrain legend: one line until opened, then this region's terrain types with counts
+        TerrainLegend(
+            stations = stations,
+            showRelief = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // 3. The map with its dot-size slider fills the rest of the screen
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            SpatialMapCanvas(
+                stations = stations,
+                hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
+                selectedStationId = selectedStationId,
+                pinScale = pinScale,
+                onSelectStation = { selectedStationId = it.id }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        PinSizeSlider(value = pinScale, onValueChange = { pinScale = it })
     }
     RegionPickerOverlay(
         state = pickerState,
