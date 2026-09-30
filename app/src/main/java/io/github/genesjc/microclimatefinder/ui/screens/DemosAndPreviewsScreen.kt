@@ -55,6 +55,12 @@ private val DEMOS_AND_PREVIEWS_ENTRIES = listOf(
         target = AppScreen.ANIMATION_PREVIEWS
     ),
     DemoEntry(
+        title = "Bay Area Transect Map",
+        description = "The original Bay Area transect: continuous 4-way pan and zoom from Sacramento to Monterey Bay, with a Local News panel and story viewer. A reference demo, kept as it was.",
+        iconChar = "🗺️",
+        target = AppScreen.UNIFIED_DRAGGABLE_MAP
+    ),
+    DemoEntry(
         title = "California Regional Sections",
         description = "Interactive map of CA's 6 macro climatic sections: San Diego, Los Angeles Area, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
         iconChar = "🧭",
@@ -65,8 +71,8 @@ private val DEMOS_AND_PREVIEWS_ENTRIES = listOf(
 /**
  * Demos & Previews Hub Screen
  * Two-column grid housing the component/feature demo cards moved off the Landing list:
- * Station Card Preview, Draggable Topo Map, Animation Previews, and California Regional Sections
- * (also reachable from the California button on Home).
+ * Station Card Preview, Draggable Topo Map, Animation Previews, the Bay Area Transect Map, and
+ * California Regional Sections.
  */
 @Composable
 fun DemosAndPreviewsScreen(

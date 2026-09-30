@@ -78,8 +78,6 @@ import androidx.compose.ui.unit.toSize
 import io.github.genesjc.microclimatefinder.BuildInfo
 import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
-import io.github.genesjc.microclimatefinder.data.local.TransectConfig
-import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
@@ -95,11 +93,7 @@ private data class LandingEntry(
     val target: AppScreen
 )
 
-private fun landingEntries(
-    dataset: StationDatasetInfo?,
-    transect: TransectConfig?,
-    transectStationCount: Int
-): List<LandingEntry> {
+private fun landingEntries(dataset: StationDatasetInfo?): List<LandingEntry> {
     val entries = mutableListOf<LandingEntry>()
     if (dataset != null) {
         val kind = dataset.subtitle.substringBefore(" • ")
@@ -121,14 +115,6 @@ private fun landingEntries(
             iconChar = "⛰️",
             target = AppScreen.ELEVATION_PROFILE
         )
-        if (transect != null) {
-            entries += LandingEntry(
-                title = "${transect.displayName} Transect Map",
-                description = "Continuous 4-way pan & zoom from ${transect.routeLabel} across $transectStationCount regional stations with expandable Local News panel & story viewer.",
-                iconChar = "🗺️",
-                target = AppScreen.UNIFIED_DRAGGABLE_MAP
-            )
-        }
     }
     return entries
 }
@@ -330,11 +316,7 @@ fun LandingScreen(
         dataset?.let { StationCsvParser(context).loadStations(it) } ?: emptyList()
     }
     val entries = remember(region.id, dataset) {
-        landingEntries(
-            dataset,
-            TransectConfigs.forRegion(region.id),
-            region.activeStationCount
-        )
+        landingEntries(dataset)
     }
     val appName = stringResource(R.string.app_name)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
