@@ -76,6 +76,7 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefin
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
+import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
@@ -182,17 +183,11 @@ fun StationMapScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Legend Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            LegendItem(color = Color(0xFF7C3AED), label = "Ridge (>500m)")
-            LegendItem(color = Color(0xFFEA580C), label = "Valley Basin")
-            LegendItem(color = Color(0xFF0284C7), label = "Delta / Coast")
-            LegendItem(color = Color(0xFF166534), label = "Mountain Relief")
-        }
+        // Terrain legend: one line until opened, then this region's terrain types with counts
+        TerrainLegend(
+            stations = stations,
+            showRelief = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
