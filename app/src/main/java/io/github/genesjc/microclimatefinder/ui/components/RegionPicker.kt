@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -107,6 +108,8 @@ fun RegionPickerButton(
             CaliforniaOutlineIcon(
                 fill = content.copy(alpha = 0.18f),
                 stroke = content,
+                regionColors = regionPickerColors(),
+                selectedRegionId = selectedRegionId,
                 modifier = Modifier
                     .size(28.dp)
                     .onGloballyPositioned { state.buttonBounds = Rect(it.positionInRoot(), it.size.toSize()) }
@@ -114,6 +117,12 @@ fun RegionPickerButton(
             )
         }
     }
+}
+
+/** The regions' colours, the same ones the picker's map uses. */
+@Composable
+private fun regionPickerColors(): Map<String, Color> = remember {
+    CaliforniaRegionalDefinitions.ALL_REGIONS.associate { it.id to Color(android.graphics.Color.parseColor(it.colorHex)) }
 }
 
 /**
@@ -176,6 +185,8 @@ fun RegionPickerOverlay(
             CaliforniaOutlineIcon(
                 fill = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
                 stroke = MaterialTheme.colorScheme.primary,
+                regionColors = regionPickerColors(),
+                selectedRegionId = selectedRegionId,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(lerp(0f, 32f, t).dp)
