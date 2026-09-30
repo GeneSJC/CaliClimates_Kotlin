@@ -446,7 +446,7 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
 private const val SHEET_OPEN_MS = 420
 private const val SHEET_CLOSE_MS = 320
 /** How much the page behind the sheet is blurred (Android 12 and up), and dimmed (0 = not at all). */
-private val SHEET_BLUR = 3.dp
+private val SHEET_BLUR = 1.dp
 private const val SHEET_DIM = 0f
 
 /** The sheet is solid at its top and fades toward its bottom, where the start screen shows through. */
