@@ -75,9 +75,11 @@ fun TerrainLegend(
     val density = LocalDensity.current
     val panelShape = RoundedCornerShape(14.dp)
     val padX = 12.dp
-    val padY = 6.dp
+    // No padding above the header, so the panel starts where the header does and keeps the page's
+    // gap to the card above it; a little below the content
+    val padBottom = 6.dp
     val padXPx = with(density) { padX.roundToPx() }
-    val padYPx = with(density) { padY.roundToPx() }
+    val padBottomPx = with(density) { padBottom.roundToPx() }
 
     fun openPanel() {
         open = true
@@ -102,7 +104,7 @@ fun TerrainLegend(
             val p = reveal.value
             Popup(
                 alignment = Alignment.TopStart,
-                offset = IntOffset(-padXPx, -padYPx),
+                offset = IntOffset(-padXPx, 0),
                 onDismissRequest = { closePanel() },
                 properties = PopupProperties(focusable = true)
             ) {
@@ -111,7 +113,7 @@ fun TerrainLegend(
                         .width(with(density) { widthPx.toDp() } + padX * 2)
                         .layout { measurable, constraints ->
                             val placeable = measurable.measure(constraints)
-                            val closedHeight = headerHeightPx + padYPx * 2
+                            val closedHeight = headerHeightPx + padBottomPx
                             val h = (closedHeight + (placeable.height - closedHeight) * p).toInt()
                             layout(placeable.width, h) { placeable.place(0, 0) }
                         }
@@ -120,7 +122,7 @@ fun TerrainLegend(
                         .background(MaterialTheme.colorScheme.surface)
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, panelShape)
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = padX, vertical = padY)) {
+                    Column(modifier = Modifier.padding(start = padX, end = padX, bottom = padBottom)) {
                         LegendHeader(
                             expanded = true,
                             modifier = Modifier.clickable(
