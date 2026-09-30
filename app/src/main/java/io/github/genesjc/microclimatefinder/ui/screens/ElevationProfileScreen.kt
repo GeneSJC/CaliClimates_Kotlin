@@ -55,6 +55,7 @@ import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
+import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
@@ -193,35 +194,19 @@ fun ElevationProfileScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Legend Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            LegendItem(color = Color(0xFF7C3AED), label = "Ridge (>500m)")
-            LegendItem(color = Color(0xFFEA580C), label = "Valley Basin")
-            LegendItem(color = Color(0xFF0284C7), label = "Delta / Coast")
-            LegendItem(color = Color(0xFF166534), label = "Mountain Relief")
-        }
+        // Terrain legend: one line until opened, then this region's terrain types with counts
+        TerrainLegend(stations = stations)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Selected Station Inspector Card
-        Text(
-            text = "Station Inspector",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
+        // Selected station card (the Station Inspector)
 
         if (selectedStation != null) {
             StationCard(
                 station = selectedStation,
                 isSelected = true,
-                onSelect = { /* Already selected */ }
+                onSelect = { /* Already selected */ },
+                compact = true
             )
         } else {
             Surface(

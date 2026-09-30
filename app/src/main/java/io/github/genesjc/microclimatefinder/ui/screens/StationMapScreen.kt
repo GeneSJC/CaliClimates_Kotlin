@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
@@ -76,6 +77,7 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefin
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
+import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
@@ -111,13 +113,17 @@ fun StationMapScreen(
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
     val pickerState = rememberRegionPickerState()
+    // The map starts at its regular height; the toggle on the map stretches it to fill the screen
+    var mapExpanded by remember { mutableStateOf(false) }
+    val pageScroll = rememberScrollState()
 
     Box(modifier = modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .verticalScroll(rememberScrollState())
+            // Only the regular-height layout scrolls; the expanded map fills the screen exactly
+            .then(if (mapExpanded) Modifier else Modifier.verticalScroll(pageScroll))
     ) {
         // App Bar
         Row(
@@ -159,73 +165,13 @@ fun StationMapScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Interactive Spatial Map Canvas Container
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-        ) {
-            SpatialMapCanvas(
-                stations = stations,
-                hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
-                selectedStationId = selectedStationId,
-                pinScale = pinScale,
-                onSelectStation = { selectedStationId = it.id }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        PinSizeSlider(value = pinScale, onValueChange = { pinScale = it })
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Legend Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            LegendItem(color = Color(0xFF7C3AED), label = "Ridge (>500m)")
-            LegendItem(color = Color(0xFFEA580C), label = "Valley Basin")
-            LegendItem(color = Color(0xFF0284C7), label = "Delta / Coast")
-            LegendItem(color = Color(0xFF166534), label = "Mountain Relief")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Selected Station Inspector Card
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Station Inspector",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Text(
-                    text = "${stations.size} Plotted",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
+        // 1. The selected station (the Station Inspector)
         if (selectedStation != null) {
             StationCard(
                 station = selectedStation,
                 isSelected = true,
-                onSelect = { /* Already selected */ }
+                onSelect = { /* Already selected */ },
+                compact = true
             )
         } else {
             Surface(
@@ -242,6 +188,62 @@ fun StationMapScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // 2. Terrain legend: one line until opened, then this region's terrain types with counts
+        TerrainLegend(
+            stations = stations,
+            showRelief = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // 3. The map with its dot-size slider: regular height, or the rest of the screen when expanded
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (mapExpanded) Modifier.weight(1f) else Modifier.height(MAP_REGULAR_HEIGHT))
+        ) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                SpatialMapCanvas(
+                    stations = stations,
+                    hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
+                    selectedStationId = selectedStationId,
+                    pinScale = pinScale,
+                    onSelectStation = { selectedStationId = it.id }
+                )
+            }
+            // Expand / shrink toggle, under the compass in the top-left corner
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = Color.White.copy(alpha = 0.90f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 6.dp, top = 44.dp)
+                    .clickable(
+                        onClickLabel = if (mapExpanded) "Shrink the map" else "Expand the map",
+                        role = Role.Button
+                    ) { mapExpanded = !mapExpanded }
+            ) {
+                Text(
+                    text = if (mapExpanded) "\u2195 Shrink" else "\u2195 Expand",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF334155),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        PinSizeSlider(value = pinScale, onValueChange = { pinScale = it })
     }
     RegionPickerOverlay(
         state = pickerState,
@@ -250,6 +252,12 @@ fun StationMapScreen(
     )
     }
 }
+
+/** The map's regular height, before it is expanded to fill the screen. */
+private val MAP_REGULAR_HEIGHT = 300.dp
+
+/** How far the map can be dragged past its edge, as a fraction of the map's size, at any zoom. */
+private const val MAP_OVERSCROLL = 0.12f
 
 /** Dots start a little larger than the base size so they are easy to see and tap. */
 private const val DEFAULT_PIN_SCALE = 1.3f
@@ -403,7 +411,7 @@ private fun SpatialMapCanvas(
     fun animateZoomTo(newZoom: Float, anchor: Offset, w: Float, h: Float) {
         zoomJob?.cancel()
         zoomJob = zoomScope.launch {
-            animateZoom(zoom, pan, newZoom, anchor, w, h) { z, p -> zoom = z; pan = p }
+            animateZoom(zoom, pan, newZoom, anchor, w, h, overscroll = MAP_OVERSCROLL) { z, p -> zoom = z; pan = p }
         }
     }
 
@@ -417,7 +425,10 @@ private fun SpatialMapCanvas(
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
-                    pan = clampPan(panForZoom(pan, zoom, newZoom, centroid, w, h) + panChange, newZoom, w, h)
+                    pan = clampPan(
+                        panForZoom(pan, zoom, newZoom, centroid, w, h, overscroll = MAP_OVERSCROLL) + panChange,
+                        newZoom, w, h, overscroll = MAP_OVERSCROLL
+                    )
                     zoom = newZoom
                 }
             }
@@ -736,12 +747,13 @@ private fun SpatialMapCanvas(
             }
         }
 
-        // Areas taken by the fixed controls (compass, topo badge, scale bar) so labels stay clear of them
+        // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
             listOf(0f, 0f, 50f, 32f),
             listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),
-            listOf(widthDp.value - 46f, 0f, widthDp.value, heightDp.value)
+            listOf(widthDp.value - 46f, 0f, widthDp.value, heightDp.value),
+            listOf(0f, 40f, 76f, 74f)  // expand / shrink toggle
         )
         fun geoX(lon: Double) = with(density) { viewX(paddingPx + ((lon - minLon) / lonSpan).toFloat() * widthPx).toDp() }
         fun geoY(lat: Double) = with(density) { viewY(paddingPx + (1f - ((lat - minLat) / latSpan).toFloat()) * heightPx).toDp() }
@@ -1004,7 +1016,7 @@ private fun SpatialMapCanvas(
             value = zoom,
             onValueChange = { newZoom ->
                 zoomJob?.cancel()
-                pan = panForZoom(pan, zoom, newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH)
+                pan = panForZoom(pan, zoom, newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH, overscroll = MAP_OVERSCROLL)
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH) },

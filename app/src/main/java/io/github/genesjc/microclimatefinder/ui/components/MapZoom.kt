@@ -64,9 +64,19 @@ fun labelBudget(base: Int, zoom: Float, perStep: Float): Float = base + (zoom - 
  * Keeps the zoomed content covering the viewport: pan can never expose an empty edge. The inset is the
  * margin around the content that stays put (content edges stop at the inset instead of the viewport edge).
  */
-fun clampPan(pan: Offset, zoom: Float, width: Float, height: Float, insetX: Float = 0f, insetY: Float = 0f): Offset {
-    val maxX = (zoom - 1f) * (width - 2f * insetX) / 2f
-    val maxY = (zoom - 1f) * (height - 2f * insetY) / 2f
+fun clampPan(
+    pan: Offset,
+    zoom: Float,
+    width: Float,
+    height: Float,
+    insetX: Float = 0f,
+    insetY: Float = 0f,
+    overscroll: Float = 0f
+): Offset {
+    // overscroll: how far past the edge the content may be dragged, as a fraction of the viewport,
+    // at every zoom (so edge content can be pulled into clear view even when fully zoomed out)
+    val maxX = (zoom - 1f) * (width - 2f * insetX) / 2f + overscroll * width
+    val maxY = (zoom - 1f) * (height - 2f * insetY) / 2f + overscroll * height
     return Offset(pan.x.coerceIn(-maxX, maxX), pan.y.coerceIn(-maxY, maxY))
 }
 
@@ -79,11 +89,12 @@ fun panForZoom(
     width: Float,
     height: Float,
     insetX: Float = 0f,
-    insetY: Float = 0f
+    insetY: Float = 0f,
+    overscroll: Float = 0f
 ): Offset {
     val center = Offset(width / 2f, height / 2f)
     val moved = anchor - center - (anchor - center - pan) * (newZoom / oldZoom)
-    return clampPan(moved, newZoom, width, height, insetX, insetY)
+    return clampPan(moved, newZoom, width, height, insetX, insetY, overscroll)
 }
 
 /**
@@ -137,12 +148,13 @@ suspend fun animateZoom(
     height: Float,
     insetX: Float = 0f,
     insetY: Float = 0f,
+    overscroll: Float = 0f,
     onFrame: (zoom: Float, pan: Offset) -> Unit
 ) {
     if (toZoom == fromZoom) return
     animate(0f, 1f, animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)) { v, _ ->
         val z = fromZoom * (toZoom / fromZoom).pow(v)
-        onFrame(z, panForZoom(fromPan, fromZoom, z, anchor, width, height, insetX, insetY))
+        onFrame(z, panForZoom(fromPan, fromZoom, z, anchor, width, height, insetX, insetY, overscroll))
     }
 }
 
