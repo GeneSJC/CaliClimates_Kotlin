@@ -539,28 +539,15 @@ private fun RegionInfoContent(
     region: CaliforniaRegion,
     hasStationData: Boolean,
     stations: List<MicroclimateStation>,
-    onOpenStationList: () -> Unit,
-    onClose: () -> Unit
+    onOpenStationList: () -> Unit
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
     Column(modifier = Modifier.padding(16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Region Info",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = "\u00BB",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .clickable(onClickLabel = "Close the region info", role = Role.Button) { onClose() }
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            )
-        }
+        Text(
+            text = "Region Info",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
         Spacer(modifier = Modifier.height(10.dp))
         // Top row: the region tile on the left; Station List and elevation on the right
         Row(
@@ -828,7 +815,7 @@ fun LandingScreen(
                     // Handle for the region info sheet, which slides in from the right
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         Text(
-                            text = "\u00AB Region Info",
+                            text = if (infoOpen) "\u2715" else "\u00AB Region Info",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -836,7 +823,10 @@ fun LandingScreen(
                                 .onGloballyPositioned {
                                     infoHandleBottomPx = it.positionInRoot().y + it.size.height
                                 }
-                                .clickable(onClickLabel = "Open the region info", role = Role.Button) { openInfo() }
+                                .clickable(
+                                    onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
+                                    role = Role.Button
+                                ) { if (infoOpen) closeInfo() else openInfo() }
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
@@ -925,8 +915,7 @@ fun LandingScreen(
                 region = region,
                 hasStationData = hasStationData,
                 stations = snapshotStations,
-                onOpenStationList = { onNavigateTo(AppScreen.STATION_LIST) },
-                onClose = closeInfo
+                onOpenStationList = { onNavigateTo(AppScreen.STATION_LIST) }
             )
         }
 
