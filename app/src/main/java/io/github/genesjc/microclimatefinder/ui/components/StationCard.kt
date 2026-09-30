@@ -515,7 +515,7 @@ fun StationCard(
 /**
  * The tighter card body: terrain and elevation centered on top, then the "Climate Station" label
  * and name on the left with the temperature on the right, the three metrics on one line, and the
- * reading's age under the last metric. About half the height of the full card.
+ * reading's age on the left, level with Pressure. About half the height of the full card.
  */
 @Composable
 private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, display: CardDisplay) {
@@ -556,48 +556,50 @@ private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, 
             Spacer(modifier = Modifier.weight(1f))
         }
         Spacer(modifier = Modifier.height(2.dp))
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            // Left: the station name with Humidity and Wind under it
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = station.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    CompactMetric("Humidity", display.humidity)
-                    CompactMetric("Wind", display.wind)
-                }
-            }
+        // Name and temperature
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = station.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
             Spacer(modifier = Modifier.width(8.dp))
-            // Right: temperature, then Pressure with the reading's age directly under it
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) } ?: "—",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = display.tempC?.let { String.format(Locale.US, "%.1f°F", it * 9.0 / 5.0 + 32.0) }
-                        ?: display.status.orEmpty(),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                CompactMetric(display.thirdLabel, display.thirdValue)
+            Text(
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) } ?: "—",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        // Humidity and Wind on the left; °F (or why there is no reading) on the right
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                CompactMetric("Humidity", display.humidity)
+                CompactMetric("Wind", display.wind)
+            }
+            Text(
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", it * 9.0 / 5.0 + 32.0) }
+                    ?: display.status.orEmpty(),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        // The reading's age on the left, level with Pressure on the right
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.weight(1f)) {
                 if (display.tempC != null && display.status != null) {
                     Text(
                         text = display.status,
                         fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
+            CompactMetric(display.thirdLabel, display.thirdValue)
         }
     }
 }
