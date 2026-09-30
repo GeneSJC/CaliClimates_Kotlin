@@ -760,7 +760,7 @@ fun LandingScreen(
             }
 
             // Row 1: the selected station as a half-width tile (it grows into the full card), and
-            // Region Info with the Terrain Legend under it, beside it
+            // the Terrain Legend and Region Info, stacked beside it
             val shown = if (dataset != null) {
                 snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
             } else null
@@ -778,12 +778,25 @@ fun LandingScreen(
                 Column(
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Handle for the region info sheet, which slides in from the right. A fixed
+                    // The Terrain Legend at the top of the column, at the right; it opens as a full-width panel over the map
+                    if (dataset != null && snapshotStations.isNotEmpty()) {
+                        TerrainLegend(
+                            stations = snapshotStations,
+                            modifier = Modifier.padding(end = 8.dp),
+                            // The dot-size slider belongs to the map, so only the Topography view has it
+                            extra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) },
+                            headerFontSize = 15.84.sp,
+                            expandedWidthPx = rowWidthPx,
+                            panelLeftPx = rowLeftPx,
+                            headerAlignment = Alignment.TopEnd
+                        )
+                    }
+                    // Region Info at the bottom of the column, level with the bottom of the station tile. The sheet slides in from the right. A fixed
                     // height, so the row does not change when the link swaps with the X
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(30.dp),
+                        modifier = Modifier.fillMaxWidth().height(26.dp),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -798,7 +811,7 @@ fun LandingScreen(
                         val handleColor = MaterialTheme.colorScheme.primary
                         if (infoOpen) {
                             // A bold X, drawn so its weight and size are exact
-                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 5.dp).size(13.dp)) {
+                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 6.5.dp).size(13.dp)) {
                                 val stroke = 2.2.dp.toPx()
                                 val inset = stroke / 2f
                                 drawLine(
@@ -824,22 +837,9 @@ fun LandingScreen(
                                 lineHeight = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = handleColor,
-                                modifier = handleModifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                modifier = handleModifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
-                    }
-                    // The Terrain Legend under it, also at the right; it opens as a full-width panel over the map
-                    if (dataset != null && snapshotStations.isNotEmpty()) {
-                        TerrainLegend(
-                            stations = snapshotStations,
-                            modifier = Modifier.padding(end = 8.dp),
-                            // The dot-size slider belongs to the map, so only the Topography view has it
-                            extra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) },
-                            headerFontSize = 15.84.sp,
-                            expandedWidthPx = rowWidthPx,
-                            panelLeftPx = rowLeftPx,
-                            headerAlignment = Alignment.TopEnd
-                        )
                     }
                 }
             }

@@ -630,6 +630,10 @@ private fun ElevationProfileCanvas(
             // made-up skyline (the same every time for a region) that drifts slower than the profile
             // when you pan and zoom, and fades toward the sky colour the farther away it is.
             val horizon = skyTheme.colors.last()
+            // The ranges keep the size and position they have in the regular-height chart, measured from
+            // the top, so expanding the chart leaves them as they are and the ground drops below them
+            // instead of stretching them
+            val ridgeH = CHART_REGULAR_HEIGHT.toPx() - padding * 2
             clipPath(skyPath) {
             RIDGE_LAYERS.forEachIndexed { layer, spec ->
                 val ridge = Path()
@@ -639,7 +643,7 @@ private fun ElevationProfileCanvas(
                 for (i in 0..steps) {
                     val bx = startX + (endX - startX) * i / steps
                     val t = (bx / size.width) * spec.spread
-                    val by = padding + h * spec.base - h * spec.amplitude * ridgeHeight(t, regionId.hashCode(), layer)
+                    val by = padding + ridgeH * spec.base - ridgeH * spec.amplitude * ridgeHeight(t, regionId.hashCode(), layer)
                     val lx = size.width / 2f + (bx - size.width / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.x * spec.follow
                     val ly = size.height / 2f + (by - size.height / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.y * spec.follow
                     if (i == 0) ridge.moveTo(lx, ly) else ridge.lineTo(lx, ly)
