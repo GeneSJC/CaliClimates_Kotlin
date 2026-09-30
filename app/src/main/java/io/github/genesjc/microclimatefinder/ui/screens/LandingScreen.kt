@@ -445,6 +445,9 @@ private const val SHEET_OPEN_MS = 420
 private const val SHEET_CLOSE_MS = 320
 private val SHEET_BLUR = 14.dp
 
+/** How opaque the sheet is: the blurred start screen shows through the rest. */
+private const val SHEET_OPACITY = 0.5f
+
 /**
  * A panel that slides in from the right edge, over the page. The page behind it is blurred (on
  * Android 12 and up) and dimmed, and the panel itself is translucent so it shows through.
@@ -482,12 +485,14 @@ private fun BoxScope.InfoSideSheet(
         }
         Surface(
             shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
-            shadowElevation = 16.dp,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = SHEET_OPACITY),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
             modifier = Modifier
-                .align(Alignment.CenterEnd)
+                .align(Alignment.TopEnd)
+                // Level with the header, and only as tall as its content
+                .padding(top = 20.dp)
                 .width(panelWidth)
-                .fillMaxHeight()
+                .heightIn(max = maxHeight - 40.dp)
                 .graphicsLayer { translationX = (1f - reveal.value) * panelWidthPx }
                 .draggable(
                     state = dragState,
