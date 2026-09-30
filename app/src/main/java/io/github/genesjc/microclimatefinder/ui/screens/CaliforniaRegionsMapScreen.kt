@@ -1110,19 +1110,6 @@ private fun CaliforniaClassicMapCanvas(
                     letterSpacing = 3.sp
                 )
             )
-
-            // Key anchor cities — warm ink-brown ring with bright core, matching the antique-map treatment
-            val cityMarkers = listOf(
-                Offset(px(-122.42f), py(37.77f)) to 4.5f, // SF Bay
-                Offset(px(-121.49f), py(38.58f)) to 3.6f, // Sacramento
-                Offset(px(-118.24f), py(34.05f)) to 4f,   // LA
-                Offset(px(-117.16f), py(32.72f)) to 4f    // San Diego
-            )
-            for ((center, radius) in cityMarkers) {
-                drawCircle(color = Color(0xFF2A1B12).copy(alpha = 0.55f), radius = radius + 1.6f, center = center)
-                drawCircle(color = Color(0xFFFFFBEB), radius = radius, center = center)
-                drawCircle(color = Color(0xFFB8860B), radius = radius * 0.45f, center = center)
-            }
         }
     }
 }
