@@ -515,11 +515,11 @@ fun StationCard(
 /**
  * The tighter card body: terrain and elevation centered on top, then the "Climate Station" label
  * and name on the left with the temperature on the right, the three metrics on one line, and the
- * reading's age underneath. About half the height of the full card.
+ * reading's age under the last metric. About half the height of the full card.
  */
 @Composable
 private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, display: CardDisplay) {
-    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+    Column(modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 5.dp)) {
         // Terrain and elevation, centered across the card
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -577,19 +577,26 @@ private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, 
                 )
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Spacer(modifier = Modifier.height(3.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
             CompactMetric("Humidity", display.humidity)
             CompactMetric("Wind", display.wind)
-            CompactMetric(display.thirdLabel, display.thirdValue)
-        }
-        if (display.tempC != null && display.status != null) {
-            Text(
-                text = display.status,
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            // The reading's age sits directly under the last metric
+            Column(horizontalAlignment = Alignment.End) {
+                CompactMetric(display.thirdLabel, display.thirdValue)
+                if (display.tempC != null && display.status != null) {
+                    Text(
+                        text = display.status,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
         }
     }
 }
