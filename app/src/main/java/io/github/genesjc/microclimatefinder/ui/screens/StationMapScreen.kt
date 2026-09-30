@@ -290,7 +290,7 @@ fun StationMapScreen(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     // Just left of the top of the zoom slider
-                    .padding(end = 50.dp, top = 46.dp)
+                    .padding(end = 50.dp, top = 56.dp)
             )
             }
         }
@@ -546,9 +546,9 @@ private fun SpatialMapCanvas(
             listOf(0f, 0f, 58f, 40f),                                   // compass
             listOf(widthDp.value - 150f, 0f, widthDp.value, 40f),       // data credit
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
-            listOf(widthDp.value - 46f, 46f, widthDp.value, heightDp.value),  // zoom slider
-            if (embedded) listOf(54f, 0f, 196f, 40f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
-            listOf(widthDp.value - 126f, 42f, widthDp.value - 46f, 74f)  // expand / shrink toggle
+            listOf(widthDp.value - 46f, 56f, widthDp.value, heightDp.value),  // zoom slider
+            if (embedded) listOf(widthDp.value - 170f, 0f, widthDp.value, 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+            listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f)  // expand / shrink toggle
         )
 
         // Which labels have room right now. Only the target (shown or hidden) is decided here; the
@@ -687,8 +687,9 @@ private fun SpatialMapCanvas(
             color = Color(0xFFF0FDF4),
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC)),
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 12.dp, top = 12.dp)
+                // Where the Topography / Elevation buttons were: left of them, after the compass
+                .align(Alignment.TopStart)
+                .padding(start = 54.dp, top = 21.dp)
         ) {
             Text(
                 text = if (terrain != null) "Terrain: USGS · NASA data" else "Base map: coast and border only",
@@ -711,7 +712,7 @@ private fun SpatialMapCanvas(
             // Its top stays under the data credit whatever the map's height; the bottom follows the map
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 46.dp, end = 4.dp, bottom = 4.dp)
+                .padding(top = 56.dp, end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
                 .fillMaxHeight()
         )

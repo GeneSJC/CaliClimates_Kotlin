@@ -943,7 +943,8 @@ fun LandingScreen(
                     MapViewSwitch(
                         selected = homeTab,
                         onSelect = onHomeTabChange,
-                        modifier = Modifier.align(Alignment.TopStart).padding(start = 54.dp, top = if (homeTab == 0) 12.dp else 21.dp)
+                        // Top right, the same place on both views, above the zoom slider
+                        modifier = Modifier.align(Alignment.TopEnd).padding(end = 12.dp, top = 21.dp)
                     )
                 }
             }
