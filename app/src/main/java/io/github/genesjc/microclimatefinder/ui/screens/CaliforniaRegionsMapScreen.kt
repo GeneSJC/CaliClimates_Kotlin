@@ -63,21 +63,28 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefin
 import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 
 /**
- * Content of the region picker overlay on Home: the selected region's name, the regional map to
- * pick another, and a Confirm button. Picking on the map only marks a pending choice; the caller
- * applies it when [onConfirm] fires.
+ * Content of the region picker overlay on Home: a title, a close button and the regional map. A pick on
+ * the map is the choice itself ([onPickRegion]); there is no Confirm button.
  */
 @Composable
 fun CaliforniaRegionPickerPanel(
     pendingRegionId: String,
     onPickRegion: (String) -> Unit,
-    onConfirm: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(16.dp)) {
-        // Just the close button: the regions are named on the map itself
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        // The title, and the close button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Pick a region",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceVariant,
@@ -102,13 +109,6 @@ fun CaliforniaRegionPickerPanel(
             // Only as tall as the state needs, so there is little empty space above and below it
             sizeModifier = Modifier.aspectRatio(1f / 1.35f)
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(
-            onClick = onConfirm,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Confirm")
-        }
     }
 }
 
@@ -1059,14 +1059,14 @@ private fun CaliforniaClassicMapCanvas(
             }
             val regionStyle = androidx.compose.ui.text.TextStyle(
                 color = ink,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.Bold,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             // A white outline under the dark letters keeps them crisp on the terrain
             val outlineStyle = regionStyle.copy(
                 color = Color.White.copy(alpha = 0.95f),
-                drawStyle = Stroke(width = 5f, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+                drawStyle = Stroke(width = 3.5f, join = androidx.compose.ui.graphics.StrokeJoin.Round)
             )
             fun regionLabel(text: String, lon: Float, lat: Float) {
                 label(text, lon, lat, outlineStyle)
@@ -1075,8 +1075,8 @@ private fun CaliforniaClassicMapCanvas(
             regionLabel("Northern\nCalifornia", -122.3f, 40.9f)
             regionLabel("Bay Area", -122.2f, 38.45f)
             regionLabel("Central\nValley", -119.6f, 36.9f)
-            regionLabel("Central\nCoast", -122.8f, 35.4f)
-            regionLabel("Los Angeles", -117.6f, 34.45f)
+            regionLabel("Central\nCoast", -122.2f, 35.4f)
+            regionLabel("Los Angeles", -117.0f, 34.45f)
             regionLabel("San Diego", -116.3f, 32.95f)
             // The neighbours, quietly
             val neighbourStyle = androidx.compose.ui.text.TextStyle(

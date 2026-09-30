@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -128,8 +129,8 @@ private fun regionPickerColors(): Map<String, Color> = remember {
 /**
  * The region picker overlay. Place it last inside a full-screen Box so it covers the screen: the
  * California icon grows into a panel (about 75% of the height, with a 40% scrim) holding the region
- * map and a Confirm button. Picking on the map only marks a pending region; the region changes when
- * Confirm is tapped. Back, the scrim and the close button cancel.
+ * map. Tapping a region on the map picks it and closes the panel. Back, the scrim and the close button
+ * cancel.
  */
 @Composable
 fun RegionPickerOverlay(
@@ -149,8 +150,8 @@ fun RegionPickerOverlay(
     val containerH = size.height.toFloat()
     val targetW = containerW * 0.92f
     // As tall as the picker's content needs (the map is 1.35 times as tall as it is wide), with a little
-    // room under the Confirm button, and never more than 75% of the screen
-    val contentDp = 16f + 32f + 12f + (targetW / density.density - 32f) * 1.35f + 12f + 40f + 16f + 30f
+    // room under the map, and never more than 75% of the screen
+    val contentDp = 16f + 32f + 12f + (targetW / density.density - 32f) * 1.35f + 16f + 14f
     val targetH = minOf(containerH * 0.75f, contentDp * density.density)
     val targetX = (containerW - targetW) / 2f
     val targetY = (containerH - targetH) / 2f
@@ -180,7 +181,14 @@ fun RegionPickerOverlay(
                     height = with(density) { lerp(state.buttonBounds.height, targetH, t).toDp() }
                 )
                 .clip(RoundedCornerShape(lerp(10f, 24f, t).dp))
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f * t))
+                .background(
+                    // Solid through the title row, then fading to half-see-through toward the bottom
+                    Brush.verticalGradient(
+                        0f to MaterialTheme.colorScheme.surface.copy(alpha = t),
+                        0.14f to MaterialTheme.colorScheme.surface.copy(alpha = t),
+                        1f to MaterialTheme.colorScheme.surface.copy(alpha = 0.5f * t)
+                    )
+                )
                 // Taps inside the panel must not reach the scrim
                 .clickable(interactionSource = noRipple, indication = null) { },
             contentAlignment = Alignment.Center
@@ -198,9 +206,10 @@ fun RegionPickerOverlay(
             if (t > 0.5f) {
                 CaliforniaRegionPickerPanel(
                     pendingRegionId = state.pendingRegionId,
-                    onPickRegion = { state.pendingRegionId = it },
-                    onConfirm = {
-                        if (state.pendingRegionId != selectedRegionId) onSelectRegion(state.pendingRegionId)
+                    // A pick is the choice: no Confirm button
+                    onPickRegion = { id ->
+                        state.pendingRegionId = id
+                        if (id != selectedRegionId) onSelectRegion(id)
                         state.close()
                     },
                     onClose = { state.close() },
