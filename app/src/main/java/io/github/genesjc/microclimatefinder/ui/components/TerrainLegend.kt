@@ -49,21 +49,21 @@ fun TerrainLegend(
         Row(
             modifier = Modifier
                 .clickable(
-                    onClickLabel = if (expanded) "Hide terrain legend" else "Show terrain legend",
+                    onClickLabel = if (expanded) "Hide the Terrain Legend" else "Show the Terrain Legend",
                     role = Role.Button
                 ) { expanded = !expanded }
                 .padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (extra != null) "Terrain legend & dot size" else "Terrain legend",
-                fontSize = 11.sp,
+                text = if (extra != null) "Terrain Legend & dot size" else "Terrain Legend",
+                fontSize = 17.6.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
                 text = if (expanded) " ▴" else " ▾",
-                fontSize = 11.sp,
+                fontSize = 17.6.sp,
                 color = MaterialTheme.colorScheme.primary
             )
         }
