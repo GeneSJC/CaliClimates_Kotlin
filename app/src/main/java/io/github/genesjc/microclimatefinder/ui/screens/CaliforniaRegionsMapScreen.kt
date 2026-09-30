@@ -1057,25 +1057,38 @@ private fun CaliforniaClassicMapCanvas(
                     topLeft = Offset(px(lon) - layout.size.width / 2f, py(lat) - layout.size.height / 2f)
                 )
             }
+            // Each region's name sits on a beige pill with dark letters, so it never blends into the terrain
             val regionStyle = androidx.compose.ui.text.TextStyle(
-                color = ink,
-                fontSize = 12.5.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-            // A white outline under the dark letters keeps them crisp on the terrain
-            val outlineStyle = regionStyle.copy(
-                color = Color.White.copy(alpha = 0.95f),
-                drawStyle = Stroke(width = 3.5f, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+                color = Color(0xFF1A1208),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
             )
             fun regionLabel(text: String, lon: Float, lat: Float) {
-                label(text, lon, lat, outlineStyle)
-                label(text, lon, lat, regionStyle)
+                val layout = textMeasurer.measure(text, regionStyle)
+                val pad = 4.dp.toPx()
+                val pillW = layout.size.width + pad * 2f
+                val pillH = layout.size.height + pad * 2f
+                val left = px(lon) - pillW / 2f
+                val top = py(lat) - pillH / 2f
+                drawRoundRect(
+                    color = Color(0xFFF5EAD2).copy(alpha = 0.96f),
+                    topLeft = Offset(left, top),
+                    size = androidx.compose.ui.geometry.Size(pillW, pillH),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(pillH / 2f)
+                )
+                drawRoundRect(
+                    color = Color(0xFF8B6F3E).copy(alpha = 0.55f),
+                    topLeft = Offset(left, top),
+                    size = androidx.compose.ui.geometry.Size(pillW, pillH),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(pillH / 2f),
+                    style = Stroke(width = 1.dp.toPx())
+                )
+                drawText(layout, topLeft = Offset(left + pad, top + pad))
             }
-            regionLabel("Northern\nCalifornia", -122.3f, 40.9f)
+            regionLabel("Northern California", -122.2f, 40.9f)
             regionLabel("Bay Area", -122.2f, 38.45f)
-            regionLabel("Central\nValley", -119.6f, 36.9f)
-            regionLabel("Central\nCoast", -122.2f, 35.4f)
+            regionLabel("Central Valley", -119.6f, 36.9f)
+            regionLabel("Central Coast", -122.6f, 35.4f)
             regionLabel("Los Angeles", -117.0f, 34.45f)
             regionLabel("San Diego", -116.3f, 32.95f)
             // The neighbours, quietly
