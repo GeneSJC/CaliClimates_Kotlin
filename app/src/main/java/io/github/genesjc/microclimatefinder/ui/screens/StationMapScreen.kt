@@ -222,6 +222,9 @@ fun StationMapScreen(
     }
 }
 
+/** How far the map can be dragged past its edge, as a fraction of the map's size, at any zoom. */
+private const val MAP_OVERSCROLL = 0.12f
+
 /** Dots start a little larger than the base size so they are easy to see and tap. */
 private const val DEFAULT_PIN_SCALE = 1.3f
 
@@ -374,7 +377,7 @@ private fun SpatialMapCanvas(
     fun animateZoomTo(newZoom: Float, anchor: Offset, w: Float, h: Float) {
         zoomJob?.cancel()
         zoomJob = zoomScope.launch {
-            animateZoom(zoom, pan, newZoom, anchor, w, h) { z, p -> zoom = z; pan = p }
+            animateZoom(zoom, pan, newZoom, anchor, w, h, overscroll = MAP_OVERSCROLL) { z, p -> zoom = z; pan = p }
         }
     }
 
@@ -388,7 +391,10 @@ private fun SpatialMapCanvas(
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
-                    pan = clampPan(panForZoom(pan, zoom, newZoom, centroid, w, h) + panChange, newZoom, w, h)
+                    pan = clampPan(
+                        panForZoom(pan, zoom, newZoom, centroid, w, h, overscroll = MAP_OVERSCROLL) + panChange,
+                        newZoom, w, h, overscroll = MAP_OVERSCROLL
+                    )
                     zoom = newZoom
                 }
             }
@@ -975,7 +981,7 @@ private fun SpatialMapCanvas(
             value = zoom,
             onValueChange = { newZoom ->
                 zoomJob?.cancel()
-                pan = panForZoom(pan, zoom, newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH)
+                pan = panForZoom(pan, zoom, newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH, overscroll = MAP_OVERSCROLL)
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH) },
