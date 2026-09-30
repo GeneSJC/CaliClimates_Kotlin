@@ -308,6 +308,26 @@ private fun PinSizeSlider(
     }
 }
 
+/** A name printed on the Bay Area map (region, lake, landmark), placed only where it has room. */
+private data class MapAreaLabel(
+    val text: String,
+    val lon: Double,
+    val lat: Double,
+    val xOffsetDp: Int,
+    val fontSizeSp: Float,
+    val weight: FontWeight,
+    val letterSpacingSp: Float,
+    val color: Color
+)
+
+private val BAY_AREA_AREA_LABELS = listOf(
+    MapAreaLabel("SACRAMENTO VALLEY", -121.85, 38.95, -55, 10f, FontWeight.ExtraBold, 2f, Color(0xFF4B6349).copy(alpha = 0.38f)),
+    MapAreaLabel("SIERRA NEVADA", -120.55, 39.10, -42, 10f, FontWeight.ExtraBold, 1.5f, Color(0xFF3F5938).copy(alpha = 0.48f)),
+    MapAreaLabel("THE DELTA", -121.65, 38.05, -27, 9f, FontWeight.Bold, 1f, Color(0xFF0284C7).copy(alpha = 0.55f)),
+    MapAreaLabel("Folsom Lake", -121.10, 38.72, -25, 8f, FontWeight.Bold, 0f, Color(0xFF0369A1)),
+    MapAreaLabel("Sutter Buttes", -121.82, 39.20, -25, 8f, FontWeight.Medium, 0f, Color(0xFF4B6349).copy(alpha = 0.70f))
+)
+
 private data class RegionalMapCity(
     val name: String,
     val lat: Double,
@@ -713,75 +733,15 @@ private fun SpatialMapCanvas(
         fun geoY(lat: Double) = with(density) { viewY(paddingPx + (1f - ((lat - minLat) / latSpan).toFloat()) * heightPx).toDp() }
 
         if (hasArtwork) {
-            // 9. Overlay Cartographic Typography & Landmark Badges
-            // Regional Watermark Labels
-            Box(
-                modifier = Modifier
-                    .offset(x = geoX(-121.85) - 55.dp, y = geoY(38.95))
-            ) {
-                Text(
-                    text = "SACRAMENTO VALLEY",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 2.sp,
-                    color = Color(0xFF4B6349).copy(alpha = 0.38f)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .offset(x = geoX(-120.55) - 42.dp, y = geoY(39.10))
-            ) {
-                Text(
-                    text = "SIERRA NEVADA",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.5.sp,
-                    color = Color(0xFF3F5938).copy(alpha = 0.48f)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .offset(x = geoX(-121.65) - 27.dp, y = geoY(38.05))
-            ) {
-                Text(
-                    text = "THE DELTA",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    color = Color(0xFF0284C7).copy(alpha = 0.55f)
-                )
-            }
-
-            // Folsom Lake label
-            Box(
-                modifier = Modifier
-                    .offset(x = geoX(-121.10) - 25.dp, y = geoY(38.72))
-            ) {
-                Text(
-                    text = "Folsom Lake",
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0369A1)
-                )
-            }
-
-            // Sutter Buttes label
-            Box(
-                modifier = Modifier
-                    .offset(x = geoX(-121.82) - 25.dp, y = geoY(39.20))
-            ) {
-                Text(
-                    text = "Sutter Buttes",
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF4B6349).copy(alpha = 0.70f)
-                )
-            }
-
+            // 9. City badges first; area names (watermarks, lake, buttes) are placed after them so they
+            // never sit under a badge.
             // Interactive Regional Cities & Landmarks
+            // The capital first, then more places as the map zooms; the newest one fades in
+            val cityBudget = labelBudget(5, zoom, 2f)
+            var shownCities = 0
             for (city in REGIONAL_MAP_CITIES.sortedByDescending { it.isCapital }) {
+                val cityFade = labelFade(cityBudget, shownCities)
+                if (cityFade <= 0.02f) break
                 val ratioX = ((city.lon - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
                 val ratioY = (1f - ((city.lat - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
 
@@ -797,6 +757,7 @@ private fun SpatialMapCanvas(
                 val cityBottom = cityTop + 20f
                 if (placedRects.any { r -> cityLeft < r[2] && cityRight > r[0] && cityTop < r[3] && cityBottom > r[1] }) continue
                 placedRects.add(listOf(cityLeft, cityTop, cityRight, cityBottom))
+                shownCities++
 
                 val isSelected = city.targetStationId == selectedStationId
 
@@ -813,6 +774,7 @@ private fun SpatialMapCanvas(
                     ),
                     modifier = Modifier
                         .offset(x = xDp, y = yDp)
+                        .alpha(cityFade)
                         .clickable {
                             city.targetStationId?.let { targetId ->
                                 stations.find { it.id == targetId }?.let { onSelectStation(it) }
@@ -846,6 +808,28 @@ private fun SpatialMapCanvas(
                             )
                         }
                     }
+                }
+            }
+
+            // Area names: shown only where they do not overlap a badge or the controls
+            BAY_AREA_AREA_LABELS.forEach { label ->
+                val x = geoX(label.lon) + label.xOffsetDp.dp
+                val y = geoY(label.lat)
+                val left = x.value
+                val top = y.value
+                val right = left + label.text.length * (label.fontSizeSp * 0.6f + label.letterSpacingSp)
+                val bottom = top + label.fontSizeSp + 6f
+                val free = placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
+                if (free) {
+                    placedRects.add(listOf(left, top, right, bottom))
+                    Text(
+                        text = label.text,
+                        fontSize = label.fontSizeSp.sp,
+                        fontWeight = label.weight,
+                        letterSpacing = label.letterSpacingSp.sp,
+                        color = label.color,
+                        modifier = Modifier.offset(x = x, y = y)
+                    )
                 }
             }
         } else {
