@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,10 +35,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Slider
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.ln
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +65,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
@@ -68,11 +76,27 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefin
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
+import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
+import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
+import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
+import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
+import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
+import io.github.genesjc.microclimatefinder.ui.components.animateZoom
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import io.github.genesjc.microclimatefinder.ui.components.clampPan
+import io.github.genesjc.microclimatefinder.ui.components.labelBudget
+import io.github.genesjc.microclimatefinder.ui.components.panForZoom
+import io.github.genesjc.microclimatefinder.ui.components.rememberLabelFades
+import io.github.genesjc.microclimatefinder.ui.components.zoomDotGrowth
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
 
 @Composable
 fun StationMapScreen(
     dataset: StationDatasetInfo,
+    selectedRegionId: String,
+    onSelectRegion: (String) -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -83,12 +107,14 @@ fun StationMapScreen(
     var selectedStationId by remember {
         mutableStateOf(stations.firstOrNull()?.id)
     }
-    var pinScale by remember { mutableStateOf(1.0f) }
+    var pinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
+    val pickerState = rememberRegionPickerState()
 
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
@@ -128,18 +154,7 @@ fun StationMapScreen(
                 )
             }
 
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Text(
-                    text = "${stations.size} Plotted",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
+            RegionPickerButton(state = pickerState, selectedRegionId = selectedRegionId)
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -152,34 +167,18 @@ fun StationMapScreen(
                 .fillMaxWidth()
                 .height(300.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // Left 85%: Map Canvas
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    SpatialMapCanvas(
-                        stations = stations,
-                        hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
-                        selectedStationId = selectedStationId,
-                        pinScale = pinScale,
-                        onSelectStation = { selectedStationId = it.id }
-                    )
-                }
-
-                // Right 15%: Vertical Dot Size Slider
-                VerticalPinSizeSlider(
-                    value = pinScale,
-                    onValueChange = { pinScale = it },
-                    modifier = Modifier
-                        .width(50.dp)
-                        .fillMaxHeight()
-                )
-            }
+            SpatialMapCanvas(
+                stations = stations,
+                hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
+                selectedStationId = selectedStationId,
+                pinScale = pinScale,
+                onSelectStation = { selectedStationId = it.id }
+            )
         }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        PinSizeSlider(value = pinScale, onValueChange = { pinScale = it })
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -198,12 +197,27 @@ fun StationMapScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Selected Station Inspector Card
-        Text(
-            text = "Station Inspector",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Station Inspector",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Text(
+                    text = "${stations.size} Plotted",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -229,152 +243,104 @@ fun StationMapScreen(
             }
         }
     }
+    RegionPickerOverlay(
+        state = pickerState,
+        selectedRegionId = selectedRegionId,
+        onSelectRegion = onSelectRegion
+    )
+    }
 }
 
+/** Dots start a little larger than the base size so they are easy to see and tap. */
+private const val DEFAULT_PIN_SCALE = 1.3f
+
+/** Horizontal dot-size control under the map: small dot to large dot. */
+@OptIn(ExperimentalMaterial3Api::class) // custom slider thumb
 @Composable
-private fun VerticalPinSizeSlider(
+private fun PinSizeSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val density = LocalDensity.current
-    val currentOnValueChange by rememberUpdatedState(onValueChange)
-
-    // Widget handle: Rounded-square with width increased by 80% (32.dp width x 18.dp height)
-    val thumbShape = RoundedCornerShape(4.dp)
-    val thumbWidth = 32.dp
-    val thumbHeight = 18.dp
-
-    Surface(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
-        shape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
-        modifier = modifier
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
+        Text(
+            text = "Dot size",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.size(5.dp)
+        ) {}
+        Slider(
+            value = value,
+            onValueChange = { onValueChange((it * 10f).roundToInt() / 10f) },
+            valueRange = 1.0f..2.5f,
+            thumb = {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    shadowElevation = 2.dp,
+                    modifier = Modifier.size(20.dp)
+                ) {}
+            },
             modifier = Modifier
-                .fillMaxSize()
-                .padding(vertical = 12.dp, horizontal = 2.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Top Indicator: Large Dot icon (tap to set max 2.5x)
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(13.dp)
-                    .clickable { currentOnValueChange(2.5f) }
-            ) {}
-
-            Text(
-                text = "SIZE",
-                fontSize = 8.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            // Draggable Track Area
-            BoxWithConstraints(
-                modifier = Modifier
-                    .weight(1f)
-                    .width(36.dp)
-                    .padding(vertical = 6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                val trackHeight = maxHeight
-                val normalizedRatio = ((value - 1.0f) / 1.5f).coerceIn(0f, 1f)
-
-                val thumbHeightPx = with(density) { thumbHeight.toPx() }
-                val trackHeightPx = with(density) { trackHeight.toPx() }
-                val usableHeightPx = (trackHeightPx - thumbHeightPx).coerceAtLeast(1f)
-
-                // Track Background
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(5.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(3.dp)
-                        )
-                )
-
-                // Active Filled Track (from bottom up)
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .height(trackHeight * normalizedRatio)
-                        .width(5.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(3.dp)
-                        )
-                )
-
-                // Draggable Slider Thumb: Square with rounded corners, width increased by 80% (32.dp x 18.dp)
-                val thumbOffset = (trackHeight - thumbHeight) * (1f - normalizedRatio)
-
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = thumbOffset)
-                        .size(width = thumbWidth, height = thumbHeight)
-                        .shadow(3.dp, thumbShape)
-                        .background(MaterialTheme.colorScheme.primary, thumbShape)
-                        .border(2.dp, Color.White, thumbShape)
-                )
-
-                // Full-height Touch & Drag Area overlay covering the entire rail
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(trackHeightPx) {
-                            detectTapGestures { tapOffset ->
-                                val relativeY = (tapOffset.y - thumbHeightPx / 2f).coerceIn(0f, usableHeightPx)
-                                val ratio = 1f - (relativeY / usableHeightPx)
-                                val newScale = (1.0f + ratio * 1.5f).coerceIn(1.0f, 2.5f)
-                                currentOnValueChange((newScale * 10f).roundToInt() / 10f)
-                            }
-                        }
-                        .pointerInput(trackHeightPx) {
-                            detectVerticalDragGestures(
-                                onDragStart = { startOffset ->
-                                    val relativeY = (startOffset.y - thumbHeightPx / 2f).coerceIn(0f, usableHeightPx)
-                                    val ratio = 1f - (relativeY / usableHeightPx)
-                                    val newScale = (1.0f + ratio * 1.5f).coerceIn(1.0f, 2.5f)
-                                    currentOnValueChange((newScale * 10f).roundToInt() / 10f)
-                                },
-                                onVerticalDrag = { change, _ ->
-                                    change.consume()
-                                    val touchY = change.position.y
-                                    val relativeY = (touchY - thumbHeightPx / 2f).coerceIn(0f, usableHeightPx)
-                                    val ratio = 1f - (relativeY / usableHeightPx)
-                                    val newScale = (1.0f + ratio * 1.5f).coerceIn(1.0f, 2.5f)
-                                    currentOnValueChange((newScale * 10f).roundToInt() / 10f)
-                                }
-                            )
-                        }
-                )
-            }
-
-            // Bottom Indicator: Small Dot icon (tap to set min 1.0x)
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier
-                    .size(5.dp)
-                    .clickable { currentOnValueChange(1.0f) }
-            ) {}
-
-            Text(
-                text = "${(value * 10).toInt() / 10f}x",
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+                .weight(1f)
+                .padding(horizontal = 6.dp)
+        )
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(13.dp)
+        ) {}
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = "${(value * 10).toInt() / 10f}x",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
+
+/** A name printed on the Bay Area map (region, lake, landmark), placed only where it has room. */
+private data class MapAreaLabel(
+    val text: String,
+    val lon: Double,
+    val lat: Double,
+    val xOffsetDp: Int,
+    val fontSizeSp: Float,
+    val weight: FontWeight,
+    val letterSpacingSp: Float,
+    val color: Color
+)
+
+private val BAY_AREA_AREA_LABELS = listOf(
+    MapAreaLabel("SACRAMENTO VALLEY", -121.85, 38.95, -55, 10f, FontWeight.ExtraBold, 2f, Color(0xFF4B6349).copy(alpha = 0.38f)),
+    MapAreaLabel("SIERRA NEVADA", -120.55, 39.10, -42, 10f, FontWeight.ExtraBold, 1.5f, Color(0xFF3F5938).copy(alpha = 0.48f)),
+    MapAreaLabel("THE DELTA", -121.65, 38.05, -27, 9f, FontWeight.Bold, 1f, Color(0xFF0284C7).copy(alpha = 0.55f)),
+    MapAreaLabel("Folsom Lake", -121.10, 38.72, -25, 8f, FontWeight.Bold, 0f, Color(0xFF0369A1)),
+    MapAreaLabel("Sutter Buttes", -121.82, 39.20, -25, 8f, FontWeight.Medium, 0f, Color(0xFF4B6349).copy(alpha = 0.70f))
+)
+
+/** Where a Bay Area city badge would go (its opacity comes from the label fades). */
+private data class CityLabelPlan(val city: RegionalMapCity, val xDp: Dp, val yDp: Dp)
+
+private data class AreaLabelPlan(val label: MapAreaLabel, val xDp: Dp, val yDp: Dp)
+
+private data class StationLabelPlan(
+    val station: MicroclimateStation,
+    val city: String,
+    val elevText: String,
+    val xDp: Dp,
+    val yDp: Dp
+)
 
 private data class RegionalMapCity(
     val name: String,
@@ -425,9 +391,49 @@ private fun SpatialMapCanvas(
     val lonSpan = (maxLon - minLon)
 
     val textMeasurer = rememberTextMeasurer()
-    val landmarks = remember(stations) { pickMapLandmarks(stations) }
+    // Ranked by spread, so the first few are the most useful; more fade in as the map zooms
+    val landmarks = remember(stations) { pickMapLandmarks(stations, minOf(stations.size, MAP_LABEL_COUNT * 8)) }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    // View transform: zoom about the map centre plus a pan in pixels
+    var zoom by remember(stations) { mutableStateOf(1f) }
+    var pan by remember(stations) { mutableStateOf(Offset.Zero) }
+    // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
+    val zoomScope = rememberCoroutineScope()
+    var zoomJob by remember { mutableStateOf<Job?>(null) }
+    fun animateZoomTo(newZoom: Float, anchor: Offset, w: Float, h: Float) {
+        zoomJob?.cancel()
+        zoomJob = zoomScope.launch {
+            animateZoom(zoom, pan, newZoom, anchor, w, h) { z, p -> zoom = z; pan = p }
+        }
+    }
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .clipToBounds()
+            .pointerInput(Unit) {
+                // Pinch to zoom, drag to pan
+                detectTransformGestures { centroid, panChange, zoomChange, _ ->
+                    val w = size.width.toFloat()
+                    val h = size.height.toFloat()
+                    val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
+                    pan = clampPan(panForZoom(pan, zoom, newZoom, centroid, w, h) + panChange, newZoom, w, h)
+                    zoom = newZoom
+                }
+            }
+            .pointerInput(Unit) {
+                // Double-tap: zoom in on the spot, and back out to the full map once fully zoomed
+                detectTapGestures(onDoubleTap = { spot ->
+                    val w = size.width.toFloat()
+                    val h = size.height.toFloat()
+                    if (zoom >= MAX_MAP_ZOOM * 0.99f) {
+                        animateZoomTo(1f, Offset(w / 2f, h / 2f), w, h)
+                    } else {
+                        animateZoomTo((zoom * 2f).coerceAtMost(MAX_MAP_ZOOM), spot, w, h)
+                    }
+                })
+            }
+    ) {
         val widthDp = maxWidth
         val heightDp = maxHeight
         val density = LocalDensity.current
@@ -435,6 +441,10 @@ private fun SpatialMapCanvas(
         val paddingPx = with(density) { 20.dp.toPx() }
         val widthPx = with(density) { widthDp.toPx() } - (paddingPx * 2)
         val heightPx = with(density) { heightDp.toPx() } - (paddingPx * 2)
+        val canvasW = with(density) { widthDp.toPx() }
+        val canvasH = with(density) { heightDp.toPx() }
+        fun viewX(baseX: Float) = canvasW / 2f + (baseX - canvasW / 2f) * zoom + pan.x
+        fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
 
         Canvas(
             modifier = Modifier
@@ -444,15 +454,18 @@ private fun SpatialMapCanvas(
                         val padding = 20f
                         val w = size.width - (padding * 2)
                         val h = size.height - (padding * 2)
+                        val cx = size.width / 2f
+                        val cy = size.height / 2f
 
                         var closestStation: MicroclimateStation? = null
                         var closestDist = Float.MAX_VALUE
 
-                        val maxTouchDist = 2000f * (pinScale * pinScale).coerceAtLeast(1f)
+                        val dotScale = pinScale * zoomDotGrowth(zoom)
+                        val maxTouchDist = 2000f * (dotScale * dotScale).coerceAtLeast(1f)
 
                         stations.forEach { station ->
-                            val x = padding + ((station.longitude - minLon) / lonSpan).toFloat() * w
-                            val y = padding + (1f - ((station.latitude - minLat) / latSpan).toFloat()) * h
+                            val x = cx + (padding + ((station.longitude - minLon) / lonSpan).toFloat() * w - cx) * zoom + pan.x
+                            val y = cy + (padding + (1f - ((station.latitude - minLat) / latSpan).toFloat()) * h - cy) * zoom + pan.y
 
                             val dx = tapOffset.x - x
                             val dy = tapOffset.y - y
@@ -470,8 +483,12 @@ private fun SpatialMapCanvas(
             val w = size.width - (padding * 2)
             val h = size.height - (padding * 2)
 
-            fun mapX(lon: Double): Float = padding + ((lon - minLon) / lonSpan).toFloat() * w
-            fun mapY(lat: Double): Float = padding + (1f - ((lat - minLat) / latSpan).toFloat()) * h
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            fun mapX(lon: Double): Float =
+                cx + (padding + ((lon - minLon) / lonSpan).toFloat() * w - cx) * zoom + pan.x
+            fun mapY(lat: Double): Float =
+                cy + (padding + (1f - ((lat - minLat) / latSpan).toFloat()) * h - cy) * zoom + pan.y
 
             if (hasArtwork) {
                 // 1. Base Alluvial Sacramento Valley Floor
@@ -655,14 +672,14 @@ private fun SpatialMapCanvas(
 
                 // 7. Subtle Geographic Reference Grid
                 for (i in 1..3) {
-                    val gridY = padding + (h * i / 4f)
+                    val gridY = cy + (padding + (h * i / 4f) - cy) * zoom + pan.y
                     drawLine(
                         color = Color.DarkGray.copy(alpha = 0.08f),
                         start = Offset(padding, gridY),
                         end = Offset(size.width - padding, gridY),
                         strokeWidth = 1f
                     )
-                    val gridX = padding + (w * i / 4f)
+                    val gridX = cx + (padding + (w * i / 4f) - cx) * zoom + pan.x
                     drawLine(
                         color = Color.DarkGray.copy(alpha = 0.08f),
                         start = Offset(gridX, padding),
@@ -674,11 +691,12 @@ private fun SpatialMapCanvas(
                 drawNeutralBase(
                     minLon = minLon, maxLon = maxLon, minLat = minLat, maxLat = maxLat,
                     padding = padding, mapX = ::mapX, mapY = ::mapY,
-                    textMeasurer = textMeasurer
+                    zoom = zoom, textMeasurer = textMeasurer
                 )
             }
 
-            // 8. Station Pins with dynamic pinScale
+            // 8. Station Pins: dot-size setting times the growth from zoom
+            val dotScale = pinScale * zoomDotGrowth(zoom)
             stations.forEach { station ->
                 val x = mapX(station.longitude)
                 val y = mapY(station.latitude)
@@ -694,25 +712,25 @@ private fun SpatialMapCanvas(
                 if (isSelected) {
                     drawCircle(
                         color = pinColor.copy(alpha = 0.35f),
-                        radius = 20f * pinScale,
+                        radius = 20f * dotScale,
                         center = Offset(x, y)
                     )
                     drawCircle(
                         color = pinColor,
-                        radius = 16f * pinScale,
+                        radius = 16f * dotScale,
                         center = Offset(x, y),
-                        style = Stroke(width = 3f * pinScale)
+                        style = Stroke(width = 3f * dotScale)
                     )
                 }
 
                 drawCircle(
                     color = Color.White,
-                    radius = if (isSelected) 9f * pinScale else 7f * pinScale,
+                    radius = if (isSelected) 9f * dotScale else 7f * dotScale,
                     center = Offset(x, y)
                 )
                 drawCircle(
                     color = pinColor,
-                    radius = if (isSelected) 7f * pinScale else 5.5f * pinScale,
+                    radius = if (isSelected) 7f * dotScale else 5.5f * dotScale,
                     center = Offset(x, y)
                 )
             }
@@ -722,99 +740,97 @@ private fun SpatialMapCanvas(
         val placedRects = mutableListOf(
             listOf(0f, 0f, 50f, 32f),
             listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),
-            listOf(0f, heightDp.value - 46f, 130f, heightDp.value)
+            listOf(0f, heightDp.value - 46f, 130f, heightDp.value),
+            listOf(widthDp.value - 46f, 0f, widthDp.value, heightDp.value)
         )
-        fun geoX(lon: Double) = with(density) { (paddingPx + ((lon - minLon) / lonSpan).toFloat() * widthPx).toDp() }
-        fun geoY(lat: Double) = with(density) { (paddingPx + (1f - ((lat - minLat) / latSpan).toFloat()) * heightPx).toDp() }
+        fun geoX(lon: Double) = with(density) { viewX(paddingPx + ((lon - minLon) / lonSpan).toFloat() * widthPx).toDp() }
+        fun geoY(lat: Double) = with(density) { viewY(paddingPx + (1f - ((lat - minLat) / latSpan).toFloat()) * heightPx).toDp() }
+
+        // Which labels have room right now. Only the target (shown or hidden) is decided here; the
+        // opacity eases toward it on its own, so labels fade in and out however the zoom changed.
+        val labelTargets = mutableMapOf<String, Float>()
+        val cityPlans = mutableListOf<CityLabelPlan>()
+        val areaPlans = mutableListOf<AreaLabelPlan>()
+        val stationPlans = mutableListOf<StationLabelPlan>()
 
         if (hasArtwork) {
-            // 9. Overlay Cartographic Typography & Landmark Badges
-            // Regional Watermark Labels
-            Box(
-                modifier = Modifier
-                    .offset(x = geoX(-121.85) - 55.dp, y = geoY(38.95))
-            ) {
-                Text(
-                    text = "SACRAMENTO VALLEY",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 2.sp,
-                    color = Color(0xFF4B6349).copy(alpha = 0.38f)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .offset(x = geoX(-120.55) - 42.dp, y = geoY(39.10))
-            ) {
-                Text(
-                    text = "SIERRA NEVADA",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.5.sp,
-                    color = Color(0xFF3F5938).copy(alpha = 0.48f)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .offset(x = geoX(-121.65) - 27.dp, y = geoY(38.05))
-            ) {
-                Text(
-                    text = "THE DELTA",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    color = Color(0xFF0284C7).copy(alpha = 0.55f)
-                )
-            }
-
-            // Folsom Lake label
-            Box(
-                modifier = Modifier
-                    .offset(x = geoX(-121.10) - 25.dp, y = geoY(38.72))
-            ) {
-                Text(
-                    text = "Folsom Lake",
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0369A1)
-                )
-            }
-
-            // Sutter Buttes label
-            Box(
-                modifier = Modifier
-                    .offset(x = geoX(-121.82) - 25.dp, y = geoY(39.20))
-            ) {
-                Text(
-                    text = "Sutter Buttes",
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF4B6349).copy(alpha = 0.70f)
-                )
-            }
-
-            // Interactive Regional Cities & Landmarks
+            // City badges first; area names (watermarks, lake, buttes) are placed after them so they
+            // never sit under a badge. The capital first, then more places as the map zooms.
+            val cityBudget = labelBudget(5, zoom, 2f).toInt()
+            var shownCities = 0
             for (city in REGIONAL_MAP_CITIES.sortedByDescending { it.isCapital }) {
                 val ratioX = ((city.lon - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
                 val ratioY = (1f - ((city.lat - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
-
                 val xDp = with(density) { (paddingPx + ratioX * widthPx).toDp() } + city.xOffsetDp.dp
                 val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + city.yOffsetDp.dp
-
-                // Skip a label that would overlap one already placed (the capital is placed first)
                 val cityLabelWidth = (city.name.length + (city.elevationText?.length ?: 0) + 1) * 4.9f +
                     12f + (if (city.isCapital) 10f else 0f)
-                val cityLeft = xDp.value
-                val cityTop = yDp.value
-                val cityRight = cityLeft + cityLabelWidth
-                val cityBottom = cityTop + 20f
-                if (placedRects.any { r -> cityLeft < r[2] && cityRight > r[0] && cityTop < r[3] && cityBottom > r[1] }) continue
-                placedRects.add(listOf(cityLeft, cityTop, cityRight, cityBottom))
+                val left = xDp.value
+                val top = yDp.value
+                val right = left + cityLabelWidth
+                val bottom = top + 20f
+                val hasRoom = shownCities < cityBudget &&
+                    placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
+                if (hasRoom) {
+                    placedRects.add(listOf(left, top, right, bottom))
+                    shownCities++
+                }
+                labelTargets["c:${city.name}"] = if (hasRoom) 1f else 0f
+                cityPlans.add(CityLabelPlan(city, xDp, yDp))
+            }
+            // Area names: shown only where they do not overlap a badge or the controls
+            BAY_AREA_AREA_LABELS.forEach { label ->
+                val x = geoX(label.lon) + label.xOffsetDp.dp
+                val y = geoY(label.lat)
+                val left = x.value
+                val top = y.value
+                val right = left + label.text.length * (label.fontSizeSp * 0.6f + label.letterSpacingSp)
+                val bottom = top + label.fontSizeSp + 6f
+                val free = placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
+                if (free) placedRects.add(listOf(left, top, right, bottom))
+                labelTargets["a:${label.text}"] = if (free) 1f else 0f
+                areaPlans.add(AreaLabelPlan(label, x, y))
+            }
+        } else {
+            // Labels for stations picked from the loaded stations: more as the map zooms
+            val stationBudget = labelBudget(MAP_LABEL_COUNT, zoom, 3f).toInt()
+            var shownLabels = 0
+            for (station in landmarks) {
+                val ratioX = ((station.longitude - minLon) / lonSpan).toFloat()
+                val ratioY = (1f - ((station.latitude - minLat) / latSpan).toFloat())
+                val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
+                    .let { if (it.length > 18) it.take(17) + "\u2026" else it }
+                val elevText = "%,d".format(station.elevationMeters) + "m"
+                // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
+                val labelWidthDp = ((city.length + elevText.length + 1) * 4.9f + 12f).dp
+                val pinXDp = with(density) { viewX(paddingPx + ratioX * widthPx).toDp() }
+                val pinYDp = with(density) { viewY(paddingPx + ratioY * heightPx).toDp() }
+                // Stations panned out of view get no label
+                if (pinXDp < 0.dp || pinXDp > widthDp || pinYDp < 0.dp || pinYDp > heightDp) continue
+                val xDp = if (pinXDp + labelWidthDp > widthDp - 6.dp) pinXDp - labelWidthDp else pinXDp
+                val yDp = pinYDp + (if (pinYDp < 30.dp) 8.dp else (-16).dp)
+                val left = xDp.value
+                val top = yDp.value
+                val right = left + labelWidthDp.value
+                val bottom = top + 20f
+                val hasRoom = shownLabels < stationBudget &&
+                    placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
+                if (hasRoom) {
+                    placedRects.add(listOf(left, top, right, bottom))
+                    shownLabels++
+                }
+                labelTargets[station.id] = if (hasRoom) 1f else 0f
+                stationPlans.add(StationLabelPlan(station, city, elevText, xDp, yDp))
+            }
+        }
+        val labelFades = rememberLabelFades(labelTargets)
 
+        // Draw every label that is at least partly visible, at its current opacity
+        cityPlans.forEach { plan ->
+            val city = plan.city
+            val fade = labelFades["c:${city.name}"] ?: 0f
+            if (fade > 0.01f) {
                 val isSelected = city.targetStationId == selectedStationId
-
                 Surface(
                     shape = RoundedCornerShape(4.dp),
                     color = if (city.isCapital) {
@@ -827,7 +843,8 @@ private fun SpatialMapCanvas(
                         color = if (city.isCapital) Color(0xFFD97706) else Color.DarkGray.copy(alpha = 0.25f)
                     ),
                     modifier = Modifier
-                        .offset(x = xDp, y = yDp)
+                        .offset(x = plan.xDp, y = plan.yDp)
+                        .alpha(fade)
                         .clickable {
                             city.targetStationId?.let { targetId ->
                                 stations.find { it.id == targetId }?.let { onSelectStation(it) }
@@ -863,52 +880,47 @@ private fun SpatialMapCanvas(
                     }
                 }
             }
-        } else {
-            // Place labels picked from the loaded stations
-            var shownLabels = 0
-            for (station in landmarks) {
-                if (shownLabels >= MAP_LABEL_COUNT) break
-                val ratioX = ((station.longitude - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
-                val ratioY = (1f - ((station.latitude - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
-                val isSelected = station.id == selectedStationId
-                val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
-                    .let { if (it.length > 18) it.take(17) + "\u2026" else it }
-                val elevText = "%,d".format(station.elevationMeters) + "m"
-                // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
-                val labelWidthDp = ((city.length + elevText.length + 1) * 4.9f + 12f).dp
-                val pinXDp = with(density) { (paddingPx + ratioX * widthPx).toDp() }
-                val xDp = if (pinXDp + labelWidthDp > widthDp - 6.dp) pinXDp - labelWidthDp else pinXDp
-                val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + (if (ratioY < 0.12f) 8.dp else (-16).dp)
-
-                // Skip a label that would overlap one already placed
-                val left = xDp.value
-                val top = yDp.value
-                val right = left + labelWidthDp.value
-                val bottom = top + 20f
-                if (placedRects.any { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }) continue
-                placedRects.add(listOf(left, top, right, bottom))
-                shownLabels++
-
+        }
+        areaPlans.forEach { plan ->
+            val fade = labelFades["a:${plan.label.text}"] ?: 0f
+            if (fade > 0.01f) {
+                Text(
+                    text = plan.label.text,
+                    fontSize = plan.label.fontSizeSp.sp,
+                    fontWeight = plan.label.weight,
+                    letterSpacing = plan.label.letterSpacingSp.sp,
+                    color = plan.label.color,
+                    modifier = Modifier
+                        .offset(x = plan.xDp, y = plan.yDp)
+                        .alpha(fade)
+                )
+            }
+        }
+        stationPlans.forEach { plan ->
+            val fade = labelFades[plan.station.id] ?: 0f
+            if (fade > 0.01f) {
+                val isSelected = plan.station.id == selectedStationId
                 Surface(
                     shape = RoundedCornerShape(4.dp),
                     color = Color.White.copy(alpha = 0.88f),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color.DarkGray.copy(alpha = 0.25f)),
                     modifier = Modifier
-                        .offset(x = xDp, y = yDp)
-                        .clickable { onSelectStation(station) }
+                        .offset(x = plan.xDp, y = plan.yDp)
+                        .alpha(fade)
+                        .clickable { onSelectStation(plan.station) }
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
                     ) {
                         Text(
-                            text = city,
+                            text = plan.city,
                             fontSize = 8.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = Color(0xFF1E293B)
                         )
                         Text(
-                            text = " $elevText",
+                            text = " ${plan.elevText}",
                             fontSize = 7.sp,
                             color = Color(0xFF64748B)
                         )
@@ -941,8 +953,8 @@ private fun SpatialMapCanvas(
 
         // Map Scale Bar (Bottom-Left): a bar drawn to the map's real scale
         val midLat = (minLat + maxLat) / 2
-        val mapWidthKm = lonSpan * 111.32 * cos(midLat * PI / 180)
-        val scaleKm = listOf(5, 10, 20, 25, 50, 100, 200).lastOrNull { it <= mapWidthKm * 0.4 } ?: 5
+        val mapWidthKm = lonSpan * 111.32 * cos(midLat * PI / 180) / zoom
+        val scaleKm = listOf(1, 2, 5, 10, 20, 25, 50, 100, 200).lastOrNull { it <= mapWidthKm * 0.4 } ?: 5
         val scaleMiles = (scaleKm * 0.621371).roundToInt()
         val scaleBarDp = with(density) { (scaleKm / mapWidthKm * widthPx).toFloat().toDp() }
         Surface(
@@ -986,6 +998,23 @@ private fun SpatialMapCanvas(
                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
             )
         }
+
+        // Floating zoom slider on the right edge
+        ZoomSlider(
+            value = zoom,
+            onValueChange = { newZoom ->
+                zoomJob?.cancel()
+                pan = panForZoom(pan, zoom, newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH)
+                zoom = newZoom
+            },
+            onStep = { newZoom -> animateZoomTo(newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH) },
+            // Most of the map's height, below the top-right badge
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 4.dp, bottom = 4.dp)
+                .width(40.dp)
+                .fillMaxHeight(0.86f)
+        )
     }
 }
 
@@ -1002,6 +1031,7 @@ private fun DrawScope.drawNeutralBase(
     padding: Float,
     mapX: (Double) -> Float,
     mapY: (Double) -> Float,
+    zoom: Float,
     textMeasurer: TextMeasurer
 ) {
     val far = 5000f
@@ -1039,8 +1069,8 @@ private fun DrawScope.drawNeutralBase(
         val steps = listOf(0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0)
         return steps.firstOrNull { it / spanDegrees * lengthPx >= minGapPx } ?: steps.last()
     }
-    val lonStep = niceStep(maxLon - minLon, size.width - padding * 2, 64.dp.toPx())
-    val latStep = niceStep(maxLat - minLat, size.height - padding * 2, 44.dp.toPx())
+    val lonStep = niceStep((maxLon - minLon) / zoom, size.width - padding * 2, 64.dp.toPx())
+    val latStep = niceStep((maxLat - minLat) / zoom, size.height - padding * 2, 44.dp.toPx())
     fun degrees(value: Double): String = "%.2f".format(value).trimEnd('0').trimEnd('.')
     val labelStyle = TextStyle(fontSize = 8.sp, color = Color(0xFF64748B))
     var lon = ceil(minLon / lonStep) * lonStep

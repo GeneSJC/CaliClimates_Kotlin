@@ -4,12 +4,14 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +33,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -51,77 +55,52 @@ import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
+import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
+import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
+import io.github.genesjc.microclimatefinder.ui.components.animateZoom
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import io.github.genesjc.microclimatefinder.ui.components.clampPan
+import io.github.genesjc.microclimatefinder.ui.components.labelBudget
+import io.github.genesjc.microclimatefinder.ui.components.rememberLabelFades
+import io.github.genesjc.microclimatefinder.ui.components.panForZoom
+import io.github.genesjc.microclimatefinder.ui.components.zoomDotGrowth
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
-
-private data class LandmarkCity(
-    val id: String,
-    val displayName: String,
-    val yOffsetDp: Int = -26,
-    val xOffsetDp: Int = 0
-)
 
 private const val LANDMARK_COUNT = 6
 
-// Rough chart width on a phone, used only to keep labels inside the chart
-private const val CHART_WIDTH_DP_ESTIMATE = 300f
+// Chart margin in pixels; the Canvas and the label overlay must use the same value
+private const val CHART_PADDING_PX = 32f
+
+// Labels are about this tall (dp) when checking for overlaps
+private const val LABEL_HEIGHT_DP = 18f
+
+/** A label's spot (top-left corner in dp) and whether it has room at the current zoom. */
+private data class PlacedLabel(
+    val station: MicroclimateStation,
+    val text: String,
+    val xDp: Float,
+    val yDp: Float,
+    val hasRoom: Boolean
+)
 
 /**
- * Picks stations spread evenly by elevation and labels each with its place name and elevation.
- * Airport stations are preferred near each target because they are recognizable cities. Labels are
- * placed left to right on up to three heights, and a label is skipped when it would overlap one
- * already placed at the same height.
+ * Ranks stations for labels, most useful first: each next pick is the station farthest along the
+ * profile from those already picked, with airports (K-prefixed, recognizable cities) preferred.
  */
-private fun buildLandmarks(sorted: List<MicroclimateStation>): List<LandmarkCity> {
+private fun rankLandmarkIndexes(sorted: List<MicroclimateStation>): List<Int> {
     if (sorted.isEmpty()) return emptyList()
-    val candidateCount = minOf(LANDMARK_COUNT + 3, sorted.size)
-    val maxElev = sorted.last().elevationMeters.coerceAtLeast(1)
-    val chosen = mutableListOf<Int>()
-    for (i in 0 until candidateCount) {
-        val target = if (candidateCount == 1) 0 else ((i * (sorted.size - 1).toFloat() / (candidateCount - 1)) + 0.5f).toInt()
-        val window = (target - 2..target + 2).filter { it in sorted.indices && it !in chosen }
-        val pick = window
-            .filter { sorted[it].id.startsWith("K") }
-            .minByOrNull { kotlin.math.abs(it - target) }
-            ?: window.minByOrNull { kotlin.math.abs(it - target) }
-            ?: target
-        chosen.add(pick)
+    fun bonus(i: Int) = if (sorted[i].id.startsWith("K")) 2f else 0f
+    val chosen = mutableListOf(0)
+    while (chosen.size < minOf(sorted.size, 60)) {
+        val next = sorted.indices
+            .filter { it !in chosen }
+            .maxByOrNull { c -> chosen.minOf { kotlin.math.abs(c - it) }.toFloat() + bonus(c) }
+            ?: break
+        chosen.add(next)
     }
-
-    val placed = mutableListOf<Triple<Float, Float, Int>>() // left, right, height level
-    val result = mutableListOf<LandmarkCity>()
-    for (idx in chosen.distinct().sorted()) {
-        if (result.size >= LANDMARK_COUNT) break
-        val station = sorted[idx]
-        val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
-        val elevRatio = station.elevationMeters.toFloat() / maxElev
-        val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
-        val label = "$city ${"%,d".format(station.elevationMeters)}m"
-        // Estimated label width at 9sp; labels that would pass the chart's right edge end at the pin instead
-        val labelWidthDp = label.length * 5.4f + 10f
-        val xOffset = when {
-            ratioX * CHART_WIDTH_DP_ESTIMATE + labelWidthDp - 24f > CHART_WIDTH_DP_ESTIMATE * 0.95f ->
-                (24f - labelWidthDp).toInt()
-            ratioX < 0.12f -> 4
-            else -> 0
-        }
-        val left = ratioX * CHART_WIDTH_DP_ESTIMATE + xOffset - 24f
-        val right = left + labelWidthDp
-        // High pins stay on the lowest height so they remain inside the chart
-        val maxLevel = if (elevRatio > 0.8f) 0 else 2
-        val level = (0..maxLevel).firstOrNull { lv ->
-            placed.none { it.third == lv && left < it.second && right > it.first }
-        } ?: continue
-        placed.add(Triple(left, right, level))
-        result.add(
-            LandmarkCity(
-                id = station.id,
-                displayName = label,
-                yOffsetDp = -26 - 16 * level,
-                xOffsetDp = xOffset
-            )
-        )
-    }
-    return result
+    return chosen
 }
 
 @Composable
@@ -282,7 +261,24 @@ private fun ElevationProfileCanvas(
     // Sort stations by elevation ascending (valley 5m -> ridge 1406m)
     val sorted = remember(stations) { stations.sortedBy { it.elevationMeters } }
     val maxElevation = remember(sorted) { (sorted.maxOfOrNull { it.elevationMeters } ?: 1500).toFloat() }
-    val landmarks = remember(sorted) { buildLandmarks(sorted) }
+    // Stations ranked for labels; the first few are the ones the sky badge cycles through
+    val rankedLandmarks = remember(sorted) { rankLandmarkIndexes(sorted) }
+    val cycleIds = remember(sorted) {
+        rankedLandmarks.take(LANDMARK_COUNT).sorted().map { sorted[it].id }
+    }
+
+    // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
+    var zoom by remember(sorted) { mutableStateOf(1f) }
+    var pan by remember(sorted) { mutableStateOf(Offset.Zero) }
+    // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
+    val zoomScope = rememberCoroutineScope()
+    var zoomJob by remember { mutableStateOf<Job?>(null) }
+    fun animateZoomTo(newZoom: Float, anchor: Offset, w: Float, h: Float) {
+        zoomJob?.cancel()
+        zoomJob = zoomScope.launch {
+            animateZoom(zoom, pan, newZoom, anchor, w, h, CHART_PADDING_PX, CHART_PADDING_PX) { z, p -> zoom = z; pan = p }
+        }
+    }
 
     // Nothing selected: start on the lowest station that has a live reading, so the first view is not blank
     val currentStation = sorted.find { it.id == selectedStationId }
@@ -359,22 +355,114 @@ private fun ElevationProfileCanvas(
         }
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .clipToBounds()
+            .pointerInput(Unit) {
+                // Pinch to zoom in on the profile, drag to pan
+                detectTransformGestures { centroid, panChange, zoomChange, _ ->
+                    val w = size.width.toFloat()
+                    val h = size.height.toFloat()
+                    val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
+                    val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX)
+                    pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX)
+                    zoom = newZoom
+                }
+            }
+            .pointerInput(Unit) {
+                // Double-tap: zoom in on the spot, and back out once fully zoomed
+                detectTapGestures(onDoubleTap = { spot ->
+                    val w = size.width.toFloat()
+                    val h = size.height.toFloat()
+                    if (zoom >= MAX_MAP_ZOOM * 0.99f) {
+                        animateZoomTo(1f, Offset(w / 2f, h / 2f), w, h)
+                    } else {
+                        animateZoomTo((zoom * 2f).coerceAtMost(MAX_MAP_ZOOM), spot, w, h)
+                    }
+                })
+            }
+    ) {
         val widthDp = maxWidth
         val heightDp = maxHeight
         val density = LocalDensity.current
 
-        val paddingPx = with(density) { 32.dp.toPx() }
-        val widthPx = with(density) { widthDp.toPx() } - (paddingPx * 2)
-        val heightPx = with(density) { heightDp.toPx() } - (paddingPx * 2)
+        val paddingPx = CHART_PADDING_PX
+        val canvasW = with(density) { widthDp.toPx() }
+        val canvasH = with(density) { heightDp.toPx() }
+        val widthPx = canvasW - (paddingPx * 2)
+        val heightPx = canvasH - (paddingPx * 2)
+        fun viewX(baseX: Float) = canvasW / 2f + (baseX - canvasW / 2f) * zoom + pan.x
+        fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
+        val dotGrowth = zoomDotGrowth(zoom)
+
+        // Which labels have room at this zoom: more as the profile spreads out. Only the target (room
+        // or no room) is decided here; each label's opacity eases toward it on its own.
+        val placedLabels = run {
+            val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
+            val taken = mutableListOf(
+                listOf(0f, 0f, 46f, heightDp.value),      // zoom slider
+                listOf(45f, 45f, 215f, 92f)               // weather badge
+            )
+            // Null when the station is out of view; otherwise its label spot, marked with or without room
+            fun plan(idx: Int, allow: Boolean, force: Boolean): PlacedLabel? {
+                val station = sorted[idx]
+                val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
+                val elevRatio = station.elevationMeters / maxElevation
+                val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
+                val pinY = with(density) { viewY(paddingPx + (1f - elevRatio) * heightPx).toDp().value }
+                if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
+                val text = LocalNewsRepository.getCleanCityName(station.id, station.name) +
+                    " ${"%,d".format(station.elevationMeters)}m"
+                // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
+                val labelW = text.length * 5.4f + 10f
+                val left = (if (pinX - 24f + labelW > widthDp.value * 0.97f) pinX - labelW else pinX - 24f).coerceAtLeast(2f)
+                // High pins stay on the lowest height so the label stays inside the chart
+                val maxLevel = if (elevRatio > 0.8f) 0 else 2
+                if (allow) {
+                    for (level in 0..maxLevel) {
+                        val top = pinY - 26f - 16f * level
+                        if (top < 0f) continue
+                        val right = left + labelW
+                        val bottom = top + LABEL_HEIGHT_DP
+                        val free = taken.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
+                        if (free || force) {
+                            taken.add(listOf(left, top, right, bottom))
+                            return PlacedLabel(station, text, left, top, hasRoom = true)
+                        }
+                    }
+                }
+                return PlacedLabel(station, text, left, pinY - 26f, hasRoom = false)
+            }
+            val plans = mutableListOf<PlacedLabel>()
+            var shown = 0
+            for (idx in rankedLandmarks) {
+                val p = plan(idx, allow = shown < budget, force = false) ?: continue
+                if (p.hasRoom) shown++
+                plans.add(p)
+            }
+            // The selected station always keeps its label
+            val selectedIdx = sorted.indexOfFirst { it.id == selectedStationId }
+            if (selectedIdx >= 0) {
+                val existing = plans.indexOfFirst { it.station.id == selectedStationId }
+                if (existing < 0 || !plans[existing].hasRoom) {
+                    plan(selectedIdx, allow = true, force = true)?.let {
+                        if (existing >= 0) plans[existing] = it else plans.add(it)
+                    }
+                }
+            }
+            plans
+        }
+        val placedIds = placedLabels.filter { it.hasRoom }.map { it.station.id }.toSet()
+        val labelFades = rememberLabelFades(placedLabels.associate { it.station.id to if (it.hasRoom) 1f else 0f })
 
         // Canvas drawing the dynamic sky, slope, shaded terrain, leader lines, and nodes
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(sorted) {
+                .pointerInput(sorted, canvasW) {
                     detectTapGestures { tapOffset ->
-                        val padding = 32f
+                        val padding = CHART_PADDING_PX
                         val w = size.width - (padding * 2)
                         val h = size.height - (padding * 2)
 
@@ -382,9 +470,9 @@ private fun ElevationProfileCanvas(
                         var closestDist = Float.MAX_VALUE
 
                         sorted.forEachIndexed { index, station ->
-                            val x = padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w
+                            val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                             val elevRatio = station.elevationMeters / maxElevation
-                            val y = padding + (1f - elevRatio) * h
+                            val y = viewY(padding + (1f - elevRatio) * h)
 
                             val dx = tapOffset.x - x
                             val dy = tapOffset.y - y
@@ -398,21 +486,21 @@ private fun ElevationProfileCanvas(
                     }
                 }
         ) {
-            val padding = 32f
+            val padding = CHART_PADDING_PX
             val w = size.width - (padding * 2)
             val h = size.height - (padding * 2)
 
             // 1. DYNAMIC SKY GRADIENT FILL: fills the open space above & to the left of the slope
             val skyPath = Path().apply {
-                moveTo(padding, padding)
-                lineTo(size.width - padding, padding)
+                moveTo(viewX(padding), viewY(padding))
+                lineTo(viewX(size.width - padding), viewY(padding))
                 val lastElevRatio = (sorted.lastOrNull()?.elevationMeters ?: 0) / maxElevation
-                lineTo(size.width - padding, padding + (1f - lastElevRatio) * h)
+                lineTo(viewX(size.width - padding), viewY(padding + (1f - lastElevRatio) * h))
                 for (i in (sorted.size - 1) downTo 0) {
                     val st = sorted[i]
-                    val x = padding + (i.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w
+                    val x = viewX(padding + (i.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                     val elevRatio = st.elevationMeters / maxElevation
-                    val y = padding + (1f - elevRatio) * h
+                    val y = viewY(padding + (1f - elevRatio) * h)
                     lineTo(x, y)
                 }
                 close()
@@ -422,8 +510,8 @@ private fun ElevationProfileCanvas(
                 path = skyPath,
                 brush = Brush.verticalGradient(
                     colors = skyTheme.colors,
-                    startY = padding,
-                    endY = padding + h * 0.85f
+                    startY = viewY(padding),
+                    endY = viewY(padding + h * 0.85f)
                 )
             )
 
@@ -486,12 +574,12 @@ private fun ElevationProfileCanvas(
             val linePath = Path()
 
             sorted.forEachIndexed { index, station ->
-                val x = padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w
+                val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                 val elevRatio = station.elevationMeters / maxElevation
-                val y = padding + (1f - elevRatio) * h
+                val y = viewY(padding + (1f - elevRatio) * h)
 
                 if (index == 0) {
-                    terrainPath.moveTo(x, size.height - padding)
+                    terrainPath.moveTo(x, viewY(size.height - padding))
                     terrainPath.lineTo(x, y)
                     linePath.moveTo(x, y)
                 } else {
@@ -499,7 +587,7 @@ private fun ElevationProfileCanvas(
                     linePath.lineTo(x, y)
                 }
             }
-            terrainPath.lineTo(size.width - padding, size.height - padding)
+            terrainPath.lineTo(viewX(size.width - padding), viewY(size.height - padding))
             terrainPath.close()
 
             // Gradient under the elevation curve (Warm valley 28°C -> Cool Ridge 18°C)
@@ -523,12 +611,12 @@ private fun ElevationProfileCanvas(
 
             // Station points along the slope & leader lines for landmarks
             sorted.forEachIndexed { index, station ->
-                val x = padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w
+                val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                 val elevRatio = station.elevationMeters / maxElevation
-                val y = padding + (1f - elevRatio) * h
+                val y = viewY(padding + (1f - elevRatio) * h)
                 val isSelected = station.id == selectedStationId
 
-                val isLandmark = landmarks.any { it.id == station.id }
+                val isLandmark = station.id in placedIds
 
                 val pinColor = when (station.terrain) {
                     TerrainType.RIDGE -> Color(0xFF7C3AED)
@@ -550,12 +638,12 @@ private fun ElevationProfileCanvas(
                 if (isSelected) {
                     drawCircle(
                         color = skyTheme.accent.copy(alpha = 0.35f),
-                        radius = 18f,
+                        radius = 18f * dotGrowth,
                         center = Offset(x, y)
                     )
                     drawCircle(
                         color = skyTheme.accent,
-                        radius = 14f,
+                        radius = 14f * dotGrowth,
                         center = Offset(x, y),
                         style = Stroke(width = 2.5f)
                     )
@@ -563,12 +651,12 @@ private fun ElevationProfileCanvas(
 
                 drawCircle(
                     color = Color.White,
-                    radius = if (isSelected) 8f else (if (isLandmark) 6.5f else 4.5f),
+                    radius = (if (isSelected) 8f else (if (isLandmark) 6.5f else 4.5f)) * dotGrowth,
                     center = Offset(x, y)
                 )
                 drawCircle(
                     color = if (isSelected) skyTheme.accent else pinColor,
-                    radius = if (isSelected) 6f else (if (isLandmark) 4.8f else 3.2f),
+                    radius = (if (isSelected) 6f else (if (isLandmark) 4.8f else 3.2f)) * dotGrowth,
                     center = Offset(x, y)
                 )
             }
@@ -583,10 +671,10 @@ private fun ElevationProfileCanvas(
                 .offset(x = 45.dp, y = 45.dp)
                 .clickable {
                     // Tap to cycle landmarks
-                    if (landmarks.isNotEmpty()) {
-                        val currentIndex = landmarks.indexOfFirst { it.id == currentStation?.id }
-                        val nextIndex = if (currentIndex >= 0) (currentIndex + 1) % landmarks.size else 0
-                        val nextId = landmarks[nextIndex].id
+                    if (cycleIds.isNotEmpty()) {
+                        val currentIndex = cycleIds.indexOfFirst { it == currentStation?.id }
+                        val nextIndex = if (currentIndex >= 0) (currentIndex + 1) % cycleIds.size else 0
+                        val nextId = cycleIds[nextIndex]
                         sorted.find { it.id == nextId }?.let { onSelectStation(it) }
                     }
                 }
@@ -625,46 +713,65 @@ private fun ElevationProfileCanvas(
         }
 
         // Overlay Interactive City Landmark Labels along the curve
-        sorted.forEachIndexed { index, station ->
-            val landmark = landmarks.find { it.id == station.id }
-            if (landmark != null) {
-                val ratioX = index.toFloat() / (sorted.size - 1).coerceAtLeast(1)
-                val elevRatio = station.elevationMeters / maxElevation
+        placedLabels.forEach { label ->
+            val station = label.station
+            val isSelected = station.id == selectedStationId
+            val fade = labelFades[station.id] ?: 0f
+            if (fade <= 0.01f) return@forEach
 
-                val xDp = with(density) {
-                    (paddingPx + ratioX * widthPx).toDp()
-                } + landmark.xOffsetDp.dp
-
-                val yDp = with(density) {
-                    (paddingPx + (1f - elevRatio) * heightPx).toDp()
-                } + landmark.yOffsetDp.dp
-
-                val isSelected = station.id == selectedStationId
-
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
-                    },
-                    border = BorderStroke(
-                        width = 1.dp,
-                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                    ),
-                    modifier = Modifier
-                        .offset(x = xDp - 24.dp, y = yDp)
-                        .clickable { onSelectStation(station) }
-                ) {
-                    Text(
-                        text = landmark.displayName,
-                        fontSize = 9.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                    )
-                }
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+                },
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                ),
+                modifier = Modifier
+                    .offset(x = label.xDp.dp, y = label.yDp.dp)
+                    .alpha(fade)
+                    .clickable { onSelectStation(station) }
+            ) {
+                Text(
+                    text = label.text,
+                    fontSize = 9.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
             }
         }
+
+        // Floating zoom slider on the left edge (the steep ridge is on the right)
+        fun nearestLinePoint(): Offset {
+            val middle = Offset(canvasW / 2f, canvasH / 2f)
+            return sorted.indices
+                .map { i ->
+                    val elevRatio = sorted[i].elevationMeters / maxElevation
+                    Offset(
+                        viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
+                        viewY(paddingPx + (1f - elevRatio) * heightPx)
+                    )
+                }
+                .minByOrNull { (it - middle).getDistance() } ?: middle
+        }
+        ZoomSlider(
+            value = zoom,
+            onValueChange = { newZoom ->
+                // Zoom about the point on the line nearest the middle of the view, not the (often empty) middle itself
+                zoomJob?.cancel()
+                pan = panForZoom(pan, zoom, newZoom, nearestLinePoint(), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX)
+                zoom = newZoom
+            },
+            onStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) },
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 4.dp)
+                .width(40.dp)
+                .fillMaxHeight(0.9f)
+        )
     }
 }

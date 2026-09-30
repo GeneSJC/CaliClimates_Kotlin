@@ -5,11 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
+import io.github.genesjc.microclimatefinder.data.local.RegionPreferences
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
@@ -34,6 +32,7 @@ import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.ElevationProfileScreen
 import io.github.genesjc.microclimatefinder.ui.screens.FixedCloudSplashScreen
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
+import io.github.genesjc.microclimatefinder.ui.screens.RegionOption
 import io.github.genesjc.microclimatefinder.ui.screens.MovingCloudsSplashScreen
 import io.github.genesjc.microclimatefinder.ui.screens.NewsStoryViewerScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationCardPreviewScreen
@@ -67,16 +66,27 @@ fun AppNavigation() {
     var selectedNewsCity by remember { mutableStateOf("") }
     // Where Back returns to from Regional Sections (Home icon or Demos & Previews)
     var regionsReturnScreen by remember { mutableStateOf(AppScreen.LANDING) }
-    // App-wide CA region; the Regional Sections screen is its only writer
-    var selectedRegionId by remember { mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id) }
+    val context = LocalContext.current
+    // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
+    val regionPrefs = remember { RegionPreferences(context) }
+    var selectedRegionId by remember { mutableStateOf(regionPrefs.load()) }
 
     // Station data: the full bundled files per region, or the built-in Bay Area sample
-    val context = LocalContext.current
     val store = remember { StationDataStore(context) }
     val fullDataRegions = remember { store.fullDataRegionCount() }
-    var showLimitedDataNotice by remember { mutableStateOf(fullDataRegions < store.totalRegionCount()) }
     val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
     val defaultDataset = remember { store.defaultDataset() }
+    // Changes the app-wide region and remembers it (Home, Topo Map and Station Feed pickers use this)
+    fun pickRegion(regionId: String) {
+        selectedRegionId = regionId
+        regionPrefs.save(regionId)
+    }
+    // Rows for the quick region picker on Home: every region with its station count
+    val regionOptions = remember {
+        CaliforniaRegionalDefinitions.ALL_REGIONS.map { r ->
+            RegionOption(r.id, r.name, store.datasetFor(r.id)?.stationCount)
+        }
+    }
 
     // Fetch live readings for the region's featured stations when a region loads; switching region
     // cancels this and starts the new region's.
@@ -107,31 +117,15 @@ fun AppNavigation() {
         }
     }
 
-    if (showLimitedDataNotice) {
-        AlertDialog(
-            onDismissRequest = { showLimitedDataNotice = false },
-            title = { Text("Limited station data") },
-            text = {
-                Text(
-                    "$fullDataRegions of ${store.totalRegionCount()} regions have full station lists in " +
-                        "this build. The rest show no stations, and Bay Area / Sacramento shows a " +
-                        "small built-in sample. Readings for the stations that are shown are live " +
-                        "from the National Weather Service.\n\n" +
-                        "To load all station lists, add the station files (stations_<regionId>.csv) to " +
-                        "app/src/debug/assets and rebuild."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showLimitedDataNotice = false }) { Text("OK") }
-            }
-        )
-    }
-
     when (currentScreen) {
         AppScreen.LANDING -> {
             LandingScreen(
                 selectedRegionId = selectedRegionId,
                 dataset = regionDataset,
+                fullDataRegions = fullDataRegions,
+                totalRegions = store.totalRegionCount(),
+                regionOptions = regionOptions,
+                onSelectRegion = { pickRegion(it) },
                 onNavigateTo = { targetScreen ->
                     if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.LANDING
                     currentScreen = targetScreen
@@ -159,6 +153,8 @@ fun AppNavigation() {
         AppScreen.STATION_LIST -> {
             StationListScreen(
                 dataset = regionDataset ?: defaultDataset,
+                selectedRegionId = selectedRegionId,
+                onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -167,6 +163,8 @@ fun AppNavigation() {
         AppScreen.STATION_MAP -> {
             StationMapScreen(
                 dataset = regionDataset ?: defaultDataset,
+                selectedRegionId = selectedRegionId,
+                onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 }
@@ -211,7 +209,14 @@ fun AppNavigation() {
             }
             CaliforniaRegionsMapScreen(
                 selectedRegionId = if (isDemo) demoRegionId else selectedRegionId,
-                onSelectRegion = { if (isDemo) demoRegionId = it else selectedRegionId = it },
+                onSelectRegion = {
+                    if (isDemo) {
+                        demoRegionId = it
+                    } else {
+                        selectedRegionId = it
+                        regionPrefs.save(it)
+                    }
+                },
                 onNavigateBack = {
                     currentScreen = regionsReturnScreen
                 },

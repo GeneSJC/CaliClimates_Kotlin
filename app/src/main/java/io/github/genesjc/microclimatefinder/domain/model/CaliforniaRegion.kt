@@ -150,12 +150,12 @@ object CaliforniaRegionalDefinitions {
         maxElevationMeters = 1406, // Blue Canyon
         keyCities = listOf("Monterey", "Santa Cruz", "San Francisco", "Oakland", "Berkeley", "Walnut Creek", "Stockton", "Sacramento", "Colfax", "Blue Canyon"),
         microclimateTraits = listOf(
-            "Active NOAA transect with 36 real-time recording stations",
+            "Active NOAA transect of real-time recording stations",
             "Golden Gate ocean cold-water marine surge into the Delta Breeze",
             "Diablo Range rain shadow and thermal inland transition",
             "Lapse-rate cooling up Western Sierra Nevada slope to 1406m"
         ),
-        description = "The primary baseline transect: fully unified draggable and zoomable coordinate space covering 36 stations from Pacific tidepools to alpine ridge tops.",
+        description = "The primary baseline transect: fully unified draggable and zoomable coordinate space covering stations from Pacific tidepools to alpine ridge tops.",
         status = RegionStatus.ACTIVE_TRANSECT,
         activeStationCount = 36,
         colorHex = "#0E7C86"
