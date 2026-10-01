@@ -4,7 +4,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import android.graphics.BitmapFactory
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.asImageBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import androidx.compose.ui.Modifier
@@ -26,6 +30,17 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
         animationSpec = tween(700),
         label = "backdropTint"
     )
+    // EXPERIMENT: a faint relief texture over the light backdrop, for a little depth. It is not tied to any real place
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val texture by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null) {
+        value = withContext(Dispatchers.IO) {
+            try {
+                context.assets.open("terrain/bg_relief.webp").use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -55,10 +70,24 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
                 val dotColor = (if (darkTheme) Color.White else Color(0xFF475569)).copy(alpha = if (darkTheme) 0.06f else 0.10f)
                 val step = 18.dp.toPx()
                 val dot = 1.1.dp.toPx()
+                val tex = if (darkTheme) null else texture
                 onDrawBehind {
                     drawRect(base)
                     drawRect(glowA)
                     drawRect(glowB)
+                    // The relief, multiplied in so it only shades the colour, covering the whole screen
+                    if (tex != null) {
+                        val cover = maxOf(size.width / tex.width, size.height / tex.height)
+                        val dw = (tex.width * cover).toInt()
+                        val dh = (tex.height * cover).toInt()
+                        drawImage(
+                            image = tex,
+                            dstOffset = androidx.compose.ui.unit.IntOffset(((size.width - dw) / 2f).toInt(), ((size.height - dh) / 2f).toInt()),
+                            dstSize = androidx.compose.ui.unit.IntSize(dw, dh),
+                            alpha = BACKDROP_TEXTURE_STRENGTH,
+                            blendMode = androidx.compose.ui.graphics.BlendMode.Multiply
+                        )
+                    }
                     var y = step / 2f
                     while (y < size.height) {
                         var x = step / 2f
@@ -76,12 +105,15 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
 
 private val DEFAULT_CORNER = Color(0xFFF3A583)
 
+/** How strongly the relief texture shows over the light backdrop (0 = not at all). */
+private const val BACKDROP_TEXTURE_STRENGTH = 0.65f
+
 /**
- * A soft tint of the region's picker colour for the backdrop corners: the muted earth tone, half-way to white,
+ * A soft tint of the region's picker colour for the backdrop corners: the muted earth tone, a little under half-way to white,
  * so every region has a gentle, similar lightness.
  */
 private fun regionBackdropTint(regionId: String?): Color {
     val hex = CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == regionId }?.colorHex
         ?: return DEFAULT_CORNER
-    return androidx.compose.ui.graphics.lerp(Color(android.graphics.Color.parseColor(hex)), Color.White, 0.52f)
+    return androidx.compose.ui.graphics.lerp(Color(android.graphics.Color.parseColor(hex)), Color.White, 0.44f)
 }
