@@ -2,7 +2,11 @@ package io.github.genesjc.microclimatefinder.ui.theme
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -15,7 +19,13 @@ import androidx.compose.ui.unit.dp
  * page is not one flat colour. Deep slate with an indigo glow in dark mode; in light mode a warm coral-yellow-coral wash: coral in the bottom left and top right corners, yellow across the middle.
  */
 @Composable
-fun AppBackground(darkTheme: Boolean, content: @Composable () -> Unit) {
+fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Composable () -> Unit) {
+    // In light mode the two corner colours follow the selected region, easing over when the region changes
+    val corner by animateColorAsState(
+        targetValue = regionBackdropTint(regionId),
+        animationSpec = tween(700),
+        label = "backdropTint"
+    )
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -25,20 +35,20 @@ fun AppBackground(darkTheme: Boolean, content: @Composable () -> Unit) {
                 } else {
                     Brush.linearGradient(
                         // Warm, so it stands apart from the blue widgets: the same coral in the bottom left and the
-                        // top right corners, fading to yellow across the middle
-                        listOf(Color(0xFFF3A583), Color(0xFFFFF0C2), Color(0xFFF3A583)),
+                        // top right corners (a soft tint of the selected region's colour), fading to a pale cream-yellow across the middle
+                        listOf(corner, androidx.compose.ui.graphics.lerp(corner, Color(0xFFFFF3CF), 0.8f), corner),
                         start = Offset(0f, size.height),
                         end = Offset(size.width, 0f)
                     )
                 }
                 val glowRadius = size.width * 1.0f
                 val glowA = Brush.radialGradient(
-                    listOf((if (darkTheme) Color(0xFF4F46E5) else Color(0xFFF3A583)).copy(alpha = if (darkTheme) 0.30f else 0.25f), Color.Transparent),
+                    listOf((if (darkTheme) Color(0xFF4F46E5) else corner).copy(alpha = if (darkTheme) 0.30f else 0.25f), Color.Transparent),
                     center = Offset(size.width * 0.95f, size.height * 0.20f),
                     radius = glowRadius
                 )
                 val glowB = Brush.radialGradient(
-                    listOf((if (darkTheme) Color(0xFF0EA5E9) else Color(0xFFF3A583)).copy(alpha = if (darkTheme) 0.12f else 0.25f), Color.Transparent),
+                    listOf((if (darkTheme) Color(0xFF0EA5E9) else corner).copy(alpha = if (darkTheme) 0.12f else 0.25f), Color.Transparent),
                     center = Offset(size.width * 0.05f, size.height * 0.85f),
                     radius = glowRadius
                 )
@@ -62,4 +72,20 @@ fun AppBackground(darkTheme: Boolean, content: @Composable () -> Unit) {
             },
         content = { content() }
     )
+}
+
+private val DEFAULT_CORNER = Color(0xFFF3A583)
+
+/**
+ * A soft tint of the region's picker colour for the backdrop corners: the region's hue at the same gentle
+ * strength as the original coral (a light, medium-saturation colour), so every region has the same lightness.
+ */
+private fun regionBackdropTint(regionId: String?): Color {
+    val hex = CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == regionId }?.colorHex
+        ?: return DEFAULT_CORNER
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(android.graphics.Color.parseColor(hex), hsv)
+    hsv[1] = 0.46f
+    hsv[2] = 0.95f
+    return Color(android.graphics.Color.HSVToColor(hsv))
 }

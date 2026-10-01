@@ -40,8 +40,10 @@ class MainActivity : ComponentActivity() {
             // Dark mode is the default; the menu switches it, and the choice is remembered
             val themePrefs = remember { ThemePreferences(applicationContext) }
             var darkMode by remember { mutableStateOf(themePrefs.darkMode()) }
+            // The backdrop takes a soft tint of the selected region's colour (AppNavigation reports each change)
+            var backdropRegionId by remember { mutableStateOf(RegionPreferences(applicationContext).load()) }
             MicroClimateFinderTheme(darkTheme = darkMode) {
-                AppBackground(darkTheme = darkMode) {
+                AppBackground(darkTheme = darkMode, regionId = backdropRegionId) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = Color.Transparent,
@@ -51,6 +53,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         AppNavigation(
                             darkMode = darkMode,
+                            onRegionChanged = { backdropRegionId = it },
                             onDarkModeChange = {
                                 darkMode = it
                                 themePrefs.saveDarkMode(it)
@@ -64,7 +67,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation(darkMode: Boolean, onDarkModeChange: (Boolean) -> Unit) {
+fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkModeChange: (Boolean) -> Unit) {
     var currentScreen by remember { mutableStateOf(AppScreen.LANDING) }
     // Where Back returns to from Regional Sections (Home icon or Demos & Previews)
     var regionsReturnScreen by remember { mutableStateOf(AppScreen.LANDING) }
@@ -80,6 +83,8 @@ fun AppNavigation(darkMode: Boolean, onDarkModeChange: (Boolean) -> Unit) {
     // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
     val regionPrefs = remember { RegionPreferences(context) }
     var selectedRegionId by remember { mutableStateOf(regionPrefs.load()) }
+    // Tell the backdrop which region is selected, so it can take on the region's tint
+    LaunchedEffect(selectedRegionId) { onRegionChanged(selectedRegionId) }
 
     // Station data per region: a CSV override in assets, else the region's bundled pack
     val store = remember { StationDataStore(context) }
