@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MicroClimateFinder" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.MicroClimateFinder" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- The light look is the default: a warm colour at start, close to the backdrop, instead of flashing white -->
+        <item name="android:windowBackground">#FFFFE9CF</item>
+    </style>
 </resources>

@@ -1,12 +1,17 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import io.github.genesjc.microclimatefinder.data.local.StateTerrain
+import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,6 +54,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,37 +62,32 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 
+/** How much the picker's map is stretched vertically (1 = true shape). Taller, at the cost of some skew. */
+internal const val PICKER_VERTICAL_STRETCH = 1.35f
+
 /**
- * Content of the region picker overlay on Home: the selected region's name, the regional map to
- * pick another, and a Confirm button. Picking on the map only marks a pending choice; the caller
- * applies it when [onConfirm] fires.
+ * Content of the region picker overlay on Home: a title, a close button and the regional map. A pick on
+ * the map is the choice itself ([onPickRegion]); there is no Confirm button.
  */
 @Composable
 fun CaliforniaRegionPickerPanel(
     pendingRegionId: String,
     onPickRegion: (String) -> Unit,
-    onConfirm: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val region = remember(pendingRegionId) {
-        CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == pendingRegionId }
-            ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
-    }
     Column(modifier = modifier.padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = region.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Tap the map to choose a region",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        // The title, and the close button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Pick a region",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceVariant,
@@ -108,15 +109,11 @@ fun CaliforniaRegionPickerPanel(
         CaliforniaClassicMapCanvas(
             selectedRegionId = pendingRegionId,
             onSelectRegion = onPickRegion,
-            sizeModifier = Modifier.weight(1f)
+            // Tall: the map is stretched a little vertically and fills the panel's height (the panel is sized to
+            // fit it, up to most of the screen; on a short screen the map just gets a little shorter)
+            sizeModifier = Modifier.weight(1f),
+            verticalStretch = PICKER_VERTICAL_STRETCH
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(
-            onClick = onConfirm,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Confirm")
-        }
     }
 }
 
@@ -523,8 +520,16 @@ fun CaliforniaRegionsMapScreen(
 private fun CaliforniaClassicMapCanvas(
     selectedRegionId: String,
     onSelectRegion: (String) -> Unit,
-    sizeModifier: Modifier = Modifier.height(430.dp)
+    sizeModifier: Modifier = Modifier.height(430.dp),
+    // Stretches the map vertically (1 = true shape); the picker uses a little, to be taller
+    verticalStretch: Float = 1f
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val terrain by androidx.compose.runtime.produceState<StateTerrain?>(null) {
+        value = withContext(Dispatchers.IO) { TerrainMaps.loadState(context) }
+    }
+    val tintAlpha = if (terrain != null) 0.58f else 0.72f
+    val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -542,14 +547,16 @@ private fun CaliforniaClassicMapCanvas(
                 detectTapGestures { offset ->
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
-                    val padX = w * 0.05f
-                    val padY = h * 0.05f
-                    val availW = w * 0.90f
-                    val availH = h * 0.90f
-                    val lonMin = -124.5f
-                    val lonMax = -114.1f
-                    val latMin = 32.4f
-                    val latMax = 42.1f
+                    val lonMin = -124.45f
+                    val lonMax = -114.15f
+                    val latMin = 31.9f
+                    val latMax = 43.0f
+                    // True shape: one scale for both axes (a degree of longitude is about 0.8 of a degree of latitude), centred
+                    val k = minOf(w * 0.985f / ((lonMax - lonMin) * 0.8f), h * 0.985f / ((latMax - latMin) * verticalStretch))
+                    val availW = (lonMax - lonMin) * 0.8f * k
+                    val availH = (latMax - latMin) * k * verticalStretch
+                    val padX = (w - availW) / 2f
+                    val padY = (h - availH) / 2f
 
                     fun px(lon: Float): Float = padX + ((lon - lonMin) / (lonMax - lonMin)) * availW
                     fun py(lat: Float): Float = padY + (1.0f - (lat - latMin) / (latMax - latMin)) * availH
@@ -717,14 +724,16 @@ private fun CaliforniaClassicMapCanvas(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
-            val padX = w * 0.05f
-            val padY = h * 0.05f
-            val availW = w * 0.90f
-            val availH = h * 0.90f
-            val lonMin = -124.5f
-            val lonMax = -114.1f
-            val latMin = 32.4f
-            val latMax = 42.1f
+            val lonMin = -124.45f
+            val lonMax = -114.15f
+            val latMin = 31.9f
+            val latMax = 43.0f
+            // True shape: one scale for both axes (a degree of longitude is about 0.8 of a degree of latitude), centred
+            val k = minOf(w * 0.985f / ((lonMax - lonMin) * 0.8f), h * 0.985f / ((latMax - latMin) * verticalStretch))
+            val availW = (lonMax - lonMin) * 0.8f * k
+            val availH = (latMax - latMin) * k * verticalStretch
+            val padX = (w - availW) / 2f
+            val padY = (h - availH) / 2f
 
             fun px(lon: Float): Float = padX + ((lon - lonMin) / (lonMax - lonMin)) * availW
             fun py(lat: Float): Float = padY + (1.0f - (lat - latMin) / (latMax - latMin)) * availH
@@ -794,6 +803,7 @@ private fun CaliforniaClassicMapCanvas(
             // Pacific Ocean coastal wash
             val oceanPath = Path().apply {
                 moveTo(0f, 0f)
+                lineTo(px(-124.45f), py(43.00f))
                 lineTo(px(-124.21f), py(42.00f))
                 lineTo(px(-124.41f), py(40.44f))
                 lineTo(pCoastMendoSonoma.x, pCoastMendoSonoma.y)
@@ -811,7 +821,9 @@ private fun CaliforniaClassicMapCanvas(
                 lineTo(pCoastSanOnofre.x, pCoastSanOnofre.y)
                 lineTo(px(-117.25f), py(32.72f))
                 lineTo(px(-117.12f), py(32.53f))
-                lineTo(px(-117.12f), h)
+                lineTo(px(-117.02f), py(32.20f))
+                lineTo(px(-116.70f), py(31.90f))
+                lineTo(px(-116.65f), h)
                 lineTo(0f, h)
                 close()
             }
@@ -939,6 +951,18 @@ private fun CaliforniaClassicMapCanvas(
                 }
             }
 
+            // The land itself: shaded relief of the whole state under translucent region tints
+            terrain?.let { t ->
+                val dstOffset = androidx.compose.ui.unit.IntOffset(px(-124.5f).toInt(), py(43.0f).toInt())
+                val dstSize = androidx.compose.ui.unit.IntSize(
+                    (availW * 10.4f / (lonMax - lonMin)).toInt(),
+                    (availH * 11.1f / (latMax - latMin)).toInt()
+                )
+                // The neighbours first, quieter; then California over them
+                drawImage(image = t.surround, dstOffset = dstOffset, dstSize = dstSize)
+                drawImage(image = t.state, dstOffset = dstOffset, dstSize = dstSize)
+            }
+
             // Fills lock together seamlessly — richer gradient fills instead of flat washed-out tints
             for ((region, path) in regionPolys) {
                 val isSelected = selectedRegionId == region.id
@@ -947,7 +971,7 @@ private fun CaliforniaClassicMapCanvas(
                 drawPath(
                     path = path,
                     brush = Brush.linearGradient(
-                        colors = listOf(color.copy(alpha = if (isSelected) 1f else 0.72f).lighten(0.18f), color.copy(alpha = if (isSelected) 1f else 0.72f)),
+                        colors = listOf(color.copy(alpha = if (isSelected) 0.82f else tintAlpha).lighten(0.18f), color.copy(alpha = if (isSelected) 0.82f else tintAlpha)),
                         start = Offset(bounds.left, bounds.top),
                         end = Offset(bounds.right, bounds.bottom)
                     )
@@ -990,16 +1014,18 @@ private fun CaliforniaClassicMapCanvas(
                 Offset(px(-116.70f), py(33.20f)),
                 Offset(px(-116.50f), py(32.70f))
             )
-            for (ridge in listOf(klamathCascades, sierraNevada, coastRanges, transverseRanges, peninsularRanges)) {
-                drawHachureRidge(ridge)
+            if (terrain == null) {
+                for (ridge in listOf(klamathCascades, sierraNevada, coastRanges, transverseRanges, peninsularRanges)) {
+                    drawHachureRidge(ridge)
+                }
             }
 
             // Clean boundary strokes — warm ink-brown for an inked, hand-drawn map feel
             for ((_, path) in regionPolys) {
                 drawPath(
                     path = path,
-                    color = Color(0xFF4A3728).copy(alpha = 0.55f),
-                    style = Stroke(width = 1.3f)
+                    color = Color(0xFF3A2A1E).copy(alpha = 0.8f),
+                    style = Stroke(width = 2.4f)
                 )
             }
 
@@ -1019,18 +1045,78 @@ private fun CaliforniaClassicMapCanvas(
                 }
             }
 
-            // Key anchor cities — warm ink-brown ring with bright core, matching the antique-map treatment
-            val cityMarkers = listOf(
-                Offset(px(-122.42f), py(37.77f)) to 4.5f, // SF Bay
-                Offset(px(-121.49f), py(38.58f)) to 3.6f, // Sacramento
-                Offset(px(-118.24f), py(34.05f)) to 4f,   // LA
-                Offset(px(-117.16f), py(32.72f)) to 4f    // San Diego
+            // State lines beyond California's own edge: Oregon and Nevada share the 42°N line
+            val stateLine = PathEffect.dashPathEffect(floatArrayOf(10f, 7f), 0f)
+            drawLine(
+                color = Color(0xFF4A3728).copy(alpha = 0.45f),
+                start = Offset(px(-120.0f), py(42.0f)),
+                end = Offset(px(lonMax), py(42.0f)),
+                strokeWidth = 1.6f,
+                pathEffect = stateLine
             )
-            for ((center, radius) in cityMarkers) {
-                drawCircle(color = Color(0xFF2A1B12).copy(alpha = 0.55f), radius = radius + 1.6f, center = center)
-                drawCircle(color = Color(0xFFFFFBEB), radius = radius, center = center)
-                drawCircle(color = Color(0xFFB8860B), radius = radius * 0.45f, center = center)
+
+            // Names on the regions, and on Nevada to the east
+            val ink = Color(0xFF2A1B12)
+            fun label(text: String, lon: Float, lat: Float, style: androidx.compose.ui.text.TextStyle) {
+                val layout = textMeasurer.measure(text, style)
+                drawText(
+                    layout,
+                    topLeft = Offset(px(lon) - layout.size.width / 2f, py(lat) - layout.size.height / 2f)
+                )
             }
+            // Each region's name sits on a beige pill with dark letters, so it never blends into the terrain
+            val regionStyle = androidx.compose.ui.text.TextStyle(
+                color = Color(0xFF1A1208),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            fun regionLabel(text: String, lon: Float, lat: Float) {
+                val layout = textMeasurer.measure(text, regionStyle)
+                val pad = 4.dp.toPx()
+                val pillW = layout.size.width + pad * 2f
+                val pillH = layout.size.height + pad * 2f
+                val left = px(lon) - pillW / 2f
+                val top = py(lat) - pillH / 2f
+                drawRoundRect(
+                    color = Color(0xFFF5EAD2).copy(alpha = 0.96f),
+                    topLeft = Offset(left, top),
+                    size = androidx.compose.ui.geometry.Size(pillW, pillH),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(pillH / 2f)
+                )
+                drawRoundRect(
+                    color = Color(0xFF8B6F3E).copy(alpha = 0.55f),
+                    topLeft = Offset(left, top),
+                    size = androidx.compose.ui.geometry.Size(pillW, pillH),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(pillH / 2f),
+                    style = Stroke(width = 1.dp.toPx())
+                )
+                drawText(layout, topLeft = Offset(left + pad, top + pad))
+            }
+            regionLabel("Northern California", -122.2f, 40.9f)
+            regionLabel("Bay Area", -122.2f, 38.45f)
+            regionLabel("Central Valley", -119.6f, 36.9f)
+            regionLabel("Central Coast", -121.2f, 35.4f)
+            regionLabel("Los Angeles", -117.0f, 34.45f)
+            regionLabel("San Diego", -116.3f, 32.95f)
+            // The neighbours, quietly
+            val neighbourStyle = androidx.compose.ui.text.TextStyle(
+                color = Color(0xFF6B5636).copy(alpha = 0.75f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 2.sp
+            )
+            label("OREGON", -121.9f, 42.55f, neighbourStyle)
+            label("IDAHO", -115.3f, 42.55f, neighbourStyle)
+            label("MEXICO", -115.9f, 32.15f, neighbourStyle)
+            label(
+                "NEVADA", -116.9f, 39.3f,
+                androidx.compose.ui.text.TextStyle(
+                    color = Color(0xFF6B5636).copy(alpha = 0.8f),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 3.sp
+                )
+            )
         }
     }
 }

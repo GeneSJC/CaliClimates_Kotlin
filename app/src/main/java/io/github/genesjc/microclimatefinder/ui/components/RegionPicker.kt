@@ -1,5 +1,9 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import io.github.genesjc.microclimatefinder.ui.screens.PICKER_VERTICAL_STRETCH
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.border
+import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -31,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -89,14 +94,16 @@ fun RegionPickerButton(
     modifier: Modifier = Modifier,
     background: Color = MaterialTheme.colorScheme.primaryContainer,
     content: Color = MaterialTheme.colorScheme.onPrimaryContainer,
-    border: Color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)
+    border: Color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f),
+    size: androidx.compose.ui.unit.Dp = 44.dp,
+    iconSize: androidx.compose.ui.unit.Dp = 31.dp
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
         color = background,
         border = BorderStroke(1.dp, border),
         modifier = modifier
-            .size(44.dp)
+            .size(size)
             .clickable(
                 enabled = !state.visible,
                 onClickLabel = "Change region",
@@ -107,8 +114,10 @@ fun RegionPickerButton(
             CaliforniaOutlineIcon(
                 fill = content.copy(alpha = 0.18f),
                 stroke = content,
+                regionColors = regionPickerColors(),
+                selectedRegionId = selectedRegionId,
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(iconSize)
                     .onGloballyPositioned { state.buttonBounds = Rect(it.positionInRoot(), it.size.toSize()) }
                     .alpha(if (state.visible) 0f else 1f)
             )
@@ -116,11 +125,17 @@ fun RegionPickerButton(
     }
 }
 
+/** The regions' colours, the same ones the picker's map uses. */
+@Composable
+internal fun regionPickerColors(): Map<String, Color> = remember {
+    CaliforniaRegionalDefinitions.ALL_REGIONS.associate { it.id to Color(android.graphics.Color.parseColor(it.colorHex)) }
+}
+
 /**
  * The region picker overlay. Place it last inside a full-screen Box so it covers the screen: the
  * California icon grows into a panel (about 75% of the height, with a 40% scrim) holding the region
- * map and a Confirm button. Picking on the map only marks a pending region; the region changes when
- * Confirm is tapped. Back, the scrim and the close button cancel.
+ * map. Tapping a region on the map picks it and closes the panel. Back, the scrim and the close button
+ * cancel.
  */
 @Composable
 fun RegionPickerOverlay(
@@ -134,12 +149,18 @@ fun RegionPickerOverlay(
     val t = state.expand.value
     val density = LocalDensity.current
     val noRipple = remember { MutableInteractionSource() }
+    val lightLook = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val panelTint = if (lightLook) Color(0xFFF1E2C4) else MaterialTheme.colorScheme.surface
+    val panelOutline = if (lightLook) Color(0xFF3A2A1E).copy(alpha = 0.7f) else Color.White.copy(alpha = 0.25f)
     var origin by remember { mutableStateOf(Offset.Zero) }
     var size by remember { mutableStateOf(IntSize.Zero) }
     val containerW = size.width.toFloat()
     val containerH = size.height.toFloat()
     val targetW = containerW * 0.92f
-    val targetH = containerH * 0.75f
+    // As tall as the picker's content needs (the map is 1.35 times as tall as it is wide), with a little
+    // room under the map, and never more than 82% of the screen
+    val contentDp = 16f + 32f + 12f + (targetW / density.density - 32f) * 1.35f * PICKER_VERTICAL_STRETCH + 16f + 14f
+    val targetH = minOf(containerH * 0.82f, contentDp * density.density)
     val targetX = (containerW - targetW) / 2f
     val targetY = (containerH - targetH) / 2f
     val startX = state.buttonBounds.left - origin.x
@@ -168,7 +189,17 @@ fun RegionPickerOverlay(
                     height = with(density) { lerp(state.buttonBounds.height, targetH, t).toDp() }
                 )
                 .clip(RoundedCornerShape(lerp(10f, 24f, t).dp))
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = t))
+                .background(
+                    // Solid through the title row, then fading to half see-through toward the bottom. In light
+                    // mode a warm sand, to sit with the map's parchment and pills; in dark mode the surface colour
+                    Brush.verticalGradient(
+                        0f to panelTint.copy(alpha = t),
+                        0.14f to panelTint.copy(alpha = t),
+                        1f to panelTint.copy(alpha = 0.5f * t)
+                    )
+                )
+                // A fine dark outline, so the panel reads against whatever is behind it
+                .border(1.dp, panelOutline.copy(alpha = panelOutline.alpha * t), RoundedCornerShape(lerp(10f, 24f, t).dp))
                 // Taps inside the panel must not reach the scrim
                 .clickable(interactionSource = noRipple, indication = null) { },
             contentAlignment = Alignment.Center
@@ -176,6 +207,8 @@ fun RegionPickerOverlay(
             CaliforniaOutlineIcon(
                 fill = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
                 stroke = MaterialTheme.colorScheme.primary,
+                regionColors = regionPickerColors(),
+                selectedRegionId = selectedRegionId,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(lerp(0f, 32f, t).dp)
@@ -184,9 +217,10 @@ fun RegionPickerOverlay(
             if (t > 0.5f) {
                 CaliforniaRegionPickerPanel(
                     pendingRegionId = state.pendingRegionId,
-                    onPickRegion = { state.pendingRegionId = it },
-                    onConfirm = {
-                        if (state.pendingRegionId != selectedRegionId) onSelectRegion(state.pendingRegionId)
+                    // A pick is the choice: no Confirm button
+                    onPickRegion = { id ->
+                        state.pendingRegionId = id
+                        if (id != selectedRegionId) onSelectRegion(id)
                         state.close()
                     },
                     onClose = { state.close() },
