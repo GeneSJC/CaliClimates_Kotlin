@@ -654,7 +654,8 @@ fun LandingScreen(
                 val headerShape = RoundedCornerShape(16.dp)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    // A wider gap between the region widget and the picker widget (it was 8dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     // Widget 2: the region name with a chevron (tap for the region list), and the Region Info link
