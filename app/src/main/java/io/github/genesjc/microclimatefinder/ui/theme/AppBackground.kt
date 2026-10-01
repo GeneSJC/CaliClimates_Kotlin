@@ -51,7 +51,7 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
                     Brush.linearGradient(
                         // Warm, so it stands apart from the blue widgets: the same coral in the bottom left and the
                         // top right corners (a soft tint of the selected region's colour), fading to a pale cream-yellow across the middle
-                        listOf(corner, androidx.compose.ui.graphics.lerp(corner, Color(0xFFFFF3CF), 0.8f), corner),
+                        listOf(corner, androidx.compose.ui.graphics.lerp(corner, Color(0xFFFFF3CF), 0.6f), corner),
                         start = Offset(0f, size.height),
                         end = Offset(size.width, 0f)
                     )
@@ -109,11 +109,11 @@ private val DEFAULT_CORNER = Color(0xFFF3A583)
 private const val BACKDROP_TEXTURE_STRENGTH = 0.65f
 
 /**
- * A soft tint of the region's picker colour for the backdrop corners: the muted earth tone, a little under half-way to white,
+ * A soft tint of the region's picker colour for the backdrop corners: the muted earth tone, about a quarter of the way to white,
  * so every region has a gentle, similar lightness.
  */
 private fun regionBackdropTint(regionId: String?): Color {
     val hex = CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == regionId }?.colorHex
         ?: return DEFAULT_CORNER
-    return androidx.compose.ui.graphics.lerp(Color(android.graphics.Color.parseColor(hex)), Color.White, 0.44f)
+    return androidx.compose.ui.graphics.lerp(Color(android.graphics.Color.parseColor(hex)), Color.White, 0.26f)
 }
