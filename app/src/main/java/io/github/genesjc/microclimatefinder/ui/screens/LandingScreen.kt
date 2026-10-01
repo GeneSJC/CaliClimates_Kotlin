@@ -128,6 +128,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /** One row in the quick region picker. */
+/** The height of the three header widgets on Home. */
+private val HEADER_HEIGHT = 84.dp
+
 data class RegionOption(val id: String, val name: String, val stationCount: Int?)
 
 /** The mix of terrain types in the region, as a bar with counts. */
@@ -639,8 +642,9 @@ fun LandingScreen(
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             run {
-                // App header: three separate widgets (the menu, the region, the controls) with the backdrop showing
-                // between them, each with the same gradient as the About dialog's header
+                // App header: three separate widgets with the backdrop showing between them, each with the
+                // About-dialog gradient: (1) the menu and the About button, (2) the region (its name, and the Region
+                // Info link under it), (3) the region picker. The two side widgets are the same narrow width.
                 val headerBrush = Brush.linearGradient(
                     listOf(
                         MaterialTheme.colorScheme.primaryContainer,
@@ -653,14 +657,15 @@ fun LandingScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Widget 1: the menu, on its own
-                    Box(
+                    // Widget 1: the menu, with the (i) About button under it
+                    Column(
                         modifier = Modifier
-                            .padding(top = 8.dp)
-                            .size(52.dp)
+                            .width(60.dp)
+                            .height(HEADER_HEIGHT)
                             .clip(headerShape)
                             .background(headerBrush),
-                        contentAlignment = Alignment.Center
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
@@ -677,22 +682,49 @@ fun LandingScreen(
                                 )
                             }
                         }
+                        // The (i) button: opens the same About dialog as the menu; plain, a supporting control
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(23.dp)
+                                    .border(2.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "i",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
                     }
 
-                    // Widget 2: the region name with a chevron (tap for the region list), a little shorter than the
-                    // others. The Box is the list's anchor.
-                    Box(modifier = Modifier.padding(top = 8.dp).weight(1f)) {
+                    // Widget 2: the region name with a chevron (tap for the region list), and the Region Info link
+                    // on the line below, in the same card. The Box is the list's anchor.
+                    Box(modifier = Modifier.weight(1f).height(HEADER_HEIGHT)) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(headerShape)
+                                .background(headerBrush)
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.Center
+                        ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp)
-                                    .clip(headerShape)
-                                    .background(headerBrush)
+                                    .clip(RoundedCornerShape(8.dp))
                                     .clickable(onClickLabel = "Choose region", role = Role.Button) {
                                         showRegionMenu = true
                                     }
-                                    .padding(horizontal = 16.dp)
+                                    .padding(vertical = 2.dp)
                             ) {
                                 Text(
                                     text = region.name,
@@ -713,6 +745,53 @@ fun LandingScreen(
                                     modifier = Modifier.padding(start = 6.dp, end = 4.dp)
                                 )
                             }
+
+                            // The Region Info link under the name; the sheet slides in from the right, the X takes its place
+                                Row(
+                                    // A fixed height, so nothing moves when the link becomes the X
+                                    modifier = Modifier.height(26.dp),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val handleModifier = Modifier
+                                        .clickable(
+                                            onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
+                                            role = Role.Button
+                                        ) { if (infoOpen) closeInfo() else openInfo() }
+                                    val handleColor = MaterialTheme.colorScheme.primary
+                                    if (infoOpen) {
+                                        // A bold X, drawn so its weight and size are exact
+                                        Canvas(modifier = handleModifier.padding(horizontal = 2.dp, vertical = 6.5.dp).size(13.dp)) {
+                                            val stroke = 2.2.dp.toPx()
+                                            val inset = stroke / 2f
+                                            drawLine(
+                                                color = handleColor,
+                                                start = Offset(inset, inset),
+                                                end = Offset(size.width - inset, size.height - inset),
+                                                strokeWidth = stroke,
+                                                cap = StrokeCap.Round
+                                            )
+                                            drawLine(
+                                                color = handleColor,
+                                                start = Offset(size.width - inset, inset),
+                                                end = Offset(inset, size.height - inset),
+                                                strokeWidth = stroke,
+                                                cap = StrokeCap.Round
+                                            )
+                                        }
+                                    } else {
+                                        Text(
+                                            text = "\u00AB Region Info",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontSize = 15.84.sp,
+                                            lineHeight = 22.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = handleColor,
+                                            modifier = handleModifier.padding(horizontal = 2.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                        }
                             // The region list, dressed like the rest of the app: a warm sand panel with a fine
                             // outline, each region marked with its own map colour, the current one tinted
                             val menuColors = regionPickerColors()
@@ -773,98 +852,28 @@ fun LandingScreen(
                                     )
                                 }
                             }
-                        }
+                    }
 
-                    // Widget 3: the controls (About, the region picker, the Region Info link)
-                    Column(
-                        horizontalAlignment = Alignment.End,
+                    // Widget 3: the region picker, on its own, the same width as widget 1
+                    Box(
                         modifier = Modifier
+                            .width(60.dp)
+                            .height(HEADER_HEIGHT)
                             .clip(headerShape)
-                            .background(headerBrush)
-                            .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp)
+                            .background(headerBrush),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // The (i) button: opens the same About dialog as the menu. No chip behind it: it is a
-                            // supporting control next to the region picker, which is the main one.
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(23.dp)
-                                        .border(2.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "i",
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            RegionPickerButton(
-                                state = pickerState,
-                                selectedRegionId = selectedRegionId,
-                                background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
-                                content = MaterialTheme.colorScheme.onPrimaryContainer,
-                                // The main control: a larger chip and shape, using the room the link gives up
-                                size = 52.dp,
-                                iconSize = 40.dp
-                            )
-                        }
-                        // Region Info, under the picker. The sheet slides in from the right; the X takes the link's place
-                    Row(
-                        // A fixed height, so nothing moves when the link becomes the X
-                        modifier = Modifier.height(26.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val handleModifier = Modifier
-                            .clickable(
-                                onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
-                                role = Role.Button
-                            ) { if (infoOpen) closeInfo() else openInfo() }
-                        val handleColor = MaterialTheme.colorScheme.primary
-                        if (infoOpen) {
-                            // A bold X, drawn so its weight and size are exact
-                            Canvas(modifier = handleModifier.padding(horizontal = 8.dp, vertical = 6.5.dp).size(13.dp)) {
-                                val stroke = 2.2.dp.toPx()
-                                val inset = stroke / 2f
-                                drawLine(
-                                    color = handleColor,
-                                    start = Offset(inset, inset),
-                                    end = Offset(size.width - inset, size.height - inset),
-                                    strokeWidth = stroke,
-                                    cap = StrokeCap.Round
-                                )
-                                drawLine(
-                                    color = handleColor,
-                                    start = Offset(size.width - inset, inset),
-                                    end = Offset(inset, size.height - inset),
-                                    strokeWidth = stroke,
-                                    cap = StrokeCap.Round
-                                )
-                            }
-                        } else {
-                            Text(
-                                text = "\u00AB Region Info",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontSize = 15.84.sp,
-                                lineHeight = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = handleColor,
-                                modifier = handleModifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
-                        }
+                        RegionPickerButton(
+                            state = pickerState,
+                            selectedRegionId = selectedRegionId,
+                            background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                            content = MaterialTheme.colorScheme.onPrimaryContainer,
+                            // The main control: the chip and the California shape fill the widget
+                            size = 52.dp,
+                            iconSize = 40.dp
+                        )
                     }
-                        }
-                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
