@@ -746,10 +746,10 @@ fun LandingScreen(
                                 )
                             }
 
-                            // The Region Info link under the name; the sheet slides in from the right, the X takes its place
+                            // The Region Info link under the name, at the right; the sheet slides in from the right, the X takes its place
                                 Row(
-                                    // A fixed height, so nothing moves when the link becomes the X
-                                    modifier = Modifier.height(26.dp),
+                                    // A fixed height, so nothing moves when the link becomes the X; at the right of the widget
+                                    modifier = Modifier.fillMaxWidth().height(26.dp),
                                     horizontalArrangement = Arrangement.End,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
