@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Android 12 and later: the system splash screen. It shows the launcher icon's sky and clouds on the
+         icon's deep marine navy, filling the whole screen, instead of a cropped circle on an empty background -->
+    <style name="Theme.MicroClimateFinder" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#FFFFE9CF</item>
+        <item name="android:windowSplashScreenBackground">#FF08203E</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+    </style>
+</resources>
