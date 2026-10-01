@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import io.github.genesjc.microclimatefinder.ui.components.regionPickerColors
 import io.github.genesjc.microclimatefinder.domain.Elevation
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -474,28 +475,68 @@ private fun RegionInfoContent(
     legendExtra: (@Composable () -> Unit)? = null
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
-    Column(modifier = Modifier.padding(16.dp)) {
-        // The title and the Station List link share one row, solid so both read clearly
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Region Info",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
-            if (hasStationData) {
-                Text(
-                    text = "Station List \u203A",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenStationList() }
-                        .padding(vertical = 4.dp)
+    Column {
+        // The title band, in the same style as the About dialog and the menu drawer: the gradient, a California
+        // icon with this region lit, the title with the region's name, and the Station List link as a pill
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
+                        )
+                    )
                 )
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CaliforniaOutlineIcon(
+                    fill = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                    stroke = MaterialTheme.colorScheme.onPrimaryContainer,
+                    regionColors = regionPickerColors(),
+                    selectedRegionId = region.id,
+                    modifier = Modifier.size(40.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Region Info",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = region.name,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (hasStationData) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenStationList() }
+                    ) {
+                        Text(
+                            text = "Station List \u203A",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                        )
+                    }
+                }
             }
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Column(modifier = Modifier.padding(16.dp)) {
         // The region tile, the full width of the sheet
         Box(modifier = Modifier.fillMaxWidth().onSizeChanged { topRowWidthPx = it.width }) {
             RegionDetailsCard(region, fullWidthPx = topRowWidthPx, folded = menuOpen)
@@ -506,6 +547,7 @@ private fun RegionInfoContent(
             // The Terrain Legend, at the bottom, folded until opened
             Spacer(modifier = Modifier.height(12.dp))
             TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), extra = legendExtra)
+        }
         }
     }
 }
