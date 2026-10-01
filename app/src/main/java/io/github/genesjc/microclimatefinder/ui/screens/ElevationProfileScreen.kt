@@ -56,6 +56,7 @@ import io.github.genesjc.microclimatefinder.data.local.TerrainImage
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -301,7 +302,8 @@ fun ElevationProfileScreen(
         Box(modifier = Modifier.fillMaxWidth().height(chartHeight)) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                // An opaque base (the old tint, laid over the page colour) so the backdrop's relief does not show through the chart
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f).compositeOver(MaterialTheme.colorScheme.background),
                 // A 1dp outline, for a crisper edge
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.fillMaxSize()
