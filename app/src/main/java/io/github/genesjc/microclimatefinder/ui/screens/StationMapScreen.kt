@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import io.github.genesjc.microclimatefinder.domain.Elevation
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -60,6 +61,12 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.graphics.FilterQuality
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -78,7 +85,9 @@ import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaGeography
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.data.local.TerrainImage
+import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
+import io.github.genesjc.microclimatefinder.ui.components.MapProjection
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.LegendItem
@@ -113,13 +122,20 @@ fun StationMapScreen(
     sharedSelectedStationId: String? = null,
     onStationSelected: ((String) -> Unit)? = null,
     /** The dot size, when Home owns it (its Terrain Legend panel holds the slider). */
-    sharedPinScale: Float? = null
+    sharedPinScale: Float? = null,
+    /** The zoom to start at, and a report of each change (Home keeps the zoom when it switches views). */
+    initialZoom: Float = 1f,
+    onZoomChange: ((Float) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
     val stations = remember(dataset) { parser.loadStations(dataset) }
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
+    // The region's terrain picture, loaded off the main thread; the map shows a plain base until it arrives
+    val terrain by produceState<TerrainImage?>(null, dataset.regionId) {
+        value = withContext(Dispatchers.IO) { TerrainMaps.load(context, dataset.regionId) }
+    }
     var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
     val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
     var localPinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
@@ -128,7 +144,9 @@ fun StationMapScreen(
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
     val pickerState = rememberRegionPickerState()
     // The map starts at its regular height; the toggle on the map stretches it, slowly, to fill the screen
-    var mapExpanded by remember { mutableStateOf(false) }
+    var localExpanded by remember { mutableStateOf(false) }
+    // On Home the map always fills the space; the standalone screen keeps the Expand / Shrink toggle
+    val mapExpanded = embedded || localExpanded
     val pageScroll = rememberScrollState()
     val density = LocalDensity.current
     var aboveMapPx by remember { mutableStateOf(0) }
@@ -177,7 +195,7 @@ fun StationMapScreen(
 
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                 Text(
-                    text = "Topographical Map",
+                    text = "Topography",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -228,7 +246,6 @@ fun StationMapScreen(
         if (!embedded) {
         TerrainLegend(
             stations = stations,
-            showRelief = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
             // Dot size lives here, out of the way, instead of in a row under the map
             extra = { PinSizeSlider(value = pinScale, onValueChange = { localPinScale = it }) }
         )
@@ -246,27 +263,37 @@ fun StationMapScreen(
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                // A 1dp outline, for a crisper edge
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.fillMaxSize()
             ) {
                 SpatialMapCanvas(
                     stations = stations,
-                    hasArtwork = dataset.regionId == CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id,
+                    terrain = terrain,
+                    embedded = embedded,
                     selectedStationId = selectedStationId,
                     pinScale = pinScale,
+                    initialZoom = initialZoom,
+                    onZoomChange = onZoomChange,
                     onSelectStation = {
                     localSelectedId = it.id
                     onStationSelected?.invoke(it.id)
                 }
                 )
             }
-            // Expand / shrink toggle, under the compass in the top-left corner
+            // Expand / shrink toggle, just left of the top of the zoom slider (not on Home, where the map always fills the space)
+            if (!embedded) {
             MapExpandToggle(
                 expanded = mapExpanded,
-                onToggle = { mapExpanded = !mapExpanded },
+                onToggle = {
+                    localExpanded = !mapExpanded
+                },
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 6.dp, top = 44.dp)
+                    .align(Alignment.TopEnd)
+                    // Just left of the top of the zoom slider
+                    .padding(end = 50.dp, top = 56.dp)
             )
+            }
         }
 
     }
@@ -279,6 +306,9 @@ fun StationMapScreen(
     }
     }
 }
+
+/** How much room the map leaves around the stations, as a fraction of their spread. */
+private const val FRAME_MARGIN = 0.08
 
 /** The map's regular height, before it is expanded to fill the screen. */
 private val MAP_REGULAR_HEIGHT = 300.dp
@@ -347,31 +377,6 @@ internal fun PinSizeSlider(
     }
 }
 
-/** A name printed on the Bay Area map (region, lake, landmark), placed only where it has room. */
-private data class MapAreaLabel(
-    val text: String,
-    val lon: Double,
-    val lat: Double,
-    val xOffsetDp: Int,
-    val fontSizeSp: Float,
-    val weight: FontWeight,
-    val letterSpacingSp: Float,
-    val color: Color
-)
-
-private val BAY_AREA_AREA_LABELS = listOf(
-    MapAreaLabel("SACRAMENTO VALLEY", -121.85, 38.95, -55, 10f, FontWeight.ExtraBold, 2f, Color(0xFF4B6349).copy(alpha = 0.38f)),
-    MapAreaLabel("SIERRA NEVADA", -120.55, 39.10, -42, 10f, FontWeight.ExtraBold, 1.5f, Color(0xFF3F5938).copy(alpha = 0.48f)),
-    MapAreaLabel("THE DELTA", -121.65, 38.05, -27, 9f, FontWeight.Bold, 1f, Color(0xFF0284C7).copy(alpha = 0.55f)),
-    MapAreaLabel("Folsom Lake", -121.10, 38.72, -25, 8f, FontWeight.Bold, 0f, Color(0xFF0369A1)),
-    MapAreaLabel("Sutter Buttes", -121.82, 39.20, -25, 8f, FontWeight.Medium, 0f, Color(0xFF4B6349).copy(alpha = 0.70f))
-)
-
-/** Where a Bay Area city badge would go (its opacity comes from the label fades). */
-private data class CityLabelPlan(val city: RegionalMapCity, val xDp: Dp, val yDp: Dp)
-
-private data class AreaLabelPlan(val label: MapAreaLabel, val xDp: Dp, val yDp: Dp)
-
 private data class StationLabelPlan(
     val station: MicroclimateStation,
     val city: String,
@@ -380,38 +385,20 @@ private data class StationLabelPlan(
     val yDp: Dp
 )
 
-private data class RegionalMapCity(
-    val name: String,
-    val lat: Double,
-    val lon: Double,
-    val isCapital: Boolean = false,
-    val elevationText: String? = null,
-    val targetStationId: String? = null,
-    val xOffsetDp: Int = 0,
-    val yOffsetDp: Int = -16
-)
-
-private val REGIONAL_MAP_CITIES = listOf(
-    RegionalMapCity("Sacramento", 38.5816, -121.4944, isCapital = true, elevationText = "5m", targetStationId = "KSAC", xOffsetDp = -20, yOffsetDp = -18),
-    RegionalMapCity("Davis", 38.5449, -121.7405, elevationText = "16m", targetStationId = "KEDU", xOffsetDp = -14, yOffsetDp = -16),
-    RegionalMapCity("Roseville", 38.7521, -121.2880, elevationText = "50m", targetStationId = "KMHR", xOffsetDp = -10, yOffsetDp = -16),
-    RegionalMapCity("Auburn", 38.8966, -121.0763, elevationText = "453m", targetStationId = "KAUN", xOffsetDp = 4, yOffsetDp = -16),
-    RegionalMapCity("Grass Valley", 39.2191, -121.0611, elevationText = "961m", targetStationId = "KGOO", xOffsetDp = -4, yOffsetDp = -16),
-    RegionalMapCity("Placerville", 38.7296, -120.7985, elevationText = "568m", targetStationId = "BDMC1", xOffsetDp = -8, yOffsetDp = -16),
-    RegionalMapCity("Vacaville", 38.3566, -121.9877, elevationText = "32m", targetStationId = "KVCB", xOffsetDp = -8, yOffsetDp = 8)
-)
-
 @Composable
 private fun SpatialMapCanvas(
     stations: List<MicroclimateStation>,
-    hasArtwork: Boolean,
+    terrain: TerrainImage?,
+    embedded: Boolean,
     selectedStationId: String?,
     pinScale: Float = 1.0f,
+    initialZoom: Float = 1f,
+    onZoomChange: ((Float) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
 
-    // Geographic bounding box with slight 4% safety margin
+    // Geographic bounding box with a margin of 8%
     val rawMinLat = remember(stations) { stations.minOf { it.latitude } }
     val rawMaxLat = remember(stations) { stations.maxOf { it.latitude } }
     val rawMinLon = remember(stations) { stations.minOf { it.longitude } }
@@ -420,20 +407,18 @@ private fun SpatialMapCanvas(
     val rawLatSpan = (rawMaxLat - rawMinLat).coerceAtLeast(0.01)
     val rawLonSpan = (rawMaxLon - rawMinLon).coerceAtLeast(0.01)
 
-    val minLat = rawMinLat - (rawLatSpan * 0.04)
-    val maxLat = rawMaxLat + (rawLatSpan * 0.04)
-    val minLon = rawMinLon - (rawLonSpan * 0.04)
-    val maxLon = rawMaxLon + (rawLonSpan * 0.04)
-
-    val latSpan = (maxLat - minLat)
-    val lonSpan = (maxLon - minLon)
+    val minLat = rawMinLat - (rawLatSpan * FRAME_MARGIN)
+    val maxLat = rawMaxLat + (rawLatSpan * FRAME_MARGIN)
+    val minLon = rawMinLon - (rawLonSpan * FRAME_MARGIN)
+    val maxLon = rawMaxLon + (rawLonSpan * FRAME_MARGIN)
 
     val textMeasurer = rememberTextMeasurer()
     // Ranked by spread, so the first few are the most useful; more fade in as the map zooms
     val landmarks = remember(stations) { pickMapLandmarks(stations, minOf(stations.size, MAP_LABEL_COUNT * 8)) }
 
     // View transform: zoom about the map centre plus a pan in pixels
-    var zoom by remember(stations) { mutableStateOf(1f) }
+    var zoom by remember(stations) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
+    androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
     var pan by remember(stations) { mutableStateOf(Offset.Zero) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
     val zoomScope = rememberCoroutineScope()
@@ -480,24 +465,23 @@ private fun SpatialMapCanvas(
         val density = LocalDensity.current
 
         val paddingPx = with(density) { 20.dp.toPx() }
-        val widthPx = with(density) { widthDp.toPx() } - (paddingPx * 2)
-        val heightPx = with(density) { heightDp.toPx() } - (paddingPx * 2)
         val canvasW = with(density) { widthDp.toPx() }
         val canvasH = with(density) { heightDp.toPx() }
+        // One scale in both directions, so the region keeps its true shape
+        val projection = remember(minLon, maxLon, minLat, maxLat, canvasW, canvasH) {
+            MapProjection(minLon, maxLon, minLat, maxLat, canvasW, canvasH, paddingPx)
+        }
         fun viewX(baseX: Float) = canvasW / 2f + (baseX - canvasW / 2f) * zoom + pan.x
         fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
+        // Longitude and latitude to canvas pixels, with the current zoom and pan
+        fun mapX(lon: Double): Float = viewX(projection.baseX(lon))
+        fun mapY(lat: Double): Float = viewY(projection.baseY(lat))
 
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(stations, pinScale) {
+                .pointerInput(stations, pinScale, projection) {
                     detectTapGestures { tapOffset ->
-                        val padding = 20f
-                        val w = size.width - (padding * 2)
-                        val h = size.height - (padding * 2)
-                        val cx = size.width / 2f
-                        val cy = size.height / 2f
-
                         var closestStation: MicroclimateStation? = null
                         var closestDist = Float.MAX_VALUE
 
@@ -505,8 +489,8 @@ private fun SpatialMapCanvas(
                         val maxTouchDist = 2000f * (dotScale * dotScale).coerceAtLeast(1f)
 
                         stations.forEach { station ->
-                            val x = cx + (padding + ((station.longitude - minLon) / lonSpan).toFloat() * w - cx) * zoom + pan.x
-                            val y = cy + (padding + (1f - ((station.latitude - minLat) / latSpan).toFloat()) * h - cy) * zoom + pan.y
+                            val x = mapX(station.longitude)
+                            val y = mapY(station.latitude)
 
                             val dx = tapOffset.x - x
                             val dy = tapOffset.y - y
@@ -520,218 +504,29 @@ private fun SpatialMapCanvas(
                     }
                 }
         ) {
-            val padding = 20f
-            val w = size.width - (padding * 2)
-            val h = size.height - (padding * 2)
-
-            val cx = size.width / 2f
-            val cy = size.height / 2f
-            fun mapX(lon: Double): Float =
-                cx + (padding + ((lon - minLon) / lonSpan).toFloat() * w - cx) * zoom + pan.x
-            fun mapY(lat: Double): Float =
-                cy + (padding + (1f - ((lat - minLat) / latSpan).toFloat()) * h - cy) * zoom + pan.y
-
-            if (hasArtwork) {
-                // 1. Base Alluvial Sacramento Valley Floor
-                drawRect(color = Color(0xFFF1F6EC))
-
-                // 2. Coast Range Foothills & Vaca Mountains (Western boundary strip)
-                val coastRangePath = Path().apply {
-                    moveTo(mapX(minLon), mapY(maxLat))
-                    lineTo(mapX(-122.02), mapY(maxLat))
-                    lineTo(mapX(-121.98), mapY(39.10))
-                    lineTo(mapX(-121.92), mapY(38.65))
-                    lineTo(mapX(-121.88), mapY(38.30))
-                    lineTo(mapX(-121.84), mapY(minLat))
-                    lineTo(mapX(minLon), mapY(minLat))
-                    close()
-                }
-                drawPath(path = coastRangePath, color = Color(0xFFE3ECD7))
-
-                // 3. Sierra Nevada Elevation Relief Bands (Rising eastward)
-                // Band A: Low Foothills & Oak Belt (100m - 350m)
-                val foothillsPath = Path().apply {
-                    moveTo(mapX(-121.36), mapY(maxLat))
-                    lineTo(mapX(-121.30), mapY(39.10))
-                    lineTo(mapX(-121.20), mapY(38.80))
-                    lineTo(mapX(-121.05), mapY(38.50))
-                    lineTo(mapX(-120.85), mapY(38.15))
-                    lineTo(mapX(-120.75), mapY(minLat))
-                    lineTo(mapX(maxLon), mapY(minLat))
-                    lineTo(mapX(maxLon), mapY(maxLat))
-                    close()
-                }
-                drawPath(path = foothillsPath, color = Color(0xFFDFE9D0))
-
-                // Band B: Montane Pine & Conifer Forest (350m - 850m)
-                val montanePath = Path().apply {
-                    moveTo(mapX(-121.18), mapY(maxLat))
-                    lineTo(mapX(-121.10), mapY(39.15))
-                    lineTo(mapX(-120.95), mapY(38.85))
-                    lineTo(mapX(-120.78), mapY(38.55))
-                    lineTo(mapX(-120.65), mapY(38.20))
-                    lineTo(mapX(-120.55), mapY(minLat))
-                    lineTo(mapX(maxLon), mapY(minLat))
-                    lineTo(mapX(maxLon), mapY(maxLat))
-                    close()
-                }
-                drawPath(path = montanePath, color = Color(0xFFC7DEB1))
-
-                // Band C: Sierra High Ridge & Subalpine Crest (>850m - 1500m+)
-                val highRidgePath = Path().apply {
-                    moveTo(mapX(-120.95), mapY(maxLat))
-                    lineTo(mapX(-120.88), mapY(39.15))
-                    lineTo(mapX(-120.72), mapY(38.90))
-                    lineTo(mapX(-120.58), mapY(38.60))
-                    lineTo(mapX(-120.48), mapY(38.25))
-                    lineTo(mapX(maxLon), mapY(38.25))
-                    lineTo(mapX(maxLon), mapY(maxLat))
-                    close()
-                }
-                drawPath(path = highRidgePath, color = Color(0xFFAECFA0))
-
-                // 4. Subtle Topographic Elevation Contour Lines
-                val contourColor = Color(0xFF6B8B5B).copy(alpha = 0.35f)
-                val contourStroke = Stroke(width = 1.2f, cap = StrokeCap.Round)
-
-                // 150m Contour
-                val contour150 = Path().apply {
-                    moveTo(mapX(-121.36), mapY(maxLat))
-                    lineTo(mapX(-121.30), mapY(39.10))
-                    lineTo(mapX(-121.20), mapY(38.80))
-                    lineTo(mapX(-121.05), mapY(38.50))
-                    lineTo(mapX(-120.85), mapY(38.15))
-                    lineTo(mapX(-120.75), mapY(minLat))
-                }
-                drawPath(contour150, color = contourColor, style = contourStroke)
-
-                // 400m Contour
-                val contour400 = Path().apply {
-                    moveTo(mapX(-121.18), mapY(maxLat))
-                    lineTo(mapX(-121.10), mapY(39.15))
-                    lineTo(mapX(-120.95), mapY(38.85))
-                    lineTo(mapX(-120.78), mapY(38.55))
-                    lineTo(mapX(-120.65), mapY(38.20))
-                    lineTo(mapX(-120.55), mapY(minLat))
-                }
-                drawPath(contour400, color = contourColor, style = contourStroke)
-
-                // 900m Contour
-                val contour900 = Path().apply {
-                    moveTo(mapX(-120.95), mapY(maxLat))
-                    lineTo(mapX(-120.88), mapY(39.15))
-                    lineTo(mapX(-120.72), mapY(38.90))
-                    lineTo(mapX(-120.58), mapY(38.60))
-                    lineTo(mapX(-120.48), mapY(38.25))
-                }
-                drawPath(contour900, color = contourColor, style = contourStroke)
-
-                // Coast Range Contour
-                val contourCoast = Path().apply {
-                    moveTo(mapX(-122.02), mapY(maxLat))
-                    lineTo(mapX(-121.98), mapY(39.10))
-                    lineTo(mapX(-121.92), mapY(38.65))
-                    lineTo(mapX(-121.88), mapY(38.30))
-                    lineTo(mapX(-121.84), mapY(minLat))
-                }
-                drawPath(contourCoast, color = contourColor.copy(alpha = 0.25f), style = contourStroke)
-
-                // 5. Sutter Buttes (Distinct circular volcanic peak cluster in northern valley)
-                val sutterX = mapX(-121.82)
-                val sutterY = mapY(39.21)
-                drawCircle(color = Color(0xFFD2E3C0), radius = 13f, center = Offset(sutterX, sutterY))
-                drawCircle(color = Color(0xFFBED7A6), radius = 8f, center = Offset(sutterX, sutterY))
-                drawCircle(color = Color(0xFF8BA674), radius = 3.5f, center = Offset(sutterX, sutterY))
-
-                // 6. Hydrography & Waterways (Vibrant River Blue)
-                val waterColor = Color(0xFF0284C7)
-                val waterGlow = Color(0xFF38BDF8).copy(alpha = 0.35f)
-
-                // Sacramento-San Joaquin Delta / Suisun Estuary Channels (Southwest)
-                val deltaChannel1 = Path().apply {
-                    moveTo(mapX(-121.85), mapY(38.10))
-                    lineTo(mapX(-121.72), mapY(38.18))
-                    lineTo(mapX(-121.65), mapY(38.28))
-                }
-                val deltaChannel2 = Path().apply {
-                    moveTo(mapX(-121.90), mapY(38.15))
-                    lineTo(mapX(-121.78), mapY(38.22))
-                    lineTo(mapX(-121.68), mapY(38.35))
-                }
-                drawPath(deltaChannel1, color = waterColor.copy(alpha = 0.6f), style = Stroke(width = 2.5f))
-                drawPath(deltaChannel2, color = waterColor.copy(alpha = 0.5f), style = Stroke(width = 2.0f))
-
-                // Folsom Lake Reservoir (distinct multi-arm polygon)
-                val folsomLakePath = Path().apply {
-                    moveTo(mapX(-121.17), mapY(38.70))
-                    lineTo(mapX(-121.14), mapY(38.74))
-                    lineTo(mapX(-121.10), mapY(38.78))
-                    lineTo(mapX(-121.07), mapY(38.76))
-                    lineTo(mapX(-121.10), mapY(38.73))
-                    lineTo(mapX(-121.05), mapY(38.70))
-                    lineTo(mapX(-121.11), mapY(38.67))
-                    lineTo(mapX(-121.16), mapY(38.69))
-                    close()
-                }
-                drawPath(path = folsomLakePath, color = waterColor)
-                drawPath(path = folsomLakePath, color = Color(0xFF0369A1), style = Stroke(width = 1.2f))
-
-                // Feather River
-                val featherRiverPath = Path().apply {
-                    moveTo(mapX(-121.58), mapY(39.36))
-                    lineTo(mapX(-121.60), mapY(39.08))
-                    lineTo(mapX(-121.62), mapY(38.80))
-                }
-                drawPath(featherRiverPath, color = waterColor.copy(alpha = 0.8f), style = Stroke(width = 1.8f, cap = StrokeCap.Round))
-
-                // American River (Flows from Sierra -> Folsom Lake -> Confluence with Sacramento River)
-                val americanRiverPath = Path().apply {
-                    moveTo(mapX(-120.98), mapY(38.85))
-                    lineTo(mapX(-121.15), mapY(38.71)) // Folsom Lake
-                    lineTo(mapX(-121.28), mapY(38.65)) // Fair Oaks
-                    lineTo(mapX(-121.40), mapY(38.60)) // Rancho Cordova
-                    lineTo(mapX(-121.51), mapY(38.59)) // Confluence at Sacramento
-                }
-                drawPath(americanRiverPath, color = waterGlow, style = Stroke(width = 3.6f, cap = StrokeCap.Round))
-                drawPath(americanRiverPath, color = waterColor, style = Stroke(width = 2.2f, cap = StrokeCap.Round))
-
-                // Sacramento River (Main valley arterial waterway)
-                val sacRiverPath = Path().apply {
-                    moveTo(mapX(-121.92), mapY(39.38))
-                    lineTo(mapX(-121.82), mapY(39.20))
-                    lineTo(mapX(-121.75), mapY(38.98))
-                    lineTo(mapX(-121.68), mapY(38.80))
-                    lineTo(mapX(-121.61), mapY(38.70)) // Adjacent to KSMF
-                    lineTo(mapX(-121.51), mapY(38.59)) // Sacramento confluence
-                    lineTo(mapX(-121.52), mapY(38.50)) // Passing KSAC
-                    lineTo(mapX(-121.57), mapY(38.38))
-                    lineTo(mapX(-121.68), mapY(38.25))
-                    lineTo(mapX(-121.78), mapY(38.00)) // Into Delta
-                }
-                drawPath(sacRiverPath, color = waterGlow, style = Stroke(width = 4.2f, cap = StrokeCap.Round))
-                drawPath(sacRiverPath, color = waterColor, style = Stroke(width = 2.6f, cap = StrokeCap.Round))
-
-                // 7. Subtle Geographic Reference Grid
-                for (i in 1..3) {
-                    val gridY = cy + (padding + (h * i / 4f) - cy) * zoom + pan.y
-                    drawLine(
-                        color = Color.DarkGray.copy(alpha = 0.08f),
-                        start = Offset(padding, gridY),
-                        end = Offset(size.width - padding, gridY),
-                        strokeWidth = 1f
-                    )
-                    val gridX = cx + (padding + (w * i / 4f) - cx) * zoom + pan.x
-                    drawLine(
-                        color = Color.DarkGray.copy(alpha = 0.08f),
-                        start = Offset(gridX, padding),
-                        end = Offset(gridX, size.height - padding),
-                        strokeWidth = 1f
-                    )
-                }
+            if (terrain != null) {
+                // Land colour first (the picture may not reach every edge), then the terrain, then a light grid
+                drawRect(color = Color(0xFFE4EBDA))
+                val b = terrain.bounds
+                val left = mapX(b.minLon)
+                val top = mapY(b.maxLat)
+                drawImage(
+                    image = terrain.image,
+                    srcOffset = IntOffset.Zero,
+                    srcSize = IntSize(terrain.image.width, terrain.image.height),
+                    dstOffset = IntOffset(left.roundToInt(), top.roundToInt()),
+                    dstSize = IntSize((mapX(b.maxLon) - left).roundToInt(), (mapY(b.minLat) - top).roundToInt()),
+                    filterQuality = FilterQuality.Medium
+                )
+                drawGraticule(
+                    minLon = minLon, maxLon = maxLon, minLat = minLat, maxLat = maxLat,
+                    padding = paddingPx, mapX = ::mapX, mapY = ::mapY,
+                    zoom = zoom, textMeasurer = textMeasurer
+                )
             } else {
                 drawNeutralBase(
                     minLon = minLon, maxLon = maxLon, minLat = minLat, maxLat = maxLat,
-                    padding = padding, mapX = ::mapX, mapY = ::mapY,
+                    padding = paddingPx, mapX = ::mapX, mapY = ::mapY,
                     zoom = zoom, textMeasurer = textMeasurer
                 )
             }
@@ -749,74 +544,31 @@ private fun SpatialMapCanvas(
 
         // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
-            listOf(0f, 0f, 50f, 32f),
-            listOf(widthDp.value - 140f, 0f, widthDp.value, 32f),
-            listOf(0f, heightDp.value - 46f, 130f, heightDp.value),
-            listOf(widthDp.value - 46f, 0f, widthDp.value, heightDp.value),
-            listOf(0f, 40f, 76f, 74f)  // expand / shrink toggle
+            listOf(0f, 0f, 58f, 40f),                                   // compass
+            listOf(widthDp.value - 150f, 0f, widthDp.value, 40f),       // data credit
+            listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
+            listOf(widthDp.value - 46f, 56f, widthDp.value, heightDp.value),  // zoom slider
+            if (embedded) listOf(widthDp.value - 170f, 0f, widthDp.value, 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+            listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f)  // expand / shrink toggle
         )
-        fun geoX(lon: Double) = with(density) { viewX(paddingPx + ((lon - minLon) / lonSpan).toFloat() * widthPx).toDp() }
-        fun geoY(lat: Double) = with(density) { viewY(paddingPx + (1f - ((lat - minLat) / latSpan).toFloat()) * heightPx).toDp() }
 
         // Which labels have room right now. Only the target (shown or hidden) is decided here; the
         // opacity eases toward it on its own, so labels fade in and out however the zoom changed.
         val labelTargets = mutableMapOf<String, Float>()
-        val cityPlans = mutableListOf<CityLabelPlan>()
-        val areaPlans = mutableListOf<AreaLabelPlan>()
         val stationPlans = mutableListOf<StationLabelPlan>()
 
-        if (hasArtwork) {
-            // City badges first; area names (watermarks, lake, buttes) are placed after them so they
-            // never sit under a badge. The capital first, then more places as the map zooms.
-            val cityBudget = labelBudget(5, zoom, 2f).toInt()
-            var shownCities = 0
-            for (city in REGIONAL_MAP_CITIES.sortedByDescending { it.isCapital }) {
-                val ratioX = ((city.lon - minLon) / lonSpan).toFloat().coerceIn(0f, 1f)
-                val ratioY = (1f - ((city.lat - minLat) / latSpan).toFloat()).coerceIn(0f, 1f)
-                val xDp = with(density) { (paddingPx + ratioX * widthPx).toDp() } + city.xOffsetDp.dp
-                val yDp = with(density) { (paddingPx + ratioY * heightPx).toDp() } + city.yOffsetDp.dp
-                val cityLabelWidth = (city.name.length + (city.elevationText?.length ?: 0) + 1) * 4.9f +
-                    12f + (if (city.isCapital) 10f else 0f)
-                val left = xDp.value
-                val top = yDp.value
-                val right = left + cityLabelWidth
-                val bottom = top + 20f
-                val hasRoom = shownCities < cityBudget &&
-                    placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
-                if (hasRoom) {
-                    placedRects.add(listOf(left, top, right, bottom))
-                    shownCities++
-                }
-                labelTargets["c:${city.name}"] = if (hasRoom) 1f else 0f
-                cityPlans.add(CityLabelPlan(city, xDp, yDp))
-            }
-            // Area names: shown only where they do not overlap a badge or the controls
-            BAY_AREA_AREA_LABELS.forEach { label ->
-                val x = geoX(label.lon) + label.xOffsetDp.dp
-                val y = geoY(label.lat)
-                val left = x.value
-                val top = y.value
-                val right = left + label.text.length * (label.fontSizeSp * 0.6f + label.letterSpacingSp)
-                val bottom = top + label.fontSizeSp + 6f
-                val free = placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
-                if (free) placedRects.add(listOf(left, top, right, bottom))
-                labelTargets["a:${label.text}"] = if (free) 1f else 0f
-                areaPlans.add(AreaLabelPlan(label, x, y))
-            }
-        } else {
+        run {
             // Labels for stations picked from the loaded stations: more as the map zooms
             val stationBudget = labelBudget(MAP_LABEL_COUNT, zoom, 3f).toInt()
             var shownLabels = 0
             for (station in landmarks) {
-                val ratioX = ((station.longitude - minLon) / lonSpan).toFloat()
-                val ratioY = (1f - ((station.latitude - minLat) / latSpan).toFloat())
                 val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
                     .let { if (it.length > 18) it.take(17) + "\u2026" else it }
-                val elevText = "%,d".format(station.elevationMeters) + "m"
+                val elevText = Elevation.formatFeet(station.elevationMeters)
                 // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
                 val labelWidthDp = ((city.length + elevText.length + 1) * 4.9f + 12f).dp
-                val pinXDp = with(density) { viewX(paddingPx + ratioX * widthPx).toDp() }
-                val pinYDp = with(density) { viewY(paddingPx + ratioY * heightPx).toDp() }
+                val pinXDp = with(density) { mapX(station.longitude).toDp() }
+                val pinYDp = with(density) { mapY(station.latitude).toDp() }
                 // Stations panned out of view get no label
                 if (pinXDp < 0.dp || pinXDp > widthDp || pinYDp < 0.dp || pinYDp > heightDp) continue
                 val xDp = if (pinXDp + labelWidthDp > widthDp - 6.dp) pinXDp - labelWidthDp else pinXDp
@@ -838,76 +590,6 @@ private fun SpatialMapCanvas(
         val labelFades = rememberLabelFades(labelTargets)
 
         // Draw every label that is at least partly visible, at its current opacity
-        cityPlans.forEach { plan ->
-            val city = plan.city
-            val fade = labelFades["c:${city.name}"] ?: 0f
-            if (fade > 0.01f) {
-                val isSelected = city.targetStationId == selectedStationId
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = if (city.isCapital) {
-                        Color(0xFFFEF3C7)
-                    } else {
-                        Color.White.copy(alpha = 0.88f)
-                    },
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = 1.dp,
-                        color = if (city.isCapital) Color(0xFFD97706) else Color.DarkGray.copy(alpha = 0.25f)
-                    ),
-                    modifier = Modifier
-                        .offset(x = plan.xDp, y = plan.yDp)
-                        .alpha(fade)
-                        .clickable {
-                            city.targetStationId?.let { targetId ->
-                                stations.find { it.id == targetId }?.let { onSelectStation(it) }
-                            }
-                        }
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
-                    ) {
-                        if (city.isCapital) {
-                            Text(
-                                text = "★ ",
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFD97706)
-                            )
-                        }
-                        Text(
-                            text = city.name,
-                            fontSize = 8.sp,
-                            fontWeight = if (city.isCapital || isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (city.isCapital) Color(0xFF92400E) else Color(0xFF1E293B)
-                        )
-                        if (city.elevationText != null) {
-                            Text(
-                                text = " ${city.elevationText}",
-                                fontSize = 7.sp,
-                                color = Color(0xFF64748B),
-                                fontWeight = FontWeight.Normal
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        areaPlans.forEach { plan ->
-            val fade = labelFades["a:${plan.label.text}"] ?: 0f
-            if (fade > 0.01f) {
-                Text(
-                    text = plan.label.text,
-                    fontSize = plan.label.fontSizeSp.sp,
-                    fontWeight = plan.label.weight,
-                    letterSpacing = plan.label.letterSpacingSp.sp,
-                    color = plan.label.color,
-                    modifier = Modifier
-                        .offset(x = plan.xDp, y = plan.yDp)
-                        .alpha(fade)
-                )
-            }
-        }
         stationPlans.forEach { plan ->
             val fade = labelFades[plan.station.id] ?: 0f
             if (fade > 0.01f) {
@@ -945,14 +627,7 @@ private fun SpatialMapCanvas(
         // canvas takes no touches; taps fall through to the map below.
         stations.firstOrNull { it.id == selectedStationId }?.let { station ->
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val padding = 20f
-                val w = size.width - (padding * 2)
-                val h = size.height - (padding * 2)
-                val cx = size.width / 2f
-                val cy = size.height / 2f
-                val x = cx + (padding + ((station.longitude - minLon) / lonSpan).toFloat() * w - cx) * zoom + pan.x
-                val y = cy + (padding + (1f - ((station.latitude - minLat) / latSpan).toFloat()) * h - cy) * zoom + pan.y
-                drawStationPin(x, y, pinColor(station.terrain), pinScale * zoomDotGrowth(zoom), selected = true)
+                drawStationPin(mapX(station.longitude), mapY(station.latitude), pinColor(station.terrain), pinScale * zoomDotGrowth(zoom), selected = true)
             }
         }
 
@@ -963,7 +638,7 @@ private fun SpatialMapCanvas(
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(6.dp)
+                .padding(start = 12.dp, top = 12.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -979,11 +654,10 @@ private fun SpatialMapCanvas(
         }
 
         // Map Scale Bar (Bottom-Left): a bar drawn to the map's real scale
-        val midLat = (minLat + maxLat) / 2
-        val mapWidthKm = lonSpan * 111.32 * cos(midLat * PI / 180) / zoom
+        val mapWidthKm = canvasW / (projection.pixelsPerKm * zoom)
         val scaleKm = listOf(1, 2, 5, 10, 20, 25, 50, 100, 200).lastOrNull { it <= mapWidthKm * 0.4 } ?: 5
         val scaleMiles = (scaleKm * 0.621371).roundToInt()
-        val scaleBarDp = with(density) { (scaleKm / mapWidthKm * widthPx).toFloat().toDp() }
+        val scaleBarDp = with(density) { (scaleKm * projection.pixelsPerKm * zoom).toFloat().toDp() }
         Surface(
             shape = RoundedCornerShape(4.dp),
             color = Color.White.copy(alpha = 0.90f),
@@ -1008,17 +682,18 @@ private fun SpatialMapCanvas(
             }
         }
 
-        // Topo Relief Badge (Top-Right)
+        // Data credit (top right)
         Surface(
             shape = RoundedCornerShape(6.dp),
             color = Color(0xFFF0FDF4),
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC)),
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 6.dp, top = 6.dp)
+                // Where the Topography / Elevation buttons were: left of them, after the compass
+                .align(Alignment.TopStart)
+                .padding(start = 54.dp, top = 21.dp)
         ) {
             Text(
-                text = if (hasArtwork) "🗺️ Topo Relief" else "Base map: coast and border only",
+                text = if (terrain != null) "Terrain: USGS · NASA data" else "Base map: coast and border only",
                 fontSize = 7.5.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF166534),
@@ -1035,12 +710,12 @@ private fun SpatialMapCanvas(
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH) },
-            // Most of the map's height, below the top-right badge
+            // Its top stays under the data credit whatever the map's height; the bottom follows the map
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 4.dp, bottom = 4.dp)
+                .align(Alignment.TopEnd)
+                .padding(top = 56.dp, end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
-                .fillMaxHeight(0.86f)
+                .fillMaxHeight()
         )
     }
 }
@@ -1113,6 +788,37 @@ private fun DrawScope.drawNeutralBase(
     }
     drawPath(ocean, color = Color(0xFFDCEBF4))
 
+    drawGraticule(minLon, maxLon, minLat, maxLat, padding, mapX, mapY, zoom, textMeasurer)
+
+    // Border (dashed) and coast
+    val borderPath = Path().apply {
+        moveTo(mapX(border.first().first), mapY(border.first().second))
+        for (i in 1 until border.size) lineTo(mapX(border[i].first), mapY(border[i].second))
+    }
+    drawPath(
+        borderPath,
+        color = Color(0xFF94A3B8),
+        style = Stroke(width = 1.8f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f)))
+    )
+    val coastPath = Path().apply {
+        moveTo(mapX(coast.first().first), mapY(coast.first().second))
+        for (i in 1 until coast.size) lineTo(mapX(coast[i].first), mapY(coast[i].second))
+    }
+    drawPath(coastPath, color = Color(0xFF7FA7C4), style = Stroke(width = 2.6f, cap = StrokeCap.Round))
+}
+
+/** A light latitude / longitude grid with degree labels, drawn over the base. */
+private fun DrawScope.drawGraticule(
+    minLon: Double,
+    maxLon: Double,
+    minLat: Double,
+    maxLat: Double,
+    padding: Float,
+    mapX: (Double) -> Float,
+    mapY: (Double) -> Float,
+    zoom: Float,
+    textMeasurer: TextMeasurer
+) {
     // Latitude / longitude grid with degree labels
     // Steps chosen so neighboring labels stay at least ~64dp (longitude) and ~44dp (latitude) apart
     fun niceStep(spanDegrees: Double, lengthPx: Float, minGapPx: Float): Double {
@@ -1145,22 +851,6 @@ private fun DrawScope.drawNeutralBase(
         }
         lat += latStep
     }
-
-    // Border (dashed) and coast
-    val borderPath = Path().apply {
-        moveTo(mapX(border.first().first), mapY(border.first().second))
-        for (i in 1 until border.size) lineTo(mapX(border[i].first), mapY(border[i].second))
-    }
-    drawPath(
-        borderPath,
-        color = Color(0xFF94A3B8),
-        style = Stroke(width = 1.8f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f)))
-    )
-    val coastPath = Path().apply {
-        moveTo(mapX(coast.first().first), mapY(coast.first().second))
-        for (i in 1 until coast.size) lineTo(mapX(coast[i].first), mapY(coast[i].second))
-    }
-    drawPath(coastPath, color = Color(0xFF7FA7C4), style = Stroke(width = 2.6f, cap = StrokeCap.Round))
 }
 
 /**

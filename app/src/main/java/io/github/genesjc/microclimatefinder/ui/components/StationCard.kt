@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import io.github.genesjc.microclimatefinder.domain.Elevation
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,7 +66,13 @@ fun StationCard(
     // Demos pass true to keep the built-in sample numbers; the real app shows live NWS readings.
     useMockReadings: Boolean = false,
     // A tighter layout for the Station Inspector under the maps: no description, one-line metrics
-    compact: Boolean = false
+    compact: Boolean = false,
+    // Compact only: a line at the bottom of the card, inside its border
+    compactFooter: (@Composable () -> Unit)? = null,
+    // Compact only: a control at the right end of the title row (the open card's Less link)
+    compactHeaderAction: (@Composable () -> Unit)? = null,
+    // Compact only: a sentence about the height, shown under the terrain row
+    elevationNote: String? = null
 ) {
     val context = LocalContext.current
     var showNewsDialog by remember { mutableStateOf(false) }
@@ -106,7 +114,7 @@ fun StationCard(
             }
         )
     ) {
-        if (compact) CompactStationBody(station, terrainBadgeColor, display) else Column(modifier = Modifier.padding(16.dp)) {
+        if (compact) CompactStationBody(station, terrainBadgeColor, display, compactFooter, compactHeaderAction, elevationNote) else Column(modifier = Modifier.padding(16.dp)) {
             // Header row: Terrain Badge & Elevation
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -127,7 +135,7 @@ fun StationCard(
                 }
 
                 Text(
-                    text = "${station.elevationMeters}m elev.",
+                    text = "${Elevation.describe(station.elevationMeters)}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
@@ -192,16 +200,15 @@ fun StationCard(
                     MetricPill(label = "Humidity", value = display.humidity)
                     MetricPill(label = "Wind", value = display.wind)
                     MetricPill(label = display.thirdLabel, value = display.thirdValue)
+                    // The age of the reading, as a fourth column (its value wraps if it must)
+                    if (display.tempC != null && display.status != null) {
+                        MetricPill(
+                            label = "Updated",
+                            value = display.status.removePrefix("Updated").removePrefix(":").trim(),
+                            modifier = Modifier.widthIn(max = 76.dp)
+                        )
+                    }
                 }
-            }
-
-            if (display.tempC != null && display.status != null) {
-                Text(
-                    text = display.status,
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
             }
 
             if (AppFeatures.LOCAL_NEWS) {
@@ -519,9 +526,16 @@ fun StationCard(
  * height of the full card.
  */
 @Composable
-private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, display: CardDisplay) {
+private fun CompactStationBody(
+    station: MicroclimateStation,
+    badgeColor: Color,
+    display: CardDisplay,
+    footer: (@Composable () -> Unit)? = null,
+    headerAction: (@Composable () -> Unit)? = null,
+    elevationNote: String? = null
+) {
     Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
-        // Row 1: name and temperature
+        // Row 1: name, and the card's control (Less) at the right, like the other open cards
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = station.name,
@@ -531,30 +545,36 @@ private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, 
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            if (headerAction != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                headerAction()
+            }
+        }
+        // Row 2: the temperature in °F, with °C (or why there is no reading) beside it
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Text(
-                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "—",
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-        }
-        // Row 2: Humidity, Wind and Pressure on the left; °C (or why there is no reading) on the right
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CompactMetric("Humidity", display.humidity)
-                CompactMetric("Wind", display.wind)
-                CompactMetric(display.thirdLabel, display.thirdValue)
-            }
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) }
                     ?: display.status.orEmpty(),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
             )
         }
+        // Row 3: Humidity, Wind and Pressure
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            CompactMetric("Humidity", display.humidity)
+            CompactMetric("Wind", display.wind)
+            CompactMetric(display.thirdLabel, display.thirdValue)
+        }
         Spacer(modifier = Modifier.height(6.dp))
-        // Row 3: terrain chip and elevation on the left; the reading's age on the right
+        // Row 4: terrain chip and elevation on the left; the reading's age on the right
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Surface(
@@ -571,8 +591,10 @@ private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, 
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "${station.elevationMeters}m elev.",
+                    text = Elevation.describe(station.elevationMeters),
                     fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -584,6 +606,16 @@ private fun CompactStationBody(station: MicroclimateStation, badgeColor: Color, 
                 )
             }
         }
+        if (elevationNote != null) {
+            Text(
+                text = elevationNote,
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+        }
+        if (footer != null) footer()
     }
 }
 
@@ -597,6 +629,48 @@ private fun CompactMetric(label: String, value: String) {
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+/**
+ * The summary of a station for the Home row: the name, then the temperature in °F with °C beside it
+ * and a More link on the right. The age of the reading is in the full card that More opens. When
+ * there is no reading, the reason shows where the °C would be.
+ */
+@Composable
+fun StationSummaryTile(station: MicroclimateStation) {
+    val display = liveDisplay(station)
+    // One line: the name (at most 25 characters), the temperature in °F, and the More link at the right
+    val name = if (station.name.length > 25) station.name.take(24).trimEnd() + "\u2026" else station.name
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = name,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = "More \u25BC",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1
         )
     }
 }
@@ -663,8 +737,8 @@ private fun liveDisplay(station: MicroclimateStation): CardDisplay {
 }
 
 @Composable
-private fun MetricPill(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun MetricPill(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,
             fontSize = 10.sp,
@@ -675,6 +749,7 @@ private fun MetricPill(label: String, value: String) {
             text = value,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface
         )
     }

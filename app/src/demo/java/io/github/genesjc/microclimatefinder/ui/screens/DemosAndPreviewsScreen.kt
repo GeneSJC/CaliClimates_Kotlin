@@ -37,14 +37,14 @@ private data class DemoEntry(
 
 private val DEMOS_AND_PREVIEWS_ENTRIES = listOf(
     DemoEntry(
-        title = "Topographical Map (standalone)",
-        description = "The Topo Map as its own screen, with its own header. The same map now lives in the Topo Map tab on Home.",
+        title = "Topography (legacy)",
+        description = "The Topography map as its own screen, with its own header. Kept for reference: the same map is the Topography view on Home.",
         iconChar = "▲",
         target = AppScreen.STATION_MAP
     ),
     DemoEntry(
-        title = "Elevation Profile (standalone)",
-        description = "The Elevation Profile as its own screen, with its own header. The same view now lives in the Elevation Profile tab on Home.",
+        title = "Elevation (legacy)",
+        description = "The Elevation profile as its own screen, with its own header. Kept for reference: the same view is the Elevation view on Home.",
         iconChar = "⛰️",
         target = AppScreen.ELEVATION_PROFILE
     ),

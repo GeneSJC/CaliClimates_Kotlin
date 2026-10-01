@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import io.github.genesjc.microclimatefinder.domain.Elevation
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -38,6 +39,23 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlin.math.abs
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.BlendMode
+import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
+import io.github.genesjc.microclimatefinder.data.local.TerrainImage
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -50,6 +68,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -79,6 +98,62 @@ private const val LANDMARK_COUNT = 6
 
 // Chart margin in pixels; the Canvas and the label overlay must use the same value
 private const val CHART_PADDING_PX = 32f
+
+// The profile sits between a little headroom and sea level; the bottom of the chart is ocean, so sea level
+// is in view and the cities spread over more of the height
+private const val PROFILE_HEAD = 0.05f
+private const val SEA_FRACTION = 0.14f
+
+/** Where (0 at the chart's top, 1 at its bottom) a height, as a share of the highest station, is drawn. */
+private fun profileFrac(elevRatio: Float): Float = PROFILE_HEAD + (1f - elevRatio) * (1f - PROFILE_HEAD - SEA_FRACTION)
+
+private class Fish(
+    val lengthDp: Float,
+    val color: Color,
+    val cycles: Int,
+    val offset: Float,
+    val depth: Float,
+    val rightward: Boolean
+)
+
+// Three fish of different sizes, each swimming across at its own pace
+private val FISH = listOf(
+    Fish(lengthDp = 16f, color = Color(0xFFFFA64D), cycles = 4, offset = 0.15f, depth = 0.28f, rightward = true),
+    Fish(lengthDp = 24f, color = Color(0xFFFFE08A), cycles = 3, offset = 0.60f, depth = 0.55f, rightward = false),
+    Fish(lengthDp = 34f, color = Color(0xFFD5E8F7), cycles = 2, offset = 0.35f, depth = 0.42f, rightward = true)
+)
+
+/** A little fish: an oval body, a tail that waggles with [wag] (-1 to 1) and an eye at the head. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawFish(
+    cx: Float, cy: Float, length: Float, color: Color, rightward: Boolean, wag: Float
+) {
+    val dir = if (rightward) 1f else -1f
+    val bodyW = length * 0.72f
+    val bodyH = length * 0.40f
+    // Body
+    drawOval(
+        color = color,
+        topLeft = Offset(cx - bodyW / 2f, cy - bodyH / 2f),
+        size = androidx.compose.ui.geometry.Size(bodyW, bodyH)
+    )
+    // Tail, behind the body
+    val tailBase = cx - dir * bodyW * 0.45f
+    val tailTip = cx - dir * length * 0.5f
+    val sway = wag * bodyH * 0.35f
+    val tail = Path().apply {
+        moveTo(tailBase, cy)
+        lineTo(tailTip, cy - bodyH * 0.55f + sway)
+        lineTo(tailTip, cy + bodyH * 0.55f + sway)
+        close()
+    }
+    drawPath(tail, color = color)
+    // Eye
+    drawCircle(
+        color = Color(0xFF0F2A44),
+        radius = length * 0.045f,
+        center = Offset(cx + dir * bodyW * 0.28f, cy - bodyH * 0.1f)
+    )
+}
 
 // Labels are about this tall (dp) when checking for overlaps
 private const val LABEL_HEIGHT_DP = 18f
@@ -119,11 +194,24 @@ fun ElevationProfileScreen(
     embedded: Boolean = false,
     /** A station selected elsewhere (the other Home tab), and a way to report selections back. */
     sharedSelectedStationId: String? = null,
-    onStationSelected: ((String) -> Unit)? = null
+    onStationSelected: ((String) -> Unit)? = null,
+    /** The zoom to start at, and a report of each change (Home keeps the zoom when it switches views). */
+    initialZoom: Float = 1f,
+    onZoomChange: ((Float) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val parser = remember(dataset.fileName) { StationCsvParser(context) }
     val stations = remember(dataset) { parser.loadStations(dataset) }
+
+    // The region's terrain picture (the one the Topography map draws), used as a faint texture in the ground
+    val terrain by produceState<TerrainImage?>(null, dataset.regionId) {
+        value = withContext(Dispatchers.IO) { TerrainMaps.load(context, dataset.regionId) }
+    }
+
+    // The region's real skylines, for the distant ranges
+    val skyline by produceState<List<FloatArray>?>(null, dataset.regionId) {
+        value = withContext(Dispatchers.IO) { TerrainMaps.loadSkyline(context, dataset.regionId) }
+    }
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
@@ -132,7 +220,9 @@ fun ElevationProfileScreen(
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
 
     // The chart starts at its regular height; the toggle on it stretches it, slowly, to fill the screen
-    var chartExpanded by remember { mutableStateOf(false) }
+    var localExpanded by remember { mutableStateOf(false) }
+    // On Home the chart always fills the space; the standalone screen keeps the Expand / Shrink toggle
+    val chartExpanded = embedded || localExpanded
     var aboveChartPx by remember { mutableStateOf(0) }
     var belowChartPx by remember { mutableStateOf(0) }
     val density = LocalDensity.current
@@ -179,7 +269,7 @@ fun ElevationProfileScreen(
 
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                 Text(
-                    text = "Elevation Profile",
+                    text = "Elevation",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -213,26 +303,39 @@ fun ElevationProfileScreen(
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                // A 1dp outline, for a crisper edge
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.fillMaxSize()
             ) {
                 ElevationProfileCanvas(
                     stations = stations,
+                    regionId = dataset.regionId,
+                    terrain = terrain,
+                    skyline = skyline,
+                    embedded = embedded,
                     selectedStationId = selectedStationId,
+                    initialZoom = initialZoom,
+                    onZoomChange = onZoomChange,
                     onSelectStation = {
                         localSelectedId = it.id
                         onStationSelected?.invoke(it.id)
                     }
                 )
             }
+            if (!embedded) {
             MapExpandToggle(
                 expanded = chartExpanded,
-                onToggle = { chartExpanded = !chartExpanded },
-                modifier = Modifier.align(Alignment.TopStart).padding(start = 6.dp, top = 6.dp)
+                onToggle = {
+                    localExpanded = !chartExpanded
+                },
+                // Just left of the top of the zoom slider, as on the Topography map
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 50.dp, top = 56.dp)
             )
+            }
         }
 
         Column(modifier = Modifier.onSizeChanged { belowChartPx = it.height }) {
-        Spacer(modifier = Modifier.height(12.dp))
+        if (!embedded) Spacer(modifier = Modifier.height(12.dp))
 
         // Terrain legend: one line until opened, then this region's terrain types with counts.
         // Embedded, Home shows it beside the Region Info link.
@@ -278,6 +381,133 @@ private val CHART_REGULAR_HEIGHT = 300.dp
 /** How long the chart takes to grow to full height and back. */
 private const val CHART_RESIZE_MS = 700
 
+/** One layer behind the profile: where it sits, how tall, how fast it drifts, how hazy, and its trees. */
+private data class RidgeLayer(
+    val base: Float,        // baseline, as a fraction of the regular chart height from the top
+    val amplitude: Float,   // tallest peak, as a fraction of the regular chart height
+    val spread: Float,      // how many peaks fit across the chart (the made-up part of the outline)
+    val follow: Float,      // how much of the pan and zoom it follows (less = farther away)
+    val depthShade: Float,  // how far it is pushed toward slate from the horizon colour
+    val alpha: Float,
+    val anchor: Float,      // how much of the extra height of an expanded chart it moves down (0 = stays put, 1 = all of it)
+    val skylineIndex: Int,  // which real skyline gives its outline (0 far, 1 middle, 2 near), or -1 for a made-up one
+    val treeSizeDp: Float   // tree height, or 0 for none
+)
+
+private val RIDGE_LAYERS = listOf(
+    RidgeLayer(0.50f, 0.22f, 1.3f, 0.22f, 0.20f, 0.30f, 0.00f, 0, 0f),
+    RidgeLayer(0.62f, 0.20f, 1.8f, 0.34f, 0.30f, 0.38f, 0.12f, 1, 0f),
+    RidgeLayer(0.74f, 0.16f, 2.4f, 0.46f, 0.40f, 0.46f, 0.30f, 2, 0f),
+    RidgeLayer(0.84f, 0.09f, 2.8f, 0.58f, 0.50f, 0.55f, 0.55f, -1, 0f),
+    RidgeLayer(0.92f, 0.05f, 3.6f, 0.70f, 0.58f, 0.70f, 0.80f, -1, 11f),
+    RidgeLayer(0.99f, 0.04f, 4.5f, 0.85f, 0.65f, 0.80f, 1.00f, -1, 18f)
+)
+
+/** A real skyline's height (0 to 1) at [t], where 0 to 1 is across the chart; it mirrors outside that. */
+private fun sampleSkyline(values: FloatArray, t: Float): Float {
+    val m = ((t % 2f) + 2f) % 2f
+    val u = if (m <= 1f) m else 2f - m
+    val pos = u * (values.size - 1)
+    val i = pos.toInt().coerceAtMost(values.size - 2)
+    return values[i] + (values[i + 1] - values[i]) * (pos - i)
+}
+
+private enum class TreeKind { CONIFER, OAK, PALM }
+
+/** The kinds of tree along the near hills, by region (repeats make a kind more common). */
+private val TREE_MIX = mapOf(
+    "northern_california" to listOf(TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.OAK),
+    "bay_area_sacramento" to listOf(TreeKind.CONIFER, TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),
+    "central_coast" to listOf(TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),
+    "central_valley" to listOf(TreeKind.OAK, TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),
+    "los_angeles" to listOf(TreeKind.PALM, TreeKind.OAK, TreeKind.OAK),
+    "san_diego" to listOf(TreeKind.PALM, TreeKind.PALM, TreeKind.OAK)
+)
+
+private fun pseudoRandom(i: Int, seed: Int): Float = (((i * 73856093) xor (seed * 19349663)) and 0xFFFF) / 65535f
+
+/** Little trees standing along a ridgeline ([points] run left to right, evenly spaced). Decoration. */
+private fun DrawScope.drawTrees(
+    points: List<Offset>,
+    regionId: String,
+    sizePx: Float,
+    color: Color,
+    seed: Int,
+    xMin: Float,
+    xMax: Float
+) {
+    val mix = TREE_MIX[regionId] ?: listOf(TreeKind.OAK, TreeKind.CONIFER)
+    val first = points.first().x
+    val last = points.last().x
+    if (last <= first) return
+    val step = (last - first) / (points.size - 1)
+    var index = 0
+    var x = first
+    while (x < last) {
+        val r = pseudoRandom(index, seed)
+        val tx = x + (r - 0.5f) * sizePx * 0.6f
+        if (tx in xMin..xMax) {
+            val pos = ((tx - first) / step).coerceIn(0f, (points.size - 1).toFloat() - 0.001f)
+            val k = pos.toInt()
+            val y = points[k].y + (points[k + 1].y - points[k].y) * (pos - k)
+            val s = sizePx * (0.7f + 0.6f * pseudoRandom(index + 7, seed))
+            when (mix[(pseudoRandom(index + 13, seed) * mix.size).toInt().coerceAtMost(mix.size - 1)]) {
+                TreeKind.CONIFER -> {
+                    val upper = Path().apply {
+                        moveTo(tx, y - s); lineTo(tx - s * 0.26f, y - s * 0.3f); lineTo(tx + s * 0.26f, y - s * 0.3f); close()
+                    }
+                    val lower = Path().apply {
+                        moveTo(tx, y - s * 0.7f); lineTo(tx - s * 0.34f, y); lineTo(tx + s * 0.34f, y); close()
+                    }
+                    drawPath(upper, color)
+                    drawPath(lower, color)
+                }
+                TreeKind.OAK -> {
+                    drawLine(color, Offset(tx, y), Offset(tx, y - s * 0.3f), strokeWidth = s * 0.09f)
+                    drawCircle(color, radius = s * 0.36f, center = Offset(tx, y - s * 0.6f))
+                    drawCircle(color, radius = s * 0.26f, center = Offset(tx - s * 0.22f, y - s * 0.45f))
+                }
+                TreeKind.PALM -> {
+                    val topPoint = Offset(tx + s * 0.06f, y - s * 0.85f)
+                    drawLine(color, Offset(tx, y), topPoint, strokeWidth = s * 0.08f)
+                    for (angle in listOf(-165f, -125f, -90f, -55f, -15f)) {
+                        val rad = Math.toRadians(angle.toDouble())
+                        drawLine(
+                            color, topPoint,
+                            Offset(topPoint.x + (kotlin.math.cos(rad) * s * 0.38f).toFloat(), topPoint.y + (kotlin.math.sin(rad) * s * 0.26f).toFloat() + s * 0.06f),
+                            strokeWidth = s * 0.06f
+                        )
+                    }
+                }
+            }
+        }
+        index++
+        x += sizePx * 0.85f
+    }
+}
+
+/** A ridgeline's height from 0 to 1 at position [t]; a fixed pattern for a given region and layer. */
+private fun ridgeHeight(t: Float, seed: Int, layer: Int): Float {
+    val a = ((seed * 31 + layer * 17) and 0xFF) / 40f
+    val b = ((seed * 57 + layer * 29) and 0xFF) / 40f
+    val c = ((seed * 91 + layer * 43) and 0xFF) / 40f
+    val v = 0.60f * (1f - abs(sin(t * 4.3f + a))) + 0.30f * (1f - abs(sin(t * 9.1f + b))) + 0.10f * (0.5f + 0.5f * sin(t * 21f + c))
+    return v.coerceIn(0f, 1f)
+}
+
+/** The ground colour at [elevationMeters]: green lowlands, tan hills, pale high country. Matches the terrain pictures. */
+private fun heightTint(elevationMeters: Float): Color {
+    val stops = listOf(
+        0f to Color(0xFFE2EDD6), 300f to Color(0xFFDEE4C8), 900f to Color(0xFFD9D1B2),
+        1800f to Color(0xFFCDC4AA), 3000f to Color(0xFFD6D2C8), 4200f to Color(0xFFF0F0F0)
+    )
+    val e = elevationMeters.coerceIn(0f, 4200f)
+    val upper = stops.indexOfFirst { it.first >= e }.coerceAtLeast(1)
+    val (e0, c0) = stops[upper - 1]
+    val (e1, c1) = stops[upper]
+    return lerp(c0, c1, if (e1 > e0) (e - e0) / (e1 - e0) else 0f)
+}
+
 // Data class for atmospheric sky gradient & weather condition above the elevation profile
 private data class SkyAtmosphereTheme(
     val colors: List<Color>,
@@ -290,7 +520,13 @@ private data class SkyAtmosphereTheme(
 @Composable
 private fun ElevationProfileCanvas(
     stations: List<MicroclimateStation>,
+    regionId: String,
+    terrain: TerrainImage?,
+    skyline: List<FloatArray>?,
+    embedded: Boolean,
     selectedStationId: String?,
+    initialZoom: Float = 1f,
+    onZoomChange: ((Float) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
@@ -305,7 +541,24 @@ private fun ElevationProfileCanvas(
     }
 
     // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
-    var zoom by remember(sorted) { mutableStateOf(1f) }
+    var zoom by remember(sorted) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
+    androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
+
+    // First visits: a pulse runs up the line once and a hint says the line can be tapped
+    val hintContext = LocalContext.current
+    val hintPrefs = remember { io.github.genesjc.microclimatefinder.data.local.ElevationHintPreferences(hintContext) }
+    var showHint by remember { mutableStateOf(false) }
+    val pulse = remember { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        hintPrefs.countLaunch()
+        if (hintPrefs.shouldShow()) {
+            showHint = true
+            kotlinx.coroutines.delay(700)
+            pulse.animateTo(1f, tween(2000, easing = androidx.compose.animation.core.LinearEasing))
+            kotlinx.coroutines.delay(2500)
+            showHint = false
+        }
+    }
     var pan by remember(sorted) { mutableStateOf(Offset.Zero) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
     val zoomScope = rememberCoroutineScope()
@@ -438,9 +691,10 @@ private fun ElevationProfileCanvas(
         val placedLabels = run {
             val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
             val taken = mutableListOf(
-                listOf(widthDp.value - 46f, heightDp.value * 0.14f, widthDp.value, heightDp.value), // zoom slider
-                listOf(0f, 0f, 80f, 38f),                 // expand toggle
-                listOf(10f, 45f, 180f, 92f)               // weather badge
+                listOf(widthDp.value - 46f, 56f, widthDp.value, heightDp.value), // zoom slider
+                if (embedded) listOf(widthDp.value - 170f, 0f, widthDp.value, 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+                listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
+                listOf(20f, 50f, 190f, 97f)               // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
             fun plan(idx: Int, allow: Boolean, force: Boolean): PlacedLabel? {
@@ -448,10 +702,10 @@ private fun ElevationProfileCanvas(
                 val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
                 val elevRatio = station.elevationMeters / maxElevation
                 val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
-                val pinY = with(density) { viewY(paddingPx + (1f - elevRatio) * heightPx).toDp().value }
+                val pinY = with(density) { viewY(paddingPx + profileFrac(elevRatio) * heightPx).toDp().value }
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
                 val text = LocalNewsRepository.getCleanCityName(station.id, station.name) +
-                    " ${"%,d".format(station.elevationMeters)}m"
+                    " ${Elevation.formatFeet(station.elevationMeters)}"
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
                 val labelW = text.length * 5.4f + 10f
                 val left = (if (pinX - 24f + labelW > widthDp.value * 0.97f) pinX - labelW else pinX - 24f).coerceAtLeast(2f)
@@ -510,7 +764,7 @@ private fun ElevationProfileCanvas(
                         sorted.forEachIndexed { index, station ->
                             val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                             val elevRatio = station.elevationMeters / maxElevation
-                            val y = viewY(padding + (1f - elevRatio) * h)
+                            val y = viewY(padding + profileFrac(elevRatio) * h)
 
                             val dx = tapOffset.x - x
                             val dy = tapOffset.y - y
@@ -520,7 +774,11 @@ private fun ElevationProfileCanvas(
                                 closestStation = station
                             }
                         }
-                        closestStation?.let { onSelectStation(it) }
+                        closestStation?.let {
+                            onSelectStation(it)
+                            hintPrefs.markLineTapped()
+                            showHint = false
+                        }
                     }
                 }
         ) {
@@ -533,12 +791,12 @@ private fun ElevationProfileCanvas(
                 moveTo(viewX(padding), viewY(padding))
                 lineTo(viewX(size.width - padding), viewY(padding))
                 val lastElevRatio = (sorted.lastOrNull()?.elevationMeters ?: 0) / maxElevation
-                lineTo(viewX(size.width - padding), viewY(padding + (1f - lastElevRatio) * h))
+                lineTo(viewX(size.width - padding), viewY(padding + profileFrac(lastElevRatio) * h))
                 for (i in (sorted.size - 1) downTo 0) {
                     val st = sorted[i]
                     val x = viewX(padding + (i.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                     val elevRatio = st.elevationMeters / maxElevation
-                    val y = viewY(padding + (1f - elevRatio) * h)
+                    val y = viewY(padding + profileFrac(elevRatio) * h)
                     lineTo(x, y)
                 }
                 close()
@@ -552,6 +810,69 @@ private fun ElevationProfileCanvas(
                     endY = viewY(padding + h * 0.85f)
                 )
             )
+
+            // 1b. Distant ranges, hills and trees behind the profile, for depth. Decoration: the three
+            // farthest ranges take their outline from the region's real skyline (the highest ground,
+            // looking north across the region); the nearer hills and trees are made up, the same every
+            // time for a region. Each layer drifts slower than the profile when you pan and zoom, and
+            // hazes toward the sky colour the farther away it is.
+            val horizon = skyTheme.colors.last()
+            val seed = regionId.hashCode()
+            // The layers keep the size they have in the regular-height chart. When the chart is taller,
+            // the extra height is shared out between them (the far ranges stay near the top, the near
+            // hills sink toward the ground), so nothing stretches and the gaps fill with more layers.
+            val ridgeH = CHART_REGULAR_HEIGHT.toPx() - padding * 2
+            val extra = (h - ridgeH).coerceAtLeast(0f)
+            clipPath(skyPath) {
+                RIDGE_LAYERS.forEachIndexed { layer, spec ->
+                    val steps = 110
+                    val startX = -size.width
+                    val endX = size.width * 2f
+                    val points = ArrayList<Offset>(steps + 1)
+                    val realLayer = if (spec.skylineIndex >= 0) skyline?.getOrNull(spec.skylineIndex) else null
+                    for (i in 0..steps) {
+                        val bx = startX + (endX - startX) * i / steps
+                        val procedural = ridgeHeight((bx / size.width) * spec.spread, seed, layer)
+                        val height = if (realLayer != null) {
+                            0.85f * sampleSkyline(realLayer, bx / size.width) + 0.15f * procedural
+                        } else procedural
+                        val by = padding + ridgeH * spec.base - ridgeH * spec.amplitude * height + spec.anchor * extra
+                        val lx = size.width / 2f + (bx - size.width / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.x * spec.follow
+                        val ly = size.height / 2f + (by - size.height / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.y * spec.follow
+                        points.add(Offset(lx, ly))
+                    }
+                    val ridge = Path().apply {
+                        moveTo(points.first().x, points.first().y)
+                        for (k in 1 until points.size) lineTo(points[k].x, points[k].y)
+                        lineTo(size.width * 4f, size.height * 3f)
+                        lineTo(-size.width * 3f, size.height * 3f)
+                        close()
+                    }
+                    // Darker at the ridge, hazing lighter below it, so the gap to the next layer reads as mist
+                    val top = lerp(horizon, Color(0xFF334155), spec.depthShade)
+                    val topY = points.minOf { it.y }
+                    drawPath(
+                        ridge,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(top.copy(alpha = spec.alpha), lerp(top, horizon, 0.5f).copy(alpha = spec.alpha * 0.7f)),
+                            startY = topY,
+                            endY = topY + ridgeH * 0.45f * (1f + (zoom - 1f) * spec.follow)
+                        )
+                    )
+                    if (spec.treeSizeDp > 0f) {
+                        val treeScale = 1f + (zoom - 1f) * spec.follow
+                        drawTrees(
+                            points = points,
+                            regionId = regionId,
+                            sizePx = spec.treeSizeDp.dp.toPx() * treeScale,
+                            color = lerp(top, Color(0xFF0F2F2A), 0.55f).copy(alpha = (spec.alpha + 0.15f).coerceAtMost(0.95f)),
+                            seed = seed + layer * 101,
+                            xMin = -40f,
+                            xMax = size.width + 40f
+                        )
+                    }
+                }
+            }
 
             // 2. DYNAMIC WEATHER VISUALS (Clouds / Sun corona in the upper-left quadrant)
             if (tempF == null) {
@@ -614,7 +935,7 @@ private fun ElevationProfileCanvas(
             sorted.forEachIndexed { index, station ->
                 val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                 val elevRatio = station.elevationMeters / maxElevation
-                val y = viewY(padding + (1f - elevRatio) * h)
+                val y = viewY(padding + profileFrac(elevRatio) * h)
 
                 if (index == 0) {
                     terrainPath.moveTo(x, viewY(size.height - padding))
@@ -628,16 +949,93 @@ private fun ElevationProfileCanvas(
             terrainPath.lineTo(viewX(size.width - padding), viewY(size.height - padding))
             terrainPath.close()
 
-            // Gradient under the elevation curve (Warm valley 28°C -> Cool Ridge 18°C)
+            // The ground: tinted by height with the same ramp as the Topography map (data), so a given
+            // height has the same colour in both views
+            val groundTop = viewY(padding)
+            val groundBottom = viewY(padding + h)
             drawPath(
                 path = terrainPath,
                 brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF7C3AED).copy(alpha = 0.35f), // High ridge cool air
-                        Color(0xFF0284C7).copy(alpha = 0.20f), // Mid
-                        Color(0xFFEA580C).copy(alpha = 0.12f)  // Valley basin heat
-                    )
+                    colorStops = (0..10).map { step ->
+                        val fraction = step / 10f
+                        // The height drawn at this share of the chart (clamped: above the top and below sea level)
+                        val ratio = (1f - (fraction - PROFILE_HEAD) / (1f - PROFILE_HEAD - SEA_FRACTION)).coerceIn(0f, 1f)
+                        fraction to heightTint(ratio * maxElevation)
+                    }.toTypedArray(),
+                    startY = groundTop,
+                    endY = groundBottom
                 )
+            )
+
+            // A faint relief texture from the region's own terrain picture (decoration, not data). It
+            // drifts slower than the profile when you pan and zoom, which gives the ground some depth.
+            if (terrain != null) {
+                val b = terrain.bounds
+                val lonSpan = b.maxLon - b.minLon
+                val latSpan = b.maxLat - b.minLat
+                // The part of the picture that holds the stations
+                val sLeft = ((stations.minOf { it.longitude } - b.minLon) / lonSpan).coerceIn(0.0, 1.0)
+                val sRight = ((stations.maxOf { it.longitude } - b.minLon) / lonSpan).coerceIn(0.0, 1.0)
+                val sTop = ((b.maxLat - stations.maxOf { it.latitude }) / latSpan).coerceIn(0.0, 1.0)
+                val sBottom = ((b.maxLat - stations.minOf { it.latitude }) / latSpan).coerceIn(0.0, 1.0)
+                val img = terrain.image
+                val srcX = (sLeft * img.width).toInt()
+                val srcY = (sTop * img.height).toInt()
+                val srcW = ((sRight - sLeft) * img.width).toInt().coerceAtLeast(1)
+                val srcH = ((sBottom - sTop) * img.height).toInt().coerceAtLeast(1)
+                val follow = 0.6f
+                val scale = 1f + (zoom - 1f) * follow
+                // Big enough to cover the whole chart, whatever its shape
+                val cover = maxOf(size.width * 1.6f / srcW, size.height * 1.4f / srcH)
+                val dstW = srcW * cover * scale
+                val dstH = srcH * cover * scale
+                val dstX = size.width / 2f - dstW / 2f + pan.x * follow
+                val dstY = size.height / 2f - dstH / 2f + pan.y * follow
+                clipPath(terrainPath) {
+                    drawImage(
+                        image = img,
+                        srcOffset = IntOffset(srcX, srcY),
+                        srcSize = IntSize(srcW, srcH),
+                        dstOffset = IntOffset(dstX.roundToInt(), dstY.roundToInt()),
+                        dstSize = IntSize(dstW.roundToInt(), dstH.roundToInt()),
+                        alpha = 0.5f,
+                        colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
+                        blendMode = BlendMode.Multiply
+                    )
+                }
+            }
+
+            // The ocean: the bottom of the chart, below sea level (decoration; the heights above it are data)
+            val seaY = viewY(padding + (1f - SEA_FRACTION) * h)
+            val oceanBottom = maxOf(size.height, viewY(size.height - padding) + padding)
+            if (seaY < oceanBottom) {
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        listOf(Color(0xFF7CC3E6), Color(0xFF3B8EC4), Color(0xFF1F5F99)),
+                        startY = seaY,
+                        endY = oceanBottom
+                    ),
+                    topLeft = Offset(0f, seaY),
+                    size = androidx.compose.ui.geometry.Size(size.width, oceanBottom - seaY)
+                )
+                // A light line at the waterline and a few soft wave crests
+                drawLine(Color.White.copy(alpha = 0.55f), Offset(0f, seaY), Offset(size.width, seaY), strokeWidth = 2.5f)
+                val crest = Color.White.copy(alpha = 0.22f)
+                for (row in 1..3) {
+                    val wy = seaY + (oceanBottom - seaY) * row / 4.5f
+                    var wx = -(row * 37f) % 90f
+                    while (wx < size.width) {
+                        drawLine(crest, Offset(wx, wy), Offset(wx + 26f, wy), strokeWidth = 2f, cap = StrokeCap.Round)
+                        wx += 90f
+                    }
+                }
+            }
+
+            // A lit edge along the profile, like the sun catching the ridge
+            drawPath(
+                path = linePath,
+                color = Color.White.copy(alpha = 0.30f),
+                style = Stroke(width = 10f, cap = StrokeCap.Round)
             )
 
             // Top ridge line
@@ -651,7 +1049,7 @@ private fun ElevationProfileCanvas(
             sorted.forEachIndexed { index, station ->
                 val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
                 val elevRatio = station.elevationMeters / maxElevation
-                val y = viewY(padding + (1f - elevRatio) * h)
+                val y = viewY(padding + profileFrac(elevRatio) * h)
                 val isSelected = station.id == selectedStationId
 
                 val isLandmark = station.id in placedIds
@@ -697,6 +1095,73 @@ private fun ElevationProfileCanvas(
                     radius = (if (isSelected) 6f else (if (isLandmark) 4.8f else 3.2f)) * dotGrowth,
                     center = Offset(x, y)
                 )
+
+                // The one-off pulse: a ring that runs up the line, low dots first
+                val pulseValue = pulse.value
+                if (pulseValue > 0f && pulseValue < 1f) {
+                    val ring = (pulseValue * (sorted.size + 8f) - index) / 8f
+                    if (ring in 0f..1f) {
+                        drawCircle(
+                            color = Color.White.copy(alpha = (1f - ring) * 0.85f),
+                            radius = (9f + 26f * ring) * dotGrowth,
+                            center = Offset(x, y),
+                            style = Stroke(width = 3f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Three fish swimming in the ocean (decoration). They are drawn in their own layer, so only it
+        // redraws as they move, and they follow the ocean when the chart is zoomed or panned.
+        val swim = androidx.compose.animation.core.rememberInfiniteTransition(label = "fish")
+        val fishTime by swim.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                animation = tween(120_000, easing = androidx.compose.animation.core.LinearEasing)
+            ),
+            label = "fishTime"
+        )
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val seaTop = viewY(paddingPx + (1f - SEA_FRACTION) * heightPx)
+            val seaBottom = maxOf(size.height, viewY(size.height - paddingPx) + paddingPx)
+            val band = seaBottom - seaTop
+            if (seaTop < size.height && band > 40.dp.toPx()) {
+                clipRect(top = maxOf(0f, seaTop), bottom = size.height) {
+                    for (fish in FISH) {
+                        val length = fish.lengthDp.dp.toPx()
+                        val travel = size.width + 2f * length
+                        val phase = (fishTime * fish.cycles + fish.offset) % 1f
+                        val cx = if (fish.rightward) phase * travel - length else size.width + length - phase * travel
+                        val wobble = kotlin.math.sin((fishTime * 60f * fish.cycles + fish.offset) * 2f * Math.PI.toFloat())
+                        val cy = seaTop + band * fish.depth + wobble * 4.dp.toPx()
+                        drawFish(cx, cy, length, fish.color, fish.rightward, wobble)
+                    }
+                }
+            }
+        }
+
+        // The hint, in the ocean: fades away after a few seconds or at the first tap on the line
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showHint,
+            enter = androidx.compose.animation.fadeIn(tween(500)),
+            exit = androidx.compose.animation.fadeOut(tween(700)),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = heightDp * 0.045f + 6.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = Color(0xCC0F172A)
+            ) {
+                Text(
+                    text = "Tap anywhere on the line to pick a station",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                )
             }
         }
 
@@ -706,7 +1171,7 @@ private fun ElevationProfileCanvas(
             color = skyTheme.badgeBg.copy(alpha = 0.85f),
             border = BorderStroke(1.dp, skyTheme.accent.copy(alpha = 0.45f)),
             modifier = Modifier
-                .offset(x = 10.dp, y = 45.dp)
+                .offset(x = 20.dp, y = 50.dp)
                 .clickable {
                     // Tap to cycle landmarks
                     if (cycleIds.isNotEmpty()) {
@@ -741,7 +1206,7 @@ private fun ElevationProfileCanvas(
                         )
                     }
                     Text(
-                        text = "${skyTheme.condition} • ${currentStation?.elevationMeters}m elev",
+                        text = "${skyTheme.condition} • ${currentStation?.let { Elevation.formatFeet(it.elevationMeters) }} elev",
                         fontSize = 8.sp,
                         color = skyTheme.accent,
                         fontWeight = FontWeight.SemiBold
@@ -783,7 +1248,7 @@ private fun ElevationProfileCanvas(
             }
         }
 
-        // Floating zoom slider on the right edge, where the Topo Map has it
+        // Floating zoom slider on the right edge, where the Topography map has it
         fun nearestLinePoint(): Offset {
             val middle = Offset(canvasW / 2f, canvasH / 2f)
             return sorted.indices
@@ -791,7 +1256,7 @@ private fun ElevationProfileCanvas(
                     val elevRatio = sorted[i].elevationMeters / maxElevation
                     Offset(
                         viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
-                        viewY(paddingPx + (1f - elevRatio) * heightPx)
+                        viewY(paddingPx + profileFrac(elevRatio) * heightPx)
                     )
                 }
                 .minByOrNull { (it - middle).getDistance() } ?: middle
@@ -805,12 +1270,12 @@ private fun ElevationProfileCanvas(
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) },
-            // The same spot as on the Topo Map: bottom right, most of the height
+            // The same spot as on the Topography map: its top stays put, the bottom follows the chart
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 4.dp, bottom = 4.dp)
+                .align(Alignment.TopEnd)
+                .padding(top = 56.dp, end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
-                .fillMaxHeight(0.86f)
+                .fillMaxHeight()
         )
     }
 }

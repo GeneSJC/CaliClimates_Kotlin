@@ -1,2 +1,5 @@
 # Station packs are one line of text that must never be re-encoded or have line endings rewritten
 app/src/main/assets/[a-f].txt -text
+
+# Terrain pictures are binary
+app/src/main/assets/terrain/*.webp binary

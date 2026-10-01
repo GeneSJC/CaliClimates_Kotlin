@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 
 // California border as (lon, lat) vertices: Pacific coast north to south, the Mexico
 // and Colorado River edge, then the Nevada diagonal back up to Oregon.
@@ -33,7 +34,11 @@ private const val CA_LON_SCALE = 0.8f
 fun CaliforniaOutlineIcon(
     fill: Color,
     stroke: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** When given, the icon is filled region by region in these colours, like the picker's map. */
+    regionColors: Map<String, Color> = emptyMap(),
+    /** The current region, drawn at full strength; the others are softer. */
+    selectedRegionId: String? = null
 ) {
     Canvas(modifier = modifier) {
         val lonSpan = (CA_LON_MAX - CA_LON_MIN) * CA_LON_SCALE
@@ -54,7 +59,25 @@ fun CaliforniaOutlineIcon(
             }
             close()
         }
-        drawPath(path, color = fill)
+        if (regionColors.isEmpty()) {
+            drawPath(path, color = fill)
+        } else {
+            // The state's shape clips the regions, so the coast stays as in the outline
+            clipPath(path) {
+                for ((id, pts) in CALIFORNIA_REGION_SHAPES) {
+                    val color = regionColors[id] ?: continue
+                    val p = Path().apply {
+                        pts.forEachIndexed { i, (lon, lat) ->
+                            val o = point(lon, lat)
+                            if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y)
+                        }
+                        close()
+                    }
+                    drawPath(p, color = color.copy(alpha = if (id == selectedRegionId || selectedRegionId == null) 1f else 0.55f))
+                    drawPath(p, color = Color(0xFF4A3728).copy(alpha = 0.5f), style = Stroke(width = size.minDimension * 0.012f))
+                }
+            }
+        }
         drawPath(
             path,
             color = stroke,
