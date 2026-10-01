@@ -38,6 +38,11 @@ class StationCsvParser(private val context: Context) {
             emptyList()
         }
 
+    fun parse(reader: BufferedReader): List<MicroclimateStation> = StationCsvFormat.parse(reader)
+}
+
+/** The station CSV format itself: no Android classes, so it can be tested on the JVM. */
+internal object StationCsvFormat {
     fun parse(reader: BufferedReader): List<MicroclimateStation> {
         val stations = mutableListOf<MicroclimateStation>()
         val header = reader.readLine() ?: return emptyList()

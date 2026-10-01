@@ -60,29 +60,35 @@ object NwsObservationClient {
             if (code == 404) return ObservationResult.NoReading
             if (code !in 200..299) return ObservationResult.Failed
             val body = conn.inputStream.bufferedReader().use { it.readText() }
-            val props = JSONObject(body).getJSONObject("properties")
-            // Values can be null and carry a unit code; convert by unit code instead of assuming.
-            val tempC = number(props.optJSONObject("temperature"))?.let {
-                if (unit(props, "temperature").endsWith("degF")) (it - 32.0) * 5.0 / 9.0 else it
-            } ?: return ObservationResult.NoReading
-            val wind = number(props.optJSONObject("windSpeed"))?.let {
-                if (unit(props, "windSpeed").endsWith("m_s-1")) it * 3.6 else it
-            }
-            val pressure = number(props.optJSONObject("barometricPressure"))?.let {
-                if (unit(props, "barometricPressure").endsWith("Pa")) it / 100.0 else it
-            }
-            return ObservationResult.Reading(
-                LiveObservation(
-                    temperatureCelsius = tempC,
-                    humidityPercent = number(props.optJSONObject("relativeHumidity")),
-                    windSpeedKmh = wind,
-                    pressureHpa = pressure,
-                    observedAtMillis = parseTime(props.optString("timestamp"))
-                )
-            )
+            return parseObservation(body)
         } finally {
             conn.disconnect()
         }
+    }
+
+    /** One api.weather.gov observation (GeoJSON text) as a result; [ObservationResult.NoReading] when it has no temperature. */
+    internal fun parseObservation(body: String): ObservationResult {
+        val props = JSONObject(body).getJSONObject("properties")
+        // Values can be null and carry a unit code; convert by unit code instead of assuming.
+        val tempC = number(props.optJSONObject("temperature"))?.let {
+            if (unit(props, "temperature").endsWith("degF")) (it - 32.0) * 5.0 / 9.0 else it
+        } ?: return ObservationResult.NoReading
+        val wind = number(props.optJSONObject("windSpeed"))?.let {
+            if (unit(props, "windSpeed").endsWith("m_s-1")) it * 3.6 else it
+        }
+        val pressure = number(props.optJSONObject("barometricPressure"))?.let {
+            // Pascals only: a unit already in hectopascals ("wmoUnit:hPa") also ends in "Pa"
+            if (unit(props, "barometricPressure").endsWith(":Pa")) it / 100.0 else it
+        }
+        return ObservationResult.Reading(
+            LiveObservation(
+                temperatureCelsius = tempC,
+                humidityPercent = number(props.optJSONObject("relativeHumidity")),
+                windSpeedKmh = wind,
+                pressureHpa = pressure,
+                observedAtMillis = parseTime(props.optString("timestamp"))
+            )
+        )
     }
 
     private fun number(obj: JSONObject?): Double? =
