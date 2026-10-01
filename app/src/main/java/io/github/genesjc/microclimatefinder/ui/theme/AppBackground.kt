@@ -28,14 +28,14 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
     // In light mode the two corner colours follow the selected region, easing over when the region changes
     val corner by animateColorAsState(
         targetValue = regionBackdropTint(regionId),
-        animationSpec = tween(700),
+        animationSpec = tween(BACKDROP_TRANSITION_MS),
         label = "backdropTint"
     )
     // Each region looks at a different part of the relief picture; the window slides over when the region changes
     val regionIndex = CaliforniaRegionalDefinitions.ALL_REGIONS.indexOfFirst { it.id == regionId }.coerceAtLeast(0)
     val window = TEXTURE_WINDOWS[regionIndex % TEXTURE_WINDOWS.size]
-    val windowX by animateFloatAsState(window.first, tween(900), label = "textureX")
-    val windowY by animateFloatAsState(window.second, tween(900), label = "textureY")
+    val windowX by animateFloatAsState(window.first, tween(BACKDROP_TRANSITION_MS), label = "textureX")
+    val windowY by animateFloatAsState(window.second, tween(BACKDROP_TRANSITION_MS), label = "textureY")
     // EXPERIMENT: a relief texture over the light backdrop, for a little depth. It is not tied to any real place
     val context = androidx.compose.ui.platform.LocalContext.current
     val texture by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null) {
@@ -114,6 +114,9 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
 }
 
 private val DEFAULT_CORNER = Color(0xFFF3A583)
+
+/** How long the backdrop takes to change colour and slide its texture when the region changes (milliseconds). */
+private const val BACKDROP_TRANSITION_MS = 1500
 
 /** How strongly the relief texture shows over the light backdrop (0 = not at all). */
 private const val BACKDROP_TEXTURE_STRENGTH = 1.0f
