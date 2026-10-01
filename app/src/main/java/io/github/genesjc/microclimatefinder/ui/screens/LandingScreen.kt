@@ -653,7 +653,8 @@ fun LandingScreen(
                                     )
                                 )
                             )
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            // A little less below, so the Region Info link sits lower and the picker has more room
+                            .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 6.dp)
                     ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
@@ -776,7 +777,10 @@ fun LandingScreen(
                                 state = pickerState,
                                 selectedRegionId = selectedRegionId,
                                 background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
-                                content = MaterialTheme.colorScheme.onPrimaryContainer
+                                content = MaterialTheme.colorScheme.onPrimaryContainer,
+                                // The main control: a larger chip and shape, using the room the link gives up
+                                size = 52.dp,
+                                iconSize = 40.dp
                             )
                         }
                         // Region Info, under the picker. The sheet slides in from the right; the X takes the link's place

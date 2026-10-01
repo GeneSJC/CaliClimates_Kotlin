@@ -93,14 +93,16 @@ fun RegionPickerButton(
     modifier: Modifier = Modifier,
     background: Color = MaterialTheme.colorScheme.primaryContainer,
     content: Color = MaterialTheme.colorScheme.onPrimaryContainer,
-    border: Color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)
+    border: Color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f),
+    size: androidx.compose.ui.unit.Dp = 44.dp,
+    iconSize: androidx.compose.ui.unit.Dp = 31.dp
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
         color = background,
         border = BorderStroke(1.dp, border),
         modifier = modifier
-            .size(44.dp)
+            .size(size)
             .clickable(
                 enabled = !state.visible,
                 onClickLabel = "Change region",
@@ -114,7 +116,7 @@ fun RegionPickerButton(
                 regionColors = regionPickerColors(),
                 selectedRegionId = selectedRegionId,
                 modifier = Modifier
-                    .size(31.dp)
+                    .size(iconSize)
                     .onGloballyPositioned { state.buttonBounds = Rect(it.positionInRoot(), it.size.toSize()) }
                     .alpha(if (state.visible) 0f else 1f)
             )
