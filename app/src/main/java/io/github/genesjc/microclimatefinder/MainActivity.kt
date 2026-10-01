@@ -104,18 +104,19 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
     val store = remember { StationDataStore(context) }
     val fullDataRegions = remember { store.fullDataRegionCount() }
     val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
-    val defaultDataset = remember { store.defaultDataset() }
+    // The Bay Area fallback dataset is only needed by the Station List when a region has none, and by the demos, so it
+    // is read the first time it is wanted and not while the app is starting
+    val defaultDatasetLazy = remember { lazy { store.defaultDataset() } }
     // Changes the app-wide region and remembers it (Home, Topo Map and Station Feed pickers use this)
     fun pickRegion(regionId: String) {
         selectedRegionId = regionId
         homeStationId = null
         regionPrefs.save(regionId)
     }
-    // Rows for the quick region picker on Home: every region with its station count
+    // Rows for the quick region list on Home: names only (reading every region's stations just for a count slowed the
+    // start-up by seconds, and the list no longer shows counts)
     val regionOptions = remember {
-        CaliforniaRegionalDefinitions.ALL_REGIONS.map { r ->
-            RegionOption(r.id, r.name, store.datasetFor(r.id)?.stationCount)
-        }
+        CaliforniaRegionalDefinitions.ALL_REGIONS.map { r -> RegionOption(r.id, r.name, null) }
     }
 
     // Fetch live readings for the region's featured stations when a region loads; switching region
@@ -164,7 +165,7 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
         }
         AppScreen.STATION_LIST -> {
             StationListScreen(
-                dataset = regionDataset ?: defaultDataset,
+                dataset = regionDataset ?: defaultDatasetLazy.value,
                 selectedRegionId = selectedRegionId,
                 onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
@@ -204,7 +205,7 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
                 navigate = { currentScreen = it },
                 setRegionsReturn = { regionsReturnScreen = it },
                 regionDataset = regionDataset,
-                defaultDataset = defaultDataset,
+                defaultDataset = defaultDatasetLazy.value,
                 selectedRegionId = selectedRegionId,
                 pickRegion = { pickRegion(it) }
             )
