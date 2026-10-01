@@ -106,7 +106,7 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
 private val DEFAULT_CORNER = Color(0xFFF3A583)
 
 /** How strongly the relief texture shows over the light backdrop (0 = not at all). */
-private const val BACKDROP_TEXTURE_STRENGTH = 0.65f
+private const val BACKDROP_TEXTURE_STRENGTH = 0.85f
 
 /**
  * A soft tint of the region's picker colour for the backdrop corners: the muted earth tone, about a quarter of the way to white,
