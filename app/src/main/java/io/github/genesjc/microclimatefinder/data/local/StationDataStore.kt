@@ -25,8 +25,6 @@ data class StationDatasetInfo(
  */
 class StationDataStore(private val context: Context) {
 
-    private val parser = StationCsvParser(context)
-
     private val assetNames: Set<String> by lazy {
         try { context.assets.list("")?.toSet() ?: emptySet() } catch (e: Exception) { emptySet() }
     }
@@ -91,7 +89,7 @@ class StationDataStore(private val context: Context) {
             maxElevationMeters = 0,
             packFileName = packFile
         )
-        val stations = parser.loadStations(base)
+        val stations = StationRepository.stations(context, base)
         if (stations.isEmpty()) return null
         return base.copy(
             subtitle = "$kind • ${stations.size} stations",

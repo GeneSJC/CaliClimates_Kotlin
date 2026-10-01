@@ -22,7 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.RegionPreferences
-import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
@@ -123,8 +123,16 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
     // cancels this and starts the new region's.
     LaunchedEffect(regionDataset) {
         regionDataset?.let { dataset ->
-            val stations = withContext(Dispatchers.IO) { StationCsvParser(context).loadStations(dataset) }
+            val stations = withContext(Dispatchers.IO) { StationRepository.stations(context, dataset) }
             LiveObservationCache.prefetch(stations)
+        }
+    }
+
+    // Once the first screen is up, read the other regions' stations in the background, so changing region later finds
+    // them already parsed instead of unzipping a pack on the main thread in the middle of the transition
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            CaliforniaRegionalDefinitions.ALL_REGIONS.forEach { store.datasetFor(it.id) }
         }
     }
 
