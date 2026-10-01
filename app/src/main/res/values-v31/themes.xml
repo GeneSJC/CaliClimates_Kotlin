@@ -2,10 +2,13 @@
 <resources>
 
     <!-- Android 12 and later: the system splash screen. It shows the full round launcher icon (its sky, sun,
-         clouds and terrain) in the middle of a dark slate that fills the whole screen -->
+         clouds and terrain) in the middle of a dark blue-slate that fills the whole screen, on a soft halo -->
     <style name="Theme.MicroClimateFinder" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">#FFFFE9CF</item>
-        <item name="android:windowSplashScreenBackground">#FF0B1220</item>
+        <!-- A slate with a touch more blue, closer to the icon's own navy -->
+        <item name="android:windowSplashScreenBackground">#FF0A1628</item>
         <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <!-- A soft, lighter navy circle behind the icon, so it sits on the slate with a halo -->
+        <item name="android:windowSplashScreenIconBackgroundColor">#FF16263F</item>
     </style>
 </resources>
