@@ -8,7 +8,13 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -95,7 +101,7 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                             modifier = Modifier.size(56.dp)
                         )
                         Spacer(modifier = Modifier.width(14.dp))
-                        Column {
+                        Column(modifier = Modifier.padding(end = 28.dp)) {
                             Text(
                                 text = appName,
                                 style = MaterialTheme.typography.titleLarge,
@@ -113,6 +119,24 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                             )
+                        }
+                    }
+                    // Close: an X at the top right, where the eye already is (a tap outside the dialog closes it too)
+                    val closeColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 10.dp, y = (-10).dp)
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .clickable(onClickLabel = "Close", role = Role.Button, onClick = onClose),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Canvas(modifier = Modifier.size(14.dp)) {
+                            val stroke = 2.4.dp.toPx()
+                            val inset = stroke / 2f
+                            drawLine(closeColor, Offset(inset, inset), Offset(size.width - inset, size.height - inset), stroke, StrokeCap.Round)
+                            drawLine(closeColor, Offset(size.width - inset, inset), Offset(inset, size.height - inset), stroke, StrokeCap.Round)
                         }
                     }
                 }
@@ -200,13 +224,6 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
                         )
                     }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onClose) { Text("Close") }
                 }
             }
         }

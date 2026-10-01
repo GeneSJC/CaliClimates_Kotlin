@@ -698,8 +698,8 @@ fun LandingScreen(
                                     text = region.name,
                                     style = MaterialTheme.typography.titleLarge,
                                     // 25% smaller than the title style, so more of a long name shows
-                                    fontSize = 16.5.sp,
-                                    lineHeight = 22.sp,
+                                    fontSize = 20.6.sp,
+                                    lineHeight = 26.sp,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -708,7 +708,7 @@ fun LandingScreen(
                                 )
                                 Text(
                                     text = "\u25BE",
-                                    fontSize = 15.sp,
+                                    fontSize = 18.sp,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(start = 6.dp, end = 4.dp)
                                 )
@@ -731,13 +731,13 @@ fun LandingScreen(
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(21.dp)
-                                                .border(2.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
+                                                .size(19.dp)
+                                                .border(1.8.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
                                                 text = "i",
-                                                fontSize = 13.sp,
+                                                fontSize = 12.sp,
                                                 fontWeight = FontWeight.ExtraBold,
                                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
@@ -861,8 +861,8 @@ fun LandingScreen(
                             background = Color.Transparent,
                             content = MaterialTheme.colorScheme.onPrimaryContainer,
                             border = Color.Transparent,
-                            size = 52.dp,
-                            iconSize = 44.dp
+                            size = 58.dp,
+                            iconSize = 54.dp
                         )
                     }
                 }
