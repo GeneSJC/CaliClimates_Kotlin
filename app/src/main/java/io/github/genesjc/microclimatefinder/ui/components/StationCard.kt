@@ -566,6 +566,17 @@ private fun CompactStationBody(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
+            // The reading's age, on the temperature's line at the right, under the card's control (Less)
+            if (display.tempC != null && display.status != null) {
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = display.status,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
         }
         // Row 3: Humidity, Wind and Pressure
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -574,7 +585,7 @@ private fun CompactStationBody(
             CompactMetric(display.thirdLabel, display.thirdValue)
         }
         Spacer(modifier = Modifier.height(6.dp))
-        // Row 4: terrain chip and elevation on the left; the reading's age on the right
+        // Row 4: terrain chip and elevation on the left; the footer (the region's elevation range) on the right
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Surface(
@@ -598,12 +609,9 @@ private fun CompactStationBody(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            if (display.tempC != null && display.status != null) {
-                Text(
-                    text = display.status,
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            if (footer != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                footer()
             }
         }
         if (elevationNote != null) {
@@ -615,7 +623,6 @@ private fun CompactStationBody(
                 modifier = Modifier.padding(top = 6.dp)
             )
         }
-        if (footer != null) footer()
     }
 }
 
