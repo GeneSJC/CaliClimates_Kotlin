@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.RegionPreferences
+import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
@@ -133,6 +134,8 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             CaliforniaRegionalDefinitions.ALL_REGIONS.forEach { store.datasetFor(it.id) }
+            // ... and the statewide terrain pictures the region picker draws, so its first open shows them at once
+            TerrainMaps.loadState(context)
         }
     }
 

@@ -68,14 +68,24 @@ object TerrainMaps {
     /** The whole state for the California picker, and its neighbours drawn quieter. Their pixels are linear in lon and lat. */
     val STATE_BOUNDS = GeoBounds(-124.5, -114.1, 31.9, 43.0)
 
-    fun loadState(context: Context): StateTerrain? = try {
-        fun decode(name: String) = context.assets.open("terrain/$name").use { BitmapFactory.decodeStream(it) }
-        val state = decode("california.webp")
-        val surround = decode("california_surround.webp")
-        if (state != null && surround != null) StateTerrain(state.asImageBitmap(), surround.asImageBitmap()) else null
-    } catch (e: Exception) {
-        Log.w(TAG, "No statewide terrain picture", e)
-        null
+    // The statewide pictures are about 18 MB once decoded, so they are kept after the first decode and handed out again
+    // on every later open of the picker. A soft reference lets the system take the memory back if it is short.
+    private var stateCache: java.lang.ref.SoftReference<StateTerrain>? = null
+
+    @Synchronized
+    fun loadState(context: Context): StateTerrain? {
+        stateCache?.get()?.let { return it }
+        val loaded = try {
+            fun decode(name: String) = context.assets.open("terrain/$name").use { BitmapFactory.decodeStream(it) }
+            val state = decode("california.webp")
+            val surround = decode("california_surround.webp")
+            if (state != null && surround != null) StateTerrain(state.asImageBitmap(), surround.asImageBitmap()) else null
+        } catch (e: Exception) {
+            Log.w(TAG, "No statewide terrain picture", e)
+            null
+        }
+        if (loaded != null) stateCache = java.lang.ref.SoftReference(loaded)
+        return loaded
     }
 }
 
