@@ -42,7 +42,10 @@ class MainActivity : ComponentActivity() {
             var darkMode by remember { mutableStateOf(themePrefs.darkMode()) }
             // The backdrop takes a soft tint of the selected region's colour (AppNavigation reports each change)
             var backdropRegionId by remember { mutableStateOf(RegionPreferences(applicationContext).load()) }
+            // The opening view shows once per launch (and not again after a rotation)
+            var showIntro by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
             MicroClimateFinderTheme(darkTheme = darkMode) {
+                androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
                 AppBackground(darkTheme = darkMode, regionId = backdropRegionId) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
@@ -60,6 +63,10 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
+                }
+                if (showIntro) {
+                    io.github.genesjc.microclimatefinder.ui.components.IntroOverlay(onDone = { showIntro = false })
+                }
                 }
             }
         }
