@@ -639,34 +639,35 @@ fun LandingScreen(
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             run {
-                // App Header Banner
-                Surface(
+                // App header: three separate widgets (the menu, the region, the controls) with the backdrop showing
+                // between them, each with the same gradient as the About dialog's header
+                val headerBrush = Brush.linearGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
+                    )
+                )
+                val headerShape = RoundedCornerShape(16.dp)
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.Transparent
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.Top
                 ) {
-                    // The same gradient as the About dialog's header
-                    Column(
+                    // Widget 1: the menu, on its own
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        MaterialTheme.colorScheme.primaryContainer,
-                                        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
-                                    )
-                                )
-                            )
-                            // A little less below, so the Region Info link sits lower and the picker has more room
-                            .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 6.dp)
+                            .padding(top = 8.dp)
+                            .size(52.dp)
+                            .clip(headerShape)
+                            .background(headerBrush),
+                        contentAlignment = Alignment.Center
                     ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
                             modifier = Modifier
                                 .size(36.dp)
-                                .clickable { scope.launch { drawerState.open() } }
+                                .clickable(onClickLabel = "Open the menu", role = Role.Button) { scope.launch { drawerState.open() } }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
@@ -676,19 +677,22 @@ fun LandingScreen(
                                 )
                             }
                         }
+                    }
 
-                        Spacer(modifier = Modifier.width(14.dp))
-
-                        // Region name with a chevron: tap for the quick region picker
-                        Box(modifier = Modifier.weight(1f)) {
+                    // Widget 2: the region name with a chevron (tap for the region list), a little shorter than the
+                    // others. The Box is the list's anchor.
+                    Box(modifier = Modifier.padding(top = 8.dp).weight(1f)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .fillMaxWidth()
+                                    .height(52.dp)
+                                    .clip(headerShape)
+                                    .background(headerBrush)
                                     .clickable(onClickLabel = "Choose region", role = Role.Button) {
                                         showRegionMenu = true
                                     }
-                                    .padding(vertical = 4.dp)
+                                    .padding(horizontal = 16.dp)
                             ) {
                                 Text(
                                     text = region.name,
@@ -771,10 +775,14 @@ fun LandingScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        // Change-region button: the California outline on a bordered chip like the menu button
-                        Column(horizontalAlignment = Alignment.End) {
+                    // Widget 3: the controls (About, the region picker, the Region Info link)
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        modifier = Modifier
+                            .clip(headerShape)
+                            .background(headerBrush)
+                            .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 6.dp)
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             // The (i) button: opens the same About dialog as the menu. No chip behind it: it is a
                             // supporting control next to the region picker, which is the main one.
@@ -857,8 +865,6 @@ fun LandingScreen(
                     }
                         }
                     }
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
