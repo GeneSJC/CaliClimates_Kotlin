@@ -657,53 +657,21 @@ fun LandingScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Widget 1: the menu, with the (i) About button under it
-                    Column(
+                    // Widget 1: the menu, straight on the widget (no chip behind it)
+                    Box(
                         modifier = Modifier
                             .width(60.dp)
                             .height(HEADER_HEIGHT)
                             .clip(headerShape)
-                            .background(headerBrush),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.SpaceEvenly
+                            .background(headerBrush)
+                            .clickable(onClickLabel = "Open the menu", role = Role.Button) { scope.launch { drawerState.open() } },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clickable(onClickLabel = "Open the menu", role = Role.Button) { scope.launch { drawerState.open() } }
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "☰",
-                                    fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
-                        // The (i) button: opens the same About dialog as the menu; plain, a supporting control
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(23.dp)
-                                    .border(2.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "i",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
+                        Text(
+                            text = "☰",
+                            fontSize = 24.sp,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
 
                     // Widget 2: the region name with a chevron (tap for the region list), and the Region Info link
@@ -750,9 +718,31 @@ fun LandingScreen(
                                 Row(
                                     // A fixed height, so nothing moves when the link becomes the X; at the right of the widget
                                     modifier = Modifier.fillMaxWidth().height(26.dp),
-                                    horizontalArrangement = Arrangement.End,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    // The (i) button at the left of the same row: opens the About dialog; plain, a supporting control
+                                    Box(
+                                        modifier = Modifier
+                                            .size(26.dp)
+                                            .clip(CircleShape)
+                                            .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(21.dp)
+                                                .border(2.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "i",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
                                     val handleModifier = Modifier
                                         .clickable(
                                             onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
