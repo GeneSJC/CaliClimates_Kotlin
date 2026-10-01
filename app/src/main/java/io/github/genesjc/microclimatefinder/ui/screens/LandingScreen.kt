@@ -709,28 +709,54 @@ fun LandingScreen(
                                     modifier = Modifier.padding(start = 6.dp, end = 4.dp)
                                 )
                             }
+                            // The region list, dressed like the rest of the app: a warm sand panel with a fine
+                            // outline, each region marked with its own map colour, the current one tinted
+                            val menuColors = regionPickerColors()
+                            val lightLook = MaterialTheme.colorScheme.background.luminance() > 0.5f
                             DropdownMenu(
                                 expanded = showRegionMenu,
-                                onDismissRequest = { showRegionMenu = false }
+                                onDismissRequest = { showRegionMenu = false },
+                                shape = RoundedCornerShape(16.dp),
+                                containerColor = if (lightLook) Color(0xFFF1E2C4) else MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (lightLook) Color(0xFF3A2A1E).copy(alpha = 0.7f) else Color.White.copy(alpha = 0.25f)
+                                ),
+                                tonalElevation = 0.dp,
+                                shadowElevation = 8.dp
                             ) {
                                 regionOptions.forEach { option ->
                                     val isCurrent = option.id == selectedRegionId
+                                    val regionColor = menuColors[option.id] ?: MaterialTheme.colorScheme.primary
                                     DropdownMenuItem(
+                                        modifier = Modifier
+                                            .padding(horizontal = 6.dp, vertical = 1.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(if (isCurrent) regionColor.copy(alpha = 0.22f) else Color.Transparent),
                                         text = {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 modifier = Modifier.widthIn(min = 200.dp)
                                             ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(14.dp)
+                                                        .clip(CircleShape)
+                                                        .background(regionColor)
+                                                        .border(1.dp, Color(0xFF3A2A1E).copy(alpha = 0.35f), CircleShape)
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
                                                 Text(
                                                     text = option.name,
                                                     fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                                                    color = MaterialTheme.colorScheme.onSurface,
                                                     modifier = Modifier.weight(1f)
                                                 )
                                                 if (isCurrent) {
                                                     Text(
                                                         text = "\u2713",
                                                         fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.primary,
+                                                        color = MaterialTheme.colorScheme.onSurface,
                                                         modifier = Modifier.padding(start = 12.dp)
                                                     )
                                                 }
