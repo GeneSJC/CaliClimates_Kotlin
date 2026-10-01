@@ -686,17 +686,11 @@ fun LandingScreen(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 modifier = Modifier.widthIn(min = 200.dp)
                                             ) {
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Text(
-                                                        text = option.name,
-                                                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium
-                                                    )
-                                                    Text(
-                                                        text = option.stationCount?.let { "$it stations" } ?: "No station list",
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
+                                                Text(
+                                                    text = option.name,
+                                                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                                                    modifier = Modifier.weight(1f)
+                                                )
                                                 if (isCurrent) {
                                                     Text(
                                                         text = "\u2713",
