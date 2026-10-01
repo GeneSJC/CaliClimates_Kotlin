@@ -535,6 +535,10 @@ private fun ElevationProfileCanvas(
     val maxElevation = remember(sorted) { (sorted.maxOfOrNull { it.elevationMeters } ?: 1500).toFloat() }
     // Stations ranked for labels; the first few are the ones the sky badge cycles through
     val rankedLandmarks = remember(sorted) { rankLandmarkIndexes(sorted) }
+    // Each station's label text, made once (label placement runs on every zoom and pan frame)
+    val labelTexts = remember(sorted) {
+        sorted.map { LocalNewsRepository.getCleanCityName(it.id, it.name) + " ${Elevation.formatFeet(it.elevationMeters)}" }
+    }
     val cycleIds = remember(sorted) {
         rankedLandmarks.take(LANDMARK_COUNT).sorted().map { sorted[it].id }
     }
@@ -703,8 +707,7 @@ private fun ElevationProfileCanvas(
                 val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
                 val pinY = with(density) { viewY(paddingPx + profileFrac(elevRatio) * heightPx).toDp().value }
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
-                val text = LocalNewsRepository.getCleanCityName(station.id, station.name) +
-                    " ${Elevation.formatFeet(station.elevationMeters)}"
+                val text = labelTexts[idx]
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
                 val labelW = text.length * 5.4f + 10f
                 val left = (if (pinX - 24f + labelW > widthDp.value * 0.97f) pinX - labelW else pinX - 24f).coerceAtLeast(2f)
