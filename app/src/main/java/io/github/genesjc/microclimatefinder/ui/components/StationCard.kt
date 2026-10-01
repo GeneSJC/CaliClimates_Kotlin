@@ -641,30 +641,32 @@ private fun CompactMetric(label: String, value: String) {
 @Composable
 fun StationSummaryTile(station: MicroclimateStation) {
     val display = liveDisplay(station)
-    // One line: the name (at most 25 characters), the temperature in °F, and the More link at the right
-    val name = if (station.name.length > 25) station.name.take(24).trimEnd() + "\u2026" else station.name
+    // One line: the name, the temperature in °F, and the More link at the right. The name and temperature share all the
+    // room left of More, so the name gives way (with an ellipsis) only when it really cannot fit
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = name,
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false)
-        )
+        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = station.name,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
+        }
         Spacer(modifier = Modifier.width(10.dp))
-        Text(
-            text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
-            fontSize = 15.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1
-        )
-        Spacer(modifier = Modifier.weight(1f))
         Text(
             text = "More \u25BC",
             style = MaterialTheme.typography.labelMedium,
