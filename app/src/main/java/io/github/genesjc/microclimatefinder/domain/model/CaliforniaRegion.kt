@@ -54,7 +54,7 @@ object CaliforniaRegionalDefinitions {
         description = "South Coast transect spanning coastal ocean waters, inland mesas, alpine pine peaks, and dropping 5,000 feet into the Anza-Borrego desert rain shadow within a 50-mile drive.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#15803D"
+        colorHex = "#5E7F49"
     )
 
     val LOS_ANGELES = CaliforniaRegion(
@@ -80,7 +80,7 @@ object CaliforniaRegionalDefinitions {
         description = "Dense coastal urban basin bounded by sheer transverse mountain walls that generate severe marine layer thermal capping and sharp 30°F gradients across individual ridgelines.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#2563EB"
+        colorHex = "#6C86A8"
     )
 
     val CENTRAL_COAST = CaliforniaRegion(
@@ -106,7 +106,7 @@ object CaliforniaRegionalDefinitions {
         description = "World-renowned maritime upwelling zones and steep Santa Lucia coastal scarps channeling cold marine air deep into interior agricultural valleys.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#EC4899"
+        colorHex = "#C9857E"
     )
 
     val CENTRAL_VALLEY = CaliforniaRegion(
@@ -132,7 +132,7 @@ object CaliforniaRegionalDefinitions {
         description = "Expansive 400-mile flat interior basin protected by coastal ranges and the Sierra Nevada, characterized by high thermal accumulation and severe winter radiation inversions.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#EA580C"
+        colorHex = "#B8733A"
     )
 
     val BAY_AREA_SACRAMENTO = CaliforniaRegion(
@@ -158,7 +158,7 @@ object CaliforniaRegionalDefinitions {
         description = "The primary baseline transect: fully unified draggable and zoomable coordinate space covering stations from Pacific tidepools to alpine ridge tops.",
         status = RegionStatus.ACTIVE_TRANSECT,
         activeStationCount = 36,
-        colorHex = "#0D9488"
+        colorHex = "#5F8F7C"
     )
 
     val NORTHERN_CALIFORNIA = CaliforniaRegion(
@@ -184,7 +184,7 @@ object CaliforniaRegionalDefinitions {
         description = "Vast, rugged territory encompassing temperate coastal rainforests, volcanic Cascade peaks, high alpine passes, and extreme rain shadow transitions.",
         status = RegionStatus.PLANNED_CONSTRAINTS,
         activeStationCount = 0,
-        colorHex = "#7C3AED"
+        colorHex = "#7C6A8C"
     )
 
     val ALL_REGIONS = listOf(

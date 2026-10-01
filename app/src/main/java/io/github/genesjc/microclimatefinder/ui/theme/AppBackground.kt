@@ -77,15 +77,11 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
 private val DEFAULT_CORNER = Color(0xFFF3A583)
 
 /**
- * A soft tint of the region's picker colour for the backdrop corners: the region's hue at the same gentle
- * strength as the original coral (a light, medium-saturation colour), so every region has the same lightness.
+ * A soft tint of the region's picker colour for the backdrop corners: the muted earth tone, half-way to white,
+ * so every region has a gentle, similar lightness.
  */
 private fun regionBackdropTint(regionId: String?): Color {
     val hex = CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == regionId }?.colorHex
         ?: return DEFAULT_CORNER
-    val hsv = FloatArray(3)
-    android.graphics.Color.colorToHSV(android.graphics.Color.parseColor(hex), hsv)
-    hsv[1] = 0.46f
-    hsv[2] = 0.95f
-    return Color(android.graphics.Color.HSVToColor(hsv))
+    return androidx.compose.ui.graphics.lerp(Color(android.graphics.Color.parseColor(hex)), Color.White, 0.52f)
 }

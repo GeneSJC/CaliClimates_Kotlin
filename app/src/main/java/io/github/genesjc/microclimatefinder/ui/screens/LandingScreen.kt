@@ -658,6 +658,9 @@ fun LandingScreen(
                                 Text(
                                     text = region.name,
                                     style = MaterialTheme.typography.titleLarge,
+                                    // 25% smaller than the title style, so more of a long name shows
+                                    fontSize = 16.5.sp,
+                                    lineHeight = 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -666,7 +669,7 @@ fun LandingScreen(
                                 )
                                 Text(
                                     text = "\u25BE",
-                                    fontSize = 20.sp,
+                                    fontSize = 15.sp,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(start = 6.dp, end = 4.dp)
                                 )
