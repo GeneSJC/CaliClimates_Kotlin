@@ -86,6 +86,7 @@ import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import io.github.genesjc.microclimatefinder.ui.components.clampPan
@@ -433,6 +434,10 @@ private class RidgeHeights {
 }
 
 private const val RIDGE_STEPS = 110
+
+/** The fish layer is stepped this often (about 30 a second), and one full swim across takes this long. */
+private const val FISH_STEP_MS = 33L
+private const val FISH_LOOP_SECONDS = 120f
 
 /** A real skyline's height (0 to 1) at [t], where 0 to 1 is across the chart; it mirrors outside that. */
 private fun sampleSkyline(values: FloatArray, t: Float): Float {
@@ -1147,15 +1152,38 @@ private fun ElevationProfileCanvas(
 
         // Three fish swimming in the ocean (decoration). They are drawn in their own layer, so only it
         // redraws as they move, and they follow the ocean when the chart is zoomed or panned.
-        val swim = androidx.compose.animation.core.rememberInfiniteTransition(label = "fish")
-        val fishTime by swim.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-                animation = tween(120_000, easing = androidx.compose.animation.core.LinearEasing)
-            ),
-            label = "fishTime"
-        )
+        // The swim is stepped about 30 times a second (not every frame), stands still while the chart is being
+        // panned or zoomed and for a moment after, and stays still when the system's animations are turned off.
+        var fishTime by remember { mutableStateOf(0f) }
+        var chartMoving by remember { mutableStateOf(true) }
+        val fishContext = androidx.compose.ui.platform.LocalContext.current
+        val animationsOn = remember {
+            android.provider.Settings.Global.getFloat(
+                fishContext.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+            ) > 0f
+        }
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            // Each change of zoom or pan marks the chart as moving until it has been still for a little while
+            androidx.compose.runtime.snapshotFlow { zoom to pan }.collectLatest {
+                chartMoving = true
+                kotlinx.coroutines.delay(600)
+                chartMoving = false
+            }
+        }
+        androidx.compose.runtime.LaunchedEffect(animationsOn) {
+            if (!animationsOn) return@LaunchedEffect
+            androidx.compose.runtime.snapshotFlow { chartMoving }.collectLatest { moving ->
+                if (!moving) {
+                    var last = System.nanoTime()
+                    while (true) {
+                        kotlinx.coroutines.delay(FISH_STEP_MS)
+                        val now = System.nanoTime()
+                        fishTime = (fishTime + (now - last) / 1e9f / FISH_LOOP_SECONDS) % 1f
+                        last = now
+                    }
+                }
+            }
+        }
         Canvas(modifier = Modifier.fillMaxSize()) {
             val seaTop = viewY(paddingPx + (1f - SEA_FRACTION) * heightPx)
             val seaBottom = maxOf(size.height, viewY(size.height - paddingPx) + paddingPx)
