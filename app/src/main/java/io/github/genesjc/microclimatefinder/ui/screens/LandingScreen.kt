@@ -477,7 +477,7 @@ private fun RegionInfoContent(
     var topRowWidthPx by remember { mutableStateOf(0) }
     Column {
         // The title band, in the same style as the About dialog and the menu drawer: the gradient, a California
-        // icon with this region lit, the title with the region's name, and the Station List link as a pill
+        // icon with this region lit, the title, and the Station List link as a pill
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -506,13 +506,6 @@ private fun RegionInfoContent(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = region.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 if (hasStationData) {
