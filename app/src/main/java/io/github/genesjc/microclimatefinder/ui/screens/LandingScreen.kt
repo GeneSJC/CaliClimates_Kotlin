@@ -654,8 +654,8 @@ fun LandingScreen(
                 val headerShape = RoundedCornerShape(16.dp)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    // A wider gap between the region widget and the picker widget (it was 8dp)
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    // A wider gap between the region widget and the picker widget, so more terrain shows between them (8dp, then 16dp)
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     // Widget 2: the region name with a chevron (tap for the region list), and the Region Info link
@@ -890,7 +890,7 @@ fun LandingScreen(
                         .fillMaxHeight()
                         .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y }
                 ) {
-                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing)
+                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
                 }
             }
 
@@ -1014,7 +1014,8 @@ fun LandingScreen(
                 hasStationData = hasStationData,
                 stations = snapshotStations,
                 onOpenStationList = { onNavigateTo(AppScreen.STATION_LIST) },
-                menuOpen = menuDrawerShowing,
+                // The region picker is above the floating cards too: they fold while it is showing
+                menuOpen = menuDrawerShowing || pickerState.visible,
                 // The dot-size slider belongs to the map, so only the Topography view has it
                 legendExtra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) }
             )
