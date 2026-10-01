@@ -120,6 +120,7 @@ import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.ui.components.AboutDialog
+import io.github.genesjc.microclimatefinder.ui.components.MenuDrawerContent
 import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import kotlinx.coroutines.launch
@@ -574,56 +575,24 @@ fun LandingScreen(
         // The menu button opens it; a swipe must not compete with the map's drag to pan (it still closes by swipe)
         gesturesEnabled = drawerState.isOpen,
         drawerContent = {
-            ModalDrawerSheet {
-                Column(modifier = Modifier.padding(vertical = 24.dp)) {
-                    Text(
-                        text = appName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    )
-                    Text(
-                        text = "Build ${BuildInfo.LABEL}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 2.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(8.dp))
+            // No window insets on the sheet: the header's gradient reaches up behind the status bar
+            ModalDrawerSheet(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)) {
+                MenuDrawerContent(
+                    appName = appName,
+                    buildLabel = BuildInfo.LABEL,
                     // Only the demo edition has the Demos & Previews hub
-                    if (EditionConfig.HAS_DEMOS) {
-                        NavigationDrawerItem(
-                            label = { Text("Demos & Previews") },
-                            icon = { Text(text = "▦", fontSize = 18.sp) },
-                            selected = false,
-                            onClick = {
-                                scope.launch { drawerState.close() }
-                                onNavigateTo(AppScreen.DEMOS_AND_PREVIEWS)
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
+                    showDemos = EditionConfig.HAS_DEMOS,
+                    darkMode = darkMode,
+                    onDarkModeChange = onDarkModeChange,
+                    onOpenDemos = {
+                        scope.launch { drawerState.close() }
+                        onNavigateTo(AppScreen.DEMOS_AND_PREVIEWS)
+                    },
+                    onOpenAbout = {
+                        scope.launch { drawerState.close() }
+                        showAboutDialog = true
                     }
-                    NavigationDrawerItem(
-                        label = { Text("Dark mode") },
-                        icon = { Text(text = "\u25D0", fontSize = 18.sp) },
-                        badge = { Switch(checked = darkMode, onCheckedChange = onDarkModeChange) },
-                        selected = false,
-                        onClick = { onDarkModeChange(!darkMode) },
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("About") },
-                        icon = { Text(text = "ℹ", fontSize = 18.sp) },
-                        selected = false,
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            showAboutDialog = true
-                        },
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
-                }
+                )
             }
         }
     ) {
