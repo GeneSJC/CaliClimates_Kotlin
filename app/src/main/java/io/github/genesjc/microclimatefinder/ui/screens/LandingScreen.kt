@@ -866,11 +866,13 @@ fun LandingScreen(
                         RegionPickerButton(
                             state = pickerState,
                             selectedRegionId = selectedRegionId,
-                            background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                            // No chip behind the shape: it sits straight on the widget (the shape's own colours and
+                            // opacity are unchanged)
+                            background = Color.Transparent,
                             content = MaterialTheme.colorScheme.onPrimaryContainer,
-                            // The main control: the chip and the California shape fill the widget
+                            border = Color.Transparent,
                             size = 52.dp,
-                            iconSize = 40.dp
+                            iconSize = 44.dp
                         )
                     }
                 }
