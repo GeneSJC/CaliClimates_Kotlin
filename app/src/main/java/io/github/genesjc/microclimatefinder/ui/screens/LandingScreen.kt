@@ -249,14 +249,14 @@ private fun StationHeroTile(
                 compact = true,
                 elevationNote = Elevation.note(station.elevationMeters, regionId),
                 // Inside the card's border: the region's elevation range, and the way to fold it back
-                // The region's elevation range at the foot of the card
+                // The region's elevation range, at the right of the terrain chip's line
                 compactFooter = {
                     if (regionStations.isNotEmpty()) {
                         Text(
                             text = "Region elevation ${Elevation.rangeFeet(regionStations.minOf { it.elevationMeters }, regionStations.maxOf { it.elevationMeters })}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                            maxLines = 1
                         )
                     }
                 },
