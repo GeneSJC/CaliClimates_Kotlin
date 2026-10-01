@@ -1,5 +1,10 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,47 +56,82 @@ fun StationListScreen(
     val pickerState = rememberRegionPickerState()
 
     Box(modifier = modifier.fillMaxSize()) {
+    // The same margins and header card as Home
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+            .padding(top = 20.dp, start = 10.dp, end = 10.dp)
     ) {
-        // Top App Bar with back button
-        Row(
+        Surface(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            shape = RoundedCornerShape(16.dp),
+            color = Color.Transparent
         ) {
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
+            Row(
                 modifier = Modifier
-                    .size(36.dp)
-                    .clickable(onClick = onNavigateBack)
+                    .fillMaxWidth()
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
+                            )
+                        )
+                    )
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                // Back, in the same tile as Home's menu button
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clickable(onClickLabel = "Back", onClick = onNavigateBack)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "\u2190",
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "←",
-                        fontSize = 18.sp,
+                        text = dataset.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontSize = 16.5.sp,
+                        lineHeight = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = dataset.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-            }
 
-            Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                Text(
-                    text = dataset.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = dataset.subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                Spacer(modifier = Modifier.width(10.dp))
+
+                // The region picker, the same chip as Home's
+                RegionPickerButton(
+                    state = pickerState,
+                    selectedRegionId = selectedRegionId,
+                    background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                    content = MaterialTheme.colorScheme.onPrimaryContainer,
+                    size = 52.dp,
+                    iconSize = 40.dp
                 )
             }
-
-            RegionPickerButton(state = pickerState, selectedRegionId = selectedRegionId)
         }
 
         Spacer(modifier = Modifier.height(14.dp))
