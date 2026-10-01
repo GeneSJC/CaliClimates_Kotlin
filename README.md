@@ -1,5 +1,12 @@
 # Android_MicroClimateFinder
 
+## Highlights
+
+- **A tactile feel when you change region.** The app responds to a region change on several levels at once, so
+  switching feels physical rather than like a screen swap: a soft haptic tick on the phone, the page colour
+  easing to the new region's earth tone, and the relief texture behind everything sliding over to a different part of
+  the landscape (the Topography map and the page behind it read as one continuous surface). *(Add a short recording here.)*
+
 ## Build variants
 
 The app has two build flavor dimensions:
