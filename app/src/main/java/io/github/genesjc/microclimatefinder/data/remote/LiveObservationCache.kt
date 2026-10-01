@@ -28,19 +28,29 @@ object LiveObservationCache {
             if (result is ObservationResult.Reading) READING_TTL_MS else NEGATIVE_TTL_MS
     }
 
+    // Test hooks: the clock and the fetcher the cache uses (see LiveObservationCacheTest)
+    internal var now: () -> Long = { System.currentTimeMillis() }
+    internal var fetcher: suspend (String) -> ObservationResult = { NwsObservationClient.fetchLatest(it) }
+
     private val entries = mutableStateMapOf<String, ObservationResult>()
     private val stamps = ConcurrentHashMap<String, Entry>()
     private val gate = Semaphore(CONCURRENT_REQUESTS)
+
+    /** Forgets every reading. For tests. */
+    internal fun clear() {
+        entries.clear()
+        stamps.clear()
+    }
 
     /** Latest known result for a station without fetching; null if never fetched. */
     fun peek(stationId: String): ObservationResult? = entries[stationId]
 
     /** Fresh cached result, else fetch (at most [CONCURRENT_REQUESTS] requests at a time). */
     suspend fun get(stationId: String): ObservationResult {
-        stamps[stationId]?.takeIf { it.isFresh(System.currentTimeMillis()) }?.let { return it.result }
+        stamps[stationId]?.takeIf { it.isFresh(now()) }?.let { return it.result }
         return gate.withPermit {
-            val result = NwsObservationClient.fetchLatest(stationId)
-            stamps[stationId] = Entry(result, System.currentTimeMillis())
+            val result = fetcher(stationId)
+            stamps[stationId] = Entry(result, now())
             entries[stationId] = result
             result
         }
