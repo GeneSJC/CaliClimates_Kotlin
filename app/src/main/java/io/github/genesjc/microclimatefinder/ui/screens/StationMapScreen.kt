@@ -82,7 +82,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
-import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaGeography
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
@@ -128,8 +128,7 @@ fun StationMapScreen(
     onZoomChange: ((Float) -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.fileName) { StationCsvParser(context) }
-    val stations = remember(dataset) { parser.loadStations(dataset) }
+    val stations = remember(dataset) { StationRepository.stations(context, dataset) }
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     // The region's terrain picture, loaded off the main thread; the map shows a plain base until it arrives

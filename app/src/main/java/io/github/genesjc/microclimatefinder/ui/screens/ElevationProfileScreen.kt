@@ -75,7 +75,7 @@ import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
-import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
@@ -200,8 +200,7 @@ fun ElevationProfileScreen(
     onZoomChange: ((Float) -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.fileName) { StationCsvParser(context) }
-    val stations = remember(dataset) { parser.loadStations(dataset) }
+    val stations = remember(dataset) { StationRepository.stations(context, dataset) }
 
     // The region's terrain picture (the one the Topography map draws), used as a faint texture in the ground
     val terrain by produceState<TerrainImage?>(null, dataset.regionId) {
