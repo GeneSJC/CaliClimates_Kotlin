@@ -13,6 +13,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -77,21 +78,22 @@ fun CaliforniaRegionPickerPanel(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(16.dp)) {
-        // The title, and the close button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // The title, centred on the panel, and the close button at the right
+        Box(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp)
         ) {
             Text(
                 text = "Pick a region",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                modifier = Modifier.align(Alignment.Center)
             )
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier
+                    .align(Alignment.CenterEnd)
                     .size(32.dp)
                     .clickable(onClickLabel = "Close", onClick = onClose)
             ) {

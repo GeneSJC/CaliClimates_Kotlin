@@ -249,14 +249,14 @@ private fun StationHeroTile(
                 compact = true,
                 elevationNote = Elevation.note(station.elevationMeters, regionId),
                 // Inside the card's border: the region's elevation range, and the way to fold it back
-                // The region's elevation range at the foot of the card
+                // The region's elevation range, at the right of the terrain chip's line
                 compactFooter = {
                     if (regionStations.isNotEmpty()) {
                         Text(
                             text = "Region elevation ${Elevation.rangeFeet(regionStations.minOf { it.elevationMeters }, regionStations.maxOf { it.elevationMeters })}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                            maxLines = 1
                         )
                     }
                 },
@@ -654,7 +654,8 @@ fun LandingScreen(
                 val headerShape = RoundedCornerShape(16.dp)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    // A wider gap between the region widget and the picker widget, so more terrain shows between them (8dp, then 16dp)
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     // Widget 2: the region name with a chevron (tap for the region list), and the Region Info link
@@ -889,7 +890,7 @@ fun LandingScreen(
                         .fillMaxHeight()
                         .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y }
                 ) {
-                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing)
+                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
                 }
             }
 
@@ -1013,7 +1014,8 @@ fun LandingScreen(
                 hasStationData = hasStationData,
                 stations = snapshotStations,
                 onOpenStationList = { onNavigateTo(AppScreen.STATION_LIST) },
-                menuOpen = menuDrawerShowing,
+                // The region picker is above the floating cards too: they fold while it is showing
+                menuOpen = menuDrawerShowing || pickerState.visible,
                 // The dot-size slider belongs to the map, so only the Topography view has it
                 legendExtra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) }
             )
