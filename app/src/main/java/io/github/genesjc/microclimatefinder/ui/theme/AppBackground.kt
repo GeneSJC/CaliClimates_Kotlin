@@ -3,6 +3,7 @@ package io.github.genesjc.microclimatefinder.ui.theme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import android.graphics.BitmapFactory
 import androidx.compose.runtime.Composable
@@ -30,7 +31,12 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
         animationSpec = tween(700),
         label = "backdropTint"
     )
-    // EXPERIMENT: a faint relief texture over the light backdrop, for a little depth. It is not tied to any real place
+    // Each region looks at a different part of the relief picture; the window slides over when the region changes
+    val regionIndex = CaliforniaRegionalDefinitions.ALL_REGIONS.indexOfFirst { it.id == regionId }.coerceAtLeast(0)
+    val window = TEXTURE_WINDOWS[regionIndex % TEXTURE_WINDOWS.size]
+    val windowX by animateFloatAsState(window.first, tween(900), label = "textureX")
+    val windowY by animateFloatAsState(window.second, tween(900), label = "textureY")
+    // EXPERIMENT: a relief texture over the light backdrop, for a little depth. It is not tied to any real place
     val context = androidx.compose.ui.platform.LocalContext.current
     val texture by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null) {
         value = withContext(Dispatchers.IO) {
@@ -75,15 +81,19 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
                     drawRect(base)
                     drawRect(glowA)
                     drawRect(glowB)
-                    // The relief, multiplied in so it only shades the colour, covering the whole screen
+                    // The relief, multiplied in so it only shades the colour: a window of the picture, as wide as the
+                    // screen needs, whose place depends on the region
                     if (tex != null) {
-                        val cover = maxOf(size.width / tex.width, size.height / tex.height)
-                        val dw = (tex.width * cover).toInt()
-                        val dh = (tex.height * cover).toInt()
+                        val srcW = (tex.width * TEXTURE_ZOOM).toInt()
+                        val srcH = minOf(tex.height.toFloat(), srcW * size.height / size.width).toInt()
                         drawImage(
                             image = tex,
-                            dstOffset = androidx.compose.ui.unit.IntOffset(((size.width - dw) / 2f).toInt(), ((size.height - dh) / 2f).toInt()),
-                            dstSize = androidx.compose.ui.unit.IntSize(dw, dh),
+                            srcOffset = androidx.compose.ui.unit.IntOffset(
+                                (windowX * (tex.width - srcW)).toInt(),
+                                (windowY * (tex.height - srcH)).toInt()
+                            ),
+                            srcSize = androidx.compose.ui.unit.IntSize(srcW, srcH),
+                            dstSize = androidx.compose.ui.unit.IntSize(size.width.toInt(), size.height.toInt()),
                             alpha = BACKDROP_TEXTURE_STRENGTH,
                             blendMode = androidx.compose.ui.graphics.BlendMode.Multiply
                         )
@@ -106,7 +116,15 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
 private val DEFAULT_CORNER = Color(0xFFF3A583)
 
 /** How strongly the relief texture shows over the light backdrop (0 = not at all). */
-private const val BACKDROP_TEXTURE_STRENGTH = 0.85f
+private const val BACKDROP_TEXTURE_STRENGTH = 1.0f
+
+/** How much of the relief picture's width one screen shows (smaller = bigger, sharper ridges). */
+private const val TEXTURE_ZOOM = 0.55f
+
+/** Where each region's window sits in the picture, as fractions (x, y) of the room to move, in the regions' order. */
+private val TEXTURE_WINDOWS = listOf(
+    0.15f to 0.10f, 0.85f to 0.30f, 0.30f to 0.80f, 0.90f to 0.75f, 0.05f to 0.55f, 0.60f to 0.02f
+)
 
 /**
  * A soft tint of the region's picker colour for the backdrop corners: the muted earth tone, about a quarter of the way to white,
