@@ -60,7 +60,7 @@ fun StationListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 20.dp, start = 10.dp, end = 10.dp)
+            .padding(top = 22.dp, start = 10.dp, end = 10.dp)
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
