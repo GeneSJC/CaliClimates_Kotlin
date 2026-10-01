@@ -230,8 +230,8 @@ private fun StationHeroTile(
         closeLabel = "Hide the full station card",
         // Stays open when another station is picked from the map, and the map stays tappable behind it
         passThrough = true,
-        // A squarer tile than the other cards
-        tileCornerRadius = 6.dp,
+        // Half the rounding of the other cards
+        tileCornerRadius = 8.dp,
         // The Region Info sheet sits above this card: opening it folds the card
         forceClosed = folded,
         tile = { StationSummaryTile(station) },
