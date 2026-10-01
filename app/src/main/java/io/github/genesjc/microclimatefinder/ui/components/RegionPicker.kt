@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import io.github.genesjc.microclimatefinder.ui.screens.PICKER_VERTICAL_STRETCH
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.border
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
@@ -157,9 +158,9 @@ fun RegionPickerOverlay(
     val containerH = size.height.toFloat()
     val targetW = containerW * 0.92f
     // As tall as the picker's content needs (the map is 1.35 times as tall as it is wide), with a little
-    // room under the map, and never more than 75% of the screen
-    val contentDp = 16f + 32f + 12f + (targetW / density.density - 32f) * 1.35f + 16f + 14f
-    val targetH = minOf(containerH * 0.75f, contentDp * density.density)
+    // room under the map, and never more than 82% of the screen
+    val contentDp = 16f + 32f + 12f + (targetW / density.density - 32f) * 1.35f * PICKER_VERTICAL_STRETCH + 16f + 14f
+    val targetH = minOf(containerH * 0.82f, contentDp * density.density)
     val targetX = (containerW - targetW) / 2f
     val targetY = (containerH - targetH) / 2f
     val startX = state.buttonBounds.left - origin.x

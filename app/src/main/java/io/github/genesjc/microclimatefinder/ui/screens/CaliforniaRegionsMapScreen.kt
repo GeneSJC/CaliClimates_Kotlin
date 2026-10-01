@@ -62,6 +62,9 @@ import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 
+/** How much the picker's map is stretched vertically (1 = true shape). Taller, at the cost of some skew. */
+internal const val PICKER_VERTICAL_STRETCH = 1.35f
+
 /**
  * Content of the region picker overlay on Home: a title, a close button and the regional map. A pick on
  * the map is the choice itself ([onPickRegion]); there is no Confirm button.
@@ -106,8 +109,10 @@ fun CaliforniaRegionPickerPanel(
         CaliforniaClassicMapCanvas(
             selectedRegionId = pendingRegionId,
             onSelectRegion = onPickRegion,
-            // Only as tall as the state needs, so there is little empty space above and below it
-            sizeModifier = Modifier.aspectRatio(1f / 1.35f)
+            // Tall: the map is stretched a little vertically and fills the panel's height (the panel is sized to
+            // fit it, up to most of the screen; on a short screen the map just gets a little shorter)
+            sizeModifier = Modifier.weight(1f),
+            verticalStretch = PICKER_VERTICAL_STRETCH
         )
     }
 }
@@ -515,7 +520,9 @@ fun CaliforniaRegionsMapScreen(
 private fun CaliforniaClassicMapCanvas(
     selectedRegionId: String,
     onSelectRegion: (String) -> Unit,
-    sizeModifier: Modifier = Modifier.height(430.dp)
+    sizeModifier: Modifier = Modifier.height(430.dp),
+    // Stretches the map vertically (1 = true shape); the picker uses a little, to be taller
+    verticalStretch: Float = 1f
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val terrain by androidx.compose.runtime.produceState<StateTerrain?>(null) {
@@ -545,9 +552,9 @@ private fun CaliforniaClassicMapCanvas(
                     val latMin = 31.9f
                     val latMax = 43.0f
                     // True shape: one scale for both axes (a degree of longitude is about 0.8 of a degree of latitude), centred
-                    val k = minOf(w * 0.985f / ((lonMax - lonMin) * 0.8f), h * 0.985f / (latMax - latMin))
+                    val k = minOf(w * 0.985f / ((lonMax - lonMin) * 0.8f), h * 0.985f / ((latMax - latMin) * verticalStretch))
                     val availW = (lonMax - lonMin) * 0.8f * k
-                    val availH = (latMax - latMin) * k
+                    val availH = (latMax - latMin) * k * verticalStretch
                     val padX = (w - availW) / 2f
                     val padY = (h - availH) / 2f
 
@@ -722,9 +729,9 @@ private fun CaliforniaClassicMapCanvas(
             val latMin = 31.9f
             val latMax = 43.0f
             // True shape: one scale for both axes (a degree of longitude is about 0.8 of a degree of latitude), centred
-            val k = minOf(w * 0.985f / ((lonMax - lonMin) * 0.8f), h * 0.985f / (latMax - latMin))
+            val k = minOf(w * 0.985f / ((lonMax - lonMin) * 0.8f), h * 0.985f / ((latMax - latMin) * verticalStretch))
             val availW = (lonMax - lonMin) * 0.8f * k
-            val availH = (latMax - latMin) * k
+            val availH = (latMax - latMin) * k * verticalStretch
             val padX = (w - availW) / 2f
             val padY = (h - availH) / 2f
 
