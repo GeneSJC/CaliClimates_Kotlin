@@ -60,7 +60,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8: removes unused code (and unused resources) and shortens names, so the app is smaller and starts faster.
+            // Rules for anything it must keep are in src/main/keepRules/rules.keep and proguard-rules.pro
+            isMinifyEnabled = true
+            isShrinkResources = true
+            // Signed with the debug key for now, so a release build can be installed and tried on the emulator or a phone.
+            // A real release key replaces this before anything is published
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
