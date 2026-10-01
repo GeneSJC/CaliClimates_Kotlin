@@ -631,7 +631,7 @@ fun LandingScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(start = 20.dp, end = 20.dp, top = 20.dp),
+                .padding(start = 10.dp, end = 10.dp, top = 20.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             run {
