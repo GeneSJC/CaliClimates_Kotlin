@@ -26,7 +26,7 @@ import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
-import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
@@ -576,7 +576,7 @@ fun LandingScreen(
     val hasStationData = dataset != null
     val context = LocalContext.current
     val snapshotStations = remember(dataset) {
-        dataset?.let { StationCsvParser(context).loadStations(it) } ?: emptyList()
+        dataset?.let { StationRepository.stations(context, it) } ?: emptyList()
     }
     val appName = stringResource(R.string.app_name)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)

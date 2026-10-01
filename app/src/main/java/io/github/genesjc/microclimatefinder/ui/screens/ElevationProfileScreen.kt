@@ -76,7 +76,7 @@ import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
-import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
@@ -201,8 +201,7 @@ fun ElevationProfileScreen(
     onZoomChange: ((Float) -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.fileName) { StationCsvParser(context) }
-    val stations = remember(dataset) { parser.loadStations(dataset) }
+    val stations = remember(dataset) { StationRepository.stations(context, dataset) }
 
     // The region's terrain picture (the one the Topography map draws), used as a faint texture in the ground
     val terrain by produceState<TerrainImage?>(null, dataset.regionId) {
@@ -405,6 +404,36 @@ private val RIDGE_LAYERS = listOf(
     RidgeLayer(0.99f, 0.04f, 4.5f, 0.85f, 0.65f, 0.80f, 1.00f, -1, 18f)
 )
 
+/**
+ * The height (0 to 1) of every point of every ridge layer. These depend only on the chart's width, the region's seed
+ * and its real skyline, never on zoom or pan, so they are worked out once and reused on every frame of a pan or zoom.
+ */
+private class RidgeHeights {
+    private var width = -1f
+    private var seed = 0
+    private var skyline: List<FloatArray>? = null
+    private var data: Array<FloatArray> = emptyArray()
+
+    fun get(width: Float, seed: Int, skyline: List<FloatArray>?): Array<FloatArray> {
+        if (data.isNotEmpty() && width == this.width && seed == this.seed && skyline === this.skyline) return data
+        data = Array(RIDGE_LAYERS.size) { layer ->
+            val spec = RIDGE_LAYERS[layer]
+            val realLayer = if (spec.skylineIndex >= 0) skyline?.getOrNull(spec.skylineIndex) else null
+            FloatArray(RIDGE_STEPS + 1) { i ->
+                val bx = -width + (width * 3f) * i / RIDGE_STEPS
+                val procedural = ridgeHeight((bx / width) * spec.spread, seed, layer)
+                if (realLayer != null) 0.85f * sampleSkyline(realLayer, bx / width) + 0.15f * procedural else procedural
+            }
+        }
+        this.width = width
+        this.seed = seed
+        this.skyline = skyline
+        return data
+    }
+}
+
+private const val RIDGE_STEPS = 110
+
 /** A real skyline's height (0 to 1) at [t], where 0 to 1 is across the chart; it mirrors outside that. */
 private fun sampleSkyline(values: FloatArray, t: Float): Float {
     val m = ((t % 2f) + 2f) % 2f
@@ -538,6 +567,11 @@ private fun ElevationProfileCanvas(
     val maxElevation = remember(sorted) { (sorted.maxOfOrNull { it.elevationMeters } ?: 1500).toFloat() }
     // Stations ranked for labels; the first few are the ones the sky badge cycles through
     val rankedLandmarks = remember(sorted) { rankLandmarkIndexes(sorted) }
+    // Each station's label text, made once (label placement runs on every zoom and pan frame)
+    val labelTexts = remember(sorted) {
+        sorted.map { LocalNewsRepository.getCleanCityName(it.id, it.name) + " ${Elevation.formatFeet(it.elevationMeters)}" }
+    }
+    val ridgeCache = remember { RidgeHeights() }
     val cycleIds = remember(sorted) {
         rankedLandmarks.take(LANDMARK_COUNT).sorted().map { sorted[it].id }
     }
@@ -706,8 +740,7 @@ private fun ElevationProfileCanvas(
                 val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
                 val pinY = with(density) { viewY(paddingPx + profileFrac(elevRatio) * heightPx).toDp().value }
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
-                val text = LocalNewsRepository.getCleanCityName(station.id, station.name) +
-                    " ${Elevation.formatFeet(station.elevationMeters)}"
+                val text = labelTexts[idx]
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
                 val labelW = text.length * 5.4f + 10f
                 val left = (if (pinX - 24f + labelW > widthDp.value * 0.97f) pinX - labelW else pinX - 24f).coerceAtLeast(2f)
@@ -823,21 +856,19 @@ private fun ElevationProfileCanvas(
             // The layers keep the size they have in the regular-height chart. When the chart is taller,
             // the extra height is shared out between them (the far ranges stay near the top, the near
             // hills sink toward the ground), so nothing stretches and the gaps fill with more layers.
+            val ridgeHeights = ridgeCache.get(size.width, seed, skyline)
             val ridgeH = CHART_REGULAR_HEIGHT.toPx() - padding * 2
             val extra = (h - ridgeH).coerceAtLeast(0f)
             clipPath(skyPath) {
                 RIDGE_LAYERS.forEachIndexed { layer, spec ->
-                    val steps = 110
+                    val steps = RIDGE_STEPS
                     val startX = -size.width
                     val endX = size.width * 2f
                     val points = ArrayList<Offset>(steps + 1)
-                    val realLayer = if (spec.skylineIndex >= 0) skyline?.getOrNull(spec.skylineIndex) else null
+                    val layerHeights = ridgeHeights[layer]
                     for (i in 0..steps) {
                         val bx = startX + (endX - startX) * i / steps
-                        val procedural = ridgeHeight((bx / size.width) * spec.spread, seed, layer)
-                        val height = if (realLayer != null) {
-                            0.85f * sampleSkyline(realLayer, bx / size.width) + 0.15f * procedural
-                        } else procedural
+                        val height = layerHeights[i]
                         val by = padding + ridgeH * spec.base - ridgeH * spec.amplitude * height + spec.anchor * extra
                         val lx = size.width / 2f + (bx - size.width / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.x * spec.follow
                         val ly = size.height / 2f + (by - size.height / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.y * spec.follow

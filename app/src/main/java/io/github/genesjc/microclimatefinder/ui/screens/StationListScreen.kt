@@ -34,7 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
@@ -50,8 +50,7 @@ fun StationListScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.fileName) { StationCsvParser(context) }
-    val stations = remember(dataset) { parser.loadStations(dataset) }
+    val stations = remember(dataset) { StationRepository.stations(context, dataset) }
     var selectedStationId by remember { mutableStateOf<String?>(null) }
     val pickerState = rememberRegionPickerState()
 

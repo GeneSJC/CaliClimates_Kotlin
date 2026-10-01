@@ -82,7 +82,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
-import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaGeography
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
@@ -128,8 +128,7 @@ fun StationMapScreen(
     onZoomChange: ((Float) -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.fileName) { StationCsvParser(context) }
-    val stations = remember(dataset) { parser.loadStations(dataset) }
+    val stations = remember(dataset) { StationRepository.stations(context, dataset) }
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     // The region's terrain picture, loaded off the main thread; the map shows a plain base until it arrives
@@ -377,6 +376,9 @@ internal fun PinSizeSlider(
     }
 }
 
+/** A landmark's label text and its estimated width: fixed per station, so made once, not on every zoom or pan frame. */
+private class LandmarkLabel(val station: MicroclimateStation, val city: String, val elevText: String, val widthDp: Dp)
+
 private data class StationLabelPlan(
     val station: MicroclimateStation,
     val city: String,
@@ -417,6 +419,17 @@ private fun SpatialMapCanvas(
     val landmarks = remember(stations) { pickMapLandmarks(stations, minOf(stations.size, MAP_LABEL_COUNT * 8)) }
 
     // View transform: zoom about the map centre plus a pan in pixels
+    // The labels' text and widths, made once per station list (the placement below runs on every zoom and pan frame)
+    val landmarkLabels = remember(landmarks) {
+        landmarks.map { station ->
+            val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
+                .let { if (it.length > 18) it.take(17) + "\u2026" else it }
+            val elevText = Elevation.formatFeet(station.elevationMeters)
+            // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
+            LandmarkLabel(station, city, elevText, ((city.length + elevText.length + 1) * 4.9f + 12f).dp)
+        }
+    }
+
     var zoom by remember(stations) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
     var pan by remember(stations) { mutableStateOf(Offset.Zero) }
@@ -561,12 +574,11 @@ private fun SpatialMapCanvas(
             // Labels for stations picked from the loaded stations: more as the map zooms
             val stationBudget = labelBudget(MAP_LABEL_COUNT, zoom, 3f).toInt()
             var shownLabels = 0
-            for (station in landmarks) {
-                val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
-                    .let { if (it.length > 18) it.take(17) + "\u2026" else it }
-                val elevText = Elevation.formatFeet(station.elevationMeters)
-                // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
-                val labelWidthDp = ((city.length + elevText.length + 1) * 4.9f + 12f).dp
+            for (label in landmarkLabels) {
+                val station = label.station
+                val city = label.city
+                val elevText = label.elevText
+                val labelWidthDp = label.widthDp
                 val pinXDp = with(density) { mapX(station.longitude).toDp() }
                 val pinYDp = with(density) { mapY(station.latitude).toDp() }
                 // Stations panned out of view get no label
