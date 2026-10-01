@@ -642,9 +642,9 @@ fun LandingScreen(
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             run {
-                // App header: three separate widgets with the backdrop showing between them, each with the
-                // About-dialog gradient: (1) the menu and the About button, (2) the region (its name, and the Region
-                // Info link under it), (3) the region picker. The two side widgets are the same narrow width.
+                // App header: two separate widgets with the backdrop showing between them, each with the
+                // About-dialog gradient: (1) the region (its name, and under it the menu and About buttons at the left
+                // and the Region Info link at the right), (2) the region picker.
                 val headerBrush = Brush.linearGradient(
                     listOf(
                         MaterialTheme.colorScheme.primaryContainer,
@@ -657,23 +657,6 @@ fun LandingScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Widget 1: the menu, straight on the widget (no chip behind it)
-                    Box(
-                        modifier = Modifier
-                            .width(60.dp)
-                            .height(HEADER_HEIGHT)
-                            .clip(headerShape)
-                            .background(headerBrush)
-                            .clickable(onClickLabel = "Open the menu", role = Role.Button) { scope.launch { drawerState.open() } },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "☰",
-                            fontSize = 24.sp,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-
                     // Widget 2: the region name with a chevron (tap for the region list), and the Region Info link
                     // on the line below, in the same card. The Box is the list's anchor.
                     Box(modifier = Modifier.weight(1f).height(HEADER_HEIGHT)) {
@@ -688,6 +671,7 @@ fun LandingScreen(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
+                                    .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
                                     .clickable(onClickLabel = "Choose region", role = Role.Button) {
                                         showRegionMenu = true
@@ -721,6 +705,22 @@ fun LandingScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    // The menu button, at the left of the row, the same size as the (i)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(26.dp)
+                                            .clip(CircleShape)
+                                            .clickable(onClickLabel = "Open the menu", role = Role.Button) { scope.launch { drawerState.open() } },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "☰",
+                                            fontSize = 19.sp,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     // The (i) button at the left of the same row: opens the About dialog; plain, a supporting control
                                     Box(
                                         modifier = Modifier
@@ -742,6 +742,7 @@ fun LandingScreen(
                                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
                                         }
+                                    }
                                     }
                                     val handleModifier = Modifier
                                         .clickable(
