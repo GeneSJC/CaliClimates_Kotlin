@@ -648,13 +648,13 @@ private fun CompactMetric(label: String, value: String) {
 
 /**
  * The summary of a station for the Home row: the temperature in °F, a pipe divider, then the name,
- * and a More link on the right. The age of the reading is in the full card that More opens. When
+ * and a chevron on the right. The age of the reading is in the full card that the chevron opens. When
  * there is no reading, the reason shows where the °C would be.
  */
 @Composable
 fun StationSummaryTile(station: MicroclimateStation) {
     val display = liveDisplay(station)
-    // One line: the temperature in °F, a pipe divider, the name, and the More link at the right. The name gives way
+    // One line: the temperature in °F, a pipe divider, the name, and the chevron at the right. The name gives way
     // (with an ellipsis) only when it really cannot fit; the temperature always shows
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -686,7 +686,7 @@ fun StationSummaryTile(station: MicroclimateStation) {
         }
         Spacer(modifier = Modifier.width(10.dp))
         Text(
-            text = "More \u25BC",
+            text = "\u25BC",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,

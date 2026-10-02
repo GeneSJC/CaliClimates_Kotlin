@@ -904,8 +904,9 @@ fun LandingScreen(
                             }
                     }
 
-                    // Widget 3: the region picker, on its own, the same width as widget 1
-                    Box(
+                    // Widget 3: the region picker, on its own. With station data it lives beside the station tile on the
+                    // map instead; here it stays for a region with no data (no map, no tile)
+                    if (dataset == null) Box(
                         modifier = Modifier
                             .width(52.dp)
                             .height(HEADER_HEIGHT)
@@ -1053,6 +1054,34 @@ fun LandingScreen(
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y }
                         ) {
                             if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
+                        }
+                        // The California region picker, to the right of the tile, dressed like it
+                        val pickerShape = RoundedCornerShape(8.dp)
+                        Box(
+                            modifier = Modifier
+                                .width(46.dp)
+                                .fillMaxHeight()
+                                .clip(pickerShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(
+                                            MaterialTheme.colorScheme.primaryContainer,
+                                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
+                                        )
+                                    )
+                                )
+                                .border(2.dp, MaterialTheme.colorScheme.primary, pickerShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            RegionPickerButton(
+                                state = pickerState,
+                                selectedRegionId = selectedRegionId,
+                                background = Color.Transparent,
+                                content = MaterialTheme.colorScheme.onPrimaryContainer,
+                                border = Color.Transparent,
+                                size = 40.dp,
+                                iconSize = 36.dp
+                            )
                         }
                     }
                     // Below the tile, at the left: hides or brings back the header
