@@ -99,6 +99,7 @@ import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerSt
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.MapText
+import io.github.genesjc.microclimatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.microclimatefinder.ui.components.ms
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
@@ -484,8 +485,10 @@ private fun SpatialMapCanvas(
         val canvasW = with(density) { widthDp.toPx() }
         val canvasH = with(density) { heightDp.toPx() }
         // One scale in both directions, so the region keeps its true shape
-        val projection = remember(minLon, maxLon, minLat, maxLat, canvasW, canvasH) {
-            MapProjection(minLon, maxLon, minLat, maxLat, canvasW, canvasH, paddingPx)
+        // On Home the station tile floats over the top of the map: the zoomed-out map fits below it
+        val topInset = if (embedded) with(density) { HOME_TILE_BAND.toPx() } else 0f
+        val projection = remember(minLon, maxLon, minLat, maxLat, canvasW, canvasH, topInset) {
+            MapProjection(minLon, maxLon, minLat, maxLat, canvasW, canvasH, paddingPx, topInset)
         }
         fun viewX(baseX: Float) = canvasW / 2f + (baseX - canvasW / 2f) * zoom + pan.x
         fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
@@ -560,11 +563,11 @@ private fun SpatialMapCanvas(
 
         // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
-            listOf(0f, 0f, 58f, 40f),                                   // compass
-            listOf(widthDp.value - 150f, 0f, widthDp.value, 40f),       // data credit
+            if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
+            if (embedded) listOf(0f, HOME_TILE_BAND.value, 58f, HOME_TILE_BAND.value + 88f) else listOf(0f, 0f, 58f, 40f),  // maximize and compass
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
-            listOf(widthDp.value - 46f, 56f, widthDp.value, heightDp.value),  // zoom slider
-            if (embedded) listOf(widthDp.value - 170f, 0f, widthDp.value, 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+            listOf(widthDp.value - 46f, 56f + (if (embedded) HOME_TILE_BAND.value else 0f), widthDp.value, heightDp.value),  // zoom slider
+            if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
             listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f)  // expand / shrink toggle
         )
 
@@ -653,7 +656,7 @@ private fun SpatialMapCanvas(
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 12.dp, top = if (embedded) 50.dp else 12.dp)
+                .padding(start = 12.dp, top = if (embedded) 50.dp + HOME_TILE_BAND else 12.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -707,7 +710,7 @@ private fun SpatialMapCanvas(
                 caption = "FONT",
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 56.dp, end = 4.dp, bottom = 4.dp)
+                    .padding(top = 56.dp + (if (embedded) HOME_TILE_BAND else 0.dp), end = 4.dp, bottom = 4.dp)
                     .width(40.dp)
                     .fillMaxHeight()
             )
@@ -722,7 +725,7 @@ private fun SpatialMapCanvas(
             // Its top stays under the data credit whatever the map's height; the bottom follows the map
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 56.dp, end = 4.dp, bottom = 4.dp)
+                .padding(top = 56.dp + (if (embedded) HOME_TILE_BAND else 0.dp), end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
                 .fillMaxHeight()
         )

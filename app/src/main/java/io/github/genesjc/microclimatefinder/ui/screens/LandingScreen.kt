@@ -4,6 +4,7 @@ import io.github.genesjc.microclimatefinder.ui.components.regionPickerColors
 import io.github.genesjc.microclimatefinder.domain.Elevation
 import androidx.compose.animation.AnimatedVisibility
 import io.github.genesjc.microclimatefinder.ui.components.MapText
+import io.github.genesjc.microclimatefinder.ui.components.HOME_TILE_BAND
 import androidx.compose.ui.unit.Density
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.expandVertically
@@ -927,34 +928,12 @@ fun LandingScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             }
             }
-            // Row 1: the selected station as a tile that fills the width (it grows into the full card),
-            // with Region Info at the right
             val shown = if (dataset != null) {
                 snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
             } else null
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
-                    .onSizeChanged { rowWidthPx = it.width },
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // The station tile takes the whole width
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y }
-                ) {
-                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
-                }
-            }
-
-            // A small gap between the first row and what is below it (the map)
-            Spacer(modifier = Modifier.height(2.dp))
             run {
                 Column {
                     // This region has no station data in this build
@@ -1057,20 +1036,39 @@ fun LandingScreen(
                             onZoomChange = { mapZoom[0] = it }
                         )
                     }
-                    // Top left, in the corner the compass used to have: hides or brings back the header
+                    // The selected station as a tile across the top of the map (it grows into the full card)
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .fillMaxWidth()
+                            .padding(start = 6.dp, end = 6.dp, top = 5.dp)
+                            .height(IntrinsicSize.Min)
+                            .onSizeChanged { rowWidthPx = it.width },
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y }
+                        ) {
+                            if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
+                        }
+                    }
+                    // Below the tile, at the left: hides or brings back the header
                     MapMaximizeButton(
                         maximized = mapMaximized,
                         onClick = {
                             if (!mapMaximized && infoOpen) closeInfo()
                             mapMaximized = !mapMaximized
                         },
-                        modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp)
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
                     )
                     MapViewSwitch(
                         selected = homeTab,
                         onSelect = onHomeTabChange,
                         // Top right, the same place on both views, above the zoom slider
-                        modifier = Modifier.align(Alignment.TopEnd).padding(end = 12.dp, top = 21.dp)
+                        modifier = Modifier.align(Alignment.TopEnd).padding(end = 12.dp, top = 21.dp + HOME_TILE_BAND)
                     )
                 }
             }

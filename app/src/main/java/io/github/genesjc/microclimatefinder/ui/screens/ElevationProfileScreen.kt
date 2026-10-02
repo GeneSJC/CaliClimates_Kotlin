@@ -86,6 +86,7 @@ import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.MapText
+import io.github.genesjc.microclimatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.microclimatefinder.ui.components.ms
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
@@ -106,7 +107,7 @@ private const val CHART_PADDING_PX = 32f
 
 // The profile sits between a little headroom and sea level; the bottom of the chart is ocean, so sea level
 // is in view and the cities spread over more of the height
-private const val PROFILE_HEAD = 0.05f
+private const val PROFILE_HEAD = 0.15f
 private const val SEA_FRACTION = 0.126f
 
 /** Where (0 at the chart's top, 1 at its bottom) a height, as a share of the highest station, is drawn. */
@@ -746,10 +747,11 @@ private fun ElevationProfileCanvas(
         val placedLabels = run {
             val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
             val taken = mutableListOf(
-                listOf(widthDp.value - 46f, 56f, widthDp.value, heightDp.value), // zoom slider
-                if (embedded) listOf(widthDp.value - 170f, 0f, widthDp.value, 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+                if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
+                listOf(0f, 56f + (if (embedded) HOME_TILE_BAND.value else 0f), 46f, heightDp.value), // zoom slider (at the left)
+                if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
-                listOf(20f, 50f, 190f, 97f)               // weather badge
+                listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
             fun plan(idx: Int, allow: Boolean, force: Boolean): PlacedLabel? {
@@ -1244,7 +1246,7 @@ private fun ElevationProfileCanvas(
             color = skyTheme.badgeBg.copy(alpha = 0.85f),
             border = BorderStroke(1.dp, skyTheme.accent.copy(alpha = 0.45f)),
             modifier = Modifier
-                .offset(x = 52.dp, y = 50.dp)
+                .offset(x = 52.dp, y = 50.dp + (if (embedded) HOME_TILE_BAND else 0.dp))
                 .clickable {
                     // Tap to cycle landmarks
                     if (cycleIds.isNotEmpty()) {
@@ -1344,7 +1346,7 @@ private fun ElevationProfileCanvas(
                 caption = "FONT",
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(top = 56.dp, start = 4.dp, bottom = 4.dp)
+                    .padding(top = 56.dp + (if (embedded) HOME_TILE_BAND else 0.dp), start = 4.dp, bottom = 4.dp)
                     .width(40.dp)
                     .fillMaxHeight()
             )
@@ -1360,7 +1362,7 @@ private fun ElevationProfileCanvas(
             // At the left here (the chart has no use for that side); its top stays put, the bottom follows the chart
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(top = 56.dp, start = 4.dp, bottom = 4.dp)
+                .padding(top = 56.dp + (if (embedded) HOME_TILE_BAND else 0.dp), start = 4.dp, bottom = 4.dp)
                 .width(40.dp)
                 .fillMaxHeight()
         )

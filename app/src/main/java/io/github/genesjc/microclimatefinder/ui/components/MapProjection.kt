@@ -16,16 +16,18 @@ class MapProjection(
     private val maxLat: Double,
     canvasW: Float,
     canvasH: Float,
-    padding: Float
+    padding: Float,
+    /** Space kept free at the top (something floats over it), so the whole frame fits below. */
+    topInset: Float = 0f
 ) {
     private val cosMid = cos((minLat + maxLat) / 2.0 * PI / 180.0)
     private val frameW = (maxLon - minLon) * cosMid
     private val frameH = maxLat - minLat
 
     /** Canvas pixels per degree of latitude. */
-    private val scale: Double = min((canvasW - padding * 2) / frameW, (canvasH - padding * 2) / frameH)
+    private val scale: Double = min((canvasW - padding * 2) / frameW, (canvasH - padding * 2 - topInset) / frameH)
     private val offsetX = padding + ((canvasW - padding * 2) - frameW * scale) / 2.0
-    private val offsetY = padding + ((canvasH - padding * 2) - frameH * scale) / 2.0
+    private val offsetY = padding + topInset + ((canvasH - padding * 2 - topInset) - frameH * scale) / 2.0
 
     /** Canvas pixels per kilometre at zoom 1 (a degree of latitude is about 111.2 km). */
     val pixelsPerKm: Double = scale / 111.19

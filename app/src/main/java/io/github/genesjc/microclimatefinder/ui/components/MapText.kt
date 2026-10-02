@@ -3,7 +3,9 @@ package io.github.genesjc.microclimatefinder.ui.components
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
@@ -24,6 +26,12 @@ object MapText {
 
     var scale by mutableFloatStateOf(DEFAULT_SCALE)
 }
+
+/**
+ * On Home the station tile floats over the top of the map, so the map's own controls (maximize, compass, view
+ * buttons, slider) and its drawing start this far below the map's top edge.
+ */
+val HOME_TILE_BAND: Dp = 52.dp
 
 /** A base text size in sp, multiplied by the shared [MapText.scale]. */
 fun ms(base: Float): TextUnit = (base * MapText.scale).sp
