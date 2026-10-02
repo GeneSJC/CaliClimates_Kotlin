@@ -87,6 +87,7 @@ import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.MapText
 import io.github.genesjc.microclimatefinder.ui.components.HOME_TILE_BAND
+import io.github.genesjc.microclimatefinder.ui.components.SliderToggleButton
 import io.github.genesjc.microclimatefinder.ui.components.ms
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
@@ -748,6 +749,31 @@ private fun ElevationProfileCanvas(
         fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
         val dotGrowth = zoomDotGrowth(zoom)
 
+        // When the selected station changes (from the Stations list, the tile or the other view) and it is not in
+        // view at this zoom and pan, ease the chart over so it is
+        androidx.compose.runtime.LaunchedEffect(selectedStationId, sorted) {
+            val idx = sorted.indexOfFirst { it.id == selectedStationId }
+            if (idx < 0) return@LaunchedEffect
+            val bx = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
+            val by = paddingPx + profileFrac(sorted[idx].elevationMeters / maxElevation) * heightPx
+            val vx = viewX(bx)
+            val vy = viewY(by)
+            val sideMargin = with(density) { 48.dp.toPx() }
+            val topMargin = with(density) { (if (embedded) HOME_TILE_BAND + 24.dp else 40.dp).toPx() }
+            val bottomMargin = with(density) { 40.dp.toPx() }
+            val inView = vx in sideMargin..(canvasW - sideMargin) && vy in topMargin..(canvasH - bottomMargin)
+            if (inView) return@LaunchedEffect
+            zoomJob?.cancel()
+            val from = pan
+            val target = clampPan(
+                Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
+                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX
+            )
+            androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(350, easing = FastOutSlowInEasing)) { v, _ ->
+                pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
+            }
+        }
+
         // Which labels have room at this zoom: more as the profile spreads out. Only the target (room
         // or no room) is decided here; each label's opacity eases toward it on its own.
         val placedLabels = run {
@@ -1344,33 +1370,13 @@ private fun ElevationProfileCanvas(
                 }
                 .minByOrNull { (it - middle).getDistance() } ?: middle
         }
-        // The arrow button under the menu button: up while the slider shows (tap to tuck it away), down when it is hidden
+        // The arrow button under the menu button: up while the slider shows (tap to tuck it away), down when hidden
         if (sliderCollapsible) {
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = Color.White.copy(alpha = 0.90f),
-                border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 12.dp, top = 50.dp + HOME_TILE_BAND)
-                    .size(32.dp)
-                    .clickable(
-                        onClickLabel = if (sliderShown) "Hide the zoom slider" else "Show the zoom slider",
-                        role = androidx.compose.ui.semantics.Role.Button
-                    ) { sliderShown = !sliderShown }
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 11.dp)) {
-                    val stroke = 2.2.dp.toPx()
-                    val w = size.width
-                    val h = size.height
-                    val ink = Color(0xFF0284C7)
-                    // A chevron: apex at the top when the slider is showing, at the bottom when it is hidden
-                    val tipY = if (sliderShown) 0f else h
-                    val baseY = if (sliderShown) h else 0f
-                    drawLine(ink, Offset(0f, baseY), Offset(w / 2f, tipY), strokeWidth = stroke, cap = StrokeCap.Round)
-                    drawLine(ink, Offset(w, baseY), Offset(w / 2f, tipY), strokeWidth = stroke, cap = StrokeCap.Round)
-                }
-            }
+            SliderToggleButton(
+                shown = sliderShown,
+                onToggle = { sliderShown = !sliderShown },
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 50.dp + HOME_TILE_BAND)
+            )
         }
         // For now the slider sets the type size instead of the zoom (see MapText)
         if (sliderCollapsible && !sliderShown) {

@@ -101,6 +101,7 @@ import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.MapText
 import io.github.genesjc.microclimatefinder.ui.components.HOME_TILE_BAND
+import io.github.genesjc.microclimatefinder.ui.components.SliderToggleButton
 import io.github.genesjc.microclimatefinder.ui.components.ms
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
@@ -486,6 +487,10 @@ private fun SpatialMapCanvas(
     }
 
     var zoom by remember(stations) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
+    // On Home the slider can be tucked away with the small arrow button above it (pinch still zooms)
+    var sliderShown by remember { mutableStateOf(true) }
+    // Its top sits lower on Home, below that button and the view buttons
+    val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + 34.dp else 0.dp)
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
     var pan by remember(stations) { mutableStateOf(Offset.Zero) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
@@ -546,6 +551,30 @@ private fun SpatialMapCanvas(
         // Longitude and latitude to canvas pixels, with the current zoom and pan
         fun mapX(lon: Double): Float = viewX(projection.baseX(lon))
         fun mapY(lat: Double): Float = viewY(projection.baseY(lat))
+
+        // When the selected station changes (from the Stations list, the tile or the other view) and it is not in
+        // view at this zoom and pan, ease the map over so it is
+        androidx.compose.runtime.LaunchedEffect(selectedStationId, stations) {
+            val st = stations.firstOrNull { it.id == selectedStationId } ?: return@LaunchedEffect
+            val bx = projection.baseX(st.longitude)
+            val by = projection.baseY(st.latitude)
+            val vx = viewX(bx)
+            val vy = viewY(by)
+            val sideMargin = with(density) { 48.dp.toPx() }
+            val topMargin = with(density) { (if (embedded) HOME_TILE_BAND + 24.dp else 40.dp).toPx() }
+            val bottomMargin = with(density) { 40.dp.toPx() }
+            val inView = vx in sideMargin..(canvasW - sideMargin) && vy in topMargin..(canvasH - bottomMargin)
+            if (inView) return@LaunchedEffect
+            zoomJob?.cancel()
+            val from = pan
+            val target = clampPan(
+                Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
+                zoom, canvasW, canvasH, overscroll = MAP_OVERSCROLL
+            )
+            androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(350, easing = FastOutSlowInEasing)) { v, _ ->
+                pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
+            }
+        }
 
         Canvas(
             modifier = Modifier
@@ -617,7 +646,7 @@ private fun SpatialMapCanvas(
             if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
             if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + 50f) else listOf(0f, 0f, 58f, 40f),  // Home's control row, or the compass
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
-            listOf(widthDp.value - 46f, 56f + (if (embedded) HOME_TILE_BAND.value else 0f), widthDp.value, heightDp.value),  // zoom slider
+            if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(widthDp.value - 46f, sliderTop.value, widthDp.value, heightDp.value),  // zoom slider
             if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
             listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f)  // expand / shrink toggle
         )
@@ -754,8 +783,18 @@ private fun SpatialMapCanvas(
             }
         }
 
+        // The arrow button above the slider: up while it shows (tap to tuck it away), down when it is hidden
+        if (embedded) {
+            SliderToggleButton(
+                shown = sliderShown,
+                onToggle = { sliderShown = !sliderShown },
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 52.dp + HOME_TILE_BAND)
+            )
+        }
         // Floating zoom slider on the right edge (for now it sets the type size instead; see MapText)
-        if (MapText.SLIDER_SETS_FONT) {
+        if (embedded && !sliderShown) {
+            // hidden: pinch and double-tap still zoom
+        } else if (MapText.SLIDER_SETS_FONT) {
             ZoomSlider(
                 value = MapText.scale,
                 onValueChange = { MapText.scale = it },
@@ -764,7 +803,7 @@ private fun SpatialMapCanvas(
                 caption = "FONT",
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 56.dp + (if (embedded) HOME_TILE_BAND else 0.dp), end = 4.dp, bottom = 4.dp)
+                    .padding(top = sliderTop, end = 4.dp, bottom = 4.dp)
                     .width(40.dp)
                     .fillMaxHeight()
             )
@@ -779,7 +818,7 @@ private fun SpatialMapCanvas(
             // Its top stays under the data credit whatever the map's height; the bottom follows the map
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 56.dp + (if (embedded) HOME_TILE_BAND else 0.dp), end = 4.dp, bottom = 4.dp)
+                .padding(top = sliderTop, end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
                 .fillMaxHeight()
         )
