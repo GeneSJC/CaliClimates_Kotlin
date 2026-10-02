@@ -840,7 +840,7 @@ fun LandingScreen(
                 // App header: two separate widgets with the backdrop showing between them, each with the
                 // About-dialog gradient: (1) the region (its name, and under it the menu and About buttons at the left
                 // and the Region Info link at the right), (2) the region picker.
-                val headerShape = RoundedCornerShape(16.dp)
+                val headerShape = RoundedCornerShape(8.dp)
                 val headerFill = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
                     .compositeOver(MaterialTheme.colorScheme.background)
                 Row(
