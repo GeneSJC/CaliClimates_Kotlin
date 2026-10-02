@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.layout.onSizeChanged
@@ -811,8 +812,21 @@ fun LandingScreen(
         // The menu button opens it; a swipe must not compete with the map's drag to pan (it still closes by swipe)
         gesturesEnabled = drawerState.isOpen,
         drawerContent = {
-            // No window insets on the sheet: the header's gradient reaches up behind the status bar
-            ModalDrawerSheet(windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)) {
+            // A narrow side panel only as tall as its content, starting at the header's top edge (the Region Info
+            // sheet comes in lower, from the right edge, so the two stagger). The page shows behind it; a tap there,
+            // a swipe to the left, or Back closes it.
+            val menuWidth = (LocalConfiguration.current.screenWidthDp * 0.66f).dp
+            Surface(
+                shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
+                color = Color.Transparent,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 14.dp)
+                    .width(menuWidth)
+            ) {
+              Box {
+                Box(modifier = Modifier.background(sheetBrush())) {
                 MenuDrawerContent(
                     appName = appName,
                     buildLabel = BuildInfo.LABEL,
@@ -829,6 +843,17 @@ fun LandingScreen(
                         showAboutDialog = true
                     }
                 )
+                }
+                // A small grip at the right edge: the cue that the panel can be swiped closed
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 5.dp)
+                        .size(width = 4.dp, height = 36.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+                )
+              }
             }
         }
     ) {
