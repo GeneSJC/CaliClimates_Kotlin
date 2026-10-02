@@ -84,6 +84,8 @@ import io.github.genesjc.microclimatefinder.ui.components.LegendItem
 import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
+import io.github.genesjc.microclimatefinder.ui.components.MapText
+import io.github.genesjc.microclimatefinder.ui.components.ms
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -1219,7 +1221,7 @@ private fun ElevationProfileCanvas(
                 Text(
                     text = "Tap anywhere on the line to pick a station",
                     color = Color.White,
-                    fontSize = 12.sp,
+                    fontSize = ms(12f),
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                 )
@@ -1248,19 +1250,19 @@ private fun ElevationProfileCanvas(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                Text(text = skyTheme.icon, fontSize = 14.sp)
+                Text(text = skyTheme.icon, fontSize = ms(14f))
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = tempF?.let { "${it.toInt()}°F" } ?: "—°F",
-                            fontSize = 11.sp,
+                            fontSize = ms(11f),
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = currentStation?.name?.take(16) ?: "Sacramento",
-                            fontSize = 9.sp,
+                            fontSize = ms(9f),
                             fontWeight = FontWeight.Medium,
                             color = Color.White.copy(alpha = 0.9f),
                             maxLines = 1
@@ -1268,7 +1270,7 @@ private fun ElevationProfileCanvas(
                     }
                     Text(
                         text = "${skyTheme.condition} • ${currentStation?.let { Elevation.formatFeet(it.elevationMeters) }} elev",
-                        fontSize = 8.sp,
+                        fontSize = ms(8f),
                         color = skyTheme.accent,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -1301,7 +1303,7 @@ private fun ElevationProfileCanvas(
             ) {
                 Text(
                     text = label.text,
-                    fontSize = 9.sp,
+                    fontSize = ms(9f),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -1322,7 +1324,21 @@ private fun ElevationProfileCanvas(
                 }
                 .minByOrNull { (it - middle).getDistance() } ?: middle
         }
-        ZoomSlider(
+        // For now the slider sets the type size instead of the zoom (see MapText)
+        if (MapText.SLIDER_SETS_FONT) {
+            ZoomSlider(
+                value = MapText.scale,
+                onValueChange = { MapText.scale = it },
+                minValue = MapText.MIN_SCALE,
+                maxValue = MapText.MAX_SCALE,
+                caption = "FONT",
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 56.dp, end = 4.dp, bottom = 4.dp)
+                    .width(40.dp)
+                    .fillMaxHeight()
+            )
+        } else ZoomSlider(
             value = zoom,
             onValueChange = { newZoom ->
                 // Zoom about the point on the line nearest the middle of the view, not the (often empty) middle itself

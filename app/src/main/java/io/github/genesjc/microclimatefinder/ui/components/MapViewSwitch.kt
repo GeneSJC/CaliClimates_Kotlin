@@ -30,7 +30,7 @@ fun MapViewSwitch(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = M
             ) {
                 Text(
                     text = label,
-                    fontSize = 9.sp,
+                    fontSize = ms(9f),
                     fontWeight = FontWeight.Bold,
                     color = if (on) Color.White else Color(0xFF334155),
                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)

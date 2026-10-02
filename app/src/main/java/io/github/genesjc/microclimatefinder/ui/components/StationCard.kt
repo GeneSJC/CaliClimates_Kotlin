@@ -526,6 +526,7 @@ fun StationCard(
  * height of the full card.
  */
 @Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 private fun CompactStationBody(
     station: MicroclimateStation,
     badgeColor: Color,
@@ -540,6 +541,7 @@ private fun CompactStationBody(
             Text(
                 text = station.name,
                 style = MaterialTheme.typography.titleMedium,
+                fontSize = ms(16f),
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -554,7 +556,7 @@ private fun CompactStationBody(
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Text(
                 text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
-                fontSize = 24.sp,
+                fontSize = ms(24f),
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -562,7 +564,7 @@ private fun CompactStationBody(
             Text(
                 text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) }
                     ?: display.status.orEmpty(),
-                fontSize = 12.sp,
+                fontSize = ms(12f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
@@ -571,7 +573,7 @@ private fun CompactStationBody(
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
                     text = display.status,
-                    fontSize = 10.sp,
+                    fontSize = ms(10f),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     modifier = Modifier.padding(bottom = 4.dp)
@@ -579,7 +581,11 @@ private fun CompactStationBody(
             }
         }
         // Row 3: Humidity, Wind and Pressure
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        androidx.compose.foundation.layout.FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
             CompactMetric("Humidity", display.humidity)
             CompactMetric("Wind", display.wind)
             CompactMetric(display.thirdLabel, display.thirdValue)
@@ -595,7 +601,7 @@ private fun CompactStationBody(
                     Text(
                         text = station.terrain.label,
                         color = badgeColor,
-                        fontSize = 10.sp,
+                        fontSize = ms(10f),
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                     )
@@ -603,7 +609,7 @@ private fun CompactStationBody(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = Elevation.describe(station.elevationMeters),
-                    fontSize = 11.sp,
+                    fontSize = ms(11f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -617,8 +623,8 @@ private fun CompactStationBody(
         if (elevationNote != null) {
             Text(
                 text = elevationNote,
-                fontSize = 11.sp,
-                lineHeight = 14.sp,
+                fontSize = ms(11f),
+                lineHeight = ms(14f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 6.dp)
             )
@@ -629,11 +635,11 @@ private fun CompactStationBody(
 @Composable
 private fun CompactMetric(label: String, value: String) {
     Row {
-        Text(text = label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = label, fontSize = ms(11f), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = value,
-            fontSize = 11.sp,
+            fontSize = ms(11f),
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -657,20 +663,20 @@ fun StationSummaryTile(station: MicroclimateStation) {
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
-                fontSize = 15.sp,
+                fontSize = ms(15f),
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1
             )
             Text(
                 text = "|",
-                fontSize = 17.sp,
+                fontSize = ms(17f),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
             Text(
                 text = station.name,
-                fontSize = 17.sp,
+                fontSize = ms(17f),
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -682,6 +688,7 @@ fun StationSummaryTile(station: MicroclimateStation) {
         Text(
             text = "More \u25BC",
             style = MaterialTheme.typography.labelMedium,
+            fontSize = ms(12f),
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
             maxLines = 1
