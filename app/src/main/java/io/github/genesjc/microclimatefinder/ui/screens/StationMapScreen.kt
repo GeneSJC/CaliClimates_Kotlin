@@ -564,7 +564,7 @@ private fun SpatialMapCanvas(
         // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
             if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
-            if (embedded) listOf(0f, HOME_TILE_BAND.value, 58f, HOME_TILE_BAND.value + 88f) else listOf(0f, 0f, 58f, 40f),  // maximize and compass
+            if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + 50f) else listOf(0f, 0f, 58f, 40f),  // Home's control row, or the compass
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
             listOf(widthDp.value - 46f, 56f + (if (embedded) HOME_TILE_BAND.value else 0f), widthDp.value, heightDp.value),  // zoom slider
             if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
@@ -649,7 +649,8 @@ private fun SpatialMapCanvas(
             }
         }
 
-        // Compass Rose (Top-Left; on Home it sits under the maximize button, which takes the corner)
+        // Compass Rose (Top-Left). On Home the north indicator is part of the control row Home draws, so none here.
+        if (!embedded) {
         Surface(
             shape = RoundedCornerShape(6.dp),
             color = Color.White.copy(alpha = 0.90f),
@@ -669,6 +670,8 @@ private fun SpatialMapCanvas(
                     color = Color(0xFF0284C7)
                 )
             }
+        }
+
         }
 
         // Map Scale Bar (Bottom-Left): a bar drawn to the map's real scale

@@ -5,6 +5,7 @@ import io.github.genesjc.microclimatefinder.domain.Elevation
 import androidx.compose.animation.AnimatedVisibility
 import io.github.genesjc.microclimatefinder.ui.components.MapText
 import io.github.genesjc.microclimatefinder.ui.components.HOME_TILE_BAND
+import io.github.genesjc.microclimatefinder.ui.components.ms
 import androidx.compose.ui.unit.Density
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.expandVertically
@@ -135,39 +136,53 @@ import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-/** The small button at the map's top left that maximizes the map (hides the header) and restores it. */
+/** One small white button with a blue glyph, in the style of the map's other controls. */
 @Composable
-private fun MapMaximizeButton(maximized: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val ink = Color(0xFF0284C7)
+private fun MapControlButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Surface(
         shape = RoundedCornerShape(6.dp),
         color = Color.White.copy(alpha = 0.90f),
         border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier
-            .size(32.dp)
-            .clickable(
-                onClickLabel = if (maximized) "Restore the header" else "Maximize the map",
-                role = Role.Button,
-                onClick = onClick
-            )
+            .height(32.dp)
+            .clickable(onClickLabel = label, role = Role.Button, onClick = onClick)
     ) {
-        Canvas(modifier = Modifier.fillMaxSize().padding(8.dp)) {
-            val stroke = 2.dp.toPx()
-            val arm = size.width * 0.38f
-            val w = size.width
-            val h = size.height
-            fun line(a: Offset, b: Offset) = drawLine(ink, a, b, strokeWidth = stroke, cap = StrokeCap.Round)
-            if (!maximized) {
-                // Corner brackets pointing outward: maximize
-                line(Offset(0f, 0f), Offset(arm, 0f)); line(Offset(0f, 0f), Offset(0f, arm))
-                line(Offset(w, 0f), Offset(w - arm, 0f)); line(Offset(w, 0f), Offset(w, arm))
-                line(Offset(0f, h), Offset(arm, h)); line(Offset(0f, h), Offset(0f, h - arm))
-                line(Offset(w, h), Offset(w - arm, h)); line(Offset(w, h), Offset(w, h - arm))
-            } else {
-                // A bar across the top with a chevron pointing down from it: the header comes back down
-                line(Offset(0f, h * 0.12f), Offset(w, h * 0.12f))
-                line(Offset(w * 0.1f, h * 0.45f), Offset(w * 0.5f, h * 0.85f))
-                line(Offset(w * 0.5f, h * 0.85f), Offset(w * 0.9f, h * 0.45f))
+        Box(modifier = Modifier.padding(horizontal = 9.dp), contentAlignment = Alignment.Center) { content() }
+    }
+}
+
+/**
+ * The row of small buttons at the map's top left: the menu at the left, the north indicator in the middle
+ * (Topography only; on Elevation its place stays empty so nothing shifts) and the About (i) at the right.
+ */
+@Composable
+private fun MapControlRow(showNorth: Boolean, onMenu: () -> Unit, onAbout: () -> Unit, modifier: Modifier = Modifier) {
+    val blue = Color(0xFF0284C7)
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        MapControlButton("Open the menu", onMenu) {
+            Text(text = "\u2630", fontSize = 18.sp, color = blue)
+        }
+        // The north indicator, as a button-sized tile (not a button: it does nothing)
+        Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {
+            if (showNorth) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color.White.copy(alpha = 0.90f),
+                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(text = "\u25B2 N", fontSize = ms(8f), fontWeight = FontWeight.ExtraBold, color = blue)
+                    }
+                }
+            }
+        }
+        MapControlButton("About this app", onAbout) {
+            Box(
+                modifier = Modifier.size(19.dp).border(1.8.dp, blue, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "i", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = blue)
             }
         }
     }
@@ -175,7 +190,7 @@ private fun MapMaximizeButton(maximized: Boolean, onClick: () -> Unit, modifier:
 
 /** One row in the quick region picker. */
 /** The height of the three header widgets on Home. */
-private val HEADER_HEIGHT = 56.dp
+private val HEADER_HEIGHT = 42.dp
 
 data class RegionOption(val id: String, val name: String, val stationCount: Int?)
 
@@ -657,9 +672,6 @@ fun LandingScreen(
         scope.launch { infoReveal.animateTo(0f, tween(SHEET_CLOSE_MS, easing = FastOutSlowInEasing)) }
     }
     BackHandler(enabled = infoOpen) { closeInfo() }
-    // The maximize button hides the header so the map gets its room; Back (or the button again) brings it back
-    var mapMaximized by remember { mutableStateOf(false) }
-    BackHandler(enabled = mapMaximized && !infoOpen) { mapMaximized = false }
     ModalNavigationDrawer(
         drawerState = drawerState,
         // The menu button opens it; a swipe must not compete with the map's drag to pan (it still closes by swipe)
@@ -693,11 +705,7 @@ fun LandingScreen(
                 .padding(start = 5.dp, end = 5.dp, top = 22.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            AnimatedVisibility(
-                visible = !mapMaximized,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
+            run {
             Column {
             run {
                 // App header: two separate widgets with the backdrop showing between them, each with the
@@ -737,110 +745,67 @@ fun LandingScreen(
                                     }
                                     .padding(vertical = 0.dp)
                             ) {
-                                Text(
-                                    text = region.name,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    // 25% smaller than the title style, so more of a long name shows
-                                    fontSize = 20.6.sp,
-                                    lineHeight = 26.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.weight(1f, fill = false)
-                                )
-                                Text(
-                                    text = "\u25BE",
-                                    fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.padding(start = 6.dp, end = 4.dp)
-                                )
+                                Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = region.name,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        // 25% smaller than the title style, so more of a long name shows
+                                        fontSize = 20.6.sp,
+                                        lineHeight = 26.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    )
+                                    Text(
+                                        text = "\u25BE",
+                                        fontSize = 18.sp,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(start = 6.dp, end = 4.dp)
+                                    )
+                                }
+                                // The info link at the right of the name's row; the sheet slides in from the right, the X takes its place
+                                Spacer(modifier = Modifier.width(8.dp))
+                                val handleModifier = Modifier
+                                    .clickable(
+                                        onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
+                                        role = Role.Button
+                                    ) { if (infoOpen) closeInfo() else openInfo() }
+                                val handleColor = MaterialTheme.colorScheme.primary
+                                if (infoOpen) {
+                                    // A bold X, drawn so its weight and size are exact
+                                    Canvas(modifier = handleModifier.padding(horizontal = 2.dp, vertical = 6.5.dp).size(13.dp)) {
+                                        val stroke = 2.2.dp.toPx()
+                                        val inset = stroke / 2f
+                                        drawLine(
+                                            color = handleColor,
+                                            start = Offset(inset, inset),
+                                            end = Offset(size.width - inset, size.height - inset),
+                                            strokeWidth = stroke,
+                                            cap = StrokeCap.Round
+                                        )
+                                        drawLine(
+                                            color = handleColor,
+                                            start = Offset(size.width - inset, inset),
+                                            end = Offset(inset, size.height - inset),
+                                            strokeWidth = stroke,
+                                            cap = StrokeCap.Round
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        text = "\u00AB Info",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontSize = 15.84.sp,
+                                        lineHeight = 22.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = handleColor,
+                                        modifier = handleModifier.padding(horizontal = 2.dp, vertical = 2.dp)
+                                    )
+                                }
                             }
 
-                            // The Region Info link under the name, at the right; the sheet slides in from the right, the X takes its place
-                                Row(
-                                    // A fixed height, so nothing moves when the link becomes the X; at the right of the widget
-                                    modifier = Modifier.fillMaxWidth().height(22.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    // The menu button, at the left of the row, the same size as the (i)
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(22.dp)
-                                            .clip(CircleShape)
-                                            .clickable(onClickLabel = "Open the menu", role = Role.Button) { scope.launch { drawerState.open() } },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "☰",
-                                            fontSize = 17.sp,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    // The (i) button at the left of the same row: opens the About dialog; plain, a supporting control
-                                    Box(
-                                        modifier = Modifier
-                                            .size(22.dp)
-                                            .clip(CircleShape)
-                                            .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(17.dp)
-                                                .border(1.6.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = "i",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
-                                        }
-                                    }
-                                    }
-                                    val handleModifier = Modifier
-                                        .clickable(
-                                            onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
-                                            role = Role.Button
-                                        ) { if (infoOpen) closeInfo() else openInfo() }
-                                    val handleColor = MaterialTheme.colorScheme.primary
-                                    if (infoOpen) {
-                                        // A bold X, drawn so its weight and size are exact
-                                        Canvas(modifier = handleModifier.padding(horizontal = 2.dp, vertical = 6.5.dp).size(13.dp)) {
-                                            val stroke = 2.2.dp.toPx()
-                                            val inset = stroke / 2f
-                                            drawLine(
-                                                color = handleColor,
-                                                start = Offset(inset, inset),
-                                                end = Offset(size.width - inset, size.height - inset),
-                                                strokeWidth = stroke,
-                                                cap = StrokeCap.Round
-                                            )
-                                            drawLine(
-                                                color = handleColor,
-                                                start = Offset(size.width - inset, inset),
-                                                end = Offset(inset, size.height - inset),
-                                                strokeWidth = stroke,
-                                                cap = StrokeCap.Round
-                                            )
-                                        }
-                                    } else {
-                                        Text(
-                                            text = "\u00AB Region Info",
-                                            style = MaterialTheme.typography.titleLarge,
-                                            fontSize = 15.84.sp,
-                                            lineHeight = 22.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = handleColor,
-                                            modifier = handleModifier.padding(horizontal = 2.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
                         }
                             // The region list, dressed like the rest of the app: a warm sand panel with a fine
                             // outline, each region marked with its own map colour, the current one tinted
@@ -922,8 +887,8 @@ fun LandingScreen(
                             background = Color.Transparent,
                             content = MaterialTheme.colorScheme.onPrimaryContainer,
                             border = Color.Transparent,
-                            size = 48.dp,
-                            iconSize = 44.dp
+                            size = 40.dp,
+                            iconSize = 33.dp
                         )
                     }
                 }
@@ -939,6 +904,9 @@ fun LandingScreen(
                 Column {
                     // This region has no station data in this build
                     if (dataset == null) {
+                        // No map to hold the buttons: the menu and About sit here
+                        Spacer(modifier = Modifier.height(6.dp))
+                        MapControlRow(showNorth = false, onMenu = { scope.launch { drawerState.open() } }, onAbout = { showAboutDialog = true })
                         Spacer(modifier = Modifier.height(6.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -1085,13 +1053,11 @@ fun LandingScreen(
                             )
                         }
                     }
-                    // Below the tile, at the left: hides or brings back the header
-                    MapMaximizeButton(
-                        maximized = mapMaximized,
-                        onClick = {
-                            if (!mapMaximized && infoOpen) closeInfo()
-                            mapMaximized = !mapMaximized
-                        },
+                    // Below the tile, at the left: the menu, the north indicator and the About button
+                    MapControlRow(
+                        showNorth = homeTab == 0,
+                        onMenu = { scope.launch { drawerState.open() } },
+                        onAbout = { showAboutDialog = true },
                         modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
                     )
                     MapViewSwitch(
