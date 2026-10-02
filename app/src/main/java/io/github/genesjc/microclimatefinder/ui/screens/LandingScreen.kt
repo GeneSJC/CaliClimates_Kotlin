@@ -1080,7 +1080,8 @@ fun LandingScreen(
                                 content = MaterialTheme.colorScheme.onPrimaryContainer,
                                 border = Color.Transparent,
                                 size = 40.dp,
-                                iconSize = 36.dp
+                                // A little smaller than the box, so the map outline clears the border top and bottom
+                                iconSize = 33.dp
                             )
                         }
                     }
