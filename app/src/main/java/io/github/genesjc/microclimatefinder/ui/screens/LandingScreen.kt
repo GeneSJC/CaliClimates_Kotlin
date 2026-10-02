@@ -161,12 +161,10 @@ private fun MapMaximizeButton(maximized: Boolean, onClick: () -> Unit, modifier:
                 line(Offset(0f, h), Offset(arm, h)); line(Offset(0f, h), Offset(0f, h - arm))
                 line(Offset(w, h), Offset(w - arm, h)); line(Offset(w, h), Offset(w, h - arm))
             } else {
-                // Corner brackets pointing inward: restore
-                val i = size.width * 0.18f
-                line(Offset(i + arm, i), Offset(i + arm, i + arm)); line(Offset(i, i + arm), Offset(i + arm, i + arm))
-                line(Offset(w - i - arm, i), Offset(w - i - arm, i + arm)); line(Offset(w - i, i + arm), Offset(w - i - arm, i + arm))
-                line(Offset(i + arm, h - i), Offset(i + arm, h - i - arm)); line(Offset(i, h - i - arm), Offset(i + arm, h - i - arm))
-                line(Offset(w - i - arm, h - i), Offset(w - i - arm, h - i - arm)); line(Offset(w - i, h - i - arm), Offset(w - i - arm, h - i - arm))
+                // A bar across the top with a chevron pointing down from it: the header comes back down
+                line(Offset(0f, h * 0.12f), Offset(w, h * 0.12f))
+                line(Offset(w * 0.1f, h * 0.45f), Offset(w * 0.5f, h * 0.85f))
+                line(Offset(w * 0.5f, h * 0.85f), Offset(w * 0.9f, h * 0.45f))
             }
         }
     }
