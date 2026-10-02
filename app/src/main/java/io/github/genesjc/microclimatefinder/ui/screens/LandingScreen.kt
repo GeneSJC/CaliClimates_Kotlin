@@ -205,6 +205,11 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, selectedStatio
     var open by remember { mutableStateOf(false) }
     val ink = Color(0xFF334155)
     val sorted = remember(stations) { stations.sortedBy { it.name.lowercase() } }
+    var query by remember { mutableStateOf("") }
+    val matches = remember(sorted, query) {
+        val q = query.trim()
+        if (q.isEmpty()) sorted else sorted.filter { it.name.contains(q, ignoreCase = true) }
+    }
     Box {
         // The same type as the Topography / Elevation buttons
         Surface(
@@ -230,22 +235,81 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, selectedStatio
             tonalElevation = 0.dp,
             shadowElevation = 8.dp
         ) {
-            sorted.forEach { station ->
-                val current = station.id == selectedStationId
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = station.name,
-                            fontSize = ms(9f),
-                            fontWeight = if (current) FontWeight.Bold else FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    },
-                    onClick = {
-                        open = false
-                        onPick(station.id)
-                    }
-                )
+            // Search box at the top: type to filter the list as you go (the full list shows until you do)
+            androidx.compose.runtime.LaunchedEffect(open) { if (open) query = "" }
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .widthIn(min = 230.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.White.copy(alpha = 0.75f))
+                    .border(1.dp, Color(0xFF3A2A1E).copy(alpha = 0.35f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // A magnifying glass, drawn
+                Canvas(modifier = Modifier.size(16.dp)) {
+                    val stroke = 2.dp.toPx()
+                    val r = size.width * 0.32f
+                    drawCircle(ink, radius = r, center = Offset(r + stroke / 2f, r + stroke / 2f), style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+                    drawLine(ink, Offset(r * 1.75f + stroke, r * 1.75f + stroke), Offset(size.width - stroke / 2f, size.height - stroke / 2f), strokeWidth = stroke, cap = StrokeCap.Round)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(modifier = Modifier.weight(1f)) {
+                    if (query.isEmpty()) Text("Search stations", fontSize = ms(9f), color = ink.copy(alpha = 0.55f))
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = ms(9f), color = Color(0xFF1E293B)),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(ink),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (query.isNotEmpty()) {
+                    Text(
+                        text = "\u2715",
+                        fontSize = ms(9f),
+                        color = ink,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable(onClickLabel = "Clear the search") { query = "" }
+                            .padding(start = 8.dp)
+                    )
+                }
+            }
+            // The list scrolls under the search box (which stays put)
+            Column(
+                modifier = Modifier
+                    .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.6f).dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                if (matches.isEmpty()) {
+                    Text(
+                        text = "No stations match",
+                        fontSize = ms(9f),
+                        color = ink.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                }
+                matches.forEach { station ->
+                    val current = station.id == selectedStationId
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = station.name,
+                                fontSize = ms(9f),
+                                fontWeight = if (current) FontWeight.Bold else FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        },
+                        onClick = {
+                            open = false
+                            onPick(station.id)
+                        }
+                    )
+                }
             }
         }
     }
@@ -767,7 +831,7 @@ fun LandingScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(start = 5.dp, end = 5.dp, top = 22.dp),
+                .padding(start = 5.dp, end = 5.dp, top = 14.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             run {
