@@ -20,7 +20,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun MapViewSwitch(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        listOf("Topography", "Elevation").forEachIndexed { index, label ->
+        // Shown Elevation first, then Topography; the indices stay 0 = Topography, 1 = Elevation
+        listOf("Elevation" to 1, "Topography" to 0).forEach { (label, index) ->
             val on = index == selected
             Surface(
                 shape = RoundedCornerShape(6.dp),
