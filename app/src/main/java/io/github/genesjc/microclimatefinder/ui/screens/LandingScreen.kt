@@ -583,7 +583,10 @@ private fun RegionInfoContent(
         }
         if (stations.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
-            TerrainMixCard(stations)
+            // The Terrain mix card keeps its original text size for now (it does not follow the text scale)
+            androidx.compose.runtime.CompositionLocalProvider(LocalDensity provides baseDensity) {
+                TerrainMixCard(stations)
+            }
             // The Terrain Legend, at the bottom, folded until opened
             Spacer(modifier = Modifier.height(12.dp))
             TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), extra = legendExtra)
