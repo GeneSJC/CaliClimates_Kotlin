@@ -98,6 +98,8 @@ import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
+import io.github.genesjc.microclimatefinder.ui.components.MapText
+import io.github.genesjc.microclimatefinder.ui.components.ms
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -420,13 +422,14 @@ private fun SpatialMapCanvas(
 
     // View transform: zoom about the map centre plus a pan in pixels
     // The labels' text and widths, made once per station list (the placement below runs on every zoom and pan frame)
-    val landmarkLabels = remember(landmarks) {
+    val textScale = MapText.scale
+    val landmarkLabels = remember(landmarks, textScale) {
         landmarks.map { station ->
             val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
                 .let { if (it.length > 18) it.take(17) + "\u2026" else it }
             val elevText = Elevation.formatFeet(station.elevationMeters)
-            // Estimated label width at 8sp; labels that would pass the right edge end at the pin instead
-            LandmarkLabel(station, city, elevText, ((city.length + elevText.length + 1) * 4.9f + 12f).dp)
+            // Estimated label width at the current text scale; labels that would pass the right edge end at the pin instead
+            LandmarkLabel(station, city, elevText, ((city.length + elevText.length + 1) * 4.9f * textScale + 12f).dp)
         }
     }
 
@@ -584,11 +587,11 @@ private fun SpatialMapCanvas(
                 // Stations panned out of view get no label
                 if (pinXDp < 0.dp || pinXDp > widthDp || pinYDp < 0.dp || pinYDp > heightDp) continue
                 val xDp = if (pinXDp + labelWidthDp > widthDp - 6.dp) pinXDp - labelWidthDp else pinXDp
-                val yDp = pinYDp + (if (pinYDp < 30.dp) 8.dp else (-16).dp)
+                val yDp = pinYDp + (if (pinYDp < 30.dp) 8.dp else (-16f * MapText.scale).dp)
                 val left = xDp.value
                 val top = yDp.value
                 val right = left + labelWidthDp.value
-                val bottom = top + 20f
+                val bottom = top + 20f * MapText.scale
                 val hasRoom = shownLabels < stationBudget &&
                     placedRects.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
                 if (hasRoom) {
@@ -617,17 +620,17 @@ private fun SpatialMapCanvas(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
+                        modifier = Modifier.padding(horizontal = 3.dp, vertical = 0.8.dp)
                     ) {
                         Text(
                             text = plan.city,
-                            fontSize = 8.sp,
+                            fontSize = ms(8f),
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = Color(0xFF1E293B)
                         )
                         Text(
                             text = " ${plan.elevText}",
-                            fontSize = 7.sp,
+                            fontSize = ms(7f),
                             color = Color(0xFF64748B)
                         )
                     }
@@ -643,14 +646,14 @@ private fun SpatialMapCanvas(
             }
         }
 
-        // Compass Rose (Top-Left)
+        // Compass Rose (Top-Left; on Home it sits under the maximize button, which takes the corner)
         Surface(
             shape = RoundedCornerShape(6.dp),
             color = Color.White.copy(alpha = 0.90f),
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 12.dp, top = 12.dp)
+                .padding(start = 12.dp, top = if (embedded) 50.dp else 12.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -658,7 +661,7 @@ private fun SpatialMapCanvas(
             ) {
                 Text(
                     text = "▲ N",
-                    fontSize = 8.sp,
+                    fontSize = ms(8f),
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF0284C7)
                 )
@@ -687,34 +690,28 @@ private fun SpatialMapCanvas(
                 )
                 Text(
                     text = "$scaleMiles mi ($scaleKm km)",
-                    fontSize = 7.5.sp,
+                    fontSize = ms(7.5f),
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF334155)
                 )
             }
         }
 
-        // Data credit (top right)
-        Surface(
-            shape = RoundedCornerShape(6.dp),
-            color = Color(0xFFF0FDF4),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC)),
-            modifier = Modifier
-                // Where the Topography / Elevation buttons were: left of them, after the compass
-                .align(Alignment.TopStart)
-                .padding(start = 54.dp, top = 21.dp)
-        ) {
-            Text(
-                text = if (terrain != null) "Terrain: USGS · NASA data" else "Base map: coast and border only",
-                fontSize = 7.5.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF166534),
-                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+        // Floating zoom slider on the right edge (for now it sets the type size instead; see MapText)
+        if (MapText.SLIDER_SETS_FONT) {
+            ZoomSlider(
+                value = MapText.scale,
+                onValueChange = { MapText.scale = it },
+                minValue = MapText.MIN_SCALE,
+                maxValue = MapText.MAX_SCALE,
+                caption = "FONT",
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 56.dp, end = 4.dp, bottom = 4.dp)
+                    .width(40.dp)
+                    .fillMaxHeight()
             )
-        }
-
-        // Floating zoom slider on the right edge
-        ZoomSlider(
+        } else ZoomSlider(
             value = zoom,
             onValueChange = { newZoom ->
                 zoomJob?.cancel()
@@ -840,7 +837,7 @@ private fun DrawScope.drawGraticule(
     val lonStep = niceStep((maxLon - minLon) / zoom, size.width - padding * 2, 64.dp.toPx())
     val latStep = niceStep((maxLat - minLat) / zoom, size.height - padding * 2, 44.dp.toPx())
     fun degrees(value: Double): String = "%.2f".format(value).trimEnd('0').trimEnd('.')
-    val labelStyle = TextStyle(fontSize = 8.sp, color = Color(0xFF64748B))
+    val labelStyle = TextStyle(fontSize = ms(8f), color = Color(0xFF64748B))
     var lon = ceil(minLon / lonStep) * lonStep
     while (lon <= maxLon) {
         val x = mapX(lon)

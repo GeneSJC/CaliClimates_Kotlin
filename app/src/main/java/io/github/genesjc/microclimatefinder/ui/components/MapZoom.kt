@@ -168,7 +168,11 @@ fun ZoomSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
-    onStep: (Float) -> Unit = onValueChange
+    onStep: (Float) -> Unit = onValueChange,
+    /** The range and caption; the defaults make it the zoom slider. */
+    minValue: Float = 1f,
+    maxValue: Float = MAX_MAP_ZOOM,
+    caption: String = "ZOOM"
 ) {
     val density = LocalDensity.current
     val currentOnValueChange by rememberUpdatedState(onValueChange)
@@ -180,8 +184,8 @@ fun ZoomSlider(
     val thumbHeight = 18.dp
 
     // Zoom is logarithmic so each part of the rail feels like an equal step
-    fun zoomFromRatio(ratio: Float) = MAX_MAP_ZOOM.pow(ratio.coerceIn(0f, 1f))
-    fun ratioFromZoom(zoom: Float) = (ln(zoom.coerceAtLeast(1f)) / ln(MAX_MAP_ZOOM)).coerceIn(0f, 1f)
+    fun zoomFromRatio(ratio: Float) = minValue * (maxValue / minValue).pow(ratio.coerceIn(0f, 1f))
+    fun ratioFromZoom(zoom: Float) = (ln(zoom.coerceAtLeast(minValue) / minValue) / ln(maxValue / minValue)).coerceIn(0f, 1f)
 
     Surface(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
@@ -202,11 +206,11 @@ fun ZoomSlider(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { currentOnStep((value * ZOOM_BUTTON_STEP).coerceAtMost(MAX_MAP_ZOOM)) }
+                modifier = Modifier.clickable { currentOnStep((value * ZOOM_BUTTON_STEP).coerceAtMost(maxValue)) }
             )
 
             Text(
-                text = "ZOOM",
+                text = caption,
                 fontSize = 8.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -302,7 +306,7 @@ fun ZoomSlider(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clickable { currentOnStep((value / ZOOM_BUTTON_STEP).coerceAtLeast(1f)) }
+                modifier = Modifier.clickable { currentOnStep((value / ZOOM_BUTTON_STEP).coerceAtLeast(minValue)) }
             )
 
             Text(
