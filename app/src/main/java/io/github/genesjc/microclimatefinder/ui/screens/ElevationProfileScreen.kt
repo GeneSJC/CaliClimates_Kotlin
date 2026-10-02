@@ -585,6 +585,12 @@ private fun ElevationProfileCanvas(
         rankedLandmarks.take(LANDMARK_COUNT).sorted().map { sorted[it].id }
     }
 
+    // On Home the slider can be tucked away with the small arrow button under the menu button (pinch still zooms)
+    var sliderShown by remember { mutableStateOf(true) }
+    val sliderCollapsible = embedded
+    // The slider starts lower on Home, to leave room for that button
+    val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + 32.dp else 0.dp)
+
     // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
     var zoom by remember(sorted) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
@@ -749,7 +755,8 @@ private fun ElevationProfileCanvas(
             val taken = mutableListOf(
                 if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
                 if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + 50f) else listOf(0f, 0f, 0f, 0f),  // Home's control row
-                listOf(0f, 56f + (if (embedded) HOME_TILE_BAND.value else 0f), 46f, heightDp.value), // zoom slider (at the left)
+                if (embedded) listOf(0f, HOME_TILE_BAND.value + 50f, 46f, HOME_TILE_BAND.value + 82f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
+                if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, heightDp.value), // zoom slider (at the left)
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
@@ -1337,8 +1344,38 @@ private fun ElevationProfileCanvas(
                 }
                 .minByOrNull { (it - middle).getDistance() } ?: middle
         }
+        // The arrow button under the menu button: up while the slider shows (tap to tuck it away), down when it is hidden
+        if (sliderCollapsible) {
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = Color.White.copy(alpha = 0.90f),
+                border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 12.dp, top = 50.dp + HOME_TILE_BAND)
+                    .size(32.dp)
+                    .clickable(
+                        onClickLabel = if (sliderShown) "Hide the zoom slider" else "Show the zoom slider",
+                        role = androidx.compose.ui.semantics.Role.Button
+                    ) { sliderShown = !sliderShown }
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 11.dp)) {
+                    val stroke = 2.2.dp.toPx()
+                    val w = size.width
+                    val h = size.height
+                    val ink = Color(0xFF0284C7)
+                    // A chevron: apex at the top when the slider is showing, at the bottom when it is hidden
+                    val tipY = if (sliderShown) 0f else h
+                    val baseY = if (sliderShown) h else 0f
+                    drawLine(ink, Offset(0f, baseY), Offset(w / 2f, tipY), strokeWidth = stroke, cap = StrokeCap.Round)
+                    drawLine(ink, Offset(w, baseY), Offset(w / 2f, tipY), strokeWidth = stroke, cap = StrokeCap.Round)
+                }
+            }
+        }
         // For now the slider sets the type size instead of the zoom (see MapText)
-        if (MapText.SLIDER_SETS_FONT) {
+        if (sliderCollapsible && !sliderShown) {
+            // hidden: pinch and double-tap still zoom
+        } else if (MapText.SLIDER_SETS_FONT) {
             ZoomSlider(
                 value = MapText.scale,
                 onValueChange = { MapText.scale = it },
@@ -1347,7 +1384,7 @@ private fun ElevationProfileCanvas(
                 caption = "FONT",
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(top = 56.dp + (if (embedded) HOME_TILE_BAND else 0.dp), start = 4.dp, bottom = 4.dp)
+                    .padding(top = sliderTop, start = 4.dp, bottom = 4.dp)
                     .width(40.dp)
                     .fillMaxHeight()
             )
@@ -1363,7 +1400,7 @@ private fun ElevationProfileCanvas(
             // At the left here (the chart has no use for that side); its top stays put, the bottom follows the chart
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(top = 56.dp + (if (embedded) HOME_TILE_BAND else 0.dp), start = 4.dp, bottom = 4.dp)
+                .padding(top = sliderTop, start = 4.dp, bottom = 4.dp)
                 .width(40.dp)
                 .fillMaxHeight()
         )
