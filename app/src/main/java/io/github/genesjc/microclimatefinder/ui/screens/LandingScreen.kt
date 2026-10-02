@@ -172,7 +172,7 @@ private fun MapMaximizeButton(maximized: Boolean, onClick: () -> Unit, modifier:
 
 /** One row in the quick region picker. */
 /** The height of the three header widgets on Home. */
-private val HEADER_HEIGHT = 84.dp
+private val HEADER_HEIGHT = 56.dp
 
 data class RegionOption(val id: String, val name: String, val stationCount: Int?)
 
@@ -729,7 +729,7 @@ fun LandingScreen(
                                     .clickable(onClickLabel = "Choose region", role = Role.Button) {
                                         showRegionMenu = true
                                     }
-                                    .padding(vertical = 2.dp)
+                                    .padding(vertical = 0.dp)
                             ) {
                                 Text(
                                     text = region.name,
@@ -754,7 +754,7 @@ fun LandingScreen(
                             // The Region Info link under the name, at the right; the sheet slides in from the right, the X takes its place
                                 Row(
                                     // A fixed height, so nothing moves when the link becomes the X; at the right of the widget
-                                    modifier = Modifier.fillMaxWidth().height(26.dp),
+                                    modifier = Modifier.fillMaxWidth().height(22.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -762,14 +762,14 @@ fun LandingScreen(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
-                                            .size(26.dp)
+                                            .size(22.dp)
                                             .clip(CircleShape)
                                             .clickable(onClickLabel = "Open the menu", role = Role.Button) { scope.launch { drawerState.open() } },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = "☰",
-                                            fontSize = 19.sp,
+                                            fontSize = 17.sp,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
                                     }
@@ -777,20 +777,20 @@ fun LandingScreen(
                                     // The (i) button at the left of the same row: opens the About dialog; plain, a supporting control
                                     Box(
                                         modifier = Modifier
-                                            .size(26.dp)
+                                            .size(22.dp)
                                             .clip(CircleShape)
                                             .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(19.dp)
-                                                .border(1.8.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
+                                                .size(17.dp)
+                                                .border(1.6.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
                                                 text = "i",
-                                                fontSize = 12.sp,
+                                                fontSize = 11.sp,
                                                 fontWeight = FontWeight.ExtraBold,
                                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
@@ -901,7 +901,7 @@ fun LandingScreen(
                     // Widget 3: the region picker, on its own, the same width as widget 1
                     Box(
                         modifier = Modifier
-                            .width(60.dp)
+                            .width(52.dp)
                             .height(HEADER_HEIGHT)
                             .clip(headerShape)
                             .background(headerBrush),
@@ -915,8 +915,8 @@ fun LandingScreen(
                             background = Color.Transparent,
                             content = MaterialTheme.colorScheme.onPrimaryContainer,
                             border = Color.Transparent,
-                            size = 58.dp,
-                            iconSize = 54.dp
+                            size = 48.dp,
+                            iconSize = 44.dp
                         )
                     }
                 }

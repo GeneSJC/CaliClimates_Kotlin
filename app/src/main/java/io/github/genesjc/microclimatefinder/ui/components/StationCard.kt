@@ -556,7 +556,7 @@ private fun CompactStationBody(
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Text(
                 text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
-                fontSize = ms(24f),
+                fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -663,20 +663,20 @@ fun StationSummaryTile(station: MicroclimateStation) {
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
-                fontSize = ms(15f),
+                fontSize = 15.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1
             )
             Text(
                 text = "|",
-                fontSize = ms(17f),
+                fontSize = 17.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
             Text(
                 text = station.name,
-                fontSize = ms(17f),
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -688,7 +688,6 @@ fun StationSummaryTile(station: MicroclimateStation) {
         Text(
             text = "More \u25BC",
             style = MaterialTheme.typography.labelMedium,
-            fontSize = ms(12f),
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
             maxLines = 1
