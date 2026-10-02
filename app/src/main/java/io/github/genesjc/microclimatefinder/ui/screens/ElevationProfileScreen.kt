@@ -58,6 +58,7 @@ import kotlinx.coroutines.Dispatchers
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -84,6 +85,8 @@ import io.github.genesjc.microclimatefinder.ui.components.LegendItem
 import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
+import io.github.genesjc.microclimatefinder.ui.components.MapText
+import io.github.genesjc.microclimatefinder.ui.components.ms
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -104,7 +107,7 @@ private const val CHART_PADDING_PX = 32f
 // The profile sits between a little headroom and sea level; the bottom of the chart is ocean, so sea level
 // is in view and the cities spread over more of the height
 private const val PROFILE_HEAD = 0.05f
-private const val SEA_FRACTION = 0.14f
+private const val SEA_FRACTION = 0.126f
 
 /** Where (0 at the chart's top, 1 at its bottom) a height, as a share of the highest station, is drawn. */
 private fun profileFrac(elevRatio: Float): Float = PROFILE_HEAD + (1f - elevRatio) * (1f - PROFILE_HEAD - SEA_FRACTION)
@@ -590,13 +593,24 @@ private fun ElevationProfileCanvas(
     val hintPrefs = remember { io.github.genesjc.microclimatefinder.data.local.ElevationHintPreferences(hintContext) }
     var showHint by remember { mutableStateOf(false) }
     val pulse = remember { androidx.compose.animation.core.Animatable(0f) }
+    // The hint eases in to a translucent look, then fades slowly from the start; a tap clears it quickly
+    val hintAlpha = remember { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(showHint) {
+        if (showHint) {
+            hintAlpha.animateTo(0.75f, tween(600))
+            hintAlpha.animateTo(0f, tween(5500, easing = androidx.compose.animation.core.LinearEasing))
+        } else {
+            hintAlpha.animateTo(0f, tween(300))
+        }
+    }
     androidx.compose.runtime.LaunchedEffect(Unit) {
         hintPrefs.countLaunch()
         if (hintPrefs.shouldShow()) {
             showHint = true
             kotlinx.coroutines.delay(700)
             pulse.animateTo(1f, tween(2000, easing = androidx.compose.animation.core.LinearEasing))
-            kotlinx.coroutines.delay(2500)
+            // The hint fades the whole time (see hintAlpha), so it is gone as the timeline ends
+            kotlinx.coroutines.delay(3400)
             showHint = false
         }
     }
@@ -1204,21 +1218,19 @@ private fun ElevationProfileCanvas(
         }
 
         // The hint, in the ocean: fades away after a few seconds or at the first tap on the line
-        androidx.compose.animation.AnimatedVisibility(
-            visible = showHint,
-            enter = androidx.compose.animation.fadeIn(tween(500)),
-            exit = androidx.compose.animation.fadeOut(tween(700)),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = heightDp * 0.045f + 6.dp)
-        ) {
+        if (hintAlpha.value > 0.01f) {
             Surface(
                 shape = RoundedCornerShape(50),
-                color = Color(0xCC0F172A)
+                color = Color(0xCC0F172A),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = heightDp * 0.045f + 6.dp)
+                    .graphicsLayer { alpha = hintAlpha.value }
             ) {
                 Text(
                     text = "Tap anywhere on the line to pick a station",
                     color = Color.White,
+                    // A third smaller than before; fixed, not tied to the font slider
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
@@ -1232,7 +1244,7 @@ private fun ElevationProfileCanvas(
             color = skyTheme.badgeBg.copy(alpha = 0.85f),
             border = BorderStroke(1.dp, skyTheme.accent.copy(alpha = 0.45f)),
             modifier = Modifier
-                .offset(x = 20.dp, y = 50.dp)
+                .offset(x = 52.dp, y = 50.dp)
                 .clickable {
                     // Tap to cycle landmarks
                     if (cycleIds.isNotEmpty()) {
@@ -1248,19 +1260,19 @@ private fun ElevationProfileCanvas(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                Text(text = skyTheme.icon, fontSize = 14.sp)
+                Text(text = skyTheme.icon, fontSize = ms(14f))
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = tempF?.let { "${it.toInt()}°F" } ?: "—°F",
-                            fontSize = 11.sp,
+                            fontSize = ms(11f),
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = currentStation?.name?.take(16) ?: "Sacramento",
-                            fontSize = 9.sp,
+                            fontSize = ms(9f),
                             fontWeight = FontWeight.Medium,
                             color = Color.White.copy(alpha = 0.9f),
                             maxLines = 1
@@ -1268,7 +1280,7 @@ private fun ElevationProfileCanvas(
                     }
                     Text(
                         text = "${skyTheme.condition} • ${currentStation?.let { Elevation.formatFeet(it.elevationMeters) }} elev",
-                        fontSize = 8.sp,
+                        fontSize = ms(8f),
                         color = skyTheme.accent,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -1301,7 +1313,7 @@ private fun ElevationProfileCanvas(
             ) {
                 Text(
                     text = label.text,
-                    fontSize = 9.sp,
+                    fontSize = ms(9f),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -1322,7 +1334,21 @@ private fun ElevationProfileCanvas(
                 }
                 .minByOrNull { (it - middle).getDistance() } ?: middle
         }
-        ZoomSlider(
+        // For now the slider sets the type size instead of the zoom (see MapText)
+        if (MapText.SLIDER_SETS_FONT) {
+            ZoomSlider(
+                value = MapText.scale,
+                onValueChange = { MapText.scale = it },
+                minValue = MapText.MIN_SCALE,
+                maxValue = MapText.MAX_SCALE,
+                caption = "FONT",
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 56.dp, start = 4.dp, bottom = 4.dp)
+                    .width(40.dp)
+                    .fillMaxHeight()
+            )
+        } else ZoomSlider(
             value = zoom,
             onValueChange = { newZoom ->
                 // Zoom about the point on the line nearest the middle of the view, not the (often empty) middle itself
@@ -1331,10 +1357,10 @@ private fun ElevationProfileCanvas(
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) },
-            // The same spot as on the Topography map: its top stays put, the bottom follows the chart
+            // At the left here (the chart has no use for that side); its top stays put, the bottom follows the chart
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 56.dp, end = 4.dp, bottom = 4.dp)
+                .align(Alignment.TopStart)
+                .padding(top = 56.dp, start = 4.dp, bottom = 4.dp)
                 .width(40.dp)
                 .fillMaxHeight()
         )

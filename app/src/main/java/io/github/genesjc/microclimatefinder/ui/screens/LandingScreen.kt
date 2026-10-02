@@ -2,7 +2,14 @@ package io.github.genesjc.microclimatefinder.ui.screens
 
 import io.github.genesjc.microclimatefinder.ui.components.regionPickerColors
 import io.github.genesjc.microclimatefinder.domain.Elevation
+import androidx.compose.animation.AnimatedVisibility
+import io.github.genesjc.microclimatefinder.ui.components.MapText
+import androidx.compose.ui.unit.Density
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -127,9 +134,47 @@ import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+/** The small button at the map's top left that maximizes the map (hides the header) and restores it. */
+@Composable
+private fun MapMaximizeButton(maximized: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val ink = Color(0xFF0284C7)
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = Color.White.copy(alpha = 0.90f),
+        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        modifier = modifier
+            .size(32.dp)
+            .clickable(
+                onClickLabel = if (maximized) "Restore the header" else "Maximize the map",
+                role = Role.Button,
+                onClick = onClick
+            )
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+            val stroke = 2.dp.toPx()
+            val arm = size.width * 0.38f
+            val w = size.width
+            val h = size.height
+            fun line(a: Offset, b: Offset) = drawLine(ink, a, b, strokeWidth = stroke, cap = StrokeCap.Round)
+            if (!maximized) {
+                // Corner brackets pointing outward: maximize
+                line(Offset(0f, 0f), Offset(arm, 0f)); line(Offset(0f, 0f), Offset(0f, arm))
+                line(Offset(w, 0f), Offset(w - arm, 0f)); line(Offset(w, 0f), Offset(w, arm))
+                line(Offset(0f, h), Offset(arm, h)); line(Offset(0f, h), Offset(0f, h - arm))
+                line(Offset(w, h), Offset(w - arm, h)); line(Offset(w, h), Offset(w, h - arm))
+            } else {
+                // A bar across the top with a chevron pointing down from it: the header comes back down
+                line(Offset(0f, h * 0.12f), Offset(w, h * 0.12f))
+                line(Offset(w * 0.1f, h * 0.45f), Offset(w * 0.5f, h * 0.85f))
+                line(Offset(w * 0.5f, h * 0.85f), Offset(w * 0.9f, h * 0.45f))
+            }
+        }
+    }
+}
+
 /** One row in the quick region picker. */
 /** The height of the three header widgets on Home. */
-private val HEADER_HEIGHT = 84.dp
+private val HEADER_HEIGHT = 56.dp
 
 data class RegionOption(val id: String, val name: String, val stationCount: Int?)
 
@@ -479,25 +524,19 @@ private fun RegionInfoContent(
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
     Column {
-        // The title band, in the same style as the About dialog and the menu drawer: the gradient, a California
-        // icon with this region lit, the title, and the Station List link as a pill
+        // The title band: a solid, deeper colour than the lavender header widgets above it and the pale body
+        // below, so it reads as its own bar. A California icon with this region lit, the title, and the
+        // Station List link as a pill
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
-                        )
-                    )
-                )
+                .background(MaterialTheme.colorScheme.primary)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CaliforniaOutlineIcon(
-                    fill = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                    stroke = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.22f),
+                    stroke = MaterialTheme.colorScheme.onPrimary,
                     regionColors = regionPickerColors(),
                     selectedRegionId = region.id,
                     modifier = Modifier.size(40.dp)
@@ -508,15 +547,15 @@ private fun RegionInfoContent(
                         text = "Region Info",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
                 if (hasStationData) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)),
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f)),
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
                             .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenStationList() }
@@ -525,13 +564,18 @@ private fun RegionInfoContent(
                             text = "Station List \u203A",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
                         )
                     }
                 }
             }
         }
+        // The body's text follows the shared text scale (MapText), like the map labels and the station card
+        val baseDensity = LocalDensity.current
+        androidx.compose.runtime.CompositionLocalProvider(
+            LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * MapText.scale)
+        ) {
         Column(modifier = Modifier.padding(16.dp)) {
         // The region tile, the full width of the sheet
         Box(modifier = Modifier.fillMaxWidth().onSizeChanged { topRowWidthPx = it.width }) {
@@ -539,10 +583,14 @@ private fun RegionInfoContent(
         }
         if (stations.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
-            TerrainMixCard(stations)
+            // The Terrain mix card keeps its original text size for now (it does not follow the text scale)
+            androidx.compose.runtime.CompositionLocalProvider(LocalDensity provides baseDensity) {
+                TerrainMixCard(stations)
+            }
             // The Terrain Legend, at the bottom, folded until opened
             Spacer(modifier = Modifier.height(12.dp))
             TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), extra = legendExtra)
+        }
         }
         }
     }
@@ -608,6 +656,9 @@ fun LandingScreen(
         scope.launch { infoReveal.animateTo(0f, tween(SHEET_CLOSE_MS, easing = FastOutSlowInEasing)) }
     }
     BackHandler(enabled = infoOpen) { closeInfo() }
+    // The maximize button hides the header so the map gets its room; Back (or the button again) brings it back
+    var mapMaximized by remember { mutableStateOf(false) }
+    BackHandler(enabled = mapMaximized && !infoOpen) { mapMaximized = false }
     ModalNavigationDrawer(
         drawerState = drawerState,
         // The menu button opens it; a swipe must not compete with the map's drag to pan (it still closes by swipe)
@@ -638,9 +689,15 @@ fun LandingScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(start = 10.dp, end = 10.dp, top = 22.dp),
+                .padding(start = 5.dp, end = 5.dp, top = 22.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
+            AnimatedVisibility(
+                visible = !mapMaximized,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+            Column {
             run {
                 // App header: two separate widgets with the backdrop showing between them, each with the
                 // About-dialog gradient: (1) the region (its name, and under it the menu and About buttons at the left
@@ -677,7 +734,7 @@ fun LandingScreen(
                                     .clickable(onClickLabel = "Choose region", role = Role.Button) {
                                         showRegionMenu = true
                                     }
-                                    .padding(vertical = 2.dp)
+                                    .padding(vertical = 0.dp)
                             ) {
                                 Text(
                                     text = region.name,
@@ -702,7 +759,7 @@ fun LandingScreen(
                             // The Region Info link under the name, at the right; the sheet slides in from the right, the X takes its place
                                 Row(
                                     // A fixed height, so nothing moves when the link becomes the X; at the right of the widget
-                                    modifier = Modifier.fillMaxWidth().height(26.dp),
+                                    modifier = Modifier.fillMaxWidth().height(22.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -710,14 +767,14 @@ fun LandingScreen(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
-                                            .size(26.dp)
+                                            .size(22.dp)
                                             .clip(CircleShape)
                                             .clickable(onClickLabel = "Open the menu", role = Role.Button) { scope.launch { drawerState.open() } },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = "☰",
-                                            fontSize = 19.sp,
+                                            fontSize = 17.sp,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
                                     }
@@ -725,20 +782,20 @@ fun LandingScreen(
                                     // The (i) button at the left of the same row: opens the About dialog; plain, a supporting control
                                     Box(
                                         modifier = Modifier
-                                            .size(26.dp)
+                                            .size(22.dp)
                                             .clip(CircleShape)
                                             .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(19.dp)
-                                                .border(1.8.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
+                                                .size(17.dp)
+                                                .border(1.6.dp, MaterialTheme.colorScheme.onPrimaryContainer, CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
                                                 text = "i",
-                                                fontSize = 12.sp,
+                                                fontSize = 11.sp,
                                                 fontWeight = FontWeight.ExtraBold,
                                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
@@ -849,7 +906,7 @@ fun LandingScreen(
                     // Widget 3: the region picker, on its own, the same width as widget 1
                     Box(
                         modifier = Modifier
-                            .width(60.dp)
+                            .width(52.dp)
                             .height(HEADER_HEIGHT)
                             .clip(headerShape)
                             .background(headerBrush),
@@ -863,14 +920,16 @@ fun LandingScreen(
                             background = Color.Transparent,
                             content = MaterialTheme.colorScheme.onPrimaryContainer,
                             border = Color.Transparent,
-                            size = 58.dp,
-                            iconSize = 54.dp
+                            size = 48.dp,
+                            iconSize = 44.dp
                         )
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+            }
+            }
             // Row 1: the selected station as a tile that fills the width (it grows into the full card),
             // with Region Info at the right
             val shown = if (dataset != null) {
@@ -895,7 +954,7 @@ fun LandingScreen(
             }
 
             // A small gap between the first row and what is below it (the map)
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             run {
                 Column {
                     // This region has no station data in this build
@@ -998,6 +1057,15 @@ fun LandingScreen(
                             onZoomChange = { mapZoom[0] = it }
                         )
                     }
+                    // Top left, in the corner the compass used to have: hides or brings back the header
+                    MapMaximizeButton(
+                        maximized = mapMaximized,
+                        onClick = {
+                            if (!mapMaximized && infoOpen) closeInfo()
+                            mapMaximized = !mapMaximized
+                        },
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp)
+                    )
                     MapViewSwitch(
                         selected = homeTab,
                         onSelect = onHomeTabChange,
