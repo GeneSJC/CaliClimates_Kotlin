@@ -3,6 +3,8 @@ package io.github.genesjc.microclimatefinder.ui.screens
 import io.github.genesjc.microclimatefinder.ui.components.regionPickerColors
 import io.github.genesjc.microclimatefinder.domain.Elevation
 import androidx.compose.animation.AnimatedVisibility
+import io.github.genesjc.microclimatefinder.ui.components.MapText
+import androidx.compose.ui.unit.Density
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -522,25 +524,19 @@ private fun RegionInfoContent(
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
     Column {
-        // The title band, in the same style as the About dialog and the menu drawer: the gradient, a California
-        // icon with this region lit, the title, and the Station List link as a pill
+        // The title band: a solid, deeper colour than the lavender header widgets above it and the pale body
+        // below, so it reads as its own bar. A California icon with this region lit, the title, and the
+        // Station List link as a pill
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
-                        )
-                    )
-                )
+                .background(MaterialTheme.colorScheme.primary)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CaliforniaOutlineIcon(
-                    fill = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                    stroke = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.22f),
+                    stroke = MaterialTheme.colorScheme.onPrimary,
                     regionColors = regionPickerColors(),
                     selectedRegionId = region.id,
                     modifier = Modifier.size(40.dp)
@@ -551,15 +547,15 @@ private fun RegionInfoContent(
                         text = "Region Info",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
                 if (hasStationData) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)),
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f)),
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
                             .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenStationList() }
@@ -568,13 +564,18 @@ private fun RegionInfoContent(
                             text = "Station List \u203A",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
                         )
                     }
                 }
             }
         }
+        // The body's text follows the shared text scale (MapText), like the map labels and the station card
+        val baseDensity = LocalDensity.current
+        androidx.compose.runtime.CompositionLocalProvider(
+            LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * MapText.scale)
+        ) {
         Column(modifier = Modifier.padding(16.dp)) {
         // The region tile, the full width of the sheet
         Box(modifier = Modifier.fillMaxWidth().onSizeChanged { topRowWidthPx = it.width }) {
@@ -586,6 +587,7 @@ private fun RegionInfoContent(
             // The Terrain Legend, at the bottom, folded until opened
             Spacer(modifier = Modifier.height(12.dp))
             TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), extra = legendExtra)
+        }
         }
         }
     }
