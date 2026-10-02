@@ -16,7 +16,7 @@ object MapText {
      * the map set [scale] instead of the zoom (zoom is by pinch and double-tap only). Set it back to false to
      * return the slider to zoom.
      */
-    const val SLIDER_SETS_FONT = true
+    const val SLIDER_SETS_FONT = false
 
     const val MIN_SCALE = 0.8f
     const val MAX_SCALE = 2.5f
