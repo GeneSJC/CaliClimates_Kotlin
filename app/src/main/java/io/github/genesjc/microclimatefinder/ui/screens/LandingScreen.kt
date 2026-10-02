@@ -129,7 +129,7 @@ import kotlin.math.roundToInt
 
 /** One row in the quick region picker. */
 /** The height of the three header widgets on Home. */
-private val HEADER_HEIGHT = 84.dp
+private val HEADER_HEIGHT = 62.dp
 
 data class RegionOption(val id: String, val name: String, val stationCount: Int?)
 
@@ -638,7 +638,7 @@ fun LandingScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(start = 10.dp, end = 10.dp, top = 22.dp),
+                .padding(start = 10.dp, end = 10.dp, top = 14.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             run {
@@ -655,7 +655,7 @@ fun LandingScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     // A wider gap between the region widget and the picker widget, so more terrain shows between them (8dp, then 16dp)
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     // Widget 2: the region name with a chevron (tap for the region list), and the Region Info link
@@ -666,7 +666,7 @@ fun LandingScreen(
                                 .fillMaxSize()
                                 .clip(headerShape)
                                 .background(headerBrush)
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 14.dp),
                             verticalArrangement = Arrangement.Center
                         ) {
                             Row(
@@ -677,14 +677,14 @@ fun LandingScreen(
                                     .clickable(onClickLabel = "Choose region", role = Role.Button) {
                                         showRegionMenu = true
                                     }
-                                    .padding(vertical = 2.dp)
+                                    .padding(vertical = 0.dp)
                             ) {
                                 Text(
                                     text = region.name,
                                     style = MaterialTheme.typography.titleLarge,
                                     // 25% smaller than the title style, so more of a long name shows
                                     fontSize = 20.6.sp,
-                                    lineHeight = 26.sp,
+                                    lineHeight = 24.sp,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -702,7 +702,7 @@ fun LandingScreen(
                             // The Region Info link under the name, at the right; the sheet slides in from the right, the X takes its place
                                 Row(
                                     // A fixed height, so nothing moves when the link becomes the X; at the right of the widget
-                                    modifier = Modifier.fillMaxWidth().height(26.dp),
+                                    modifier = Modifier.fillMaxWidth().height(24.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -710,7 +710,7 @@ fun LandingScreen(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
-                                            .size(26.dp)
+                                            .size(24.dp)
                                             .clip(CircleShape)
                                             .clickable(onClickLabel = "Open the menu", role = Role.Button) { scope.launch { drawerState.open() } },
                                         contentAlignment = Alignment.Center
@@ -725,7 +725,7 @@ fun LandingScreen(
                                     // The (i) button at the left of the same row: opens the About dialog; plain, a supporting control
                                     Box(
                                         modifier = Modifier
-                                            .size(26.dp)
+                                            .size(24.dp)
                                             .clip(CircleShape)
                                             .clickable(onClickLabel = "About this app", role = Role.Button) { showAboutDialog = true },
                                         contentAlignment = Alignment.Center
@@ -849,7 +849,7 @@ fun LandingScreen(
                     // Widget 3: the region picker, on its own, the same width as widget 1
                     Box(
                         modifier = Modifier
-                            .width(60.dp)
+                            .width(50.dp)
                             .height(HEADER_HEIGHT)
                             .clip(headerShape)
                             .background(headerBrush),
@@ -863,14 +863,14 @@ fun LandingScreen(
                             background = Color.Transparent,
                             content = MaterialTheme.colorScheme.onPrimaryContainer,
                             border = Color.Transparent,
-                            size = 58.dp,
-                            iconSize = 54.dp
+                            size = 48.dp,
+                            iconSize = 44.dp
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             // Row 1: the selected station as a tile that fills the width (it grows into the full card),
             // with Region Info at the right
             val shown = if (dataset != null) {
