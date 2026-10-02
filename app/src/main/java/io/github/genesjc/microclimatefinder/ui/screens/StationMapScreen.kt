@@ -131,6 +131,9 @@ fun StationMapScreen(
     /** The zoom to start at, and a report of each change (Home keeps the zoom when it switches views). */
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
+    /** Whether the slider shows, when Home owns it (one setting for both map views), and a report of changes. */
+    sliderShownShared: Boolean? = null,
+    onSliderShownChange: ((Boolean) -> Unit)? = null,
     /** Home: where the slider's arrow button starts (below the view buttons, which are measured there). */
     sliderToggleTop: Dp = 52.dp,
 ) {
@@ -282,6 +285,8 @@ fun StationMapScreen(
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,
                     sliderToggleTop = sliderToggleTop,
+                    sliderShownShared = sliderShownShared,
+                    onSliderShownChange = onSliderShownChange,
                     onSelectStation = {
                     localSelectedId = it.id
                     onStationSelected?.invoke(it.id)
@@ -455,6 +460,8 @@ private fun SpatialMapCanvas(
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
     sliderToggleTop: Dp = 52.dp,
+    sliderShownShared: Boolean? = null,
+    onSliderShownChange: ((Boolean) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
@@ -492,7 +499,9 @@ private fun SpatialMapCanvas(
 
     var zoom by remember(stations) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
     // On Home the slider can be tucked away with the small arrow button above it (pinch still zooms)
-    var sliderShown by remember { mutableStateOf(true) }
+    var localSliderShown by remember { mutableStateOf(true) }
+    val sliderShown = sliderShownShared ?: localSliderShown
+    val setSliderShown: (Boolean) -> Unit = { localSliderShown = it; onSliderShownChange?.invoke(it) }
     // Its top sits lower on Home, below that button and the view buttons
     val sliderTop = if (embedded) sliderToggleTop + 32.dp + 6.dp else 56.dp
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
@@ -792,7 +801,7 @@ private fun SpatialMapCanvas(
         if (embedded) {
             SliderToggleButton(
                 shown = sliderShown,
-                onToggle = { sliderShown = !sliderShown },
+                onToggle = { setSliderShown(!sliderShown) },
                 modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = sliderToggleTop)
             )
         }

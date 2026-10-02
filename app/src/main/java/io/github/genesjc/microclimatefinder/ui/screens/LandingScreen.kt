@@ -758,6 +758,8 @@ fun LandingScreen(
     onStationSelected: (String) -> Unit,
     pinScale: Float,
     onPinScaleChange: (Float) -> Unit,
+    sliderShown: Boolean,
+    onSliderShownChange: (Boolean) -> Unit,
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
@@ -1124,6 +1126,8 @@ fun LandingScreen(
                             sharedPinScale = pinScale,
                             initialZoom = mapZoom[0],
                             onZoomChange = { mapZoom[0] = it },
+                            sliderShownShared = sliderShown,
+                            onSliderShownChange = onSliderShownChange,
                             // The slider's arrow button sits 4 dp under the view buttons, whatever their height
                             sliderToggleTop = 21.dp + HOME_TILE_BAND + viewSwitchHeight + 4.dp
                         )
@@ -1135,7 +1139,9 @@ fun LandingScreen(
                             sharedSelectedStationId = selectedStationId,
                             onStationSelected = onStationSelected,
                             initialZoom = mapZoom[0],
-                            onZoomChange = { mapZoom[0] = it }
+                            onZoomChange = { mapZoom[0] = it },
+                            sliderShownShared = sliderShown,
+                            onSliderShownChange = onSliderShownChange
                         )
                     }
                     // The selected station as a tile across the top of the map (it grows into the full card)

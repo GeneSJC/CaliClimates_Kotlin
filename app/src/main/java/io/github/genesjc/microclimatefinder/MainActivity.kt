@@ -87,6 +87,8 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
     var homeStationId by remember { mutableStateOf<String?>(null) }
     // The Topo Map's dot size, set in the Terrain Legend panel on Home
     var homePinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
+    // Whether the maps' zoom slider is showing: one setting for both map views, kept across trips off Home
+    var homeSliderShown by remember { mutableStateOf(true) }
     val context = LocalContext.current
     // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
     val regionPrefs = remember { RegionPreferences(context) }
@@ -170,6 +172,8 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
                 onStationSelected = { homeStationId = it },
                 pinScale = homePinScale,
                 onPinScaleChange = { homePinScale = it },
+                sliderShown = homeSliderShown,
+                onSliderShownChange = { homeSliderShown = it },
                 darkMode = darkMode,
                 onDarkModeChange = onDarkModeChange
             )

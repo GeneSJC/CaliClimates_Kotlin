@@ -205,6 +205,9 @@ fun ElevationProfileScreen(
     /** The zoom to start at, and a report of each change (Home keeps the zoom when it switches views). */
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
+    /** Whether the slider shows, when Home owns it (one setting for both map views), and a report of changes. */
+    sliderShownShared: Boolean? = null,
+    onSliderShownChange: ((Boolean) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val stations = remember(dataset) { StationRepository.stations(context, dataset) }
@@ -323,6 +326,8 @@ fun ElevationProfileScreen(
                     selectedStationId = selectedStationId,
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,
+                    sliderShownShared = sliderShownShared,
+                    onSliderShownChange = onSliderShownChange,
                     onSelectStation = {
                         localSelectedId = it.id
                         onStationSelected?.invoke(it.id)
@@ -568,6 +573,8 @@ private fun ElevationProfileCanvas(
     selectedStationId: String?,
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
+    sliderShownShared: Boolean? = null,
+    onSliderShownChange: ((Boolean) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
@@ -587,7 +594,9 @@ private fun ElevationProfileCanvas(
     }
 
     // On Home the slider can be tucked away with the small arrow button under the menu button (pinch still zooms)
-    var sliderShown by remember { mutableStateOf(true) }
+    var localSliderShown by remember { mutableStateOf(true) }
+    val sliderShown = sliderShownShared ?: localSliderShown
+    val setSliderShown: (Boolean) -> Unit = { localSliderShown = it; onSliderShownChange?.invoke(it) }
     val sliderCollapsible = embedded
     // The slider starts lower on Home, to leave room for that button
     val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + 32.dp else 0.dp)
@@ -1374,7 +1383,7 @@ private fun ElevationProfileCanvas(
         if (sliderCollapsible) {
             SliderToggleButton(
                 shown = sliderShown,
-                onToggle = { sliderShown = !sliderShown },
+                onToggle = { setSliderShown(!sliderShown) },
                 modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 50.dp + HOME_TILE_BAND)
             )
         }
