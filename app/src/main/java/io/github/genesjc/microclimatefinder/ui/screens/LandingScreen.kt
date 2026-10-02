@@ -2,7 +2,12 @@ package io.github.genesjc.microclimatefinder.ui.screens
 
 import io.github.genesjc.microclimatefinder.ui.components.regionPickerColors
 import io.github.genesjc.microclimatefinder.domain.Elevation
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -126,6 +131,46 @@ import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+/** The small button at the map's top left that maximizes the map (hides the header) and restores it. */
+@Composable
+private fun MapMaximizeButton(maximized: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val ink = Color(0xFF0284C7)
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = Color.White.copy(alpha = 0.90f),
+        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        modifier = modifier
+            .size(32.dp)
+            .clickable(
+                onClickLabel = if (maximized) "Restore the header" else "Maximize the map",
+                role = Role.Button,
+                onClick = onClick
+            )
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+            val stroke = 2.dp.toPx()
+            val arm = size.width * 0.38f
+            val w = size.width
+            val h = size.height
+            fun line(a: Offset, b: Offset) = drawLine(ink, a, b, strokeWidth = stroke, cap = StrokeCap.Round)
+            if (!maximized) {
+                // Corner brackets pointing outward: maximize
+                line(Offset(0f, 0f), Offset(arm, 0f)); line(Offset(0f, 0f), Offset(0f, arm))
+                line(Offset(w, 0f), Offset(w - arm, 0f)); line(Offset(w, 0f), Offset(w, arm))
+                line(Offset(0f, h), Offset(arm, h)); line(Offset(0f, h), Offset(0f, h - arm))
+                line(Offset(w, h), Offset(w - arm, h)); line(Offset(w, h), Offset(w, h - arm))
+            } else {
+                // Corner brackets pointing inward: restore
+                val i = size.width * 0.18f
+                line(Offset(i + arm, i), Offset(i + arm, i + arm)); line(Offset(i, i + arm), Offset(i + arm, i + arm))
+                line(Offset(w - i - arm, i), Offset(w - i - arm, i + arm)); line(Offset(w - i, i + arm), Offset(w - i - arm, i + arm))
+                line(Offset(i + arm, h - i), Offset(i + arm, h - i - arm)); line(Offset(i, h - i - arm), Offset(i + arm, h - i - arm))
+                line(Offset(w - i - arm, h - i), Offset(w - i - arm, h - i - arm)); line(Offset(w - i, h - i - arm), Offset(w - i - arm, h - i - arm))
+            }
+        }
+    }
+}
 
 /** One row in the quick region picker. */
 /** The height of the three header widgets on Home. */
@@ -608,6 +653,9 @@ fun LandingScreen(
         scope.launch { infoReveal.animateTo(0f, tween(SHEET_CLOSE_MS, easing = FastOutSlowInEasing)) }
     }
     BackHandler(enabled = infoOpen) { closeInfo() }
+    // The maximize button hides the header so the map gets its room; Back (or the button again) brings it back
+    var mapMaximized by remember { mutableStateOf(false) }
+    BackHandler(enabled = mapMaximized && !infoOpen) { mapMaximized = false }
     ModalNavigationDrawer(
         drawerState = drawerState,
         // The menu button opens it; a swipe must not compete with the map's drag to pan (it still closes by swipe)
@@ -641,6 +689,12 @@ fun LandingScreen(
                 .padding(start = 10.dp, end = 10.dp, top = 22.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
+            AnimatedVisibility(
+                visible = !mapMaximized,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+            Column {
             run {
                 // App header: two separate widgets with the backdrop showing between them, each with the
                 // About-dialog gradient: (1) the region (its name, and under it the menu and About buttons at the left
@@ -871,6 +925,8 @@ fun LandingScreen(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+            }
+            }
             // Row 1: the selected station as a tile that fills the width (it grows into the full card),
             // with Region Info at the right
             val shown = if (dataset != null) {
@@ -998,6 +1054,15 @@ fun LandingScreen(
                             onZoomChange = { mapZoom[0] = it }
                         )
                     }
+                    // Top left, in the corner the compass used to have: hides or brings back the header
+                    MapMaximizeButton(
+                        maximized = mapMaximized,
+                        onClick = {
+                            if (!mapMaximized && infoOpen) closeInfo()
+                            mapMaximized = !mapMaximized
+                        },
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp)
+                    )
                     MapViewSwitch(
                         selected = homeTab,
                         onSelect = onHomeTabChange,

@@ -641,20 +641,33 @@ private fun CompactMetric(label: String, value: String) {
 }
 
 /**
- * The summary of a station for the Home row: the name, then the temperature in °F with °C beside it
+ * The summary of a station for the Home row: the temperature in °F, a pipe divider, then the name,
  * and a More link on the right. The age of the reading is in the full card that More opens. When
  * there is no reading, the reason shows where the °C would be.
  */
 @Composable
 fun StationSummaryTile(station: MicroclimateStation) {
     val display = liveDisplay(station)
-    // One line: the name, the temperature in °F, and the More link at the right. The name and temperature share all the
-    // room left of More, so the name gives way (with an ellipsis) only when it really cannot fit
+    // One line: the temperature in °F, a pipe divider, the name, and the More link at the right. The name gives way
+    // (with an ellipsis) only when it really cannot fit; the temperature always shows
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
+            Text(
+                text = "|",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
             Text(
                 text = station.name,
                 fontSize = 17.sp,
@@ -663,14 +676,6 @@ fun StationSummaryTile(station: MicroclimateStation) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
             )
         }
         Spacer(modifier = Modifier.width(10.dp))

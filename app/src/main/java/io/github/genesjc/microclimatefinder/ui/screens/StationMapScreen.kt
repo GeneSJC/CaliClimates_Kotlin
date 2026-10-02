@@ -643,14 +643,14 @@ private fun SpatialMapCanvas(
             }
         }
 
-        // Compass Rose (Top-Left)
+        // Compass Rose (Top-Left; on Home it sits under the maximize button, which takes the corner)
         Surface(
             shape = RoundedCornerShape(6.dp),
             color = Color.White.copy(alpha = 0.90f),
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 12.dp, top = 12.dp)
+                .padding(start = 12.dp, top = if (embedded) 50.dp else 12.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
