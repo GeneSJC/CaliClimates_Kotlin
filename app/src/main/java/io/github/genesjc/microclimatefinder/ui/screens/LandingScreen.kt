@@ -787,6 +787,9 @@ fun LandingScreen(
     val infoReveal = remember { Animatable(if (infoOpen) 1f else 0f) }
     // Where the sheet starts: the top of the map (or, with no map, just under the link)
     var mapTopPx by remember { mutableStateOf(0f) }
+    // The Topography / Elevation buttons' height (it follows the text size), measured
+    val mapDensity = LocalDensity.current
+    var viewSwitchHeight by remember { mutableStateOf(34.dp) }
     var rowWidthPx by remember { mutableStateOf(0) }
     var stationTileTopPx by remember { mutableStateOf(0f) }
     // The map zoom, kept across the Topography and Elevation views (a plain holder: no recomposition as it changes; a new region starts at 1x)
@@ -1120,7 +1123,9 @@ fun LandingScreen(
                             onStationSelected = onStationSelected,
                             sharedPinScale = pinScale,
                             initialZoom = mapZoom[0],
-                            onZoomChange = { mapZoom[0] = it }
+                            onZoomChange = { mapZoom[0] = it },
+                            // The slider's arrow button sits 4 dp under the view buttons, whatever their height
+                            sliderToggleTop = 21.dp + HOME_TILE_BAND + viewSwitchHeight + 4.dp
                         )
                     } else {
                         ElevationProfileScreen(
@@ -1192,7 +1197,10 @@ fun LandingScreen(
                         selected = homeTab,
                         onSelect = onHomeTabChange,
                         // Top right, the same place on both views, above the zoom slider
-                        modifier = Modifier.align(Alignment.TopEnd).padding(end = 12.dp, top = 21.dp + HOME_TILE_BAND)
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(end = 12.dp, top = 21.dp + HOME_TILE_BAND)
+                            .onSizeChanged { viewSwitchHeight = with(mapDensity) { it.height.toDp() } }
                     )
                 }
             }

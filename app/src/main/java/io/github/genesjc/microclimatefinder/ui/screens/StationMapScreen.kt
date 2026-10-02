@@ -131,6 +131,8 @@ fun StationMapScreen(
     /** The zoom to start at, and a report of each change (Home keeps the zoom when it switches views). */
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
+    /** Home: where the slider's arrow button starts (below the view buttons, which are measured there). */
+    sliderToggleTop: Dp = 52.dp,
 ) {
     val context = LocalContext.current
     val stations = remember(dataset) { StationRepository.stations(context, dataset) }
@@ -279,6 +281,7 @@ fun StationMapScreen(
                     pinScale = pinScale,
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,
+                    sliderToggleTop = sliderToggleTop,
                     onSelectStation = {
                     localSelectedId = it.id
                     onStationSelected?.invoke(it.id)
@@ -451,6 +454,7 @@ private fun SpatialMapCanvas(
     pinScale: Float = 1.0f,
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
+    sliderToggleTop: Dp = 52.dp,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
@@ -490,7 +494,7 @@ private fun SpatialMapCanvas(
     // On Home the slider can be tucked away with the small arrow button above it (pinch still zooms)
     var sliderShown by remember { mutableStateOf(true) }
     // Its top sits lower on Home, below that button and the view buttons
-    val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + 34.dp else 0.dp)
+    val sliderTop = if (embedded) sliderToggleTop + 32.dp + 6.dp else 56.dp
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
     var pan by remember(stations) { mutableStateOf(Offset.Zero) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
@@ -646,6 +650,7 @@ private fun SpatialMapCanvas(
             if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
             if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + 50f) else listOf(0f, 0f, 58f, 40f),  // Home's control row, or the compass
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
+            if (embedded) listOf(widthDp.value - 46f, sliderToggleTop.value, widthDp.value, sliderToggleTop.value + 32f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
             if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(widthDp.value - 46f, sliderTop.value, widthDp.value, heightDp.value),  // zoom slider
             if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
             listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f)  // expand / shrink toggle
@@ -788,7 +793,7 @@ private fun SpatialMapCanvas(
             SliderToggleButton(
                 shown = sliderShown,
                 onToggle = { sliderShown = !sliderShown },
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 52.dp + HOME_TILE_BAND)
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = sliderToggleTop)
             )
         }
         // Floating zoom slider on the right edge (for now it sets the type size instead; see MapText)
