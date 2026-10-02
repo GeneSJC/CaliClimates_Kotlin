@@ -791,7 +791,7 @@ private fun ElevationProfileCanvas(
                 if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
                 if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + 50f) else listOf(0f, 0f, 0f, 0f),  // Home's control row
                 if (embedded) listOf(0f, HOME_TILE_BAND.value + 50f, 46f, HOME_TILE_BAND.value + 82f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
-                if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, heightDp.value), // zoom slider (at the left)
+                if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) 0.8f else 1f)), // zoom slider (at the left)
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
@@ -1401,7 +1401,8 @@ private fun ElevationProfileCanvas(
                     .align(Alignment.TopStart)
                     .padding(top = sliderTop, start = 4.dp, bottom = 4.dp)
                     .width(40.dp)
-                    .fillMaxHeight()
+                    // 20% shorter from the bottom on Home; the top stays under the arrow button
+                .fillMaxHeight(if (embedded) 0.8f else 1f)
             )
         } else ZoomSlider(
             value = zoom,
@@ -1417,7 +1418,8 @@ private fun ElevationProfileCanvas(
                 .align(Alignment.TopStart)
                 .padding(top = sliderTop, start = 4.dp, bottom = 4.dp)
                 .width(40.dp)
-                .fillMaxHeight()
+                // 20% shorter from the bottom on Home; the top stays under the arrow button
+                .fillMaxHeight(if (embedded) 0.8f else 1f)
         )
     }
 }

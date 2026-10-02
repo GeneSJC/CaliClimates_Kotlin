@@ -660,7 +660,7 @@ private fun SpatialMapCanvas(
             if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + 50f) else listOf(0f, 0f, 58f, 40f),  // Home's control row, or the compass
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
             if (embedded) listOf(widthDp.value - 46f, sliderToggleTop.value, widthDp.value, sliderToggleTop.value + 32f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
-            if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(widthDp.value - 46f, sliderTop.value, widthDp.value, heightDp.value),  // zoom slider
+            if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(widthDp.value - 46f, sliderTop.value, widthDp.value, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) 0.8f else 1f)),  // zoom slider
             if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
             listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f)  // expand / shrink toggle
         )
@@ -819,7 +819,8 @@ private fun SpatialMapCanvas(
                     .align(Alignment.TopEnd)
                     .padding(top = sliderTop, end = 4.dp, bottom = 4.dp)
                     .width(40.dp)
-                    .fillMaxHeight()
+                    // 20% shorter from the bottom on Home; the top stays under the arrow button
+                .fillMaxHeight(if (embedded) 0.8f else 1f)
             )
         } else ZoomSlider(
             value = zoom,
@@ -834,7 +835,8 @@ private fun SpatialMapCanvas(
                 .align(Alignment.TopEnd)
                 .padding(top = sliderTop, end = 4.dp, bottom = 4.dp)
                 .width(40.dp)
-                .fillMaxHeight()
+                // 20% shorter from the bottom on Home; the top stays under the arrow button
+                .fillMaxHeight(if (embedded) 0.8f else 1f)
         )
     }
 }
