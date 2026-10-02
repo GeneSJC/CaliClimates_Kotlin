@@ -807,6 +807,8 @@ fun LandingScreen(
         scope.launch { infoReveal.animateTo(0f, tween(SHEET_CLOSE_MS, easing = FastOutSlowInEasing)) }
     }
     BackHandler(enabled = infoOpen) { closeInfo() }
+    // Region Info is a Topography feature: switching to Elevation closes it
+    LaunchedEffect(homeTab) { if (homeTab == 1 && infoOpen) closeInfo() }
     ModalNavigationDrawer(
         drawerState = drawerState,
         // The menu button opens it; a swipe must not compete with the map's drag to pan (it still closes by swipe)
@@ -1148,43 +1150,46 @@ fun LandingScreen(
                         ) {
                             if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
                         }
-                        // The info link, on its own to the right of the station tile; the sheet slides in from the right, the X takes its place
-                        val handleModifier = Modifier
-                            .clickable(
-                                onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
-                                role = Role.Button
-                            ) { if (infoOpen) closeInfo() else openInfo() }
-                        val handleColor = MaterialTheme.colorScheme.primary
-                        if (infoOpen) {
-                            // A bold X, drawn so its weight and size are exact
-                            Canvas(modifier = handleModifier.padding(horizontal = 2.dp, vertical = 6.5.dp).size(13.dp)) {
-                                val stroke = 2.2.dp.toPx()
-                                val inset = stroke / 2f
-                                drawLine(
+                        // The info link, on its own to the right of the station tile; the sheet slides in from the right, the X takes
+                        // its place. Topography only: the Elevation view has no Region Info, so the tile takes the whole width there
+                        if (homeTab == 0) {
+                            val handleModifier = Modifier
+                                .clickable(
+                                    onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
+                                    role = Role.Button
+                                ) { if (infoOpen) closeInfo() else openInfo() }
+                            val handleColor = MaterialTheme.colorScheme.primary
+                            if (infoOpen) {
+                                // A bold X, drawn so its weight and size are exact
+                                Canvas(modifier = handleModifier.padding(horizontal = 2.dp, vertical = 6.5.dp).size(13.dp)) {
+                                    val stroke = 2.2.dp.toPx()
+                                    val inset = stroke / 2f
+                                    drawLine(
+                                        color = handleColor,
+                                        start = Offset(inset, inset),
+                                        end = Offset(size.width - inset, size.height - inset),
+                                        strokeWidth = stroke,
+                                        cap = StrokeCap.Round
+                                    )
+                                    drawLine(
+                                        color = handleColor,
+                                        start = Offset(size.width - inset, inset),
+                                        end = Offset(inset, size.height - inset),
+                                        strokeWidth = stroke,
+                                        cap = StrokeCap.Round
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    text = "\u00AB Info",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontSize = 15.84.sp,
+                                    lineHeight = 22.sp,
+                                    fontWeight = FontWeight.Bold,
                                     color = handleColor,
-                                    start = Offset(inset, inset),
-                                    end = Offset(size.width - inset, size.height - inset),
-                                    strokeWidth = stroke,
-                                    cap = StrokeCap.Round
-                                )
-                                drawLine(
-                                    color = handleColor,
-                                    start = Offset(size.width - inset, inset),
-                                    end = Offset(inset, size.height - inset),
-                                    strokeWidth = stroke,
-                                    cap = StrokeCap.Round
+                                    modifier = handleModifier.padding(horizontal = 4.dp, vertical = 2.dp)
                                 )
                             }
-                        } else {
-                            Text(
-                                text = "\u00AB Info",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontSize = 15.84.sp,
-                                lineHeight = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = handleColor,
-                                modifier = handleModifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                            )
                         }
                     }
                     // Below the tile, at the left: the menu, the north indicator and the About button
