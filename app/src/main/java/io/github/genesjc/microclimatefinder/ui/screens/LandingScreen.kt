@@ -684,7 +684,7 @@ fun LandingScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(start = 10.dp, end = 10.dp, top = 22.dp),
+                .padding(start = 5.dp, end = 5.dp, top = 22.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             AnimatedVisibility(
@@ -949,7 +949,7 @@ fun LandingScreen(
             }
 
             // A small gap between the first row and what is below it (the map)
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             run {
                 Column {
                     // This region has no station data in this build

@@ -697,25 +697,6 @@ private fun SpatialMapCanvas(
             }
         }
 
-        // Data credit (top right)
-        Surface(
-            shape = RoundedCornerShape(6.dp),
-            color = Color(0xFFF0FDF4),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC)),
-            modifier = Modifier
-                // Where the Topography / Elevation buttons were: left of them, after the compass
-                .align(Alignment.TopStart)
-                .padding(start = 54.dp, top = 21.dp)
-        ) {
-            Text(
-                text = if (terrain != null) "Terrain: USGS · NASA" else "Base map: coast and border only",
-                fontSize = 7.5.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF166534),
-                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-            )
-        }
-
         // Floating zoom slider on the right edge (for now it sets the type size instead; see MapText)
         if (MapText.SLIDER_SETS_FONT) {
             ZoomSlider(
