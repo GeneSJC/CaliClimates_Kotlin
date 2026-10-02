@@ -85,3 +85,53 @@ fun CaliforniaOutlineIcon(
         )
     }
 }
+
+/**
+ * Just the selected region's shape, filled in its picker colour and outlined, scaled up to fill the space (the
+ * state's outline is not drawn). The region's polygon is clipped by the state's coast, so the shoreline matches
+ * the full-state icon.
+ */
+@Composable
+fun RegionShapeIcon(
+    regionId: String,
+    fill: Color,
+    stroke: Color,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val pts = CALIFORNIA_REGION_SHAPES[regionId] ?: return@Canvas
+        val minLon = pts.minOf { it.first }
+        val maxLon = pts.maxOf { it.first }
+        val minLat = pts.minOf { it.second }
+        val maxLat = pts.maxOf { it.second }
+        val lonSpan = ((maxLon - minLon) * CA_LON_SCALE).coerceAtLeast(0.01f)
+        val latSpan = (maxLat - minLat).coerceAtLeast(0.01f)
+        // Room for the outline's width, so it is not cut at the edges
+        val inset = size.minDimension * 0.05f
+        val availW = size.width - inset * 2f
+        val availH = size.height - inset * 2f
+        val scale = minOf(availW / lonSpan, availH / latSpan)
+        val offsetX = inset + (availW - lonSpan * scale) / 2f
+        val offsetY = inset + (availH - latSpan * scale) / 2f
+        fun point(lon: Float, lat: Float) = Offset(
+            offsetX + (lon - minLon) * CA_LON_SCALE * scale,
+            offsetY + (maxLat - lat) * scale
+        )
+        val region = Path().apply {
+            pts.forEachIndexed { i, (lon, lat) ->
+                val p = point(lon, lat)
+                if (i == 0) moveTo(p.x, p.y) else lineTo(p.x, p.y)
+            }
+            close()
+        }
+        val state = Path().apply {
+            CA_OUTLINE_POINTS.forEachIndexed { i, (lon, lat) ->
+                val p = point(lon, lat)
+                if (i == 0) moveTo(p.x, p.y) else lineTo(p.x, p.y)
+            }
+            close()
+        }
+        clipPath(state) { drawPath(region, color = fill) }
+        drawPath(region, color = stroke, style = Stroke(width = size.minDimension * 0.05f, join = StrokeJoin.Round))
+    }
+}
