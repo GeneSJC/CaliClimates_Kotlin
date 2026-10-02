@@ -924,16 +924,25 @@ fun LandingScreen(
                                 }
                                 // The region picker, at the right of the name's row (it belongs with the drop-down)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                RegionPickerButton(
-                                    state = pickerState,
-                                    selectedRegionId = selectedRegionId,
-                                    // No chip behind the shape: it sits straight on the widget
-                                    background = Color.Transparent,
-                                    content = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    border = Color.Transparent,
-                                    size = 38.dp,
-                                    iconSize = 34.dp
-                                )
+                                // In a small button of its own, so it reads as tappable
+                                Box(
+                                    modifier = Modifier
+                                        .size(width = 46.dp, height = 34.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.White.copy(alpha = 0.6f))
+                                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    RegionPickerButton(
+                                        state = pickerState,
+                                        selectedRegionId = selectedRegionId,
+                                        background = Color.Transparent,
+                                        content = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        border = Color.Transparent,
+                                        size = 34.dp,
+                                        iconSize = 28.dp
+                                    )
+                                }
                             }
 
                         }
@@ -1134,7 +1143,8 @@ fun LandingScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y }
+                                // The Region Info sheet opens below this row (the tile and the Info link / X beside it), so it never covers them
+                                .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
                         ) {
                             if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
                         }
