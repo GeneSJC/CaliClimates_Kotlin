@@ -136,6 +136,8 @@ fun StationMapScreen(
     onSliderShownChange: ((Boolean) -> Unit)? = null,
     /** Home: where the slider's arrow button starts (below the view buttons, which are measured there). */
     sliderToggleTop: Dp = 52.dp,
+    /** Home: 0 normally, 1 when the map has grown out into the page margins (the Elevation view); eased between. */
+    expandT: Float = 0f,
 ) {
     val context = LocalContext.current
     val stations = remember(dataset) { StationRepository.stations(context, dataset) }
@@ -161,7 +163,8 @@ fun StationMapScreen(
     var aboveMapPx by remember { mutableStateOf(0) }
 
     // Top and bottom padding of the page: the embedded map has no app bar, so less above it
-    val mapVerticalPadding = if (embedded) 16.dp else 32.dp
+    // Embedded: just the 5 dp left under the map, which goes to 0 as the map grows out to the screen bottom
+    val mapVerticalPadding = if (embedded) 5.dp * (1f - expandT) else 32.dp
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     // Expanded height: the screen less the padding and everything above the map
     val expandedMapHeight = with(density) {
@@ -175,7 +178,7 @@ fun StationMapScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 5.dp) else PaddingValues(16.dp))
+            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 5.dp * (1f - expandT)) else PaddingValues(16.dp))
             .verticalScroll(pageScroll)
     ) {
       Column(modifier = Modifier.onSizeChanged { aboveMapPx = it.height }) {
@@ -270,7 +273,8 @@ fun StationMapScreen(
                 .height(mapHeight)
         ) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                // The bottom corners square off as the map grows out to the screen edges
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp * (1f - expandT), bottomEnd = 16.dp * (1f - expandT)),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 // A 1dp outline, for a crisper edge
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -285,6 +289,7 @@ fun StationMapScreen(
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,
                     sliderToggleTop = sliderToggleTop,
+                    expandT = expandT,
                     sliderShownShared = sliderShownShared,
                     onSliderShownChange = onSliderShownChange,
                     onSelectStation = {
@@ -460,6 +465,7 @@ private fun SpatialMapCanvas(
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
     sliderToggleTop: Dp = 52.dp,
+    expandT: Float = 0f,
     sliderShownShared: Boolean? = null,
     onSliderShownChange: ((Boolean) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
@@ -802,7 +808,7 @@ private fun SpatialMapCanvas(
             SliderToggleButton(
                 shown = sliderShown,
                 onToggle = { setSliderShown(!sliderShown) },
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = sliderToggleTop)
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp + 5.dp * expandT, top = sliderToggleTop)
             )
         }
         // Floating zoom slider on the right edge (for now it sets the type size instead; see MapText)
@@ -817,7 +823,7 @@ private fun SpatialMapCanvas(
                 caption = "FONT",
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = sliderTop, end = 4.dp, bottom = 4.dp)
+                    .padding(top = sliderTop, end = 4.dp + 5.dp * expandT, bottom = 4.dp)
                     .width(40.dp)
                     // 20% shorter from the bottom on Home; the top stays under the arrow button
                 .fillMaxHeight(if (embedded) 0.8f else 1f)
@@ -833,7 +839,7 @@ private fun SpatialMapCanvas(
             // Its top stays under the data credit whatever the map's height; the bottom follows the map
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = sliderTop, end = 4.dp, bottom = 4.dp)
+                .padding(top = sliderTop, end = 4.dp + 5.dp * expandT, bottom = 4.dp)
                 .width(40.dp)
                 // 20% shorter from the bottom on Home; the top stays under the arrow button
                 .fillMaxHeight(if (embedded) 0.8f else 1f)

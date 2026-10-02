@@ -211,6 +211,8 @@ fun ElevationProfileScreen(
     /** Whether the slider shows, when Home owns it (one setting for both map views), and a report of changes. */
     sliderShownShared: Boolean? = null,
     onSliderShownChange: ((Boolean) -> Unit)? = null,
+    /** Home: 0 normally, 1 when the chart has grown out into the page margins (this view); eased between. */
+    expandT: Float = 0f,
 ) {
     val context = LocalContext.current
     val stations = remember(dataset) { StationRepository.stations(context, dataset) }
@@ -238,7 +240,8 @@ fun ElevationProfileScreen(
     var aboveChartPx by remember { mutableStateOf(0) }
     var belowChartPx by remember { mutableStateOf(0) }
     val density = LocalDensity.current
-    val verticalPadding = if (embedded) 16.dp else 32.dp
+    // Embedded: just the 5 dp left under the chart, which goes to 0 as it grows out to the screen bottom
+    val verticalPadding = if (embedded) 5.dp * (1f - expandT) else 32.dp
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     // Expanded height: the screen less the padding and everything above and below the chart
     val expandedHeight = with(density) {
@@ -252,7 +255,7 @@ fun ElevationProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 5.dp) else PaddingValues(16.dp))
+            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 5.dp * (1f - expandT)) else PaddingValues(16.dp))
             .verticalScroll(rememberScrollState())
     ) {
         Column(modifier = Modifier.onSizeChanged { aboveChartPx = it.height }) {
@@ -313,7 +316,8 @@ fun ElevationProfileScreen(
         // Elevation chart, with its Expand / Shrink toggle
         Box(modifier = Modifier.fillMaxWidth().height(chartHeight)) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                // The bottom corners square off as the chart grows out to the screen edges
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp * (1f - expandT), bottomEnd = 16.dp * (1f - expandT)),
                 // An opaque base (the old tint, laid over the page colour) so the backdrop's relief does not show through the chart
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f).compositeOver(MaterialTheme.colorScheme.background),
                 // A 1dp outline, for a crisper edge
@@ -326,6 +330,7 @@ fun ElevationProfileScreen(
                     terrain = terrain,
                     skyline = skyline,
                     embedded = embedded,
+                    expandT = expandT,
                     selectedStationId = selectedStationId,
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,
@@ -573,6 +578,7 @@ private fun ElevationProfileCanvas(
     terrain: TerrainImage?,
     skyline: List<FloatArray>?,
     embedded: Boolean,
+    expandT: Float = 0f,
     selectedStationId: String?,
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
@@ -1292,7 +1298,7 @@ private fun ElevationProfileCanvas(
             color = skyTheme.badgeBg.copy(alpha = 0.85f),
             border = BorderStroke(1.dp, skyTheme.accent.copy(alpha = 0.45f)),
             modifier = Modifier
-                .offset(x = 52.dp, y = 50.dp + (if (embedded) HOME_TILE_BAND else 0.dp))
+                .offset(x = 52.dp + 5.dp * expandT, y = 50.dp + (if (embedded) HOME_TILE_BAND else 0.dp))
                 .clickable {
                     // Tap to cycle landmarks
                     if (cycleIds.isNotEmpty()) {
@@ -1387,7 +1393,7 @@ private fun ElevationProfileCanvas(
             SliderToggleButton(
                 shown = sliderShown,
                 onToggle = { setSliderShown(!sliderShown) },
-                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 50.dp + HOME_TILE_BAND)
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp + 5.dp * expandT, top = 50.dp + HOME_TILE_BAND)
             )
         }
         // For now the slider sets the type size instead of the zoom (see MapText)
@@ -1402,7 +1408,7 @@ private fun ElevationProfileCanvas(
                 caption = "FONT",
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(top = sliderTop, start = 4.dp, bottom = 4.dp)
+                    .padding(top = sliderTop, start = 4.dp + 5.dp * expandT, bottom = 4.dp)
                     .width(40.dp)
                     // Another 20% shorter than Topography's on Home (so the chart's bottom-left corner stays clear); the top stays under the arrow button
                 .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)
@@ -1419,7 +1425,7 @@ private fun ElevationProfileCanvas(
             // At the left here (the chart has no use for that side); its top stays put, the bottom follows the chart
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(top = sliderTop, start = 4.dp, bottom = 4.dp)
+                .padding(top = sliderTop, start = 4.dp + 5.dp * expandT, bottom = 4.dp)
                 .width(40.dp)
                 // Another 20% shorter than Topography's on Home (so the chart's bottom-left corner stays clear); the top stays under the arrow button
                 .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)

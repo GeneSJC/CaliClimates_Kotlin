@@ -792,6 +792,13 @@ fun LandingScreen(
     var mapTopPx by remember { mutableStateOf(0f) }
     // The Topography / Elevation buttons' height (it follows the text size), measured
     val mapDensity = LocalDensity.current
+    // On the Elevation view the map grows out into the page margins (west, east and south; never up), so the water
+    // reaches the screen edges; eased both ways when switching views
+    val expandT by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (homeTab == 1) 1f else 0f,
+        animationSpec = tween(380, easing = FastOutSlowInEasing),
+        label = "mapExpand"
+    )
     var viewSwitchHeight by remember { mutableStateOf(34.dp) }
     var rowWidthPx by remember { mutableStateOf(0) }
     var stationTileTopPx by remember { mutableStateOf(0f) }
@@ -1098,6 +1105,13 @@ fun LandingScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
+                        // Wider than the page by the margin on each side, in step with expandT (the page margin is 5 dp)
+                        .layout { measurable, c ->
+                            val e = (5.dp * expandT).roundToPx()
+                            val w = c.maxWidth + 2 * e
+                            val placeable = measurable.measure(c.copy(minWidth = w, maxWidth = w))
+                            layout(c.maxWidth, placeable.height) { placeable.place(-e, 0) }
+                        }
                         .onGloballyPositioned { mapTopPx = it.positionInRoot().y }
                 ) {
                     if (homeTab == 0) {
@@ -1115,7 +1129,8 @@ fun LandingScreen(
                             sliderShownShared = sliderShown,
                             onSliderShownChange = onSliderShownChange,
                             // The slider's arrow button sits 4 dp under the view buttons, whatever their height
-                            sliderToggleTop = 21.dp + HOME_TILE_BAND + viewSwitchHeight + 4.dp
+                            sliderToggleTop = 21.dp + HOME_TILE_BAND + viewSwitchHeight + 4.dp,
+                            expandT = expandT
                         )
                     } else {
                         ElevationProfileScreen(
@@ -1127,90 +1142,94 @@ fun LandingScreen(
                             initialZoom = mapZoom[0],
                             onZoomChange = { mapZoom[0] = it },
                             sliderShownShared = sliderShown,
-                            onSliderShownChange = onSliderShownChange
+                            onSliderShownChange = onSliderShownChange,
+                            expandT = expandT
                         )
                     }
-                    // The selected station as a tile across the top of the map (it grows into the full card)
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .fillMaxWidth()
-                            .padding(start = 6.dp, end = 6.dp, top = 5.dp)
-                            .height(IntrinsicSize.Min)
-                            .onSizeChanged { rowWidthPx = it.width },
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
+                    // The tile and the buttons keep their place on the screen while the map grows out underneath them
+                    Box(modifier = Modifier.matchParentSize().padding(horizontal = 5.dp * expandT)) {
+                        // The selected station as a tile across the top of the map (it grows into the full card)
+                        Row(
                             modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                // The Region Info sheet opens below this row (the tile and the Info link / X beside it), so it never covers them
-                                .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
+                                .align(Alignment.TopStart)
+                                .fillMaxWidth()
+                                .padding(start = 6.dp, end = 6.dp, top = 5.dp)
+                                .height(IntrinsicSize.Min)
+                                .onSizeChanged { rowWidthPx = it.width },
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
-                        }
-                        // The info link, on its own to the right of the station tile; the sheet slides in from the right, the X takes
-                        // its place. Topography only: the Elevation view has no Region Info, so the tile takes the whole width there
-                        if (homeTab == 0) {
-                            val handleModifier = Modifier
-                                .clickable(
-                                    onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
-                                    role = Role.Button
-                                ) { if (infoOpen) closeInfo() else openInfo() }
-                            val handleColor = MaterialTheme.colorScheme.primary
-                            if (infoOpen) {
-                                // A bold X, drawn so its weight and size are exact
-                                Canvas(modifier = handleModifier.padding(horizontal = 2.dp, vertical = 6.5.dp).size(13.dp)) {
-                                    val stroke = 2.2.dp.toPx()
-                                    val inset = stroke / 2f
-                                    drawLine(
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    // The Region Info sheet opens below this row (the tile and the Info link / X beside it), so it never covers them
+                                    .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
+                            ) {
+                                if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
+                            }
+                            // The info link, on its own to the right of the station tile; the sheet slides in from the right, the X takes
+                            // its place. Topography only: the Elevation view has no Region Info, so the tile takes the whole width there
+                            if (homeTab == 0) {
+                                val handleModifier = Modifier
+                                    .clickable(
+                                        onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
+                                        role = Role.Button
+                                    ) { if (infoOpen) closeInfo() else openInfo() }
+                                val handleColor = MaterialTheme.colorScheme.primary
+                                if (infoOpen) {
+                                    // A bold X, drawn so its weight and size are exact
+                                    Canvas(modifier = handleModifier.padding(horizontal = 2.dp, vertical = 6.5.dp).size(13.dp)) {
+                                        val stroke = 2.2.dp.toPx()
+                                        val inset = stroke / 2f
+                                        drawLine(
+                                            color = handleColor,
+                                            start = Offset(inset, inset),
+                                            end = Offset(size.width - inset, size.height - inset),
+                                            strokeWidth = stroke,
+                                            cap = StrokeCap.Round
+                                        )
+                                        drawLine(
+                                            color = handleColor,
+                                            start = Offset(size.width - inset, inset),
+                                            end = Offset(inset, size.height - inset),
+                                            strokeWidth = stroke,
+                                            cap = StrokeCap.Round
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        text = "\u00AB Info",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontSize = 15.84.sp,
+                                        lineHeight = 22.sp,
+                                        fontWeight = FontWeight.Bold,
                                         color = handleColor,
-                                        start = Offset(inset, inset),
-                                        end = Offset(size.width - inset, size.height - inset),
-                                        strokeWidth = stroke,
-                                        cap = StrokeCap.Round
-                                    )
-                                    drawLine(
-                                        color = handleColor,
-                                        start = Offset(size.width - inset, inset),
-                                        end = Offset(inset, size.height - inset),
-                                        strokeWidth = stroke,
-                                        cap = StrokeCap.Round
+                                        modifier = handleModifier.padding(horizontal = 4.dp, vertical = 2.dp)
                                     )
                                 }
-                            } else {
-                                Text(
-                                    text = "\u00AB Info",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontSize = 15.84.sp,
-                                    lineHeight = 22.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = handleColor,
-                                    modifier = handleModifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                )
                             }
                         }
+                        // Below the tile, at the left: the menu, the north indicator and the About button
+                        MapControlRow(
+                            onElevation = homeTab == 1,
+                            stations = snapshotStations,
+                            selectedStationId = selectedStationId,
+                            onPickStation = onStationSelected,
+                            onMenu = { scope.launch { drawerState.open() } },
+                            onAbout = { showAboutDialog = true },
+                            modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
+                        )
+                        MapViewSwitch(
+                            selected = homeTab,
+                            onSelect = onHomeTabChange,
+                            // Top right, the same place on both views, above the zoom slider
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(end = 12.dp, top = 21.dp + HOME_TILE_BAND)
+                                .onSizeChanged { viewSwitchHeight = with(mapDensity) { it.height.toDp() } }
+                        )
                     }
-                    // Below the tile, at the left: the menu, the north indicator and the About button
-                    MapControlRow(
-                        onElevation = homeTab == 1,
-                        stations = snapshotStations,
-                        selectedStationId = selectedStationId,
-                        onPickStation = onStationSelected,
-                        onMenu = { scope.launch { drawerState.open() } },
-                        onAbout = { showAboutDialog = true },
-                        modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
-                    )
-                    MapViewSwitch(
-                        selected = homeTab,
-                        onSelect = onHomeTabChange,
-                        // Top right, the same place on both views, above the zoom slider
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(end = 12.dp, top = 21.dp + HOME_TILE_BAND)
-                            .onSizeChanged { viewSwitchHeight = with(mapDensity) { it.height.toDp() } }
-                    )
                 }
             }
         }
