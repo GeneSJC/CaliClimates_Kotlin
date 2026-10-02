@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -19,16 +21,19 @@ import androidx.compose.ui.unit.sp
  * (Sacramento Topographical Map, Elevation Profile).
  */
 @Composable
-fun LegendItem(color: Color, label: String, dotScale: Float = 1f) {
+fun LegendItem(color: Color, label: String, dotScale: Float = 1f, dotSlot: Dp = 8.dp) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(
-            shape = CircleShape,
-            color = color,
-            // The dot follows the Dot size setting, so the legend shows what the slider does to the map's dots
-            modifier = Modifier.size(8.dp * dotScale)
-        ) {}
+        // The dot follows the Dot size setting, so the legend shows what the slider does to the map's dots. It sits
+        // centred in a fixed slot (as big as the biggest dot), so the label never moves as the dot grows
+        Box(modifier = Modifier.size(dotSlot), contentAlignment = Alignment.Center) {
+            Surface(
+                shape = CircleShape,
+                color = color,
+                modifier = Modifier.size(8.dp * dotScale)
+            ) {}
+        }
         Text(
-            text = " $label",
+            text = if (dotSlot > 8.dp) label else " $label",
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium

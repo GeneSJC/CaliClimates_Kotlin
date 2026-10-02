@@ -192,7 +192,7 @@ fun TerrainLegend(
 /** The colour key: the terrain types the region has with counts, the rule for "ridge / highland", and [extra]. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LegendBody(stations: List<MicroclimateStation>, extra: (@Composable () -> Unit)?, dotScale: Float = 1f) {
+private fun LegendBody(stations: List<MicroclimateStation>, extra: (@Composable () -> Unit)?, dotScale: Float? = null) {
     Column {
         FlowRow(
             modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
@@ -202,7 +202,10 @@ private fun LegendBody(stations: List<MicroclimateStation>, extra: (@Composable 
             listOf(TerrainType.RIDGE, TerrainType.VALLEY_BASIN, TerrainType.COASTAL, TerrainType.URBAN_CANYON)
                 .forEach { type ->
                     val count = stations.count { it.terrain == type }
-                    if (count > 0) LegendItem(color = legendColor(type), label = "${legendName(type)} $count", dotScale = dotScale)
+                    if (count > 0) LegendItem(color = legendColor(type), label = "${legendName(type)} $count",
+                        dotScale = dotScale ?: 1f,
+                        // With the Dot size setting in play, the dot gets a fixed slot (the biggest dot, 2.5x) so the text stays put
+                        dotSlot = if (dotScale != null) 8.dp * 2.5f else 8.dp)
                 }
         }
         Text(
