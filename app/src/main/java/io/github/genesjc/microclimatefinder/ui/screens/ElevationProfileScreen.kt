@@ -249,7 +249,7 @@ fun ElevationProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 10.dp) else PaddingValues(16.dp))
+            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 5.dp) else PaddingValues(16.dp))
             .verticalScroll(rememberScrollState())
     ) {
         Column(modifier = Modifier.onSizeChanged { aboveChartPx = it.height }) {

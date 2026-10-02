@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,7 +73,9 @@ fun StationCard(
     // Compact only: a control at the right end of the title row (the open card's Less link)
     compactHeaderAction: (@Composable () -> Unit)? = null,
     // Compact only: a sentence about the height, shown under the terrain row
-    elevationNote: String? = null
+    elevationNote: String? = null,
+    // Full card: a short mark next to the terrain badge while the card is the selected one (the Station List)
+    selectedLabel: String? = null
 ) {
     val context = LocalContext.current
     var showNewsDialog by remember { mutableStateOf(false) }
@@ -108,7 +111,9 @@ fun StationCard(
         border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
+                // A light tint laid over the card colour, so the card stays fully solid (never see-through)
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                    .compositeOver(MaterialTheme.colorScheme.surface)
             } else {
                 MaterialTheme.colorScheme.surface
             }
@@ -121,17 +126,28 @@ fun StationCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = terrainBadgeColor.copy(alpha = 0.14f)
-                ) {
-                    Text(
-                        text = station.terrain.label,
-                        color = terrainBadgeColor,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = terrainBadgeColor.copy(alpha = 0.14f)
+                    ) {
+                        Text(
+                            text = station.terrain.label,
+                            color = terrainBadgeColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                    if (isSelected && selectedLabel != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "\u2713 $selectedLabel",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
                 Text(

@@ -185,7 +185,9 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
                 onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
-                }
+                },
+                selectedStationId = homeStationId,
+                onStationSelected = { homeStationId = it }
             )
         }
         AppScreen.CALIFORNIA_REGIONS -> {
