@@ -109,6 +109,9 @@ private const val CHART_PADDING_PX = 32f
 // The profile sits between a little headroom and sea level; the bottom of the chart is ocean, so sea level
 // is in view and the cities spread over more of the height
 private const val PROFILE_HEAD = 0.15f
+// The slider's height on Home, as a share of the room below its arrow button (Topography uses 0.8)
+private const val ELEVATION_SLIDER_FRACTION = 0.64f
+
 private const val SEA_FRACTION = 0.126f
 
 /** Where (0 at the chart's top, 1 at its bottom) a height, as a share of the highest station, is drawn. */
@@ -791,7 +794,7 @@ private fun ElevationProfileCanvas(
                 if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
                 if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + 50f) else listOf(0f, 0f, 0f, 0f),  // Home's control row
                 if (embedded) listOf(0f, HOME_TILE_BAND.value + 50f, 46f, HOME_TILE_BAND.value + 82f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
-                if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) 0.8f else 1f)), // zoom slider (at the left)
+                if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) ELEVATION_SLIDER_FRACTION else 1f)), // zoom slider (at the left)
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
@@ -1401,8 +1404,8 @@ private fun ElevationProfileCanvas(
                     .align(Alignment.TopStart)
                     .padding(top = sliderTop, start = 4.dp, bottom = 4.dp)
                     .width(40.dp)
-                    // 20% shorter from the bottom on Home; the top stays under the arrow button
-                .fillMaxHeight(if (embedded) 0.8f else 1f)
+                    // Another 20% shorter than Topography's on Home (so the chart's bottom-left corner stays clear); the top stays under the arrow button
+                .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)
             )
         } else ZoomSlider(
             value = zoom,
@@ -1418,8 +1421,8 @@ private fun ElevationProfileCanvas(
                 .align(Alignment.TopStart)
                 .padding(top = sliderTop, start = 4.dp, bottom = 4.dp)
                 .width(40.dp)
-                // 20% shorter from the bottom on Home; the top stays under the arrow button
-                .fillMaxHeight(if (embedded) 0.8f else 1f)
+                // Another 20% shorter than Topography's on Home (so the chart's bottom-left corner stays clear); the top stays under the arrow button
+                .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)
         )
     }
 }
