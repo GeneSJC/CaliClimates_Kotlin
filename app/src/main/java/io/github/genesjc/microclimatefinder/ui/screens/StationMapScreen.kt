@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -324,8 +325,65 @@ private const val MAP_OVERSCROLL = 0.12f
 /** Dots start at the largest size the Dot size slider allows, so they are easy to see and tap. */
 internal const val DEFAULT_PIN_SCALE = 2.5f
 
+/** A horizontal slider with a thin rail and the zoom slider's rounded-square thumb (32 x 18 dp, white edge). */
+@Composable
+private fun SquareThumbSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current
+    val thumbShape = RoundedCornerShape(4.dp)
+    val thumbWidth = 32.dp
+    val thumbHeight = 18.dp
+    val currentOnChange by rememberUpdatedState(onValueChange)
+    val ratio = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
+    BoxWithConstraints(modifier = modifier.height(thumbHeight), contentAlignment = Alignment.CenterStart) {
+        val trackWidth = maxWidth
+        val thumbWidthPx = with(density) { thumbWidth.toPx() }
+        val usablePx = (with(density) { trackWidth.toPx() } - thumbWidthPx).coerceAtLeast(1f)
+        fun valueAt(x: Float): Float {
+            val r = ((x - thumbWidthPx / 2f) / usablePx).coerceIn(0f, 1f)
+            return valueRange.start + r * (valueRange.endInclusive - valueRange.start)
+        }
+        // The rail, and the part up to the thumb filled in
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(5.dp)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
+        )
+        Box(
+            modifier = Modifier
+                .width(thumbWidth / 2 + (trackWidth - thumbWidth) * ratio)
+                .height(5.dp)
+                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(3.dp))
+        )
+        Box(
+            modifier = Modifier
+                .offset(x = (trackWidth - thumbWidth) * ratio)
+                .size(width = thumbWidth, height = thumbHeight)
+                .shadow(3.dp, thumbShape)
+                .background(MaterialTheme.colorScheme.primary, thumbShape)
+                .border(2.dp, Color.White, thumbShape)
+        )
+        // The whole strip takes taps and drags
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(usablePx) { detectTapGestures { currentOnChange(valueAt(it.x)) } }
+                .pointerInput(usablePx) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { currentOnChange(valueAt(it.x)) },
+                        onHorizontalDrag = { change, _ -> change.consume(); currentOnChange(valueAt(change.position.x)) }
+                    )
+                }
+        )
+    }
+}
+
 /** Horizontal dot-size control under the map: small dot to large dot. */
-@OptIn(ExperimentalMaterial3Api::class) // custom slider thumb
 @Composable
 internal fun PinSizeSlider(
     value: Float,
@@ -348,18 +406,11 @@ internal fun PinSizeSlider(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.size(5.dp)
         ) {}
-        Slider(
+        // The same square-thumb style as the vertical zoom slider, on a thin rail
+        SquareThumbSlider(
             value = value,
             onValueChange = { onValueChange((it * 10f).roundToInt() / 10f) },
             valueRange = 1.0f..2.5f,
-            thumb = {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
-                    shadowElevation = 2.dp,
-                    modifier = Modifier.size(20.dp)
-                ) {}
-            },
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 6.dp)

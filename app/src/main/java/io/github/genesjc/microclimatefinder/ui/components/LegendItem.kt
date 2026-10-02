@@ -19,12 +19,13 @@ import androidx.compose.ui.unit.sp
  * (Sacramento Topographical Map, Elevation Profile).
  */
 @Composable
-fun LegendItem(color: Color, label: String) {
+fun LegendItem(color: Color, label: String, dotScale: Float = 1f) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Surface(
             shape = CircleShape,
             color = color,
-            modifier = Modifier.size(8.dp)
+            // The dot follows the Dot size setting, so the legend shows what the slider does to the map's dots
+            modifier = Modifier.size(8.dp * dotScale)
         ) {}
         Text(
             text = " $label",

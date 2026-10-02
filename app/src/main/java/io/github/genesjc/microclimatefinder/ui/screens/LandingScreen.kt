@@ -289,7 +289,7 @@ private fun StationHeroTile(
         // The same colour as the open card: its tint over the page colour, not over the backdrop
         tileColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
             .compositeOver(MaterialTheme.colorScheme.background),
-        tileBorder = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+        tileBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
         // The card draws its own tint and border; this backs it so nothing shows through
         panelColor = MaterialTheme.colorScheme.background,
         openLabel = "Show the full station card",
@@ -536,6 +536,7 @@ private fun RegionInfoContent(
     stations: List<MicroclimateStation>,
     onOpenStationList: () -> Unit,
     menuOpen: Boolean,
+    dotScale: Float = 1f,
     legendExtra: (@Composable () -> Unit)? = null
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
@@ -551,8 +552,8 @@ private fun RegionInfoContent(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CaliforniaOutlineIcon(
-                    fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.22f),
-                    stroke = MaterialTheme.colorScheme.onPrimary,
+                    fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f),
+                    stroke = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                     regionColors = regionPickerColors(),
                     selectedRegionId = region.id,
                     modifier = Modifier.size(40.dp)
@@ -562,8 +563,9 @@ private fun RegionInfoContent(
                     Text(
                         text = "Region Info",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        fontWeight = FontWeight.Bold,
+                        // Off-white, not pure white, so it is easier on the eyes against the dark band
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.86f)
                     )
                 }
                 if (hasStationData) {
@@ -571,7 +573,7 @@ private fun RegionInfoContent(
                     Surface(
                         shape = RoundedCornerShape(50),
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f)),
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
                             .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenStationList() }
@@ -580,7 +582,7 @@ private fun RegionInfoContent(
                             text = "Station List \u203A",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.86f),
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
                         )
                     }
@@ -605,7 +607,7 @@ private fun RegionInfoContent(
             }
             // The Terrain Legend, at the bottom, folded until opened
             Spacer(modifier = Modifier.height(12.dp))
-            TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), extra = legendExtra)
+            TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), dotScale = dotScale, extra = legendExtra)
         }
         }
         }
@@ -711,13 +713,9 @@ fun LandingScreen(
                 // App header: two separate widgets with the backdrop showing between them, each with the
                 // About-dialog gradient: (1) the region (its name, and under it the menu and About buttons at the left
                 // and the Region Info link at the right), (2) the region picker.
-                val headerBrush = Brush.linearGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
-                    )
-                )
                 val headerShape = RoundedCornerShape(16.dp)
+                val headerFill = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                    .compositeOver(MaterialTheme.colorScheme.background)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     // A wider gap between the region widget and the picker widget, so more terrain shows between them (8dp, then 16dp)
@@ -731,7 +729,9 @@ fun LandingScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(headerShape)
-                                .background(headerBrush)
+                                // The tile's flat tint and 1 dp outline, so the name and Info link read clearly
+                                .background(headerFill)
+                                .border(1.dp, MaterialTheme.colorScheme.primary, headerShape)
                                 .padding(horizontal = 16.dp),
                             verticalArrangement = Arrangement.Center
                         ) {
@@ -876,7 +876,8 @@ fun LandingScreen(
                             .width(52.dp)
                             .height(HEADER_HEIGHT)
                             .clip(headerShape)
-                            .background(headerBrush),
+                            .background(headerFill)
+                            .border(1.dp, MaterialTheme.colorScheme.primary, headerShape),
                         contentAlignment = Alignment.Center
                     ) {
                         RegionPickerButton(
@@ -888,7 +889,7 @@ fun LandingScreen(
                             content = MaterialTheme.colorScheme.onPrimaryContainer,
                             border = Color.Transparent,
                             size = 40.dp,
-                            iconSize = 33.dp
+                            iconSize = 31.dp
                         )
                     }
                 }
@@ -1030,15 +1031,12 @@ fun LandingScreen(
                                 .width(46.dp)
                                 .fillMaxHeight()
                                 .clip(pickerShape)
+                                // The same flat tint as the tile beside it
                                 .background(
-                                    Brush.linearGradient(
-                                        listOf(
-                                            MaterialTheme.colorScheme.primaryContainer,
-                                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
-                                        )
-                                    )
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                                        .compositeOver(MaterialTheme.colorScheme.background)
                                 )
-                                .border(2.dp, MaterialTheme.colorScheme.primary, pickerShape),
+                                .border(1.dp, MaterialTheme.colorScheme.primary, pickerShape),
                             contentAlignment = Alignment.Center
                         ) {
                             RegionPickerButton(
@@ -1049,7 +1047,7 @@ fun LandingScreen(
                                 border = Color.Transparent,
                                 size = 40.dp,
                                 // A little smaller than the box, so the map outline clears the border top and bottom
-                                iconSize = 33.dp
+                                iconSize = 31.dp
                             )
                         }
                     }
@@ -1079,6 +1077,7 @@ fun LandingScreen(
                 // The region picker is above the floating cards too: they fold while it is showing
                 menuOpen = menuDrawerShowing || pickerState.visible,
                 // The dot-size slider belongs to the map, so only the Topography view has it
+                dotScale = if (homeTab == 0) pinScale else 1f,
                 legendExtra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) }
             )
         }
