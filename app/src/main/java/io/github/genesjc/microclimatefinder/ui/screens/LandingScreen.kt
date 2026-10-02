@@ -152,19 +152,30 @@ private fun MapControlButton(label: String, onClick: () -> Unit, modifier: Modif
 }
 
 /**
- * The row of small buttons at the map's top left: the menu at the left, the north indicator in the middle
- * (Topography only; on Elevation its place stays empty so nothing shifts) and the About (i) at the right.
+ * The row of small buttons at the map's top left. On Topography: the menu at the left, the north indicator in the
+ * middle and the About (i) at the right. On Elevation: the menu, then a Stations drop-down (the north indicator and
+ * the About button are not shown there). [stations] is only used by the drop-down.
  */
 @Composable
-private fun MapControlRow(showNorth: Boolean, onMenu: () -> Unit, onAbout: () -> Unit, modifier: Modifier = Modifier) {
+private fun MapControlRow(
+    onElevation: Boolean,
+    onMenu: () -> Unit,
+    onAbout: () -> Unit,
+    stations: List<MicroclimateStation> = emptyList(),
+    selectedStationId: String? = null,
+    onPickStation: (String) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     val blue = Color(0xFF0284C7)
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         MapControlButton("Open the menu", onMenu) {
             Text(text = "\u2630", fontSize = 18.sp, color = blue)
         }
-        // The north indicator, as a button-sized tile (not a button: it does nothing)
-        Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {
-            if (showNorth) {
+        if (onElevation) {
+            StationsDropdown(stations, selectedStationId, onPickStation)
+        } else {
+            // The north indicator, as a button-sized tile (not a button: it does nothing)
+            Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = Color.White.copy(alpha = 0.90f),
@@ -176,13 +187,65 @@ private fun MapControlRow(showNorth: Boolean, onMenu: () -> Unit, onAbout: () ->
                     }
                 }
             }
+            MapControlButton("About this app", onAbout) {
+                Box(
+                    modifier = Modifier.size(19.dp).border(1.8.dp, blue, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "i", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = blue)
+                }
+            }
         }
-        MapControlButton("About this app", onAbout) {
-            Box(
-                modifier = Modifier.size(19.dp).border(1.8.dp, blue, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "i", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = blue)
+    }
+}
+
+/** The Elevation view's "Stations" drop-down: every station by name; picking one makes it the selected station. */
+@Composable
+private fun StationsDropdown(stations: List<MicroclimateStation>, selectedStationId: String?, onPick: (String) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    val ink = Color(0xFF334155)
+    val sorted = remember(stations) { stations.sortedBy { it.name.lowercase() } }
+    Box {
+        // The same type as the Topography / Elevation buttons
+        Surface(
+            shape = RoundedCornerShape(6.dp),
+            color = Color.White.copy(alpha = 0.90f),
+            border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+            modifier = Modifier
+                .height(32.dp)
+                .clickable(onClickLabel = "Choose a station", role = Role.Button) { open = true }
+        ) {
+            Row(modifier = Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "Stations", fontSize = ms(9f), fontWeight = FontWeight.Bold, color = ink)
+                Text(text = " \u25BE", fontSize = ms(9f), fontWeight = FontWeight.Bold, color = ink)
+            }
+        }
+        val lightLook = MaterialTheme.colorScheme.background.luminance() > 0.5f
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            shape = RoundedCornerShape(12.dp),
+            containerColor = if (lightLook) Color(0xFFF1E2C4) else MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, if (lightLook) Color(0xFF3A2A1E).copy(alpha = 0.7f) else Color.White.copy(alpha = 0.25f)),
+            tonalElevation = 0.dp,
+            shadowElevation = 8.dp
+        ) {
+            sorted.forEach { station ->
+                val current = station.id == selectedStationId
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = station.name,
+                            fontSize = ms(9f),
+                            fontWeight = if (current) FontWeight.Bold else FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    onClick = {
+                        open = false
+                        onPick(station.id)
+                    }
+                )
             }
         }
     }
@@ -907,7 +970,7 @@ fun LandingScreen(
                     if (dataset == null) {
                         // No map to hold the buttons: the menu and About sit here
                         Spacer(modifier = Modifier.height(6.dp))
-                        MapControlRow(showNorth = false, onMenu = { scope.launch { drawerState.open() } }, onAbout = { showAboutDialog = true })
+                        MapControlRow(onElevation = false, onMenu = { scope.launch { drawerState.open() } }, onAbout = { showAboutDialog = true })
                         Spacer(modifier = Modifier.height(6.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -1053,7 +1116,10 @@ fun LandingScreen(
                     }
                     // Below the tile, at the left: the menu, the north indicator and the About button
                     MapControlRow(
-                        showNorth = homeTab == 0,
+                        onElevation = homeTab == 1,
+                        stations = snapshotStations,
+                        selectedStationId = selectedStationId,
+                        onPickStation = onStationSelected,
                         onMenu = { scope.launch { drawerState.open() } },
                         onAbout = { showAboutDialog = true },
                         modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
