@@ -2,6 +2,7 @@ package io.github.genesjc.microclimatefinder.ui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +35,8 @@ fun LegendItem(color: Color, label: String, dotScale: Float = 1f, dotSlot: Dp = 
         }
         Text(
             text = if (dotSlot > 8.dp) label else " $label",
+            // Beside the fixed slot: a little room so even the biggest dot never touches the label
+            modifier = if (dotSlot > 8.dp) Modifier.padding(start = 4.dp) else Modifier,
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium
