@@ -922,45 +922,18 @@ fun LandingScreen(
                                         modifier = Modifier.padding(start = 6.dp, end = 4.dp)
                                     )
                                 }
-                                // The info link at the right of the name's row; the sheet slides in from the right, the X takes its place
+                                // The region picker, at the right of the name's row (it belongs with the drop-down)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                val handleModifier = Modifier
-                                    .clickable(
-                                        onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
-                                        role = Role.Button
-                                    ) { if (infoOpen) closeInfo() else openInfo() }
-                                val handleColor = MaterialTheme.colorScheme.primary
-                                if (infoOpen) {
-                                    // A bold X, drawn so its weight and size are exact
-                                    Canvas(modifier = handleModifier.padding(horizontal = 2.dp, vertical = 6.5.dp).size(13.dp)) {
-                                        val stroke = 2.2.dp.toPx()
-                                        val inset = stroke / 2f
-                                        drawLine(
-                                            color = handleColor,
-                                            start = Offset(inset, inset),
-                                            end = Offset(size.width - inset, size.height - inset),
-                                            strokeWidth = stroke,
-                                            cap = StrokeCap.Round
-                                        )
-                                        drawLine(
-                                            color = handleColor,
-                                            start = Offset(size.width - inset, inset),
-                                            end = Offset(inset, size.height - inset),
-                                            strokeWidth = stroke,
-                                            cap = StrokeCap.Round
-                                        )
-                                    }
-                                } else {
-                                    Text(
-                                        text = "\u00AB Info",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontSize = 15.84.sp,
-                                        lineHeight = 22.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = handleColor,
-                                        modifier = handleModifier.padding(horizontal = 2.dp, vertical = 2.dp)
-                                    )
-                                }
+                                RegionPickerButton(
+                                    state = pickerState,
+                                    selectedRegionId = selectedRegionId,
+                                    // No chip behind the shape: it sits straight on the widget
+                                    background = Color.Transparent,
+                                    content = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    border = Color.Transparent,
+                                    size = 38.dp,
+                                    iconSize = 34.dp
+                                )
                             }
 
                         }
@@ -1026,29 +999,6 @@ fun LandingScreen(
                             }
                     }
 
-                    // Widget 3: the region picker, on its own. With station data it lives beside the station tile on the
-                    // map instead; here it stays for a region with no data (no map, no tile)
-                    if (dataset == null) Box(
-                        modifier = Modifier
-                            .width(52.dp)
-                            .height(HEADER_HEIGHT)
-                            .clip(headerShape)
-                            .background(headerFill)
-                            .border(1.dp, MaterialTheme.colorScheme.primary, headerShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        RegionPickerButton(
-                            state = pickerState,
-                            selectedRegionId = selectedRegionId,
-                            // No chip behind the shape: it sits straight on the widget (the shape's own colours and
-                            // opacity are unchanged)
-                            background = Color.Transparent,
-                            content = MaterialTheme.colorScheme.onPrimaryContainer,
-                            border = Color.Transparent,
-                            size = 40.dp,
-                            iconSize = 34.dp
-                        )
-                    }
                 }
             }
 
@@ -1177,7 +1127,8 @@ fun LandingScreen(
                             .padding(start = 6.dp, end = 6.dp, top = 5.dp)
                             .height(IntrinsicSize.Min)
                             .onSizeChanged { rowWidthPx = it.width },
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
@@ -1187,30 +1138,42 @@ fun LandingScreen(
                         ) {
                             if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
                         }
-                        // The California region picker, to the right of the tile, dressed like it
-                        val pickerShape = RoundedCornerShape(8.dp)
-                        Box(
-                            modifier = Modifier
-                                .width(46.dp)
-                                .fillMaxHeight()
-                                .clip(pickerShape)
-                                // The same flat tint as the tile beside it
-                                .background(
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-                                        .compositeOver(MaterialTheme.colorScheme.background)
+                        // The info link, on its own to the right of the station tile; the sheet slides in from the right, the X takes its place
+                        val handleModifier = Modifier
+                            .clickable(
+                                onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
+                                role = Role.Button
+                            ) { if (infoOpen) closeInfo() else openInfo() }
+                        val handleColor = MaterialTheme.colorScheme.primary
+                        if (infoOpen) {
+                            // A bold X, drawn so its weight and size are exact
+                            Canvas(modifier = handleModifier.padding(horizontal = 2.dp, vertical = 6.5.dp).size(13.dp)) {
+                                val stroke = 2.2.dp.toPx()
+                                val inset = stroke / 2f
+                                drawLine(
+                                    color = handleColor,
+                                    start = Offset(inset, inset),
+                                    end = Offset(size.width - inset, size.height - inset),
+                                    strokeWidth = stroke,
+                                    cap = StrokeCap.Round
                                 )
-                                .border(1.dp, MaterialTheme.colorScheme.primary, pickerShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            RegionPickerButton(
-                                state = pickerState,
-                                selectedRegionId = selectedRegionId,
-                                background = Color.Transparent,
-                                content = MaterialTheme.colorScheme.onPrimaryContainer,
-                                border = Color.Transparent,
-                                size = 40.dp,
-                                // A little smaller than the box, so the map outline clears the border top and bottom
-                                iconSize = 34.dp
+                                drawLine(
+                                    color = handleColor,
+                                    start = Offset(size.width - inset, inset),
+                                    end = Offset(inset, size.height - inset),
+                                    strokeWidth = stroke,
+                                    cap = StrokeCap.Round
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "\u00AB Info",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontSize = 15.84.sp,
+                                lineHeight = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = handleColor,
+                                modifier = handleModifier.padding(horizontal = 4.dp, vertical = 2.dp)
                             )
                         }
                     }
