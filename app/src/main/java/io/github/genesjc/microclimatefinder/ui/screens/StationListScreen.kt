@@ -167,7 +167,7 @@ fun StationListScreen(
                         isSelected = station.id == activeId,
                         // Tapping a card makes it the selected station for both map views; Back returns to the map
                         onSelect = { onStationSelected(station.id) },
-                        selectedLabel = "Showing on the map"
+                        selectedLabel = "Showing on map"
                     )
                 }
             }

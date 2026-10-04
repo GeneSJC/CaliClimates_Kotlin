@@ -120,10 +120,10 @@ fun StationCard(
         )
     ) {
         if (compact) CompactStationBody(station, terrainBadgeColor, display, compactFooter, compactHeaderAction, elevationNote) else Column(modifier = Modifier.padding(16.dp)) {
-            // Header row: Terrain Badge & Elevation
+            // Header row: the badge (and the selected mark) at the left take the room they need; the elevation text takes
+            // what is left and aligns to the right, wrapping inside its own space, so the two never overlap
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -145,7 +145,8 @@ fun StationCard(
                             text = "\u2713 $selectedLabel",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1
                         )
                     }
                 }
@@ -154,7 +155,9 @@ fun StationCard(
                     text = "${Elevation.describe(station.elevationMeters)}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                    modifier = Modifier.weight(1f).padding(start = 8.dp)
                 )
             }
 
