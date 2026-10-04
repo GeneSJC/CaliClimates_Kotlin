@@ -614,7 +614,7 @@ private fun ElevationProfileCanvas(
     var zoom by remember(sorted) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
 
-    // First visits: a pulse runs up the line once and a hint says the line can be tapped
+    // Every visit: a pulse runs up the line once. First launches only: a hint in words says the line can be tapped
     val hintContext = LocalContext.current
     val hintPrefs = remember { io.github.genesjc.microclimatefinder.data.local.ElevationHintPreferences(hintContext) }
     var showHint by remember { mutableStateOf(false) }
@@ -631,10 +631,14 @@ private fun ElevationProfileCanvas(
     }
     androidx.compose.runtime.LaunchedEffect(Unit) {
         hintPrefs.countLaunch()
-        if (hintPrefs.shouldShow()) {
-            showHint = true
-            kotlinx.coroutines.delay(700)
-            pulse.animateTo(1f, tween(2000, easing = androidx.compose.animation.core.LinearEasing))
+        // The ripple up the line plays on every visit to this view (it is the cue that the line can be tapped); the
+        // words of the hint show only on the first few launches, and stop at the first tap
+        val showWords = hintPrefs.shouldShow()
+        if (showWords) showHint = true
+        kotlinx.coroutines.delay(700)
+        pulse.snapTo(0f)
+        pulse.animateTo(1f, tween(2000, easing = androidx.compose.animation.core.LinearEasing))
+        if (showWords) {
             // The hint fades the whole time (see hintAlpha), so it is gone as the timeline ends
             kotlinx.coroutines.delay(3400)
             showHint = false
