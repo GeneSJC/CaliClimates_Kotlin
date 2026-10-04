@@ -138,6 +138,10 @@ fun StationMapScreen(
     sliderToggleTop: Dp = 52.dp,
     /** Home: 0 normally, 1 when the map has grown out into the page margins (the Elevation view); eased between. */
     expandT: Float = 0f,
+    /** Home: told whether the selected station is out of the visible map (panned away or zoomed past it). */
+    onSelectedOffscreenChange: ((Boolean) -> Unit)? = null,
+    /** Home: bumped to ask the map to bring the selected station back to the middle of the view. */
+    recenterTick: Int = 0,
 ) {
     val context = LocalContext.current
     val stations = remember(dataset) { StationRepository.stations(context, dataset) }
@@ -290,6 +294,8 @@ fun StationMapScreen(
                     onZoomChange = onZoomChange,
                     sliderToggleTop = sliderToggleTop,
                     expandT = expandT,
+                    onSelectedOffscreenChange = onSelectedOffscreenChange,
+                    recenterTick = recenterTick,
                     sliderShownShared = sliderShownShared,
                     onSliderShownChange = onSliderShownChange,
                     onSelectStation = {
@@ -466,6 +472,8 @@ private fun SpatialMapCanvas(
     onZoomChange: ((Float) -> Unit)? = null,
     sliderToggleTop: Dp = 52.dp,
     expandT: Float = 0f,
+    onSelectedOffscreenChange: ((Boolean) -> Unit)? = null,
+    recenterTick: Int = 0,
     sliderShownShared: Boolean? = null,
     onSliderShownChange: ((Boolean) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
@@ -573,10 +581,10 @@ private fun SpatialMapCanvas(
         fun mapX(lon: Double): Float = viewX(projection.baseX(lon))
         fun mapY(lat: Double): Float = viewY(projection.baseY(lat))
 
-        // When the selected station changes (from the Stations list, the tile or the other view) and it is not in
-        // view at this zoom and pan, ease the map over so it is
-        androidx.compose.runtime.LaunchedEffect(selectedStationId, stations) {
-            val st = stations.firstOrNull { it.id == selectedStationId } ?: return@LaunchedEffect
+        // Eases the map over so the selected station is in the middle of the view. Without [always] it does nothing when
+        // the station is already comfortably in view.
+        suspend fun bringSelectedIntoView(always: Boolean) {
+            val st = stations.firstOrNull { it.id == selectedStationId } ?: return
             val bx = projection.baseX(st.longitude)
             val by = projection.baseY(st.latitude)
             val vx = viewX(bx)
@@ -585,7 +593,7 @@ private fun SpatialMapCanvas(
             val topMargin = with(density) { (if (embedded) HOME_TILE_BAND + 24.dp else 40.dp).toPx() }
             val bottomMargin = with(density) { 40.dp.toPx() }
             val inView = vx in sideMargin..(canvasW - sideMargin) && vy in topMargin..(canvasH - bottomMargin)
-            if (inView) return@LaunchedEffect
+            if (inView && !always) return
             zoomJob?.cancel()
             val from = pan
             val target = clampPan(
@@ -596,6 +604,27 @@ private fun SpatialMapCanvas(
                 pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
             }
         }
+        // When the selected station changes (from the Stations list, the tile or the other view) and it is not in view
+        // at this zoom and pan, ease the map over so it is
+        androidx.compose.runtime.LaunchedEffect(selectedStationId, stations) { bringSelectedIntoView(always = false) }
+        // The locate button on Home asks for it explicitly
+        androidx.compose.runtime.LaunchedEffect(recenterTick) { if (recenterTick > 0) bringSelectedIntoView(always = true) }
+
+        // Whether the selected station is out of the visible map (panned away, zoomed past it, or under the station tile),
+        // reported to Home, which shows its locate button only then
+        val topHidden = if (embedded) with(density) { HOME_TILE_BAND.toPx() } else 0f
+        val selectedOffscreen by remember(selectedStationId, stations, projection, canvasW, canvasH) {
+            androidx.compose.runtime.derivedStateOf {
+                val st = stations.firstOrNull { it.id == selectedStationId }
+                if (st == null) false else {
+                    val x = viewX(projection.baseX(st.longitude))
+                    val y = viewY(projection.baseY(st.latitude))
+                    !(x in 0f..canvasW && y in topHidden..canvasH)
+                }
+            }
+        }
+        androidx.compose.runtime.LaunchedEffect(selectedOffscreen) { onSelectedOffscreenChange?.invoke(selectedOffscreen) }
+        androidx.compose.runtime.DisposableEffect(Unit) { onDispose { onSelectedOffscreenChange?.invoke(false) } }
 
         Canvas(
             modifier = Modifier

@@ -161,7 +161,9 @@ private fun MapControlButton(label: String, onClick: () -> Unit, modifier: Modif
 private fun MapControlRow(
     onElevation: Boolean,
     onMenu: () -> Unit,
-    onAbout: () -> Unit,
+    /** Topography only: shows the locate button (the selected station is out of view) and what it does when tapped. */
+    showLocate: Boolean = false,
+    onLocate: () -> Unit = {},
     stations: List<MicroclimateStation> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
@@ -188,12 +190,25 @@ private fun MapControlRow(
                     }
                 }
             }
-            MapControlButton("About this app", onAbout) {
-                Box(
-                    modifier = Modifier.size(19.dp).border(1.8.dp, blue, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "i", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = blue)
+            // The empty box (four corner brackets): brings the selected station back into view. It is only there while
+            // the selected station is out of the visible map (panned away, or zoomed in past it)
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showLocate,
+                enter = androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.fadeOut()
+            ) {
+                MapControlButton("Show the selected station", onLocate) {
+                    Canvas(modifier = Modifier.size(16.dp)) {
+                        val stroke = 2.dp.toPx()
+                        val arm = size.width * 0.38f
+                        val w = size.width
+                        val h = size.height
+                        fun line(a: Offset, b: Offset) = drawLine(blue, a, b, strokeWidth = stroke, cap = StrokeCap.Round)
+                        line(Offset(0f, 0f), Offset(arm, 0f)); line(Offset(0f, 0f), Offset(0f, arm))
+                        line(Offset(w, 0f), Offset(w - arm, 0f)); line(Offset(w, 0f), Offset(w, arm))
+                        line(Offset(0f, h), Offset(arm, h)); line(Offset(0f, h), Offset(0f, h - arm))
+                        line(Offset(w, h), Offset(w - arm, h)); line(Offset(w, h), Offset(w, h - arm))
+                    }
                 }
             }
         }
@@ -800,6 +815,9 @@ fun LandingScreen(
         label = "mapExpand"
     )
     var viewSwitchHeight by remember { mutableStateOf(34.dp) }
+    // Reported by the Topography map: is the selected station out of view; and a counter the locate button bumps
+    var selectedOffscreen by remember { mutableStateOf(false) }
+    var recenterTick by remember { mutableStateOf(0) }
     var rowWidthPx by remember { mutableStateOf(0) }
     var stationTileTopPx by remember { mutableStateOf(0f) }
     // The map zoom, kept across the Topography and Elevation views (a plain holder: no recomposition as it changes; a new region starts at 1x)
@@ -1032,7 +1050,7 @@ fun LandingScreen(
                     if (dataset == null) {
                         // No map to hold the buttons: the menu and About sit here
                         Spacer(modifier = Modifier.height(6.dp))
-                        MapControlRow(onElevation = false, onMenu = { scope.launch { drawerState.open() } }, onAbout = { showAboutDialog = true })
+                        MapControlRow(onElevation = false, onMenu = { scope.launch { drawerState.open() } })
                         Spacer(modifier = Modifier.height(6.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -1130,7 +1148,9 @@ fun LandingScreen(
                             onSliderShownChange = onSliderShownChange,
                             // The slider's arrow button sits 4 dp under the view buttons, whatever their height
                             sliderToggleTop = 21.dp + HOME_TILE_BAND + viewSwitchHeight + 4.dp,
-                            expandT = expandT
+                            expandT = expandT,
+                            onSelectedOffscreenChange = { selectedOffscreen = it },
+                            recenterTick = recenterTick
                         )
                     } else {
                         ElevationProfileScreen(
@@ -1223,7 +1243,8 @@ fun LandingScreen(
                             selectedStationId = selectedStationId,
                             onPickStation = onStationSelected,
                             onMenu = { scope.launch { drawerState.open() } },
-                            onAbout = { showAboutDialog = true },
+                            showLocate = selectedOffscreen && homeTab == 0,
+                            onLocate = { recenterTick++ },
                             modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
                         )
                         // The two view buttons keep their places at the top right: Elevation, then Topography at the edge, as

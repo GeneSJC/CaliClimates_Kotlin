@@ -95,12 +95,11 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
     var selectedRegionId by remember { mutableStateOf(regionPrefs.load()) }
     // Tell the backdrop which region is selected, so it can take on the region's tint
     LaunchedEffect(selectedRegionId) { onRegionChanged(selectedRegionId) }
-    // A soft tick when the region changes (not when the app first opens), so the change is felt as well as seen
-    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    // A click when the region changes (not when the app first opens), so the change is felt as well as seen
     var firstRegion by remember { mutableStateOf(true) }
     LaunchedEffect(selectedRegionId) {
         if (firstRegion) firstRegion = false
-        else haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+        else io.github.genesjc.microclimatefinder.ui.components.RegionHaptics.tick(context)
     }
 
     // Station data per region: a CSV override in assets, else the region's bundled pack
