@@ -152,7 +152,8 @@ fun StationMapScreen(
     val terrain by produceState<TerrainImage?>(null, dataset.regionId) {
         value = withContext(Dispatchers.IO) { TerrainMaps.load(context, dataset.regionId) }
     }
-    var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
+    // Keyed to the data, so a region change starts from that region's first station and not the old region's id
+    var localSelectedId by remember(stations) { mutableStateOf(stations.firstOrNull()?.id) }
     val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
     var localPinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
     val pinScale = sharedPinScale ?: localPinScale
@@ -481,6 +482,9 @@ private fun SpatialMapCanvas(
 ) {
     if (stations.isEmpty()) return
 
+    // The selected station; when none is selected yet (or the id is not in this region) Home shows the first one, so this does too
+    val selectedStation = stations.firstOrNull { it.id == selectedStationId } ?: stations.firstOrNull()
+
     // Geographic bounding box with a margin of 8%
     val rawMinLat = remember(stations) { stations.minOf { it.latitude } }
     val rawMaxLat = remember(stations) { stations.maxOf { it.latitude } }
@@ -585,7 +589,7 @@ private fun SpatialMapCanvas(
         // Eases the map over so the selected station is in the middle of the view. Without [always] it does nothing when
         // the station is already comfortably in view.
         suspend fun bringSelectedIntoView(always: Boolean) {
-            val st = stations.firstOrNull { it.id == selectedStationId } ?: return
+            val st = selectedStation ?: return
             val bx = projection.baseX(st.longitude)
             val by = projection.baseY(st.latitude)
             val vx = viewX(bx)
@@ -614,16 +618,13 @@ private fun SpatialMapCanvas(
         // Whether the selected station is out of the visible map (panned away, zoomed past it, or under the station tile),
         // reported to Home, which shows its locate button only then
         val topHidden = if (embedded) with(density) { HOME_TILE_BAND.toPx() } else 0f
-        val selectedOffscreen by remember(selectedStationId, stations, projection, canvasW, canvasH) {
-            androidx.compose.runtime.derivedStateOf {
-                val st = stations.firstOrNull { it.id == selectedStationId }
-                if (st == null) false else {
-                    val x = viewX(projection.baseX(st.longitude))
-                    val y = viewY(projection.baseY(st.latitude))
-                    !(x in 0f..canvasW && y in topHidden..canvasH)
-                }
-            }
-        }
+        // Worked out directly from the current zoom and pan on every change (the label placement below already runs
+        // that often), so it can never lag behind or hold on to old values
+        val selectedOffscreen = selectedStation?.let { st ->
+            val x = viewX(projection.baseX(st.longitude))
+            val y = viewY(projection.baseY(st.latitude))
+            !(x in 0f..canvasW && y in topHidden..canvasH)
+        } ?: false
         androidx.compose.runtime.LaunchedEffect(selectedOffscreen) { onSelectedOffscreenChange?.invoke(selectedOffscreen) }
         androidx.compose.runtime.DisposableEffect(Unit) { onDispose { onSelectedOffscreenChange?.invoke(false) } }
 
