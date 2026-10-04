@@ -730,7 +730,9 @@ private fun ElevationProfileCanvas(
         modifier = Modifier
             .fillMaxSize()
             .clipToBounds()
-            .pointerInput(Unit) {
+            // Keyed to the data: zoom and pan are remembered per region, so when the region changes they are new state objects
+            // and the handlers must restart to use them (with a fixed key they kept writing to the old ones and touch stopped working)
+            .pointerInput(sorted) {
                 // Pinch to zoom in on the profile, drag to pan
                 detectTransformGestures { centroid, panChange, zoomChange, _ ->
                     val w = size.width.toFloat()
@@ -741,7 +743,7 @@ private fun ElevationProfileCanvas(
                     zoom = newZoom
                 }
             }
-            .pointerInput(Unit) {
+            .pointerInput(sorted) {
                 // Double-tap: zoom in on the spot, and back out once fully zoomed
                 detectTapGestures(onDoubleTap = { spot ->
                     val w = size.width.toFloat()

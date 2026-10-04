@@ -526,7 +526,9 @@ private fun SpatialMapCanvas(
         modifier = Modifier
             .fillMaxSize()
             .clipToBounds()
-            .pointerInput(Unit) {
+            // Keyed to the data: zoom and pan are remembered per region, so when the region changes they are new state objects
+            // and the handlers must restart to use them (with a fixed key they kept writing to the old ones and touch stopped working)
+            .pointerInput(stations) {
                 // Pinch to zoom, drag to pan
                 detectTransformGestures { centroid, panChange, zoomChange, _ ->
                     val w = size.width.toFloat()
@@ -539,7 +541,7 @@ private fun SpatialMapCanvas(
                     zoom = newZoom
                 }
             }
-            .pointerInput(Unit) {
+            .pointerInput(stations) {
                 // Double-tap: zoom in on the spot, and back out to the full map once fully zoomed
                 detectTapGestures(onDoubleTap = { spot ->
                     val w = size.width.toFloat()

@@ -36,7 +36,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** How long the app's name stays fully showing before the intro fades out (long for now, for presentations). */
-private const val INTRO_HOLD_MS = 2500L
+private const val INTRO_HOLD_MS = 4500L
 
 /**
  * The opening view: it picks up where the system splash screen leaves off (the round icon, centred, on the
@@ -106,7 +106,7 @@ fun IntroOverlay(onDone: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Explore California's microclimates",
+                    text = "Explore California's Climates",
                     color = Color(0xFFBAE6FD),
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center
