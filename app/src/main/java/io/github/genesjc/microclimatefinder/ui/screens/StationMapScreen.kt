@@ -101,6 +101,7 @@ import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.MapText
 import io.github.genesjc.microclimatefinder.ui.components.HOME_TILE_BAND
+import io.github.genesjc.microclimatefinder.ui.components.BRING_INTO_VIEW_MS
 import io.github.genesjc.microclimatefinder.ui.components.SliderToggleButton
 import io.github.genesjc.microclimatefinder.ui.components.ms
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
@@ -600,7 +601,7 @@ private fun SpatialMapCanvas(
                 Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
                 zoom, canvasW, canvasH, overscroll = MAP_OVERSCROLL
             )
-            androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(350, easing = FastOutSlowInEasing)) { v, _ ->
+            androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(BRING_INTO_VIEW_MS, easing = FastOutSlowInEasing)) { v, _ ->
                 pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
             }
         }
