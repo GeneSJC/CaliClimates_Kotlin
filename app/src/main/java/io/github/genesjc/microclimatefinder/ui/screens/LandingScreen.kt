@@ -28,7 +28,7 @@ import io.github.genesjc.microclimatefinder.ui.components.LegendItem
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
 import io.github.genesjc.microclimatefinder.ui.components.StationSummaryTile
-import io.github.genesjc.microclimatefinder.ui.components.MapViewSwitch
+import io.github.genesjc.microclimatefinder.ui.components.MapViewButton
 import io.github.genesjc.microclimatefinder.ui.components.HeroTile
 import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
@@ -165,6 +165,9 @@ private fun MapControlRow(
     stations: List<MicroclimateStation> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
+    /** Home's map row also holds the Elevation view button; null leaves it out. */
+    viewSelected: Int? = null,
+    onSelectView: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val blue = Color(0xFF0284C7)
@@ -197,6 +200,8 @@ private fun MapControlRow(
                 }
             }
         }
+        // The Elevation view button, last in the row, level with the (i) button; the Topography button is at the top right
+        if (viewSelected != null) MapViewButton("Elevation", 1, viewSelected, onSelectView)
     }
 }
 
@@ -1218,9 +1223,13 @@ fun LandingScreen(
                             onPickStation = onStationSelected,
                             onMenu = { scope.launch { drawerState.open() } },
                             onAbout = { showAboutDialog = true },
+                            viewSelected = homeTab,
+                            onSelectView = onHomeTabChange,
                             modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
                         )
-                        MapViewSwitch(
+                        MapViewButton(
+                            label = "Topography",
+                            index = 0,
                             selected = homeTab,
                             onSelect = onHomeTabChange,
                             // Top right, the same place on both views, above the zoom slider

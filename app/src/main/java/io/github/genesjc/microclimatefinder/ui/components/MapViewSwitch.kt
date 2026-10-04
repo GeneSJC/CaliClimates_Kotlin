@@ -2,8 +2,6 @@ package io.github.genesjc.microclimatefinder.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -16,27 +14,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Two small buttons on the map that switch between its Topography and Elevation views. */
+/**
+ * One of the two view buttons on the map (Topography is index 0, Elevation is index 1). The selected one is dark,
+ * the other white. Home places them separately: Topography at the top right, Elevation in the row of controls at the
+ * top left.
+ */
 @Composable
-fun MapViewSwitch(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        // Shown Elevation first, then Topography; the indices stay 0 = Topography, 1 = Elevation
-        listOf("Elevation" to 1, "Topography" to 0).forEach { (label, index) ->
-            val on = index == selected
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = if (on) Color(0xFF334155) else Color.White.copy(alpha = 0.90f),
-                border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                modifier = Modifier.clickable(onClickLabel = "Show the $label view", role = Role.Tab) { onSelect(index) }
-            ) {
-                Text(
-                    text = label,
-                    fontSize = ms(9f),
-                    fontWeight = FontWeight.Bold,
-                    color = if (on) Color.White else Color(0xFF334155),
-                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
-                )
-            }
-        }
+fun MapViewButton(label: String, index: Int, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val on = index == selected
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = if (on) Color(0xFF334155) else Color.White.copy(alpha = 0.90f),
+        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        modifier = modifier.clickable(onClickLabel = "Show the $label view", role = Role.Tab) { onSelect(index) }
+    ) {
+        Text(
+            text = label,
+            fontSize = ms(9f),
+            fontWeight = FontWeight.Bold,
+            color = if (on) Color.White else Color(0xFF334155),
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
+        )
     }
 }
