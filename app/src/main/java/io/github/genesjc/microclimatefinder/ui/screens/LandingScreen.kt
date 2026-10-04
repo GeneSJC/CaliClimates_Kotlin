@@ -165,9 +165,6 @@ private fun MapControlRow(
     stations: List<MicroclimateStation> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
-    /** Home's map row also holds the Elevation view button; null leaves it out. */
-    viewSelected: Int? = null,
-    onSelectView: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val blue = Color(0xFF0284C7)
@@ -200,8 +197,6 @@ private fun MapControlRow(
                 }
             }
         }
-        // The Elevation view button, last in the row, level with the (i) button; the Topography button is at the top right
-        if (viewSelected != null) MapViewButton("Elevation", 1, viewSelected, onSelectView)
     }
 }
 
@@ -1176,33 +1171,18 @@ fun LandingScreen(
                             // The info link, on its own to the right of the station tile; the sheet slides in from the right, the X takes
                             // its place. Topography only: the Elevation view has no Region Info, so the tile takes the whole width there
                             if (homeTab == 0) {
-                                val handleModifier = Modifier
-                                    .clickable(
-                                        onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
-                                        role = Role.Button
-                                    ) { if (infoOpen) closeInfo() else openInfo() }
                                 val handleColor = MaterialTheme.colorScheme.primary
-                                if (infoOpen) {
-                                    // A bold X, drawn so its weight and size are exact
-                                    Canvas(modifier = handleModifier.padding(horizontal = 2.dp, vertical = 6.5.dp).size(13.dp)) {
-                                        val stroke = 2.2.dp.toPx()
-                                        val inset = stroke / 2f
-                                        drawLine(
-                                            color = handleColor,
-                                            start = Offset(inset, inset),
-                                            end = Offset(size.width - inset, size.height - inset),
-                                            strokeWidth = stroke,
-                                            cap = StrokeCap.Round
-                                        )
-                                        drawLine(
-                                            color = handleColor,
-                                            start = Offset(size.width - inset, inset),
-                                            end = Offset(inset, size.height - inset),
-                                            strokeWidth = stroke,
-                                            cap = StrokeCap.Round
-                                        )
-                                    }
-                                } else {
+                                // The link text always takes its space (hidden while the X shows), so the station tile beside it
+                                // keeps one width and does not grow when the link becomes the X
+                                Box(
+                                    modifier = Modifier
+                                        .clickable(
+                                            onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
+                                            role = Role.Button
+                                        ) { if (infoOpen) closeInfo() else openInfo() }
+                                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Text(
                                         text = "\u00AB Info",
                                         style = MaterialTheme.typography.titleLarge,
@@ -1210,8 +1190,29 @@ fun LandingScreen(
                                         lineHeight = 22.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = handleColor,
-                                        modifier = handleModifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                        modifier = Modifier.alpha(if (infoOpen) 0f else 1f)
                                     )
+                                    if (infoOpen) {
+                                        // A bold X, drawn so its weight and size are exact
+                                        Canvas(modifier = Modifier.size(13.dp)) {
+                                            val stroke = 2.2.dp.toPx()
+                                            val inset = stroke / 2f
+                                            drawLine(
+                                                color = handleColor,
+                                                start = Offset(inset, inset),
+                                                end = Offset(size.width - inset, size.height - inset),
+                                                strokeWidth = stroke,
+                                                cap = StrokeCap.Round
+                                            )
+                                            drawLine(
+                                                color = handleColor,
+                                                start = Offset(size.width - inset, inset),
+                                                end = Offset(inset, size.height - inset),
+                                                strokeWidth = stroke,
+                                                cap = StrokeCap.Round
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1223,21 +1224,28 @@ fun LandingScreen(
                             onPickStation = onStationSelected,
                             onMenu = { scope.launch { drawerState.open() } },
                             onAbout = { showAboutDialog = true },
-                            viewSelected = homeTab,
-                            onSelectView = onHomeTabChange,
                             modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
                         )
-                        MapViewButton(
-                            label = "Topography",
-                            index = 0,
-                            selected = homeTab,
-                            onSelect = onHomeTabChange,
-                            // Top right, the same place on both views, above the zoom slider
+                        // The two view buttons keep their old horizontal places at the top right (Elevation at the edge, Topography
+                        // beside it). Elevation is level with the row of controls; Topography sits 9 dp lower, a small offset
+                        Row(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(end = 12.dp, top = 21.dp + HOME_TILE_BAND)
-                                .onSizeChanged { viewSwitchHeight = with(mapDensity) { it.height.toDp() } }
-                        )
+                                .padding(end = 12.dp, top = 12.dp + HOME_TILE_BAND),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            MapViewButton(
+                                label = "Topography",
+                                index = 0,
+                                selected = homeTab,
+                                onSelect = onHomeTabChange,
+                                modifier = Modifier
+                                    .padding(top = 9.dp)
+                                    .onSizeChanged { viewSwitchHeight = with(mapDensity) { it.height.toDp() } }
+                            )
+                            MapViewButton(label = "Elevation", index = 1, selected = homeTab, onSelect = onHomeTabChange)
+                        }
                     }
                 }
             }
