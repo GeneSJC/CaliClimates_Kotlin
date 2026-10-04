@@ -1226,8 +1226,8 @@ fun LandingScreen(
                             onAbout = { showAboutDialog = true },
                             modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
                         )
-                        // The two view buttons keep their old horizontal places at the top right (Elevation at the edge, Topography
-                        // beside it). Elevation is level with the row of controls; Topography sits 9 dp lower, a small offset
+                        // The two view buttons keep their places at the top right: Elevation, then Topography at the edge, as
+                        // before. Elevation is raised to the row of controls; Topography stays 9 dp lower, a small offset
                         Row(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
@@ -1235,6 +1235,7 @@ fun LandingScreen(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.Top
                         ) {
+                            MapViewButton(label = "Elevation", index = 1, selected = homeTab, onSelect = onHomeTabChange)
                             MapViewButton(
                                 label = "Topography",
                                 index = 0,
@@ -1244,7 +1245,6 @@ fun LandingScreen(
                                     .padding(top = 9.dp)
                                     .onSizeChanged { viewSwitchHeight = with(mapDensity) { it.height.toDp() } }
                             )
-                            MapViewButton(label = "Elevation", index = 1, selected = homeTab, onSelect = onHomeTabChange)
                         }
                     }
                 }
