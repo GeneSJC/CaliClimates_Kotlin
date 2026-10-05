@@ -92,6 +92,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import io.github.genesjc.microclimatefinder.ui.components.TerrainLegendCard
 import androidx.compose.ui.graphics.luminance
@@ -818,6 +822,7 @@ fun LandingScreen(
     // Reported by the Topography map: is the selected station out of view; and a counter the locate button bumps
     var selectedOffscreen by remember { mutableStateOf(false) }
     var recenterTick by remember { mutableStateOf(0) }
+    val snackbarHostState = remember { SnackbarHostState() }
     var rowWidthPx by remember { mutableStateOf(0) }
     var stationTileTopPx by remember { mutableStateOf(0f) }
     // The map zoom, kept across the Topography and Elevation views (a plain holder: no recomposition as it changes; a new region starts at 1x)
@@ -1244,7 +1249,17 @@ fun LandingScreen(
                             onPickStation = onStationSelected,
                             onMenu = { scope.launch { drawerState.open() } },
                             showLocate = selectedOffscreen && homeTab == 0,
-                            onLocate = { recenterTick++ },
+                            onLocate = {
+                                recenterTick++
+                                // A short note at the bottom says what the button just did, so its meaning is learned in use
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar(
+                                        message = "Centering the map on ${shown?.name ?: "the selected station"}",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            },
                             modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
                         )
                         // The two view buttons keep their places at the top right: Elevation, then Topography at the edge, as
@@ -1283,6 +1298,19 @@ fun LandingScreen(
                 // The dot-size slider belongs to the map, so only the Topography view has it
                 dotScale = if (homeTab == 0) pinScale else 1f,
                 legendExtra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) }
+            )
+        }
+
+        // Short messages at the bottom (for example what the locate button just did)
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 14.dp)
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                shape = RoundedCornerShape(8.dp),
+                containerColor = Color(0xFF1E293B),
+                contentColor = Color.White
             )
         }
 
