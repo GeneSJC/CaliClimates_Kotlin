@@ -47,11 +47,15 @@ fun StationListScreen(
     selectedRegionId: String,
     onSelectRegion: (String) -> Unit,
     onNavigateBack: () -> Unit,
+    /** The station selected on Home (the same one both map views use), and a way to change it from here. */
+    selectedStationId: String?,
+    onStationSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val stations = remember(dataset) { StationRepository.stations(context, dataset) }
-    var selectedStationId by remember { mutableStateOf<String?>(null) }
+    // Home shows the first station when none has been picked; the list marks the same one
+    val activeId = stations.firstOrNull { it.id == selectedStationId }?.id ?: stations.firstOrNull()?.id
     val pickerState = rememberRegionPickerState()
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -147,18 +151,23 @@ fun StationListScreen(
                 )
             }
         } else {
+            // Opens with the selected station in view
+            val listState = androidx.compose.foundation.lazy.rememberLazyListState(
+                initialFirstVisibleItemIndex = stations.indexOfFirst { it.id == activeId }.coerceAtLeast(0)
+            )
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp),
+                contentPadding = PaddingValues(bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(stations, key = { it.id }) { station ->
                     StationCard(
                         station = station,
-                        isSelected = station.id == selectedStationId,
-                        onSelect = {
-                            selectedStationId = if (selectedStationId == station.id) null else station.id
-                        }
+                        isSelected = station.id == activeId,
+                        // Tapping a card makes it the selected station for both map views; Back returns to the map
+                        onSelect = { onStationSelected(station.id) },
+                        selectedLabel = "Showing on map"
                     )
                 }
             }

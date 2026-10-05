@@ -86,6 +86,9 @@ import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.MapText
+import io.github.genesjc.microclimatefinder.ui.components.HOME_TILE_BAND
+import io.github.genesjc.microclimatefinder.ui.components.BRING_INTO_VIEW_MS
+import io.github.genesjc.microclimatefinder.ui.components.SliderToggleButton
 import io.github.genesjc.microclimatefinder.ui.components.ms
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
@@ -106,7 +109,10 @@ private const val CHART_PADDING_PX = 32f
 
 // The profile sits between a little headroom and sea level; the bottom of the chart is ocean, so sea level
 // is in view and the cities spread over more of the height
-private const val PROFILE_HEAD = 0.05f
+private const val PROFILE_HEAD = 0.15f
+// The slider's height on Home, as a share of the room below its arrow button (Topography uses 0.8)
+private const val ELEVATION_SLIDER_FRACTION = 0.64f
+
 private const val SEA_FRACTION = 0.126f
 
 /** Where (0 at the chart's top, 1 at its bottom) a height, as a share of the highest station, is drawn. */
@@ -203,6 +209,11 @@ fun ElevationProfileScreen(
     /** The zoom to start at, and a report of each change (Home keeps the zoom when it switches views). */
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
+    /** Whether the slider shows, when Home owns it (one setting for both map views), and a report of changes. */
+    sliderShownShared: Boolean? = null,
+    onSliderShownChange: ((Boolean) -> Unit)? = null,
+    /** Home: 0 normally, 1 when the chart has grown out into the page margins (this view); eased between. */
+    expandT: Float = 0f,
 ) {
     val context = LocalContext.current
     val stations = remember(dataset) { StationRepository.stations(context, dataset) }
@@ -230,7 +241,8 @@ fun ElevationProfileScreen(
     var aboveChartPx by remember { mutableStateOf(0) }
     var belowChartPx by remember { mutableStateOf(0) }
     val density = LocalDensity.current
-    val verticalPadding = if (embedded) 16.dp else 32.dp
+    // Embedded: just the 5 dp left under the chart, which goes to 0 as it grows out to the screen bottom
+    val verticalPadding = if (embedded) 5.dp * (1f - expandT) else 32.dp
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     // Expanded height: the screen less the padding and everything above and below the chart
     val expandedHeight = with(density) {
@@ -244,7 +256,7 @@ fun ElevationProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 16.dp) else PaddingValues(16.dp))
+            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 5.dp * (1f - expandT)) else PaddingValues(16.dp))
             .verticalScroll(rememberScrollState())
     ) {
         Column(modifier = Modifier.onSizeChanged { aboveChartPx = it.height }) {
@@ -305,7 +317,8 @@ fun ElevationProfileScreen(
         // Elevation chart, with its Expand / Shrink toggle
         Box(modifier = Modifier.fillMaxWidth().height(chartHeight)) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                // The bottom corners square off as the chart grows out to the screen edges
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp * (1f - expandT), bottomEnd = 16.dp * (1f - expandT)),
                 // An opaque base (the old tint, laid over the page colour) so the backdrop's relief does not show through the chart
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f).compositeOver(MaterialTheme.colorScheme.background),
                 // A 1dp outline, for a crisper edge
@@ -318,9 +331,12 @@ fun ElevationProfileScreen(
                     terrain = terrain,
                     skyline = skyline,
                     embedded = embedded,
+                    expandT = expandT,
                     selectedStationId = selectedStationId,
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,
+                    sliderShownShared = sliderShownShared,
+                    onSliderShownChange = onSliderShownChange,
                     onSelectStation = {
                         localSelectedId = it.id
                         onStationSelected?.invoke(it.id)
@@ -563,9 +579,12 @@ private fun ElevationProfileCanvas(
     terrain: TerrainImage?,
     skyline: List<FloatArray>?,
     embedded: Boolean,
+    expandT: Float = 0f,
     selectedStationId: String?,
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
+    sliderShownShared: Boolean? = null,
+    onSliderShownChange: ((Boolean) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
@@ -584,11 +603,19 @@ private fun ElevationProfileCanvas(
         rankedLandmarks.take(LANDMARK_COUNT).sorted().map { sorted[it].id }
     }
 
+    // On Home the slider can be tucked away with the small arrow button under the menu button (pinch still zooms)
+    var localSliderShown by remember { mutableStateOf(true) }
+    val sliderShown = sliderShownShared ?: localSliderShown
+    val setSliderShown: (Boolean) -> Unit = { localSliderShown = it; onSliderShownChange?.invoke(it) }
+    val sliderCollapsible = embedded
+    // The slider starts lower on Home, to leave room for that button
+    val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + 32.dp else 0.dp)
+
     // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
     var zoom by remember(sorted) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
 
-    // First visits: a pulse runs up the line once and a hint says the line can be tapped
+    // Every visit: a pulse runs up the line once. First launches only: a hint in words says the line can be tapped
     val hintContext = LocalContext.current
     val hintPrefs = remember { io.github.genesjc.microclimatefinder.data.local.ElevationHintPreferences(hintContext) }
     var showHint by remember { mutableStateOf(false) }
@@ -605,10 +632,14 @@ private fun ElevationProfileCanvas(
     }
     androidx.compose.runtime.LaunchedEffect(Unit) {
         hintPrefs.countLaunch()
-        if (hintPrefs.shouldShow()) {
-            showHint = true
-            kotlinx.coroutines.delay(700)
-            pulse.animateTo(1f, tween(2000, easing = androidx.compose.animation.core.LinearEasing))
+        // The ripple up the line plays on every visit to this view (it is the cue that the line can be tapped); the
+        // words of the hint show only on the first few launches, and stop at the first tap
+        val showWords = hintPrefs.shouldShow()
+        if (showWords) showHint = true
+        kotlinx.coroutines.delay(700)
+        pulse.snapTo(0f)
+        pulse.animateTo(1f, tween(2000, easing = androidx.compose.animation.core.LinearEasing))
+        if (showWords) {
             // The hint fades the whole time (see hintAlpha), so it is gone as the timeline ends
             kotlinx.coroutines.delay(3400)
             showHint = false
@@ -704,7 +735,9 @@ private fun ElevationProfileCanvas(
         modifier = Modifier
             .fillMaxSize()
             .clipToBounds()
-            .pointerInput(Unit) {
+            // Keyed to the data: zoom and pan are remembered per region, so when the region changes they are new state objects
+            // and the handlers must restart to use them (with a fixed key they kept writing to the old ones and touch stopped working)
+            .pointerInput(sorted) {
                 // Pinch to zoom in on the profile, drag to pan
                 detectTransformGestures { centroid, panChange, zoomChange, _ ->
                     val w = size.width.toFloat()
@@ -715,7 +748,7 @@ private fun ElevationProfileCanvas(
                     zoom = newZoom
                 }
             }
-            .pointerInput(Unit) {
+            .pointerInput(sorted) {
                 // Double-tap: zoom in on the spot, and back out once fully zoomed
                 detectTapGestures(onDoubleTap = { spot ->
                     val w = size.width.toFloat()
@@ -741,15 +774,43 @@ private fun ElevationProfileCanvas(
         fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
         val dotGrowth = zoomDotGrowth(zoom)
 
+        // When the selected station changes (from the Stations list, the tile or the other view) and it is not in
+        // view at this zoom and pan, ease the chart over so it is
+        androidx.compose.runtime.LaunchedEffect(selectedStationId, sorted) {
+            val idx = sorted.indexOfFirst { it.id == selectedStationId }
+            if (idx < 0) return@LaunchedEffect
+            val bx = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
+            val by = paddingPx + profileFrac(sorted[idx].elevationMeters / maxElevation) * heightPx
+            val vx = viewX(bx)
+            val vy = viewY(by)
+            val sideMargin = with(density) { 48.dp.toPx() }
+            val topMargin = with(density) { (if (embedded) HOME_TILE_BAND + 24.dp else 40.dp).toPx() }
+            val bottomMargin = with(density) { 40.dp.toPx() }
+            val inView = vx in sideMargin..(canvasW - sideMargin) && vy in topMargin..(canvasH - bottomMargin)
+            if (inView) return@LaunchedEffect
+            zoomJob?.cancel()
+            val from = pan
+            val target = clampPan(
+                Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
+                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX
+            )
+            androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(BRING_INTO_VIEW_MS, easing = FastOutSlowInEasing)) { v, _ ->
+                pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
+            }
+        }
+
         // Which labels have room at this zoom: more as the profile spreads out. Only the target (room
         // or no room) is decided here; each label's opacity eases toward it on its own.
         val placedLabels = run {
             val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
             val taken = mutableListOf(
-                listOf(widthDp.value - 46f, 56f, widthDp.value, heightDp.value), // zoom slider
-                if (embedded) listOf(widthDp.value - 170f, 0f, widthDp.value, 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+                if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
+                if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + 50f) else listOf(0f, 0f, 0f, 0f),  // Home's control row
+                if (embedded) listOf(0f, HOME_TILE_BAND.value + 50f, 46f, HOME_TILE_BAND.value + 82f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
+                if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) ELEVATION_SLIDER_FRACTION else 1f)), // zoom slider (at the left)
+                if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
-                listOf(20f, 50f, 190f, 97f)               // weather badge
+                listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
             fun plan(idx: Int, allow: Boolean, force: Boolean): PlacedLabel? {
@@ -1244,7 +1305,7 @@ private fun ElevationProfileCanvas(
             color = skyTheme.badgeBg.copy(alpha = 0.85f),
             border = BorderStroke(1.dp, skyTheme.accent.copy(alpha = 0.45f)),
             modifier = Modifier
-                .offset(x = 52.dp, y = 50.dp)
+                .offset(x = 52.dp + 5.dp * expandT, y = 50.dp + (if (embedded) HOME_TILE_BAND else 0.dp))
                 .clickable {
                     // Tap to cycle landmarks
                     if (cycleIds.isNotEmpty()) {
@@ -1334,8 +1395,18 @@ private fun ElevationProfileCanvas(
                 }
                 .minByOrNull { (it - middle).getDistance() } ?: middle
         }
+        // The arrow button under the menu button: up while the slider shows (tap to tuck it away), down when hidden
+        if (sliderCollapsible) {
+            SliderToggleButton(
+                shown = sliderShown,
+                onToggle = { setSliderShown(!sliderShown) },
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp + 5.dp * expandT, top = 50.dp + HOME_TILE_BAND)
+            )
+        }
         // For now the slider sets the type size instead of the zoom (see MapText)
-        if (MapText.SLIDER_SETS_FONT) {
+        if (sliderCollapsible && !sliderShown) {
+            // hidden: pinch and double-tap still zoom
+        } else if (MapText.SLIDER_SETS_FONT) {
             ZoomSlider(
                 value = MapText.scale,
                 onValueChange = { MapText.scale = it },
@@ -1344,9 +1415,10 @@ private fun ElevationProfileCanvas(
                 caption = "FONT",
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(top = 56.dp, start = 4.dp, bottom = 4.dp)
+                    .padding(top = sliderTop, start = 4.dp + 5.dp * expandT, bottom = 4.dp)
                     .width(40.dp)
-                    .fillMaxHeight()
+                    // Another 20% shorter than Topography's on Home (so the chart's bottom-left corner stays clear); the top stays under the arrow button
+                .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)
             )
         } else ZoomSlider(
             value = zoom,
@@ -1360,9 +1432,10 @@ private fun ElevationProfileCanvas(
             // At the left here (the chart has no use for that side); its top stays put, the bottom follows the chart
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(top = 56.dp, start = 4.dp, bottom = 4.dp)
+                .padding(top = sliderTop, start = 4.dp + 5.dp * expandT, bottom = 4.dp)
                 .width(40.dp)
-                .fillMaxHeight()
+                // Another 20% shorter than Topography's on Home (so the chart's bottom-left corner stays clear); the top stays under the arrow button
+                .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)
         )
     }
 }

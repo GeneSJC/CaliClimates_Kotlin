@@ -87,18 +87,19 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
     var homeStationId by remember { mutableStateOf<String?>(null) }
     // The Topo Map's dot size, set in the Terrain Legend panel on Home
     var homePinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
+    // Whether the maps' zoom slider is showing: one setting for both map views, kept across trips off Home
+    var homeSliderShown by remember { mutableStateOf(true) }
     val context = LocalContext.current
     // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
     val regionPrefs = remember { RegionPreferences(context) }
     var selectedRegionId by remember { mutableStateOf(regionPrefs.load()) }
     // Tell the backdrop which region is selected, so it can take on the region's tint
     LaunchedEffect(selectedRegionId) { onRegionChanged(selectedRegionId) }
-    // A soft tick when the region changes (not when the app first opens), so the change is felt as well as seen
-    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    // A click when the region changes (not when the app first opens), so the change is felt as well as seen
     var firstRegion by remember { mutableStateOf(true) }
     LaunchedEffect(selectedRegionId) {
         if (firstRegion) firstRegion = false
-        else haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+        else io.github.genesjc.microclimatefinder.ui.components.RegionHaptics.tick(context)
     }
 
     // Station data per region: a CSV override in assets, else the region's bundled pack
@@ -170,6 +171,8 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
                 onStationSelected = { homeStationId = it },
                 pinScale = homePinScale,
                 onPinScaleChange = { homePinScale = it },
+                sliderShown = homeSliderShown,
+                onSliderShownChange = { homeSliderShown = it },
                 darkMode = darkMode,
                 onDarkModeChange = onDarkModeChange
             )
@@ -181,7 +184,9 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
                 onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
-                }
+                },
+                selectedStationId = homeStationId,
+                onStationSelected = { homeStationId = it }
             )
         }
         AppScreen.CALIFORNIA_REGIONS -> {

@@ -35,6 +35,9 @@ import io.github.genesjc.microclimatefinder.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/** How long the app's name stays fully showing before the intro fades out (long for now, for presentations). */
+private const val INTRO_HOLD_MS = 4500L
+
 /**
  * The opening view: it picks up where the system splash screen leaves off (the round icon, centred, on the
  * same dark blue-slate), adds a soft glow behind the icon, and fades the app's name and tagline in under it,
@@ -50,7 +53,8 @@ fun IntroOverlay(onDone: () -> Unit) {
         launch { glow.animateTo(1f, tween(900, easing = FastOutSlowInEasing)) }
         delay(350)
         launch { text.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
-        delay(1450)
+        // The title is fully in 700 ms after it starts; it then stays for INTRO_HOLD_MS before fading away
+        delay(700L + INTRO_HOLD_MS)
         exit.animateTo(0f, tween(450))
         onDone()
     }
@@ -102,7 +106,7 @@ fun IntroOverlay(onDone: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Explore California's microclimates",
+                    text = "Explore California's Climates",
                     color = Color(0xFFBAE6FD),
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center

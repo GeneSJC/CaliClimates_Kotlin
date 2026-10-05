@@ -109,7 +109,7 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = "Explore California's microclimates",
+                                text = "Explore California's Climates",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                             )

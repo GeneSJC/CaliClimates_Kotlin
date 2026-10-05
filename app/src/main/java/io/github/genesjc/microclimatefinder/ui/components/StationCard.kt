@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,7 +73,9 @@ fun StationCard(
     // Compact only: a control at the right end of the title row (the open card's Less link)
     compactHeaderAction: (@Composable () -> Unit)? = null,
     // Compact only: a sentence about the height, shown under the terrain row
-    elevationNote: String? = null
+    elevationNote: String? = null,
+    // Full card: a short mark next to the terrain badge while the card is the selected one (the Station List)
+    selectedLabel: String? = null
 ) {
     val context = LocalContext.current
     var showNewsDialog by remember { mutableStateOf(false) }
@@ -108,37 +111,53 @@ fun StationCard(
         border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
+                // A light tint laid over the card colour, so the card stays fully solid (never see-through)
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                    .compositeOver(MaterialTheme.colorScheme.surface)
             } else {
                 MaterialTheme.colorScheme.surface
             }
         )
     ) {
         if (compact) CompactStationBody(station, terrainBadgeColor, display, compactFooter, compactHeaderAction, elevationNote) else Column(modifier = Modifier.padding(16.dp)) {
-            // Header row: Terrain Badge & Elevation
+            // Header row: the badge (and the selected mark) at the left take the room they need; the elevation text takes
+            // what is left and aligns to the right, wrapping inside its own space, so the two never overlap
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = terrainBadgeColor.copy(alpha = 0.14f)
-                ) {
-                    Text(
-                        text = station.terrain.label,
-                        color = terrainBadgeColor,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = terrainBadgeColor.copy(alpha = 0.14f)
+                    ) {
+                        Text(
+                            text = station.terrain.label,
+                            color = terrainBadgeColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                    if (isSelected && selectedLabel != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "\u2713 $selectedLabel",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1
+                        )
+                    }
                 }
 
                 Text(
                     text = "${Elevation.describe(station.elevationMeters)}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                    modifier = Modifier.weight(1f).padding(start = 8.dp)
                 )
             }
 
@@ -648,13 +667,13 @@ private fun CompactMetric(label: String, value: String) {
 
 /**
  * The summary of a station for the Home row: the temperature in °F, a pipe divider, then the name,
- * and a More link on the right. The age of the reading is in the full card that More opens. When
+ * and a chevron on the right. The age of the reading is in the full card that the chevron opens. When
  * there is no reading, the reason shows where the °C would be.
  */
 @Composable
 fun StationSummaryTile(station: MicroclimateStation) {
     val display = liveDisplay(station)
-    // One line: the temperature in °F, a pipe divider, the name, and the More link at the right. The name gives way
+    // One line: the temperature in °F, a pipe divider, the name, and the chevron at the right. The name gives way
     // (with an ellipsis) only when it really cannot fit; the temperature always shows
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -686,7 +705,7 @@ fun StationSummaryTile(station: MicroclimateStation) {
         }
         Spacer(modifier = Modifier.width(10.dp))
         Text(
-            text = "More \u25BC",
+            text = "\u25BC",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,

@@ -45,41 +45,34 @@ fun MenuDrawerContent(
     onOpenAbout: () -> Unit
 ) {
     Column {
-        // Header: the About dialog's gradient, reaching up behind the status bar
+        // Header: the same solid primary bar as the Region Info sheet's title, so the two drawers read as a pair
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
-                        )
-                    )
-                )
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 20.dp)
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CaliforniaOutlineIcon(
-                    fill = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                    stroke = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f),
+                    stroke = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                     regionColors = regionPickerColors(),
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(40.dp)
                 )
-                Spacer(modifier = Modifier.width(14.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
                         text = appName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        fontWeight = FontWeight.Bold,
+                        // Off-white, not pure white, so it is easier on the eyes against the dark bar
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.86f)
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Build $buildLabel",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.65f)
                     )
                 }
             }
@@ -115,7 +108,8 @@ private fun MenuRow(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f),
+        // A solid card on the sheet's tint, like the cards on the Region Info sheet
+        color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         modifier = Modifier
             .fillMaxWidth()

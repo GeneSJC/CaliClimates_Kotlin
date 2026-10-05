@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -99,6 +100,9 @@ import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerSt
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.MapText
+import io.github.genesjc.microclimatefinder.ui.components.HOME_TILE_BAND
+import io.github.genesjc.microclimatefinder.ui.components.BRING_INTO_VIEW_MS
+import io.github.genesjc.microclimatefinder.ui.components.SliderToggleButton
 import io.github.genesjc.microclimatefinder.ui.components.ms
 import io.github.genesjc.microclimatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
@@ -128,6 +132,17 @@ fun StationMapScreen(
     /** The zoom to start at, and a report of each change (Home keeps the zoom when it switches views). */
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
+    /** Whether the slider shows, when Home owns it (one setting for both map views), and a report of changes. */
+    sliderShownShared: Boolean? = null,
+    onSliderShownChange: ((Boolean) -> Unit)? = null,
+    /** Home: where the slider's arrow button starts (below the view buttons, which are measured there). */
+    sliderToggleTop: Dp = 52.dp,
+    /** Home: 0 normally, 1 when the map has grown out into the page margins (the Elevation view); eased between. */
+    expandT: Float = 0f,
+    /** Home: told whether the selected station is out of the visible map (panned away or zoomed past it). */
+    onSelectedOffscreenChange: ((Boolean) -> Unit)? = null,
+    /** Home: bumped to ask the map to bring the selected station back to the middle of the view. */
+    recenterTick: Int = 0,
 ) {
     val context = LocalContext.current
     val stations = remember(dataset) { StationRepository.stations(context, dataset) }
@@ -137,7 +152,8 @@ fun StationMapScreen(
     val terrain by produceState<TerrainImage?>(null, dataset.regionId) {
         value = withContext(Dispatchers.IO) { TerrainMaps.load(context, dataset.regionId) }
     }
-    var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
+    // Keyed to the data, so a region change starts from that region's first station and not the old region's id
+    var localSelectedId by remember(stations) { mutableStateOf(stations.firstOrNull()?.id) }
     val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
     var localPinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
     val pinScale = sharedPinScale ?: localPinScale
@@ -153,7 +169,8 @@ fun StationMapScreen(
     var aboveMapPx by remember { mutableStateOf(0) }
 
     // Top and bottom padding of the page: the embedded map has no app bar, so less above it
-    val mapVerticalPadding = if (embedded) 16.dp else 32.dp
+    // Embedded: just the 5 dp left under the map, which goes to 0 as the map grows out to the screen bottom
+    val mapVerticalPadding = if (embedded) 5.dp * (1f - expandT) else 32.dp
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     // Expanded height: the screen less the padding and everything above the map
     val expandedMapHeight = with(density) {
@@ -167,7 +184,7 @@ fun StationMapScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 16.dp) else PaddingValues(16.dp))
+            .padding(if (embedded) PaddingValues(top = 0.dp, bottom = 5.dp * (1f - expandT)) else PaddingValues(16.dp))
             .verticalScroll(pageScroll)
     ) {
       Column(modifier = Modifier.onSizeChanged { aboveMapPx = it.height }) {
@@ -262,7 +279,8 @@ fun StationMapScreen(
                 .height(mapHeight)
         ) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                // The bottom corners square off as the map grows out to the screen edges
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp * (1f - expandT), bottomEnd = 16.dp * (1f - expandT)),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 // A 1dp outline, for a crisper edge
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -276,6 +294,12 @@ fun StationMapScreen(
                     pinScale = pinScale,
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,
+                    sliderToggleTop = sliderToggleTop,
+                    expandT = expandT,
+                    onSelectedOffscreenChange = onSelectedOffscreenChange,
+                    recenterTick = recenterTick,
+                    sliderShownShared = sliderShownShared,
+                    onSliderShownChange = onSliderShownChange,
                     onSelectStation = {
                     localSelectedId = it.id
                     onStationSelected?.invoke(it.id)
@@ -323,8 +347,65 @@ private const val MAP_OVERSCROLL = 0.12f
 /** Dots start at the largest size the Dot size slider allows, so they are easy to see and tap. */
 internal const val DEFAULT_PIN_SCALE = 2.5f
 
+/** A horizontal slider with a thin rail and the zoom slider's rounded-square thumb (32 x 18 dp, white edge). */
+@Composable
+private fun SquareThumbSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current
+    val thumbShape = RoundedCornerShape(4.dp)
+    val thumbWidth = 32.dp
+    val thumbHeight = 18.dp
+    val currentOnChange by rememberUpdatedState(onValueChange)
+    val ratio = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
+    BoxWithConstraints(modifier = modifier.height(thumbHeight), contentAlignment = Alignment.CenterStart) {
+        val trackWidth = maxWidth
+        val thumbWidthPx = with(density) { thumbWidth.toPx() }
+        val usablePx = (with(density) { trackWidth.toPx() } - thumbWidthPx).coerceAtLeast(1f)
+        fun valueAt(x: Float): Float {
+            val r = ((x - thumbWidthPx / 2f) / usablePx).coerceIn(0f, 1f)
+            return valueRange.start + r * (valueRange.endInclusive - valueRange.start)
+        }
+        // The rail, and the part up to the thumb filled in
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(5.dp)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
+        )
+        Box(
+            modifier = Modifier
+                .width(thumbWidth / 2 + (trackWidth - thumbWidth) * ratio)
+                .height(5.dp)
+                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(3.dp))
+        )
+        Box(
+            modifier = Modifier
+                .offset(x = (trackWidth - thumbWidth) * ratio)
+                .size(width = thumbWidth, height = thumbHeight)
+                .shadow(3.dp, thumbShape)
+                .background(MaterialTheme.colorScheme.primary, thumbShape)
+                .border(2.dp, Color.White, thumbShape)
+        )
+        // The whole strip takes taps and drags
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(usablePx) { detectTapGestures { currentOnChange(valueAt(it.x)) } }
+                .pointerInput(usablePx) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { currentOnChange(valueAt(it.x)) },
+                        onHorizontalDrag = { change, _ -> change.consume(); currentOnChange(valueAt(change.position.x)) }
+                    )
+                }
+        )
+    }
+}
+
 /** Horizontal dot-size control under the map: small dot to large dot. */
-@OptIn(ExperimentalMaterial3Api::class) // custom slider thumb
 @Composable
 internal fun PinSizeSlider(
     value: Float,
@@ -347,18 +428,11 @@ internal fun PinSizeSlider(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.size(5.dp)
         ) {}
-        Slider(
+        // The same square-thumb style as the vertical zoom slider, on a thin rail
+        SquareThumbSlider(
             value = value,
             onValueChange = { onValueChange((it * 10f).roundToInt() / 10f) },
             valueRange = 1.0f..2.5f,
-            thumb = {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
-                    shadowElevation = 2.dp,
-                    modifier = Modifier.size(20.dp)
-                ) {}
-            },
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 6.dp)
@@ -398,9 +472,18 @@ private fun SpatialMapCanvas(
     pinScale: Float = 1.0f,
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
+    sliderToggleTop: Dp = 52.dp,
+    expandT: Float = 0f,
+    onSelectedOffscreenChange: ((Boolean) -> Unit)? = null,
+    recenterTick: Int = 0,
+    sliderShownShared: Boolean? = null,
+    onSliderShownChange: ((Boolean) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
+
+    // The selected station; when none is selected yet (or the id is not in this region) Home shows the first one, so this does too
+    val selectedStation = stations.firstOrNull { it.id == selectedStationId } ?: stations.firstOrNull()
 
     // Geographic bounding box with a margin of 8%
     val rawMinLat = remember(stations) { stations.minOf { it.latitude } }
@@ -434,6 +517,12 @@ private fun SpatialMapCanvas(
     }
 
     var zoom by remember(stations) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
+    // On Home the slider can be tucked away with the small arrow button above it (pinch still zooms)
+    var localSliderShown by remember { mutableStateOf(true) }
+    val sliderShown = sliderShownShared ?: localSliderShown
+    val setSliderShown: (Boolean) -> Unit = { localSliderShown = it; onSliderShownChange?.invoke(it) }
+    // Its top sits lower on Home, below that button and the view buttons
+    val sliderTop = if (embedded) sliderToggleTop + 32.dp + 6.dp else 56.dp
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
     var pan by remember(stations) { mutableStateOf(Offset.Zero) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
@@ -450,7 +539,9 @@ private fun SpatialMapCanvas(
         modifier = Modifier
             .fillMaxSize()
             .clipToBounds()
-            .pointerInput(Unit) {
+            // Keyed to the data: zoom and pan are remembered per region, so when the region changes they are new state objects
+            // and the handlers must restart to use them (with a fixed key they kept writing to the old ones and touch stopped working)
+            .pointerInput(stations) {
                 // Pinch to zoom, drag to pan
                 detectTransformGestures { centroid, panChange, zoomChange, _ ->
                     val w = size.width.toFloat()
@@ -463,7 +554,7 @@ private fun SpatialMapCanvas(
                     zoom = newZoom
                 }
             }
-            .pointerInput(Unit) {
+            .pointerInput(stations) {
                 // Double-tap: zoom in on the spot, and back out to the full map once fully zoomed
                 detectTapGestures(onDoubleTap = { spot ->
                     val w = size.width.toFloat()
@@ -484,14 +575,58 @@ private fun SpatialMapCanvas(
         val canvasW = with(density) { widthDp.toPx() }
         val canvasH = with(density) { heightDp.toPx() }
         // One scale in both directions, so the region keeps its true shape
-        val projection = remember(minLon, maxLon, minLat, maxLat, canvasW, canvasH) {
-            MapProjection(minLon, maxLon, minLat, maxLat, canvasW, canvasH, paddingPx)
+        // On Home the station tile floats over the top of the map: the zoomed-out map fits below it
+        val topInset = if (embedded) with(density) { HOME_TILE_BAND.toPx() } else 0f
+        val projection = remember(minLon, maxLon, minLat, maxLat, canvasW, canvasH, topInset) {
+            MapProjection(minLon, maxLon, minLat, maxLat, canvasW, canvasH, paddingPx, topInset)
         }
         fun viewX(baseX: Float) = canvasW / 2f + (baseX - canvasW / 2f) * zoom + pan.x
         fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
         // Longitude and latitude to canvas pixels, with the current zoom and pan
         fun mapX(lon: Double): Float = viewX(projection.baseX(lon))
         fun mapY(lat: Double): Float = viewY(projection.baseY(lat))
+
+        // Eases the map over so the selected station is in the middle of the view. Without [always] it does nothing when
+        // the station is already comfortably in view.
+        suspend fun bringSelectedIntoView(always: Boolean) {
+            val st = selectedStation ?: return
+            val bx = projection.baseX(st.longitude)
+            val by = projection.baseY(st.latitude)
+            val vx = viewX(bx)
+            val vy = viewY(by)
+            val sideMargin = with(density) { 48.dp.toPx() }
+            val topMargin = with(density) { (if (embedded) HOME_TILE_BAND + 24.dp else 40.dp).toPx() }
+            val bottomMargin = with(density) { 40.dp.toPx() }
+            val inView = vx in sideMargin..(canvasW - sideMargin) && vy in topMargin..(canvasH - bottomMargin)
+            if (inView && !always) return
+            zoomJob?.cancel()
+            val from = pan
+            val target = clampPan(
+                Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
+                zoom, canvasW, canvasH, overscroll = MAP_OVERSCROLL
+            )
+            androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(BRING_INTO_VIEW_MS, easing = FastOutSlowInEasing)) { v, _ ->
+                pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
+            }
+        }
+        // When the selected station changes (from the Stations list, the tile or the other view) and it is not in view
+        // at this zoom and pan, ease the map over so it is
+        androidx.compose.runtime.LaunchedEffect(selectedStationId, stations) { bringSelectedIntoView(always = false) }
+        // The locate button on Home asks for it explicitly
+        androidx.compose.runtime.LaunchedEffect(recenterTick) { if (recenterTick > 0) bringSelectedIntoView(always = true) }
+
+        // Whether the selected station is out of the visible map (panned away, zoomed past it, or under the station tile),
+        // reported to Home, which shows its locate button only then
+        val topHidden = if (embedded) with(density) { HOME_TILE_BAND.toPx() } else 0f
+        // Worked out directly from the current zoom and pan on every change (the label placement below already runs
+        // that often), so it can never lag behind or hold on to old values
+        val selectedOffscreen = selectedStation?.let { st ->
+            val x = viewX(projection.baseX(st.longitude))
+            val y = viewY(projection.baseY(st.latitude))
+            !(x in 0f..canvasW && y in topHidden..canvasH)
+        } ?: false
+        androidx.compose.runtime.LaunchedEffect(selectedOffscreen) { onSelectedOffscreenChange?.invoke(selectedOffscreen) }
+        androidx.compose.runtime.DisposableEffect(Unit) { onDispose { onSelectedOffscreenChange?.invoke(false) } }
 
         Canvas(
             modifier = Modifier
@@ -560,11 +695,12 @@ private fun SpatialMapCanvas(
 
         // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
-            listOf(0f, 0f, 58f, 40f),                                   // compass
-            listOf(widthDp.value - 150f, 0f, widthDp.value, 40f),       // data credit
+            if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
+            if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + 50f) else listOf(0f, 0f, 58f, 40f),  // Home's control row, or the compass
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
-            listOf(widthDp.value - 46f, 56f, widthDp.value, heightDp.value),  // zoom slider
-            if (embedded) listOf(widthDp.value - 170f, 0f, widthDp.value, 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+            if (embedded) listOf(widthDp.value - 46f, sliderToggleTop.value, widthDp.value, sliderToggleTop.value + 32f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
+            if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(widthDp.value - 46f, sliderTop.value, widthDp.value, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) 0.8f else 1f)),  // zoom slider
+            if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
             listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f)  // expand / shrink toggle
         )
 
@@ -646,14 +782,15 @@ private fun SpatialMapCanvas(
             }
         }
 
-        // Compass Rose (Top-Left; on Home it sits under the maximize button, which takes the corner)
+        // Compass Rose (Top-Left). On Home the north indicator is part of the control row Home draws, so none here.
+        if (!embedded) {
         Surface(
             shape = RoundedCornerShape(6.dp),
             color = Color.White.copy(alpha = 0.90f),
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 12.dp, top = if (embedded) 50.dp else 12.dp)
+                .padding(start = 12.dp, top = if (embedded) 50.dp + HOME_TILE_BAND else 12.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -666,6 +803,8 @@ private fun SpatialMapCanvas(
                     color = Color(0xFF0284C7)
                 )
             }
+        }
+
         }
 
         // Map Scale Bar (Bottom-Left): a bar drawn to the map's real scale
@@ -697,8 +836,18 @@ private fun SpatialMapCanvas(
             }
         }
 
+        // The arrow button above the slider: up while it shows (tap to tuck it away), down when it is hidden
+        if (embedded) {
+            SliderToggleButton(
+                shown = sliderShown,
+                onToggle = { setSliderShown(!sliderShown) },
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp + 5.dp * expandT, top = sliderToggleTop)
+            )
+        }
         // Floating zoom slider on the right edge (for now it sets the type size instead; see MapText)
-        if (MapText.SLIDER_SETS_FONT) {
+        if (embedded && !sliderShown) {
+            // hidden: pinch and double-tap still zoom
+        } else if (MapText.SLIDER_SETS_FONT) {
             ZoomSlider(
                 value = MapText.scale,
                 onValueChange = { MapText.scale = it },
@@ -707,9 +856,10 @@ private fun SpatialMapCanvas(
                 caption = "FONT",
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 56.dp, end = 4.dp, bottom = 4.dp)
+                    .padding(top = sliderTop, end = 4.dp + 5.dp * expandT, bottom = 4.dp)
                     .width(40.dp)
-                    .fillMaxHeight()
+                    // 20% shorter from the bottom on Home; the top stays under the arrow button
+                .fillMaxHeight(if (embedded) 0.8f else 1f)
             )
         } else ZoomSlider(
             value = zoom,
@@ -722,9 +872,10 @@ private fun SpatialMapCanvas(
             // Its top stays under the data credit whatever the map's height; the bottom follows the map
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 56.dp, end = 4.dp, bottom = 4.dp)
+                .padding(top = sliderTop, end = 4.dp + 5.dp * expandT, bottom = 4.dp)
                 .width(40.dp)
-                .fillMaxHeight()
+                // 20% shorter from the bottom on Home; the top stays under the arrow button
+                .fillMaxHeight(if (embedded) 0.8f else 1f)
         )
     }
 }

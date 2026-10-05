@@ -134,6 +134,9 @@ fun rememberLabelFades(targets: Map<String, Float>, fadeSeconds: Float = 0.18f):
 /** How much one tap on the zoom slider's + or - changes the zoom. */
 const val ZOOM_BUTTON_STEP = 1.6f
 
+/** How long the ease takes when the map or chart moves to bring the selected station into view (half the speed it had at 350 ms). */
+const val BRING_INTO_VIEW_MS = 700
+
 /**
  * Animates a zoom change about [anchor] (the point that stays put) so labels fade in and out along
  * the way instead of jumping. Reports each frame's zoom and pan to [onFrame]. Zoom is interpolated
