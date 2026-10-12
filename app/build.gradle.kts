@@ -84,7 +84,9 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    // ViewModel for the Home screen state, and collectAsStateWithLifecycle to read its StateFlow in Compose
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -92,6 +94,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     testImplementation(libs.junit)
+    // runTest and a test dispatcher for the ViewModel tests
+    testImplementation(libs.kotlinx.coroutines.test)
     // org.json is part of Android but only stubbed in local unit tests; the real library lets them parse NWS data
     testImplementation("org.json:json:20240303")
     androidTestImplementation(libs.androidx.junit)
