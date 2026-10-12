@@ -18,17 +18,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.RegionPreferences
 import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
-import io.github.genesjc.microclimatefinder.data.local.StationRepository
-import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import io.github.genesjc.microclimatefinder.ui.screens.CaliforniaRegionsMapScreen
-import io.github.genesjc.microclimatefinder.ui.screens.DEFAULT_PIN_SCALE
+import io.github.genesjc.microclimatefinder.ui.home.HomeViewModel
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.RegionOption
 import io.github.genesjc.microclimatefinder.ui.screens.StationListScreen
@@ -75,24 +75,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkModeChange: (Boolean) -> Unit) {
+fun AppNavigation(
+    darkMode: Boolean,
+    onRegionChanged: (String) -> Unit,
+    onDarkModeChange: (Boolean) -> Unit,
+    homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory(LocalContext.current))
+) {
     var currentScreen by remember { mutableStateOf(AppScreen.LANDING) }
     // Where Back returns to from Regional Sections (Home icon or Demos & Previews)
     var regionsReturnScreen by remember { mutableStateOf(AppScreen.LANDING) }
-    // Whether Home's region info sheet is open; kept here so it survives a trip to the Station List
-    var homeInfoOpen by remember { mutableStateOf(false) }
-    // Which map view Home shows: 0 = Topo Map, 1 = Elevation Profile
-    var homeTab by remember { mutableStateOf(0) }
-    // The station selected on Home, shared by both tabs and kept across a trip to the Station List
-    var homeStationId by remember { mutableStateOf<String?>(null) }
-    // The Topo Map's dot size, set in the Terrain Legend panel on Home
-    var homePinScale by remember { mutableStateOf(DEFAULT_PIN_SCALE) }
-    // Whether the maps' zoom slider is showing: one setting for both map views, kept across trips off Home
-    var homeSliderShown by remember { mutableStateOf(true) }
+    // Home's state (region, map view, selected station, dot size, slider, info sheet) lives in the ViewModel
+    val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    // App-wide CA region, remembered between launches; the Regional Sections screen is its only writer
-    val regionPrefs = remember { RegionPreferences(context) }
-    var selectedRegionId by remember { mutableStateOf(regionPrefs.load()) }
+    val selectedRegionId = homeState.selectedRegionId
     // Tell the backdrop which region is selected, so it can take on the region's tint
     LaunchedEffect(selectedRegionId) { onRegionChanged(selectedRegionId) }
     // A click when the region changes (not when the app first opens), so the change is felt as well as seen
@@ -110,25 +105,14 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
     // is read the first time it is wanted and not while the app is starting
     val defaultDatasetLazy = remember { lazy { store.defaultDataset() } }
     // Changes the app-wide region and remembers it (Home, Topo Map and Station Feed pickers use this)
-    fun pickRegion(regionId: String) {
-        selectedRegionId = regionId
-        homeStationId = null
-        regionPrefs.save(regionId)
-    }
+    fun pickRegion(regionId: String) = homeViewModel.selectRegion(regionId)
     // Rows for the quick region list on Home: names only (reading every region's stations just for a count slowed the
     // start-up by seconds, and the list no longer shows counts)
     val regionOptions = remember {
         CaliforniaRegionalDefinitions.ALL_REGIONS.map { r -> RegionOption(r.id, r.name, null) }
     }
 
-    // Fetch live readings for the region's featured stations when a region loads; switching region
-    // cancels this and starts the new region's.
-    LaunchedEffect(regionDataset) {
-        regionDataset?.let { dataset ->
-            val stations = withContext(Dispatchers.IO) { StationRepository.stations(context, dataset) }
-            LiveObservationCache.prefetch(stations)
-        }
-    }
+    // (Live readings for the region's featured stations are fetched by HomeViewModel whenever the region changes.)
 
     // Once the first screen is up, read the other regions' stations in the background, so changing region later finds
     // them already parsed instead of unzipping a pack on the main thread in the middle of the transition
@@ -163,16 +147,16 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
                     if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.LANDING
                     currentScreen = targetScreen
                 },
-                infoOpen = homeInfoOpen,
-                onInfoOpenChange = { homeInfoOpen = it },
-                homeTab = homeTab,
-                onHomeTabChange = { homeTab = it },
-                selectedStationId = homeStationId,
-                onStationSelected = { homeStationId = it },
-                pinScale = homePinScale,
-                onPinScaleChange = { homePinScale = it },
-                sliderShown = homeSliderShown,
-                onSliderShownChange = { homeSliderShown = it },
+                infoOpen = homeState.infoOpen,
+                onInfoOpenChange = homeViewModel::setInfoOpen,
+                homeTab = homeState.tab,
+                onHomeTabChange = homeViewModel::setTab,
+                selectedStationId = homeState.selectedStationId,
+                onStationSelected = homeViewModel::selectStation,
+                pinScale = homeState.pinScale,
+                onPinScaleChange = homeViewModel::setPinScale,
+                sliderShown = homeState.sliderShown,
+                onSliderShownChange = homeViewModel::setSliderShown,
                 darkMode = darkMode,
                 onDarkModeChange = onDarkModeChange
             )
@@ -185,8 +169,8 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
                 onNavigateBack = {
                     currentScreen = AppScreen.LANDING
                 },
-                selectedStationId = homeStationId,
-                onStationSelected = { homeStationId = it }
+                selectedStationId = homeState.selectedStationId,
+                onStationSelected = homeViewModel::selectStation
             )
         }
         AppScreen.CALIFORNIA_REGIONS -> {
@@ -202,8 +186,7 @@ fun AppNavigation(darkMode: Boolean, onRegionChanged: (String) -> Unit, onDarkMo
                     if (isDemo) {
                         demoRegionId = it
                     } else {
-                        selectedRegionId = it
-                        regionPrefs.save(it)
+                        pickRegion(it)
                     }
                 },
                 onNavigateBack = {
