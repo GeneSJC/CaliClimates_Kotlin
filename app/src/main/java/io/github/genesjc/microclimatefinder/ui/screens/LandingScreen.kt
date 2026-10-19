@@ -780,6 +780,9 @@ fun LandingScreen(
     onPinScaleChange: (Float) -> Unit,
     sliderShown: Boolean,
     onSliderShownChange: (Boolean) -> Unit,
+    /** The map zoom shared by both map views: read when a map is shown, reported as it changes. */
+    mapZoom: () -> Float,
+    onMapZoomChange: (Float) -> Unit,
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
@@ -825,8 +828,6 @@ fun LandingScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var rowWidthPx by remember { mutableStateOf(0) }
     var stationTileTopPx by remember { mutableStateOf(0f) }
-    // The map zoom, kept across the Topography and Elevation views (a plain holder: no recomposition as it changes; a new region starts at 1x)
-    val mapZoom = remember(selectedRegionId) { floatArrayOf(1f) }
     val sheetTopPx = stationTileTopPx
     val openInfo: () -> Unit = {
         onInfoOpenChange(true)
@@ -1147,8 +1148,8 @@ fun LandingScreen(
                             sharedSelectedStationId = selectedStationId,
                             onStationSelected = onStationSelected,
                             sharedPinScale = pinScale,
-                            initialZoom = mapZoom[0],
-                            onZoomChange = { mapZoom[0] = it },
+                            initialZoom = mapZoom(),
+                            onZoomChange = onMapZoomChange,
                             sliderShownShared = sliderShown,
                             onSliderShownChange = onSliderShownChange,
                             // The slider's arrow button sits 4 dp under the view buttons, whatever their height
@@ -1164,8 +1165,8 @@ fun LandingScreen(
                             embedded = true,
                             sharedSelectedStationId = selectedStationId,
                             onStationSelected = onStationSelected,
-                            initialZoom = mapZoom[0],
-                            onZoomChange = { mapZoom[0] = it },
+                            initialZoom = mapZoom(),
+                            onZoomChange = onMapZoomChange,
                             sliderShownShared = sliderShown,
                             onSliderShownChange = onSliderShownChange,
                             expandT = expandT
