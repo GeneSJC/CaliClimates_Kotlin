@@ -1,7 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.home
 
 import android.content.Context
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -13,6 +12,7 @@ import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.ui.screens.DEFAULT_PIN_SCALE
+import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,7 +52,8 @@ data class HomeUiState(
  * - Live readings: whenever the region changes, the new region's featured stations are fetched. A newer region
  *   cancels the previous region's fetch ([collectLatest]).
  *
- * Its collaborators are passed in as plain values, so tests can supply fakes. [factory] builds the real ones.
+ * Its collaborators are passed in as plain values, so tests can supply fakes, and [factory] builds the real ones.
+ * This is a stop-gap until the app has a dependency container; the live-reading fetch also belongs in a state holder later.
  */
 class HomeViewModel(
     private val regionStore: SelectedRegionStore,
@@ -61,7 +62,7 @@ class HomeViewModel(
     /** Fetches live readings for a region's stations; cancelled when the region changes. */
     private val prefetch: suspend (List<MicroclimateStation>) -> Unit,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) : ViewModel() {
+) : AppBaseViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState(selectedRegionId = regionStore.load()))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
