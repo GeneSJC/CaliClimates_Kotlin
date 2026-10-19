@@ -7,6 +7,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.genesjc.microclimatefinder.data.local.RegionPreferences
 import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
+import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
+import io.github.genesjc.microclimatefinder.data.local.StationSelectionPreferences
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
@@ -48,7 +50,8 @@ data class HomeUiState(
  * Owns Home's state and the work that follows from it.
  *
  * - State: [uiState] is a [StateFlow]; the UI collects it and calls the functions below for every change.
- * - Region: choosing a region saves it and clears the selected station.
+ * - Region: choosing a region saves it and clears the selected station. The selected station is saved too, and
+ *   comes back on the next launch as long as it was chosen in the saved region.
  * - Live readings: whenever the region changes, the new region's featured stations are fetched. A newer region
  *   cancels the previous region's fetch ([collectLatest]).
  *
@@ -57,6 +60,8 @@ data class HomeUiState(
  */
 class HomeViewModel(
     private val regionStore: SelectedRegionStore,
+    /** Where the last selected station is remembered, so the app reopens on it. */
+    private val stationStore: SelectedStationStore,
     /** The stations of a region (empty when it has none). Called on [ioDispatcher]. */
     private val stationsForRegion: (String) -> List<MicroclimateStation>,
     /** Fetches live readings for a region's stations; cancelled when the region changes. */
@@ -64,7 +69,11 @@ class HomeViewModel(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AppBaseViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState(selectedRegionId = regionStore.load()))
+    private val _uiState = MutableStateFlow(
+        regionStore.load().let { regionId ->
+            HomeUiState(selectedRegionId = regionId, selectedStationId = stationStore.load(regionId))
+        }
+    )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
@@ -76,13 +85,17 @@ class HomeViewModel(
         }
     }
 
-    /** Changes the app-wide region, remembers it, and clears the station chosen in the old one. */
+    /** Changes the app-wide region, remembers it, and clears (and forgets) the station chosen in the old one. */
     fun selectRegion(regionId: String) {
         regionStore.save(regionId)
+        stationStore.save(regionId, null)
         _uiState.update { it.copy(selectedRegionId = regionId, selectedStationId = null) }
     }
 
-    fun selectStation(stationId: String?) = _uiState.update { it.copy(selectedStationId = stationId) }
+    fun selectStation(stationId: String?) {
+        stationStore.save(_uiState.value.selectedRegionId, stationId)
+        _uiState.update { it.copy(selectedStationId = stationId) }
+    }
 
     fun setTab(tab: Int) = _uiState.update { it.copy(tab = tab) }
 
@@ -101,6 +114,7 @@ class HomeViewModel(
                     val store = StationDataStore(app)
                     HomeViewModel(
                         regionStore = RegionPreferences(app),
+                        stationStore = StationSelectionPreferences(app),
                         stationsForRegion = { regionId ->
                             store.datasetFor(regionId)?.let { StationRepository.stations(app, it) } ?: emptyList()
                         },

@@ -1,6 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.home
 
 import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
+import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.testStation
 import kotlinx.coroutines.Dispatchers
@@ -28,12 +29,22 @@ class HomeViewModelTest {
         }
     }
 
+    private class FakeStationStore(var region: String? = null, var station: String? = null) : SelectedStationStore {
+        override fun load(regionId: String) = station?.takeIf { region == regionId }
+        override fun save(regionId: String, stationId: String?) {
+            region = regionId
+            station = stationId
+        }
+    }
+
     private val store = FakeRegionStore("a")
+    private val stationStore = FakeStationStore()
     private val fetchedFor = mutableListOf<String>()
     private val cancelledFor = mutableListOf<String>()
 
     private fun viewModel() = HomeViewModel(
         regionStore = store,
+        stationStore = stationStore,
         stationsForRegion = { regionId -> listOf(testStation(id = regionId)) },
         prefetch = { stations: List<MicroclimateStation> ->
             val regionId = stations.first().id
@@ -84,6 +95,29 @@ class HomeViewModelTest {
         assertEquals(4f, state.pinScale)
         assertEquals(false, state.sliderShown)
         assertTrue(state.infoOpen)
+    }
+
+    @Test
+    fun reopensOnTheLastSelectedStationOfTheSavedRegion() {
+        stationStore.save("a", "KXYZ")
+        assertEquals("KXYZ", viewModel().uiState.value.selectedStationId)
+    }
+
+    @Test
+    fun ignoresASavedStationFromAnotherRegion() {
+        stationStore.save("b", "KXYZ")
+        assertNull(viewModel().uiState.value.selectedStationId)
+    }
+
+    @Test
+    fun rememberingFollowsSelectionAndForgetsOnRegionChange() {
+        val vm = viewModel()
+        vm.selectStation("KXYZ")
+        assertEquals("a", stationStore.region)
+        assertEquals("KXYZ", stationStore.station)
+        vm.selectRegion("b")
+        assertEquals("b", stationStore.region)
+        assertNull(stationStore.station)
     }
 
     @Test
