@@ -157,6 +157,8 @@ fun AppNavigation(
                 onPinScaleChange = homeViewModel::setPinScale,
                 sliderShown = homeState.sliderShown,
                 onSliderShownChange = homeViewModel::setSliderShown,
+                mapZoom = { homeViewModel.mapZoom },
+                onMapZoomChange = homeViewModel::setMapZoom,
                 darkMode = darkMode,
                 onDarkModeChange = onDarkModeChange
             )
