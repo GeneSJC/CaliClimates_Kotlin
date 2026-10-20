@@ -1061,9 +1061,20 @@ fun UnifiedDraggableMapScreen(
                 val cleanCity = remember(st.id, st.name) {
                     LocalNewsRepository.getCleanCityName(st.id, st.name)
                 }
+                // The demo edition reads the live cache directly (it has no ViewModel)
+                val reading by androidx.compose.runtime.produceState<io.github.genesjc.microclimatefinder.data.remote.ObservationResult?>(
+                    io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache.peek(st.id), st.id
+                ) {
+                    value = if (st.canHaveLiveReading) {
+                        io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache.get(st.id)
+                    } else {
+                        io.github.genesjc.microclimatefinder.data.remote.ObservationResult.NoReading
+                    }
+                }
                 StationCard(
                     station = st,
                     isSelected = true,
+                    reading = reading,
                     onOpenStory = { story ->
                         onOpenNewsStory?.invoke(story, cleanCity)
                     }

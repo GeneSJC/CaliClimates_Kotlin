@@ -3,7 +3,9 @@ package io.github.genesjc.microclimatefinder.ui.map
 import io.github.genesjc.microclimatefinder.data.local.ElevationHintStore
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
+import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testStation
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -49,6 +51,7 @@ class MapViewModelsTest {
         stationsOf = { stations },
         loadTerrain = { regionId -> terrainLoads += regionId; null },
         cityNameOf = { it.name.uppercase() },
+        readings = testLiveReadings(CoroutineScope(dispatcher), fetched = fetched),
         ioDispatcher = dispatcher
     )
 
@@ -56,6 +59,7 @@ class MapViewModelsTest {
         stationsOf = { stations },
         loadTerrain = { regionId -> terrainLoads += regionId; null },
         cityNameOf = { it.name.uppercase() },
+        readings = testLiveReadings(CoroutineScope(dispatcher), fetched = fetched),
         loadSkyline = { regionId -> skylineLoads += regionId; listOf(floatArrayOf(0f, 1f)) },
         peekReading = { null },
         fetchReading = { id -> fetched += id; ObservationResult.Failed },
@@ -82,6 +86,15 @@ class MapViewModelsTest {
         assertSame(vm.terrain("a"), vm.terrain("a"))
         vm.terrain("b")
         assertEquals(listOf("a", "b"), terrainLoads)
+    }
+
+    @Test
+    fun aCardsReadingStartsAsAFetchAndSkipsStationsThatCannotReport() {
+        val vm = topography()
+        assertEquals(ObservationResult.Failed, vm.reading(stations[0]).value)
+        assertEquals(listOf("K1"), fetched)
+        assertEquals(ObservationResult.NoReading, vm.reading(testStation(id = "KNO", reportsTemp = false)).value)
+        assertEquals(listOf("K1"), fetched)
     }
 
     @Test

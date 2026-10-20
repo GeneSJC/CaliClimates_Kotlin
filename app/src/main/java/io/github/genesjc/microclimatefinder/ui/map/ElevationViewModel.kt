@@ -13,6 +13,7 @@ import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
 import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
+import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import kotlinx.coroutines.CoroutineDispatcher
@@ -30,6 +31,7 @@ class ElevationViewModel(
     stationsOf: (StationDatasetInfo) -> List<MicroclimateStation>,
     loadTerrain: (String) -> TerrainImage?,
     cityNameOf: (MicroclimateStation) -> String,
+    readings: LiveReadings,
     /** Loads a region's skylines (null when it has none). Called off the main thread. */
     private val loadSkyline: (String) -> List<FloatArray>?,
     /** The latest known reading for a station without fetching; null if never fetched. */
@@ -37,7 +39,7 @@ class ElevationViewModel(
     private val fetchReading: suspend (String) -> ObservationResult,
     private val hintStore: ElevationHintStore,
     private val io: CoroutineDispatcher = Dispatchers.IO
-) : MapViewModel(stationsOf, loadTerrain, cityNameOf, io) {
+) : MapViewModel(stationsOf, loadTerrain, cityNameOf, readings, io) {
 
     private val skylines = HashMap<String, MutableStateFlow<List<FloatArray>?>>()
 
@@ -77,6 +79,7 @@ class ElevationViewModel(
                         stationsOf = { StationRepository.stations(app, it) },
                         loadTerrain = { TerrainMaps.load(app, it) },
                         cityNameOf = { LocalNewsRepository.getCleanCityName(it.id, it.name) },
+                        readings = LiveReadings.shared,
                         loadSkyline = { TerrainMaps.loadSkyline(app, it) },
                         peekReading = { LiveObservationCache.peek(it) },
                         fetchReading = { LiveObservationCache.get(it) },

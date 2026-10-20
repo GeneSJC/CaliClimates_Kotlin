@@ -1,7 +1,10 @@
 package io.github.genesjc.microclimatefinder.ui.stationlist
 
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testStation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -15,7 +18,7 @@ class StationListViewModelTest {
     private val stations = listOf(testStation(id = "K1"), testStation(id = "K2"), testStation(id = "K3"))
 
     private fun viewModel(list: List<io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation> = stations) =
-        StationListViewModel(stationsFor = { list })
+        StationListViewModel(stationsFor = { list }, readings = testLiveReadings(CoroutineScope(UnconfinedTestDispatcher())))
 
     @Test
     fun marksTheStationSelectedOnHomeAndOpensThere() {

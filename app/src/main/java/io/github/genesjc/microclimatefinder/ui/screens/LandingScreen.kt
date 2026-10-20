@@ -106,6 +106,9 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
+import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -429,8 +432,10 @@ private fun StationHeroTile(
     fullWidthPx: Int,
     regionStations: List<MicroclimateStation>,
     regionId: String,
-    folded: Boolean
+    folded: Boolean,
+    readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>
 ) {
+    val reading by remember(station.id) { readingFor(station) }.collectAsStateWithLifecycle()
     HeroTile(
         fullWidthPx = fullWidthPx,
         // The same colour as the open card: its tint over the page colour, not over the backdrop
@@ -447,11 +452,12 @@ private fun StationHeroTile(
         tileCornerRadius = 8.dp,
         // The Region Info sheet sits above this card: opening it folds the card
         forceClosed = folded,
-        tile = { StationSummaryTile(station) },
+        tile = { StationSummaryTile(station, reading = reading) },
         panel = { close ->
             StationCard(
                 station = station,
                 isSelected = true,
+                reading = reading,
                 // Tapping the card folds it back, like Less
                 onSelect = close,
                 compact = true,
@@ -783,6 +789,8 @@ fun LandingScreen(
     /** The map zoom shared by both map views: read when a map is shown, reported as it changes. */
     mapZoom: () -> Float,
     onMapZoomChange: (Float) -> Unit,
+    /** The live reading of a station, for its tile and card; null while it is being checked. */
+    readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>,
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
@@ -1192,7 +1200,7 @@ fun LandingScreen(
                                     // The Region Info sheet opens below this row (the tile and the Info link / X beside it), so it never covers them
                                     .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
                             ) {
-                                if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible)
+                                if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible, readingFor = readingFor)
                             }
                             // The info link, on its own to the right of the station tile; the sheet slides in from the right, the X takes
                             // its place. Topography only: the Elevation view has no Region Info, so the tile takes the whole width there

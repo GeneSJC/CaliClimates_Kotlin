@@ -1,7 +1,10 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.genesjc.microclimatefinder.data.local.StateTerrain
+import io.github.genesjc.microclimatefinder.ui.regionpicker.RegionPickerViewModel
 import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -73,6 +76,7 @@ internal const val PICKER_VERTICAL_STRETCH = 1.35f
 @Composable
 fun CaliforniaRegionPickerPanel(
     pendingRegionId: String,
+    terrain: StateTerrain?,
     onPickRegion: (String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
@@ -110,6 +114,7 @@ fun CaliforniaRegionPickerPanel(
         Spacer(modifier = Modifier.height(12.dp))
         CaliforniaClassicMapCanvas(
             selectedRegionId = pendingRegionId,
+            terrain = terrain,
             onSelectRegion = onPickRegion,
             // Tall: the map is stretched a little vertically and fills the panel's height (the panel is sized to
             // fit it, up to most of the screen; on a short screen the map just gets a little shorter)
@@ -126,8 +131,10 @@ fun CaliforniaRegionsMapScreen(
     onSelectRegion: (String) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToActiveTransect: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: RegionPickerViewModel = viewModel(factory = RegionPickerViewModel.factory(androidx.compose.ui.platform.LocalContext.current))
 ) {
+    val stateTerrain by viewModel.stateTerrain.collectAsStateWithLifecycle()
     val selectedRegion = remember(selectedRegionId) {
         CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == selectedRegionId }
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
@@ -232,6 +239,7 @@ fun CaliforniaRegionsMapScreen(
                         // Map Viewport (Strict Light Mode)
                         CaliforniaClassicMapCanvas(
                             selectedRegionId = selectedRegionId,
+                            terrain = stateTerrain,
                             onSelectRegion = onSelectRegion
                         )
 
@@ -521,15 +529,12 @@ fun CaliforniaRegionsMapScreen(
 @Composable
 private fun CaliforniaClassicMapCanvas(
     selectedRegionId: String,
+    terrain: StateTerrain?,
     onSelectRegion: (String) -> Unit,
     sizeModifier: Modifier = Modifier.height(430.dp),
     // Stretches the map vertically (1 = true shape); the picker uses a little, to be taller
     verticalStretch: Float = 1f
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val terrain by androidx.compose.runtime.produceState<StateTerrain?>(null) {
-        value = withContext(Dispatchers.IO) { TerrainMaps.loadState(context) }
-    }
     val tintAlpha = if (terrain != null) 0.58f else 0.72f
     val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
     Box(

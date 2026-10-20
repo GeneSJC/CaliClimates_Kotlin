@@ -231,11 +231,13 @@ fun StationMapScreen(
         // The selected station card; embedded, Home shows it above the tabs
         if (!embedded) {
         if (selectedStation != null) {
+            val reading by remember(selectedStation.id) { viewModel.reading(selectedStation) }.collectAsStateWithLifecycle()
             StationCard(
                 station = selectedStation,
                 isSelected = true,
                 onSelect = { /* Already selected */ },
-                compact = true
+                compact = true,
+                reading = reading
             )
         } else {
             Surface(

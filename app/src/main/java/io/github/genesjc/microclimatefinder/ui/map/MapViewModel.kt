@@ -3,6 +3,8 @@ package io.github.genesjc.microclimatefinder.ui.map
 import androidx.lifecycle.viewModelScope
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
+import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
+import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
 import kotlinx.coroutines.CoroutineDispatcher
@@ -23,6 +25,7 @@ abstract class MapViewModel(
     /** Loads a region's terrain picture (null when it has none). Called off the main thread. */
     private val loadTerrain: (String) -> TerrainImage?,
     private val cityNameOf: (MicroclimateStation) -> String,
+    private val readings: LiveReadings,
     private val ioDispatcher: CoroutineDispatcher
 ) : AppBaseViewModel() {
 
@@ -43,6 +46,9 @@ abstract class MapViewModel(
             viewModelScope.launch { flow.value = withContext(ioDispatcher) { loadTerrain(regionId) } }
         }
     }
+
+    /** The station's live reading for its card, null while it is being checked. Ask once per card shown. */
+    fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 
     /** The name a station goes by on the maps' labels. */
     fun cityName(station: MicroclimateStation): String = cityNameOf(station)
