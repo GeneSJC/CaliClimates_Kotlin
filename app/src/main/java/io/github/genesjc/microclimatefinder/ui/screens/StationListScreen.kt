@@ -30,16 +30,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
+import io.github.genesjc.microclimatefinder.ui.stationlist.StationListViewModel
 
 @Composable
 fun StationListScreen(
@@ -50,12 +51,10 @@ fun StationListScreen(
     /** The station selected on Home (the same one both map views use), and a way to change it from here. */
     selectedStationId: String?,
     onStationSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: StationListViewModel = viewModel(factory = StationListViewModel.factory(LocalContext.current))
 ) {
-    val context = LocalContext.current
-    val stations = remember(dataset) { StationRepository.stations(context, dataset) }
-    // Home shows the first station when none has been picked; the list marks the same one
-    val activeId = stations.firstOrNull { it.id == selectedStationId }?.id ?: stations.firstOrNull()?.id
+    val state = remember(dataset, selectedStationId) { viewModel.stateFor(dataset, selectedStationId) }
     val pickerState = rememberRegionPickerState()
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -105,7 +104,7 @@ fun StationListScreen(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = dataset.title,
+                        text = state.title,
                         style = MaterialTheme.typography.titleLarge,
                         fontSize = 16.5.sp,
                         lineHeight = 22.sp,
@@ -115,7 +114,7 @@ fun StationListScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = dataset.subtitle,
+                        text = state.subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
                         maxLines = 1,
@@ -139,13 +138,13 @@ fun StationListScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        if (stations.isEmpty()) {
+        if (state.emptyMessage != null) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No stations loaded from: ${dataset.fileName}",
+                    text = state.emptyMessage,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -153,7 +152,7 @@ fun StationListScreen(
         } else {
             // Opens with the selected station in view
             val listState = androidx.compose.foundation.lazy.rememberLazyListState(
-                initialFirstVisibleItemIndex = stations.indexOfFirst { it.id == activeId }.coerceAtLeast(0)
+                initialFirstVisibleItemIndex = state.initialIndex
             )
             LazyColumn(
                 state = listState,
@@ -161,13 +160,13 @@ fun StationListScreen(
                 contentPadding = PaddingValues(bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(stations, key = { it.id }) { station ->
+                items(state.stations, key = { it.id }) { station ->
                     StationCard(
                         station = station,
-                        isSelected = station.id == activeId,
+                        isSelected = station.id == state.activeStationId,
                         // Tapping a card makes it the selected station for both map views; Back returns to the map
                         onSelect = { onStationSelected(station.id) },
-                        selectedLabel = "Showing on map"
+                        selectedLabel = state.selectedLabel
                     )
                 }
             }
