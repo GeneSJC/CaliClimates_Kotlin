@@ -14,6 +14,9 @@ import io.github.genesjc.microclimatefinder.data.local.StationSelectionPreferenc
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
+import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
+import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
+import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.screens.DEFAULT_PIN_SCALE
@@ -76,6 +79,8 @@ class HomeViewModel(
     private val stationsForRegion: (String) -> List<MicroclimateStation>,
     /** Fetches live readings for a region's stations; cancelled when the region changes. */
     private val prefetch: suspend (List<MicroclimateStation>) -> Unit,
+    /** The live readings the station tile and card show. */
+    private val readings: LiveReadings,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AppBaseViewModel() {
 
@@ -105,6 +110,11 @@ class HomeViewModel(
                 prefetch(stations)
             }
         }
+        // Once the first region is on its way, read the other regions' stations in the background, so changing
+        // region later finds them already parsed instead of unzipping a pack on the main thread mid-transition
+        viewModelScope.launch(ioDispatcher) {
+            CaliforniaRegionalDefinitions.ALL_REGIONS.forEach { stationsForRegion(it.id) }
+        }
     }
 
     /** Changes the app-wide region, remembers it, and clears (and forgets) the station chosen in the old one. */
@@ -115,6 +125,15 @@ class HomeViewModel(
         zoomStore.save(regionId, 1f)
         _uiState.update { it.copy(selectedRegionId = regionId, selectedStationId = null) }
     }
+
+    /**
+     * The region's stations, for Home's dropdown, Terrain Legend and station card. Usually already read (the region's
+     * fetch and the warm-up of the others do it in the background), so it is a lookup; call it from remember, not per frame.
+     */
+    fun stations(regionId: String): List<MicroclimateStation> = stationsForRegion(regionId)
+
+    /** The station's live reading for its tile and card, null while it is being checked. Ask once per station shown. */
+    fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 
     fun selectStation(stationId: String?) {
         stationStore.save(_uiState.value.selectedRegionId, stationId)
@@ -150,7 +169,8 @@ class HomeViewModel(
                         stationsForRegion = { regionId ->
                             store.datasetFor(regionId)?.let { StationRepository.stations(app, it) } ?: emptyList()
                         },
-                        prefetch = { LiveObservationCache.prefetch(it) }
+                        prefetch = { LiveObservationCache.prefetch(it) },
+                        readings = LiveReadings.shared
                     )
                 }
             }

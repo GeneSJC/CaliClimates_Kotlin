@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -161,8 +162,10 @@ fun StationListScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(state.stations, key = { it.id }) { station ->
+                    val reading by remember(station.id) { viewModel.reading(station) }.collectAsStateWithLifecycle()
                     StationCard(
                         station = station,
+                        reading = reading,
                         isSelected = station.id == state.activeStationId,
                         // Tapping a card makes it the selected station for both map views; Back returns to the map
                         onSelect = { onStationSelected(station.id) },

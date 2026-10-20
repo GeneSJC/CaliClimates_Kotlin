@@ -327,7 +327,7 @@ fun ElevationProfileScreen(
                     skyline = skyline,
                     cityName = viewModel::cityName,
                     knownReading = viewModel::knownReading,
-                    fetchReading = viewModel::reading,
+                    fetchReading = viewModel::latestReading,
                     startVisit = viewModel::startVisit,
                     onLineTapped = viewModel::lineTapped,
                     embedded = embedded,
@@ -369,11 +369,13 @@ fun ElevationProfileScreen(
         // Selected station card (the Station Inspector)
 
         if (selectedStation != null) {
+            val reading by remember(selectedStation.id) { viewModel.reading(selectedStation) }.collectAsStateWithLifecycle()
             StationCard(
                 station = selectedStation,
                 isSelected = true,
                 onSelect = { /* Already selected */ },
-                compact = true
+                compact = true,
+                reading = reading
             )
         } else {
             Surface(
