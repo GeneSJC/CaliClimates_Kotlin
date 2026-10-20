@@ -1336,7 +1336,7 @@ private fun ElevationProfileCanvas(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = currentStation?.name?.take(16) ?: "Sacramento",
+                            text = currentStation?.name?.let { if (it.length > 26) it.take(25) + "\u2026" else it } ?: "Sacramento",
                             fontSize = ms(9f),
                             fontWeight = FontWeight.Medium,
                             color = Color.White.copy(alpha = 0.9f),
