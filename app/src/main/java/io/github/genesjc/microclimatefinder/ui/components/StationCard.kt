@@ -49,7 +49,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.genesjc.microclimatefinder.AppFeatures
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
-import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
@@ -75,12 +74,14 @@ fun StationCard(
     // Compact only: a sentence about the height, shown under the terrain row
     elevationNote: String? = null,
     // Full card: a short mark next to the terrain badge while the card is the selected one (the Station List)
-    selectedLabel: String? = null
+    selectedLabel: String? = null,
+    // The station's live reading, from its ViewModel; null while it is being checked
+    reading: ObservationResult? = null
 ) {
     val context = LocalContext.current
     var showNewsDialog by remember { mutableStateOf(false) }
 
-    val display = if (useMockReadings) mockDisplay(station) else liveDisplay(station)
+    val display = if (useMockReadings) mockDisplay(station) else liveDisplay(reading)
 
     val cleanCity = remember(station.id, station.name) {
         LocalNewsRepository.getCleanCityName(station.id, station.name)
@@ -671,8 +672,8 @@ private fun CompactMetric(label: String, value: String) {
  * there is no reading, the reason shows where the °C would be.
  */
 @Composable
-fun StationSummaryTile(station: MicroclimateStation) {
-    val display = liveDisplay(station)
+fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult? = null) {
+    val display = liveDisplay(reading)
     // One line: the temperature in °F, a pipe divider, the name, and the chevron at the right. The name gives way
     // (with an ellipsis) only when it really cannot fit; the temperature always shows
     Row(
@@ -736,13 +737,8 @@ private fun mockDisplay(station: MicroclimateStation): CardDisplay {
     )
 }
 
-/** Real NWS reading for the station: from the prefetch cache when present, else fetched now. */
-@Composable
-private fun liveDisplay(station: MicroclimateStation): CardDisplay {
-    var result by remember(station.id) { mutableStateOf(LiveObservationCache.peek(station.id)) }
-    LaunchedEffect(station.id) {
-        result = if (station.canHaveLiveReading) LiveObservationCache.get(station.id) else ObservationResult.NoReading
-    }
+/** What the card shows for the station's real NWS reading (null while it is being checked). */
+private fun liveDisplay(result: ObservationResult?): CardDisplay {
     return when (val r = result) {
         is ObservationResult.Reading -> {
             val o = r.observation

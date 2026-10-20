@@ -4,7 +4,9 @@ import io.github.genesjc.microclimatefinder.data.local.MapZoomStore
 import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
 import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testStation
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -57,6 +59,7 @@ class HomeViewModelTest {
         stationStore = stationStore,
         zoomStore = zoomStore,
         stationsForRegion = { regionId -> listOf(testStation(id = regionId)) },
+        readings = testLiveReadings(CoroutineScope(dispatcher)),
         prefetch = { stations: List<MicroclimateStation> ->
             val regionId = stations.first().id
             fetchedFor += regionId
@@ -157,6 +160,11 @@ class HomeViewModelTest {
         assertEquals(1f, vm.mapZoom)
         assertEquals("b", zoomStore.region)
         assertEquals(1f, zoomStore.zoom)
+    }
+
+    @Test
+    fun providesTheStationsOfARegionForHomesLists() {
+        assertEquals(listOf("b"), viewModel().stations("b").map { it.id })
     }
 
     @Test

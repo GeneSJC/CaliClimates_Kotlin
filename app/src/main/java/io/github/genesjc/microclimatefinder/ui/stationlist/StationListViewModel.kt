@@ -6,8 +6,11 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
+import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
+import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
+import kotlinx.coroutines.flow.StateFlow
 
 /** What the Station List shows: the header text, the stations, which one is marked, and where the list opens. */
 data class StationListUiState(
@@ -30,8 +33,12 @@ data class StationListUiState(
  * [stationsFor] is a plain collaborator so tests can supply fakes; [factory] builds the real one.
  */
 class StationListViewModel(
-    private val stationsFor: (StationDatasetInfo) -> List<MicroclimateStation>
+    private val stationsFor: (StationDatasetInfo) -> List<MicroclimateStation>,
+    private val readings: LiveReadings
 ) : AppBaseViewModel() {
+
+    /** The station's live reading for its card, null while it is being checked. Ask once per card shown. */
+    fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 
     fun stateFor(dataset: StationDatasetInfo, selectedStationId: String?): StationListUiState {
         val stations = stationsFor(dataset)
@@ -54,7 +61,12 @@ class StationListViewModel(
         fun factory(context: Context): ViewModelProvider.Factory {
             val app = context.applicationContext
             return viewModelFactory {
-                initializer { StationListViewModel(stationsFor = { StationRepository.stations(app, it) }) }
+                initializer {
+                    StationListViewModel(
+                        stationsFor = { StationRepository.stations(app, it) },
+                        readings = LiveReadings.shared
+                    )
+                }
             }
         }
     }

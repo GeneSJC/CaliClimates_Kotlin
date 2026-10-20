@@ -31,6 +31,12 @@ class StationCsvFormatTest {
     }
 
     @Test
+    fun aStationInTheTownListShowsTheTownAndItsOwnName() {
+        val s = parse("id,display_name,elevation_meters\nMTZC1,Mount Zion,903\n").single()
+        assertEquals("Jackson (Mount Zion)", s.name)
+    }
+
+    @Test
     fun acceptsTheAlternativeColumnNames() {
         val s = parse("station_id,station_name,lat,lon,elevation_m\nKXYZ,Alt Names,37.0,-122.0,100\n").single()
         assertEquals("KXYZ", s.id)

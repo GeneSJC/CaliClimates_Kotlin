@@ -114,16 +114,6 @@ fun AppNavigation(
 
     // (Live readings for the region's featured stations are fetched by HomeViewModel whenever the region changes.)
 
-    // Once the first screen is up, read the other regions' stations in the background, so changing region later finds
-    // them already parsed instead of unzipping a pack on the main thread in the middle of the transition
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            CaliforniaRegionalDefinitions.ALL_REGIONS.forEach { store.datasetFor(it.id) }
-            // ... and the statewide terrain pictures the region picker draws, so its first open shows them at once
-            TerrainMaps.loadState(context)
-        }
-    }
-
     // Intercept hardware/gesture back press when not on Landing
     if (currentScreen != AppScreen.LANDING) {
         BackHandler {
@@ -159,6 +149,8 @@ fun AppNavigation(
                 onSliderShownChange = homeViewModel::setSliderShown,
                 mapZoom = { homeViewModel.mapZoom },
                 onMapZoomChange = homeViewModel::setMapZoom,
+                stationsForRegion = homeViewModel::stations,
+                readingFor = homeViewModel::reading,
                 darkMode = darkMode,
                 onDarkModeChange = onDarkModeChange
             )

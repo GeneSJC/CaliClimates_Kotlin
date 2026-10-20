@@ -39,7 +39,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.genesjc.microclimatefinder.ui.regionpicker.RegionPickerViewModel
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -141,10 +145,13 @@ internal fun regionPickerColors(): Map<String, Color> = remember {
 fun RegionPickerOverlay(
     state: RegionPickerState,
     selectedRegionId: String,
-    onSelectRegion: (String) -> Unit
+    onSelectRegion: (String) -> Unit,
+    // Created when Home first shows, so the statewide terrain picture is loaded before the picker is first opened
+    viewModel: RegionPickerViewModel = viewModel(factory = RegionPickerViewModel.factory(LocalContext.current))
 ) {
     BackHandler(enabled = state.visible) { state.close() }
     if (!state.visible) return
+    val stateTerrain by viewModel.stateTerrain.collectAsStateWithLifecycle()
 
     val t = state.expand.value
     val density = LocalDensity.current
@@ -217,6 +224,7 @@ fun RegionPickerOverlay(
             if (t > 0.5f) {
                 CaliforniaRegionPickerPanel(
                     pendingRegionId = state.pendingRegionId,
+                    terrain = stateTerrain,
                     // A pick is the choice: no Confirm button
                     onPickRegion = { id ->
                         state.pendingRegionId = id
