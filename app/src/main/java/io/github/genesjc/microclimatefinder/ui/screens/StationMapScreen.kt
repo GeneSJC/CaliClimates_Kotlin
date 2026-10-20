@@ -62,6 +62,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.genesjc.microclimatefinder.ui.map.StationMapViewModel
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.FilterQuality
@@ -82,12 +85,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
-import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaGeography
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
-import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
 import io.github.genesjc.microclimatefinder.ui.components.MapProjection
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
@@ -143,15 +143,13 @@ fun StationMapScreen(
     onSelectedOffscreenChange: ((Boolean) -> Unit)? = null,
     /** Home: bumped to ask the map to bring the selected station back to the middle of the view. */
     recenterTick: Int = 0,
+    viewModel: StationMapViewModel = viewModel(factory = StationMapViewModel.factory(LocalContext.current)),
 ) {
-    val context = LocalContext.current
-    val stations = remember(dataset) { StationRepository.stations(context, dataset) }
+    val stations = remember(dataset) { viewModel.stationsFor(dataset) }
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     // The region's terrain picture, loaded off the main thread; the map shows a plain base until it arrives
-    val terrain by produceState<TerrainImage?>(null, dataset.regionId) {
-        value = withContext(Dispatchers.IO) { TerrainMaps.load(context, dataset.regionId) }
-    }
+    val terrain by remember(dataset.regionId) { viewModel.terrain(dataset.regionId) }.collectAsStateWithLifecycle()
     // Keyed to the data, so a region change starts from that region's first station and not the old region's id
     var localSelectedId by remember(stations) { mutableStateOf(stations.firstOrNull()?.id) }
     val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
@@ -289,6 +287,7 @@ fun StationMapScreen(
                 SpatialMapCanvas(
                     stations = stations,
                     terrain = terrain,
+                    cityName = viewModel::cityName,
                     embedded = embedded,
                     selectedStationId = selectedStationId,
                     pinScale = pinScale,
@@ -467,6 +466,7 @@ private data class StationLabelPlan(
 private fun SpatialMapCanvas(
     stations: List<MicroclimateStation>,
     terrain: TerrainImage?,
+    cityName: (MicroclimateStation) -> String,
     embedded: Boolean,
     selectedStationId: String?,
     pinScale: Float = 1.0f,
@@ -508,7 +508,7 @@ private fun SpatialMapCanvas(
     val textScale = MapText.scale
     val landmarkLabels = remember(landmarks, textScale) {
         landmarks.map { station ->
-            val city = LocalNewsRepository.getCleanCityName(station.id, station.name)
+            val city = cityName(station)
                 .let { if (it.length > 18) it.take(17) + "\u2026" else it }
             val elevText = Elevation.formatFeet(station.elevationMeters)
             // Estimated label width at the current text scale; labels that would pass the right edge end at the pin instead
