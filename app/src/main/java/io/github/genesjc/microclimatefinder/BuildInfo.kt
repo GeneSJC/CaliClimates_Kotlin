@@ -5,5 +5,5 @@ package io.github.genesjc.microclimatefinder
  * Bump the commit number with every commit, so a screenshot tells you exactly which build is running.
  */
 object BuildInfo {
-    const val LABEL = "78.6"
+    const val LABEL = "80.1"
 }

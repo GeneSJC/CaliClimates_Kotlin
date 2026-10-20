@@ -16,6 +16,19 @@ data class StationDatasetInfo(
     val packFileName: String? = null
 )
 
+/** What the app asks of its station data: a dataset per region, the fallback one, and how many regions have data. */
+interface RegionDatasets {
+    fun datasetFor(regionId: String): StationDatasetInfo?
+
+    /** Bay Area / Sacramento data, or an empty placeholder if it cannot be loaded. */
+    fun defaultDataset(): StationDatasetInfo
+
+    /** Number of regions with full station data (a CSV override or a pack), not just the sample. */
+    fun fullDataRegionCount(): Int
+
+    fun totalRegionCount(): Int
+}
+
 /**
  * Finds station data per region, first match wins:
  *  1. a raw CSV in assets (stations_<regionId>.csv, dropped into the gitignored app/src/debug/assets
@@ -23,7 +36,7 @@ data class StationDatasetInfo(
  *  2. the region's station pack (a.txt to f.txt in assets).
  * A region neither can supply has no stations; the app shows its limited-data banner.
  */
-class StationDataStore(private val context: Context) {
+class StationDataStore(private val context: Context) : RegionDatasets {
 
     private val assetNames: Set<String> by lazy {
         try { context.assets.list("")?.toSet() ?: emptySet() } catch (e: Exception) { emptySet() }
@@ -36,13 +49,12 @@ class StationDataStore(private val context: Context) {
     private fun packFileFor(regionId: String): String? =
         PACK_FILES[regionId]?.takeIf { it in assetNames }
 
-    /** Number of regions with full station data (a CSV override or a pack), not just the sample. */
-    fun fullDataRegionCount(): Int =
+    override fun fullDataRegionCount(): Int =
         CaliforniaRegionalDefinitions.ALL_REGIONS.count { hasCsvOverride(it.id) || packFileFor(it.id) != null }
 
-    fun totalRegionCount(): Int = CaliforniaRegionalDefinitions.ALL_REGIONS.size
+    override fun totalRegionCount(): Int = CaliforniaRegionalDefinitions.ALL_REGIONS.size
 
-    fun datasetFor(regionId: String): StationDatasetInfo? {
+    override fun datasetFor(regionId: String): StationDatasetInfo? {
         val region = CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == regionId }
             ?: return null
         if (hasCsvOverride(regionId)) {
@@ -56,8 +68,7 @@ class StationDataStore(private val context: Context) {
         return null
     }
 
-    /** Bay Area / Sacramento data, or an empty placeholder if it cannot be loaded (used by the demos). */
-    fun defaultDataset(): StationDatasetInfo {
+    override fun defaultDataset(): StationDatasetInfo {
         val bayArea = CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
         return datasetFor(bayArea.id)
             ?: StationDatasetInfo(
