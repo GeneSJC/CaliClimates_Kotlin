@@ -57,7 +57,7 @@ class ElevationViewModel(
     fun knownReading(stationId: String): ObservationResult? = peekReading(stationId)
 
     /** The station's live reading (fetched when not fresh); [ObservationResult.NoReading] when it cannot report one. */
-    suspend fun reading(station: MicroclimateStation): ObservationResult =
+    suspend fun latestReading(station: MicroclimateStation): ObservationResult =
         if (station.canHaveLiveReading) fetchReading(station.id) else ObservationResult.NoReading
 
     /** Counts this visit to the view and says whether the hint in words should show. */

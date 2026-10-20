@@ -118,9 +118,9 @@ class MapViewModelsTest {
     fun aStationThatCannotReportIsNotFetched() = runTest {
         val vm = elevation()
         val silent = testStation(id = "KNO", reportsTemp = false)
-        assertEquals(ObservationResult.NoReading, vm.reading(silent))
+        assertEquals(ObservationResult.NoReading, vm.latestReading(silent))
         assertTrue(fetched.isEmpty())
-        assertEquals(ObservationResult.Failed, vm.reading(stations[0]))
+        assertEquals(ObservationResult.Failed, vm.latestReading(stations[0]))
         assertEquals(listOf("K1"), fetched)
         assertNull(vm.knownReading("K1"))
     }

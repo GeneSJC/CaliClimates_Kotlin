@@ -327,7 +327,7 @@ fun ElevationProfileScreen(
                     skyline = skyline,
                     cityName = viewModel::cityName,
                     knownReading = viewModel::knownReading,
-                    fetchReading = viewModel::reading,
+                    fetchReading = viewModel::latestReading,
                     startVisit = viewModel::startVisit,
                     onLineTapped = viewModel::lineTapped,
                     embedded = embedded,
