@@ -1,10 +1,19 @@
 package io.github.genesjc.microclimatefinder.data.local
 
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
+import io.github.genesjc.microclimatefinder.domain.placeAndStationName
 
 object LocalNewsRepository {
 
-    fun getCleanCityName(stationId: String, stationName: String): String {
+    /** The short name the maps' labels use: the station's town when it has one in the list below, else its cleaned name. */
+    fun getCleanCityName(stationId: String, stationName: String): String =
+        mappedCity(stationId) ?: cityFromStationName(stationName)
+
+    /** The name shown on the chip, cards and lists: the town and the station's own name together, where they differ. */
+    fun displayName(stationId: String, stationName: String): String =
+        mappedCity(stationId)?.let { placeAndStationName(it, stationName) } ?: stationName
+
+    private fun mappedCity(stationId: String): String? {
         return when (stationId) {
             "KVCB" -> "Vacaville"
             "KSUU" -> "Fairfield"
@@ -40,7 +49,7 @@ object LocalNewsRepository {
             "BKSC1" -> "Brooks"
             "MTZC1" -> "Jackson"
             "ESPC1" -> "Placerville"
-            else -> cityFromStationName(stationName)
+            else -> null
         }
     }
 

@@ -51,7 +51,6 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.BlendMode
-import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
@@ -64,6 +63,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.genesjc.microclimatefinder.ui.map.ElevationViewModel
 import androidx.compose.ui.platform.LocalDensity
 import io.github.genesjc.microclimatefinder.ui.components.MapExpandToggle
 import androidx.compose.ui.layout.onSizeChanged
@@ -74,10 +76,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
-import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
-import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
@@ -214,19 +213,15 @@ fun ElevationProfileScreen(
     onSliderShownChange: ((Boolean) -> Unit)? = null,
     /** Home: 0 normally, 1 when the chart has grown out into the page margins (this view); eased between. */
     expandT: Float = 0f,
+    viewModel: ElevationViewModel = viewModel(factory = ElevationViewModel.factory(LocalContext.current)),
 ) {
-    val context = LocalContext.current
-    val stations = remember(dataset) { StationRepository.stations(context, dataset) }
+    val stations = remember(dataset) { viewModel.stationsFor(dataset) }
 
     // The region's terrain picture (the one the Topography map draws), used as a faint texture in the ground
-    val terrain by produceState<TerrainImage?>(null, dataset.regionId) {
-        value = withContext(Dispatchers.IO) { TerrainMaps.load(context, dataset.regionId) }
-    }
+    val terrain by remember(dataset.regionId) { viewModel.terrain(dataset.regionId) }.collectAsStateWithLifecycle()
 
     // The region's real skylines, for the distant ranges
-    val skyline by produceState<List<FloatArray>?>(null, dataset.regionId) {
-        value = withContext(Dispatchers.IO) { TerrainMaps.loadSkyline(context, dataset.regionId) }
-    }
+    val skyline by remember(dataset.regionId) { viewModel.skyline(dataset.regionId) }.collectAsStateWithLifecycle()
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
@@ -330,6 +325,11 @@ fun ElevationProfileScreen(
                     regionId = dataset.regionId,
                     terrain = terrain,
                     skyline = skyline,
+                    cityName = viewModel::cityName,
+                    knownReading = viewModel::knownReading,
+                    fetchReading = viewModel::reading,
+                    startVisit = viewModel::startVisit,
+                    onLineTapped = viewModel::lineTapped,
                     embedded = embedded,
                     expandT = expandT,
                     selectedStationId = selectedStationId,
@@ -578,6 +578,12 @@ private fun ElevationProfileCanvas(
     regionId: String,
     terrain: TerrainImage?,
     skyline: List<FloatArray>?,
+    cityName: (MicroclimateStation) -> String,
+    knownReading: (String) -> ObservationResult?,
+    fetchReading: suspend (MicroclimateStation) -> ObservationResult,
+    /** Counts a visit to this view; true when the hint in words should show. */
+    startVisit: () -> Boolean,
+    onLineTapped: () -> Unit,
     embedded: Boolean,
     expandT: Float = 0f,
     selectedStationId: String?,
@@ -596,7 +602,7 @@ private fun ElevationProfileCanvas(
     val rankedLandmarks = remember(sorted) { rankLandmarkIndexes(sorted) }
     // Each station's label text, made once (label placement runs on every zoom and pan frame)
     val labelTexts = remember(sorted) {
-        sorted.map { LocalNewsRepository.getCleanCityName(it.id, it.name) + " ${Elevation.formatFeet(it.elevationMeters)}" }
+        sorted.map { cityName(it) + " ${Elevation.formatFeet(it.elevationMeters)}" }
     }
     val ridgeCache = remember { RidgeHeights() }
     val cycleIds = remember(sorted) {
@@ -616,8 +622,6 @@ private fun ElevationProfileCanvas(
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
 
     // Every visit: a pulse runs up the line once. First launches only: a hint in words says the line can be tapped
-    val hintContext = LocalContext.current
-    val hintPrefs = remember { io.github.genesjc.microclimatefinder.data.local.ElevationHintPreferences(hintContext) }
     var showHint by remember { mutableStateOf(false) }
     val pulse = remember { androidx.compose.animation.core.Animatable(0f) }
     // The hint eases in to a translucent look, then fades slowly from the start; a tap clears it quickly
@@ -631,10 +635,10 @@ private fun ElevationProfileCanvas(
         }
     }
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        hintPrefs.countLaunch()
+        // Counts this visit; the words show only while the hint is still wanted
         // The ripple up the line plays on every visit to this view (it is the cue that the line can be tapped); the
         // words of the hint show only on the first few launches, and stop at the first tap
-        val showWords = hintPrefs.shouldShow()
+        val showWords = startVisit()
         if (showWords) showHint = true
         kotlinx.coroutines.delay(700)
         pulse.snapTo(0f)
@@ -658,15 +662,15 @@ private fun ElevationProfileCanvas(
 
     // Nothing selected: start on the lowest station that has a live reading, so the first view is not blank
     val currentStation = sorted.find { it.id == selectedStationId }
-        ?: sorted.firstOrNull { LiveObservationCache.peek(it.id) is ObservationResult.Reading }
+        ?: sorted.firstOrNull { knownReading(it.id) is ObservationResult.Reading }
         ?: sorted.firstOrNull()
     // Real NWS temperature for the selected station; null while loading or when it has no reading
     var live by remember(currentStation?.id) {
-        mutableStateOf(currentStation?.let { LiveObservationCache.peek(it.id) })
+        mutableStateOf(currentStation?.let { knownReading(it.id) })
     }
     LaunchedEffect(currentStation?.id) {
         currentStation?.let {
-            live = if (it.canHaveLiveReading) LiveObservationCache.get(it.id) else ObservationResult.NoReading
+            live = fetchReading(it)
         }
     }
     val tempF: Double? = (live as? ObservationResult.Reading)?.observation?.temperatureFahrenheit
@@ -891,7 +895,7 @@ private fun ElevationProfileCanvas(
                         }
                         closestStation?.let {
                             onSelectStation(it)
-                            hintPrefs.markLineTapped()
+                            onLineTapped()
                             showHint = false
                         }
                     }
@@ -1332,7 +1336,7 @@ private fun ElevationProfileCanvas(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = currentStation?.name?.take(16) ?: "Sacramento",
+                            text = currentStation?.name?.let { if (it.length > 26) it.take(25) + "\u2026" else it } ?: "Sacramento",
                             fontSize = ms(9f),
                             fontWeight = FontWeight.Medium,
                             color = Color.White.copy(alpha = 0.9f),
