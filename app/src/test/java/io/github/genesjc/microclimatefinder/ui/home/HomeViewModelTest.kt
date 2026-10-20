@@ -163,6 +163,11 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun providesTheStationsOfARegionForHomesLists() {
+        assertEquals(listOf("b"), viewModel().stations("b").map { it.id })
+    }
+
+    @Test
     fun fetchesTheNewRegionAndCancelsThePreviousFetch() {
         val vm = viewModel()
         assertEquals(listOf("a"), fetchedFor)

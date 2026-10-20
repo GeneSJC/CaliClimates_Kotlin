@@ -35,8 +35,6 @@ import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
-import io.github.genesjc.microclimatefinder.data.local.StationRepository
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.Canvas
@@ -789,6 +787,8 @@ fun LandingScreen(
     /** The map zoom shared by both map views: read when a map is shown, reported as it changes. */
     mapZoom: () -> Float,
     onMapZoomChange: (Float) -> Unit,
+    /** The stations of a region, for the drop-down, Terrain Legend and station card. */
+    stationsForRegion: (String) -> List<MicroclimateStation>,
     /** The live reading of a station, for its tile and card; null while it is being checked. */
     readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>,
     darkMode: Boolean,
@@ -800,9 +800,8 @@ fun LandingScreen(
             ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
     }
     val hasStationData = dataset != null
-    val context = LocalContext.current
     val snapshotStations = remember(dataset) {
-        dataset?.let { StationRepository.stations(context, it) } ?: emptyList()
+        if (dataset != null) stationsForRegion(selectedRegionId) else emptyList()
     }
     val appName = stringResource(R.string.app_name)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)

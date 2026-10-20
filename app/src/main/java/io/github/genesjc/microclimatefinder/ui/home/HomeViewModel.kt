@@ -126,6 +126,12 @@ class HomeViewModel(
         _uiState.update { it.copy(selectedRegionId = regionId, selectedStationId = null) }
     }
 
+    /**
+     * The region's stations, for Home's dropdown, Terrain Legend and station card. Usually already read (the region's
+     * fetch and the warm-up of the others do it in the background), so it is a lookup; call it from remember, not per frame.
+     */
+    fun stations(regionId: String): List<MicroclimateStation> = stationsForRegion(regionId)
+
     /** The station's live reading for its tile and card, null while it is being checked. Ask once per station shown. */
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 

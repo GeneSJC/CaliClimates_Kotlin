@@ -149,6 +149,7 @@ fun AppNavigation(
                 onSliderShownChange = homeViewModel::setSliderShown,
                 mapZoom = { homeViewModel.mapZoom },
                 onMapZoomChange = homeViewModel::setMapZoom,
+                stationsForRegion = homeViewModel::stations,
                 readingFor = homeViewModel::reading,
                 darkMode = darkMode,
                 onDarkModeChange = onDarkModeChange
