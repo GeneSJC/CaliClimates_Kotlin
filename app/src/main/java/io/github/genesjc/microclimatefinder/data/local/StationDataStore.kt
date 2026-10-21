@@ -44,14 +44,12 @@ interface RegionDatasets {
  * A region neither can supply has no stations; the app shows its limited-data banner.
  */
 class StationDataStore(
-    private val context: Context,
+    private val listAssets: () -> Set<String>,
     private val repository: StationRepository,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : RegionDatasets {
 
-    private val assetNames: Set<String> by lazy {
-        try { context.assets.list("")?.toSet() ?: emptySet() } catch (e: Exception) { emptySet() }
-    }
+    private val assetNames: Set<String> by lazy { listAssets() }
 
     private fun fileNameFor(regionId: String) = "stations_$regionId.csv"
 
@@ -126,6 +124,12 @@ class StationDataStore(
     }
 
     companion object {
+        /** The store over the app's real assets; a missing or unreadable asset folder reads as no data. */
+        fun fromAssets(context: Context, repository: StationRepository) = StationDataStore(
+            listAssets = { try { context.assets.list("")?.toSet() ?: emptySet() } catch (e: Exception) { emptySet() } },
+            repository = repository
+        )
+
         // Station pack per region, named by the app's region order: north to south, then west to east
         private val PACK_FILES = mapOf(
             CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id to "a.txt",
