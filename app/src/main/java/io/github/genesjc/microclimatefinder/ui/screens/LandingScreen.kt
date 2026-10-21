@@ -129,7 +129,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
-import io.github.genesjc.microclimatefinder.BuildInfo
 import io.github.genesjc.microclimatefinder.EditionConfig
 import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
@@ -771,6 +770,8 @@ fun LandingScreen(
     dataset: StationDatasetInfo?,
     fullDataRegions: Int,
     totalRegions: Int,
+    /** The build label for the drawer and the About dialog; the screen does not read the build constants itself. */
+    buildLabel: String,
     regionOptions: List<RegionOption>,
     onSelectRegion: (String) -> Unit,
     onNavigateTo: (AppScreen) -> Unit,
@@ -869,7 +870,7 @@ fun LandingScreen(
                 Box(modifier = Modifier.background(sheetBrush())) {
                 MenuDrawerContent(
                     appName = appName,
-                    buildLabel = BuildInfo.LABEL,
+                    buildLabel = buildLabel,
                     // Only the demo edition has the Demos & Previews hub
                     showDemos = EditionConfig.HAS_DEMOS,
                     darkMode = darkMode,
@@ -1352,6 +1353,6 @@ fun LandingScreen(
     }
 
     if (showAboutDialog) {
-        AboutDialog(appName = appName, buildLabel = BuildInfo.LABEL, onClose = { showAboutDialog = false })
+        AboutDialog(appName = appName, buildLabel = buildLabel, onClose = { showAboutDialog = false })
     }
 }

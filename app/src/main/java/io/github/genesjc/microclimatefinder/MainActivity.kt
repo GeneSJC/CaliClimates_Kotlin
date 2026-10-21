@@ -127,6 +127,7 @@ fun AppNavigation(
                 dataset = regionDataset,
                 fullDataRegions = fullDataRegions,
                 totalRegions = homeViewModel.totalRegionCount(),
+                buildLabel = homeViewModel.buildLabel,
                 regionOptions = regionOptions,
                 onSelectRegion = { pickRegion(it) },
                 onNavigateTo = { targetScreen ->
