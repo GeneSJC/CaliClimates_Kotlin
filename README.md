@@ -1,4 +1,4 @@
-# Android_MicroClimateFinder
+# California Climate Finder
 
 ## Highlights
 

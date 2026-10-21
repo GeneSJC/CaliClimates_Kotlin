@@ -30,7 +30,7 @@ import io.github.genesjc.microclimatefinder.ui.root.AppRootViewModel
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.RegionOption
 import io.github.genesjc.microclimatefinder.ui.screens.StationListScreen
-import io.github.genesjc.microclimatefinder.ui.theme.MicroClimateFinderTheme
+import io.github.genesjc.microclimatefinder.ui.theme.CaliforniaClimateFinderTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
             val backdropRegionId by homeViewModel.selectedRegionId.collectAsStateWithLifecycle()
             // The opening view shows once per launch (and not again after a rotation)
             var showIntro by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
-            MicroClimateFinderTheme(darkTheme = darkMode) {
+            CaliforniaClimateFinderTheme(darkTheme = darkMode) {
                 androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
                 AppBackground(darkTheme = darkMode, regionId = backdropRegionId, texture = backdropTexture) {
                     Surface(
