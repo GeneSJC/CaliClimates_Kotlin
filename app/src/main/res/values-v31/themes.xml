@@ -3,7 +3,7 @@
 
     <!-- Android 12 and later: the system splash screen. It shows the full round launcher icon (its sky, sun,
          clouds and terrain) in the middle of a dark blue-slate that fills the whole screen, on a soft halo -->
-    <style name="Theme.CaliforniaClimateFinder" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.CaliClimates" parent="android:Theme.Material.Light.NoActionBar">
         <!-- After the splash and before the first frame, the same slate (not cream), so the hand-off is seamless -->
         <item name="android:windowBackground">#FF0A1628</item>
         <!-- A slate with a touch more blue, closer to the icon's own navy -->

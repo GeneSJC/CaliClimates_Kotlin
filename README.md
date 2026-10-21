@@ -1,4 +1,4 @@
-# California Climate Finder
+# Cali Climates
 
 ## Highlights
 
