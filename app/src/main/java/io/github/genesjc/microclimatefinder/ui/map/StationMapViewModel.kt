@@ -8,11 +8,12 @@ import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
-import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
+import io.github.genesjc.microclimatefinder.data.local.TerrainSource
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import org.koin.core.context.GlobalContext
 
 /** The Topography map's ViewModel. Today it only needs what [MapViewModel] provides. */
 class StationMapViewModel(
@@ -26,14 +27,17 @@ class StationMapViewModel(
     companion object {
         /** Builds the real [StationMapViewModel] from the application context. */
         fun factory(context: Context): ViewModelProvider.Factory {
-            val app = context.applicationContext
+            // Until the ViewModels take their helpers with `by inject()`, the factory asks the container for them
             return viewModelFactory {
                 initializer {
+                    val koin = GlobalContext.get()
+                    val stations = koin.get<StationRepository>()
+                    val terrain = koin.get<TerrainSource>()
                     StationMapViewModel(
-                        stationsOf = { StationRepository.stations(app, it) },
-                        loadTerrain = { TerrainMaps.load(app, it) },
+                        stationsOf = { stations.stations(it) },
+                        loadTerrain = { terrain.load(it) },
                         cityNameOf = { LocalNewsRepository.getCleanCityName(it.id, it.name) },
-                        readings = LiveReadings.shared
+                        readings = koin.get()
                     )
                 }
             }

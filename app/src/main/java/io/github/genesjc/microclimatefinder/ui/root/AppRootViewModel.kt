@@ -7,8 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.genesjc.microclimatefinder.data.local.DarkModeStore
-import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
-import io.github.genesjc.microclimatefinder.data.local.ThemePreferences
+import io.github.genesjc.microclimatefinder.data.local.TerrainSource
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.core.context.GlobalContext
 
 /**
  * What sits above every screen: the dark or light look (remembered between launches) and the backdrop's relief
@@ -51,12 +51,14 @@ class AppRootViewModel(
     companion object {
         /** Builds the real [AppRootViewModel] from the application context. */
         fun factory(context: Context): ViewModelProvider.Factory {
-            val app = context.applicationContext
+            // Until the ViewModels take their helpers with `by inject()`, the factory asks the container for them
             return viewModelFactory {
                 initializer {
+                    val koin = GlobalContext.get()
+                    val terrain = koin.get<TerrainSource>()
                     AppRootViewModel(
-                        darkModeStore = ThemePreferences(app),
-                        loadBackdropTexture = { TerrainMaps.loadBackdropRelief(app) }
+                        darkModeStore = koin.get(),
+                        loadBackdropTexture = { terrain.loadBackdropRelief() }
                     )
                 }
             }

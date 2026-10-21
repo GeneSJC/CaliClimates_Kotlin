@@ -27,7 +27,7 @@ class KoinTestSupportTest {
     }
 
     @Test
-    fun theAppModuleStartsWithoutAnAndroidContextWhileItIsEmpty() {
+    fun theAppModuleLoadsWithoutAnAndroidContextBecauseDefinitionsAreLazy() {
         stopKoinIfRunning()
         startKoin { modules(appModule, module { single { 1 } }) }
         assertEquals(1, GlobalContext.get().get<Int>())

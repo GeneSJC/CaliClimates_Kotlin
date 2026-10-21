@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.genesjc.microclimatefinder.data.local.StateTerrain
-import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
+import io.github.genesjc.microclimatefinder.data.local.TerrainSource
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.core.context.GlobalContext
 
 /**
  * The California region picker's data: the statewide terrain picture its map draws. It starts loading as soon as
@@ -37,8 +38,13 @@ class RegionPickerViewModel(
     companion object {
         /** Builds the real [RegionPickerViewModel] from the application context. */
         fun factory(context: Context): ViewModelProvider.Factory {
-            val app = context.applicationContext
-            return viewModelFactory { initializer { RegionPickerViewModel(loadStateTerrain = { TerrainMaps.loadState(app) }) } }
+            // Until the ViewModels take their helpers with `by inject()`, the factory asks the container for them
+            return viewModelFactory {
+                initializer {
+                    val terrain = GlobalContext.get().get<TerrainSource>()
+                    RegionPickerViewModel(loadStateTerrain = { terrain.loadState() })
+                }
+            }
         }
     }
 }

@@ -3,7 +3,6 @@ package io.github.genesjc.microclimatefinder.data.remote
 import io.github.genesjc.microclimatefinder.testStation
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -21,83 +20,81 @@ class LiveObservationCacheTest {
     )
     private var next: ObservationResult = reading
 
+    private lateinit var cache: LiveObservationCache
+
     @Before
     fun setUp() {
-        LiveObservationCache.clear()
-        LiveObservationCache.now = { clock }
-        LiveObservationCache.fetcher = { id ->
-            calls.incrementAndGet()
-            synchronized(fetched) { fetched.add(id) }
-            next
-        }
-    }
-
-    @After
-    fun tearDown() {
-        LiveObservationCache.clear()
-        LiveObservationCache.now = { System.currentTimeMillis() }
-        LiveObservationCache.fetcher = { NwsObservationClient.fetchLatest(it) }
+        cache = LiveObservationCache(
+            source = object : ObservationSource {
+                override suspend fun fetchLatest(stationId: String): ObservationResult {
+                    calls.incrementAndGet()
+                    synchronized(fetched) { fetched.add(stationId) }
+                    return next
+                }
+            },
+            now = { clock }
+        )
     }
 
     @Test
     fun nothingIsKnownBeforeTheFirstFetch() {
-        assertNull(LiveObservationCache.peek("KTST"))
+        assertNull(cache.peek("KTST"))
     }
 
     @Test
     fun aFetchedReadingIsKeptAndPeekable() = runBlocking {
-        assertSame(reading, LiveObservationCache.get("KTST"))
-        assertSame(reading, LiveObservationCache.peek("KTST"))
+        assertSame(reading, cache.get("KTST"))
+        assertSame(reading, cache.peek("KTST"))
     }
 
     @Test
     fun aReadingIsReusedForFifteenMinutes() = runBlocking {
-        LiveObservationCache.get("KTST")
+        cache.get("KTST")
         clock = 14 * minute + 59_000
-        LiveObservationCache.get("KTST")
+        cache.get("KTST")
         assertEquals(1, calls.get())
         clock = 15 * minute
-        LiveObservationCache.get("KTST")
+        cache.get("KTST")
         assertEquals(2, calls.get())
     }
 
     @Test
     fun aStationWithNoReadingIsNotRetriedForFiveMinutes() = runBlocking {
         next = ObservationResult.NoReading
-        LiveObservationCache.get("KTST")
+        cache.get("KTST")
         clock = 4 * minute + 59_000
-        LiveObservationCache.get("KTST")
+        cache.get("KTST")
         assertEquals(1, calls.get())
         clock = 5 * minute
-        LiveObservationCache.get("KTST")
+        cache.get("KTST")
         assertEquals(2, calls.get())
     }
 
     @Test
     fun aFailedRequestIsNotRetriedForFiveMinutesEither() = runBlocking {
         next = ObservationResult.Failed
-        assertSame(ObservationResult.Failed, LiveObservationCache.get("KTST"))
+        assertSame(ObservationResult.Failed, cache.get("KTST"))
         clock = 4 * minute
-        LiveObservationCache.get("KTST")
+        cache.get("KTST")
         assertEquals(1, calls.get())
         // ... and a later success replaces it
         next = reading
         clock = 5 * minute
-        assertSame(reading, LiveObservationCache.get("KTST"))
-        assertSame(reading, LiveObservationCache.peek("KTST"))
+        assertSame(reading, cache.get("KTST"))
+        assertSame(reading, cache.peek("KTST"))
     }
 
     @Test
     fun stationsAreCachedIndependently() = runBlocking {
-        LiveObservationCache.get("KAAA")
-        LiveObservationCache.get("KBBB")
-        LiveObservationCache.get("KAAA")
+        cache.get("KAAA")
+        cache.get("KBBB")
+        cache.get("KAAA")
         assertEquals(2, calls.get())
     }
 
     @Test
     fun prefetchFetchesOnlyFeaturedStationsThatCanReportTemperature() = runBlocking {
-        LiveObservationCache.prefetch(
+        cache.prefetch(
             listOf(
                 testStation(id = "FEAT1", isFeatured = true),
                 testStation(id = "FEAT2", isFeatured = true, reportsTemp = true),
@@ -106,32 +103,32 @@ class LiveObservationCacheTest {
             )
         )
         assertEquals(setOf("FEAT1", "FEAT2"), fetched.toSet())
-        assertNull(LiveObservationCache.peek("PLAIN"))
-        assertNull(LiveObservationCache.peek("NOTEMP"))
+        assertNull(cache.peek("PLAIN"))
+        assertNull(cache.peek("NOTEMP"))
     }
 
     @Test
     fun prefetchStopsAtTheLimit() = runBlocking {
         val stations = (1..LiveObservationCache.PREFETCH_LIMIT + 10).map { testStation(id = "S$it", isFeatured = true) }
-        LiveObservationCache.prefetch(stations)
+        cache.prefetch(stations)
         assertEquals(LiveObservationCache.PREFETCH_LIMIT, calls.get())
         // The first ones in the list are the ones fetched
-        assertSame(reading, LiveObservationCache.peek("S1"))
-        assertNull(LiveObservationCache.peek("S${LiveObservationCache.PREFETCH_LIMIT + 1}"))
+        assertSame(reading, cache.peek("S1"))
+        assertNull(cache.peek("S${LiveObservationCache.PREFETCH_LIMIT + 1}"))
     }
 
     @Test
     fun prefetchWithNothingToFetchDoesNothing() = runBlocking {
-        LiveObservationCache.prefetch(emptyList())
-        LiveObservationCache.prefetch(listOf(testStation(isFeatured = false)))
+        cache.prefetch(emptyList())
+        cache.prefetch(listOf(testStation(isFeatured = false)))
         assertEquals(0, calls.get())
     }
 
     @Test
     fun prefetchReusesFreshReadings() = runBlocking {
         val stations = listOf(testStation(id = "KTST", isFeatured = true))
-        LiveObservationCache.prefetch(stations)
-        LiveObservationCache.prefetch(stations)
+        cache.prefetch(stations)
+        cache.prefetch(stations)
         assertEquals(1, calls.get())
     }
 }

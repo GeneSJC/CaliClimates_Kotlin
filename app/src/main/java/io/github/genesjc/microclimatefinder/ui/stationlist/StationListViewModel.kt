@@ -11,6 +11,7 @@ import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
 import kotlinx.coroutines.flow.StateFlow
+import org.koin.core.context.GlobalContext
 
 /** What the Station List shows: the header text, the stations, which one is marked, and where the list opens. */
 data class StationListUiState(
@@ -59,12 +60,14 @@ class StationListViewModel(
 
         /** Builds the real [StationListViewModel] from the application context. */
         fun factory(context: Context): ViewModelProvider.Factory {
-            val app = context.applicationContext
+            // Until the ViewModels take their helpers with `by inject()`, the factory asks the container for them
             return viewModelFactory {
                 initializer {
+                    val koin = GlobalContext.get()
+                    val stations = koin.get<StationRepository>()
                     StationListViewModel(
-                        stationsFor = { StationRepository.stations(app, it) },
-                        readings = LiveReadings.shared
+                        stationsFor = { stations.stations(it) },
+                        readings = koin.get()
                     )
                 }
             }

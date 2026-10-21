@@ -36,7 +36,10 @@ interface RegionDatasets {
  *  2. the region's station pack (a.txt to f.txt in assets).
  * A region neither can supply has no stations; the app shows its limited-data banner.
  */
-class StationDataStore(private val context: Context) : RegionDatasets {
+class StationDataStore(
+    private val context: Context,
+    private val repository: StationRepository
+) : RegionDatasets {
 
     private val assetNames: Set<String> by lazy {
         try { context.assets.list("")?.toSet() ?: emptySet() } catch (e: Exception) { emptySet() }
@@ -100,7 +103,7 @@ class StationDataStore(private val context: Context) : RegionDatasets {
             maxElevationMeters = 0,
             packFileName = packFile
         )
-        val stations = StationRepository.stations(context, base)
+        val stations = repository.stations(base)
         if (stations.isEmpty()) return null
         return base.copy(
             subtitle = "$kind • ${stations.size} stations",
