@@ -62,7 +62,7 @@ import kotlin.math.roundToInt
 /**
  * Draggable & Pinch-to-Zoom Topographical Map Screen (v0.14.0).
  *
- * Light-theme aligned with the core MicroClimateFinder design system:
+ * Light-theme aligned with the core Cali Climates design system:
  *  - Seamless edge-to-edge terrain relief matching StationMapScreen (Alluvial valley floor,
  *    Coast Range, Sierra elevation bands, Sutter Buttes, and vibrant blue waterways).
  *  - Infinite-span terrain projection: Panning navigates the geographic area without

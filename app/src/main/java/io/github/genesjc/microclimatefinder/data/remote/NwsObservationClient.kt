@@ -37,7 +37,7 @@ sealed interface ObservationResult {
 object NwsObservationClient {
     private const val TAG = "NwsClient"
     private const val USER_AGENT =
-        "California Climate Finder (https://github.com/GeneSJC/Android_MicroClimateFinder)"
+        "Cali Climates (https://github.com/GeneSJC/Android_MicroClimateFinder)"
 
     suspend fun fetchLatest(stationId: String): ObservationResult = withContext(Dispatchers.IO) {
         try {
