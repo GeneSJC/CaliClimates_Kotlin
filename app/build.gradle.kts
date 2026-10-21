@@ -87,6 +87,8 @@ dependencies {
     // ViewModel for the Home screen state, and collectAsStateWithLifecycle to read its StateFlow in Compose
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    // Dependency injection: one container, started in the Application class (see di/AppModule.kt)
+    implementation(libs.koin.android)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
