@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
@@ -50,13 +51,15 @@ class HomeViewModelTest {
         }
     })
 
+    private val repository = StationRepository(FakeStationSource(), Dispatchers.Unconfined)
+
     private fun viewModel(): HomeViewModel {
         restartKoin {
             single<SelectedRegionStore> { store }
             single<SelectedStationStore> { stationStore }
             single<MapZoomStore> { zoomStore }
             single<RegionDatasets> { FakeDatasets() }
-            single { StationRepository(FakeStationSource()) }
+            single { repository }
             single { LiveObservationCache(observations) }
             single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined)) }
         }
@@ -165,8 +168,11 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun providesTheStationsOfARegionForHomesLists() {
-        assertEquals(listOf("b"), viewModel().stations("b").map { it.id })
+    fun providesTheStationsOfARegionForHomesLists() = runBlocking {
+        val vm = viewModel()
+        assertEquals(emptyList<String>(), vm.stations("b").map { it.id })   // never reads: nothing is parsed on the caller
+        repository.load(FakeDatasets().datasetFor("b"))
+        assertEquals(listOf("b"), vm.stations("b").map { it.id })
     }
 
     @Test

@@ -215,7 +215,7 @@ fun ElevationProfileScreen(
     expandT: Float = 0f,
     viewModel: ElevationViewModel = viewModel(),
 ) {
-    val stations = remember(dataset) { viewModel.stationsFor(dataset) }
+    val stations by remember(dataset) { viewModel.stations(dataset) }.collectAsStateWithLifecycle()
 
     // The region's terrain picture (the one the Topography map draws), used as a faint texture in the ground
     val terrain by remember(dataset.regionId) { viewModel.terrain(dataset.regionId) }.collectAsStateWithLifecycle()
@@ -224,7 +224,7 @@ fun ElevationProfileScreen(
     val skyline by remember(dataset.regionId) { viewModel.skyline(dataset.regionId) }.collectAsStateWithLifecycle()
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
-    var localSelectedId by remember { mutableStateOf(stations.firstOrNull()?.id) }
+    var localSelectedId by remember(stations) { mutableStateOf(stations.firstOrNull()?.id) }
     val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
 
     val selectedStation = stations.find { it.id == selectedStationId } ?: stations.firstOrNull()
