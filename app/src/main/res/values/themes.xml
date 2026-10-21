@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MicroClimateFinder" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.CaliClimates" parent="android:Theme.Material.Light.NoActionBar">
         <!-- The window shows this colour from launch until the first frame is drawn. It is the same deep slate as the
              system splash and the opening view, so nothing flashes white or cream in between -->
         <item name="android:windowBackground">#FF0A1628</item>
