@@ -54,4 +54,17 @@ class AppBaseViewModelTest {
             .toList()
         assertTrue("ViewModels with constructor arguments: $offenders", offenders.isEmpty())
     }
+
+    @Test
+    fun onlyTheModuleReadsTheBuildConstants() {
+        val offenders = File("src/main/java").walk()
+            .filter { it.extension == "kt" && it.name != "AppModule.kt" && it.name != "BuildInfo.kt" }
+            .flatMap { file ->
+                file.readLines()
+                    .filter { Regex("""\b(BuildInfo|BuildConfig)\.""").containsMatchIn(it) }
+                    .map { file.name }
+            }
+            .toList()
+        assertTrue("Files reading the build constants directly: $offenders", offenders.isEmpty())
+    }
 }
