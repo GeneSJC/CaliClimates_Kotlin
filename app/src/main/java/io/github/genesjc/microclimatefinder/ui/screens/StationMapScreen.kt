@@ -145,7 +145,7 @@ fun StationMapScreen(
     recenterTick: Int = 0,
     viewModel: StationMapViewModel = viewModel(),
 ) {
-    val stations = remember(dataset) { viewModel.stationsFor(dataset) }
+    val stations by remember(dataset) { viewModel.stations(dataset) }.collectAsStateWithLifecycle()
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     // The region's terrain picture, loaded off the main thread; the map shows a plain base until it arrives

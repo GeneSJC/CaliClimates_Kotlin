@@ -45,7 +45,7 @@ class MapViewModelsTest {
     private val hints = FakeHintStore()
 
     private fun register() = restartKoin {
-        single { StationRepository(FakeStationSource(stations)) }
+        single { StationRepository(FakeStationSource(stations), Dispatchers.Unconfined) }
         single { TerrainRepository(terrain, Dispatchers.Unconfined) }
         single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), fetched = cardFetches) }
         single { LiveObservationCache(observations) }
@@ -65,7 +65,8 @@ class MapViewModelsTest {
     @Test
     fun providesTheStationsAndTheLabelName() {
         val vm = topography()
-        assertEquals(stations, vm.stationsFor(dataset))
+        assertEquals(stations, vm.stations(dataset).value)
+        assertSame(vm.stations(dataset), vm.stations(dataset))
         assertEquals("One", vm.cityName(stations[0]))
     }
 

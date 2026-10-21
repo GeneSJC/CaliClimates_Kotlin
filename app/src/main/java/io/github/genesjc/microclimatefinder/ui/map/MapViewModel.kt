@@ -28,7 +28,21 @@ abstract class MapViewModel : AppBaseViewModel() {
 
     private val terrainFlows = HashMap<String, MutableStateFlow<TerrainImage?>>()
 
-    fun stationsFor(dataset: StationDatasetInfo): List<MicroclimateStation> = repository.stations(dataset)
+    private val stationFlows = HashMap<String, MutableStateFlow<List<MicroclimateStation>>>()
+
+    /**
+     * The dataset's stations: empty until they are read, which is rare because Home reads the region's stations first
+     * (a lookup then). The reading happens off the main thread. Ask once per dataset; the same flow comes back.
+     */
+    fun stations(dataset: StationDatasetInfo): StateFlow<List<MicroclimateStation>> {
+        val key = dataset.packFileName ?: dataset.fileName
+        stationFlows[key]?.let { return it }
+        val known = repository.peek(dataset)
+        return MutableStateFlow(known ?: emptyList()).also { flow ->
+            stationFlows[key] = flow
+            if (known == null) viewModelScope.launch { flow.value = repository.load(dataset) }
+        }
+    }
 
     /**
      * The region's terrain picture: null until it has loaded (the map shows a plain base meanwhile). Loaded once

@@ -51,7 +51,7 @@ val appModule = module {
     // Repositories
     single { StationRepository(get()) }
     single { TerrainRepository(get()) }
-    single<RegionDatasets> { StationDataStore(androidContext(), get()) }
+    single<RegionDatasets> { StationDataStore.fromAssets(androidContext(), get()) }
     single { LiveObservationCache(get()) }
 
     // State holders
