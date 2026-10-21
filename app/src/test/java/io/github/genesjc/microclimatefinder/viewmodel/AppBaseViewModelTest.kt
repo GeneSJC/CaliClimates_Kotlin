@@ -1,18 +1,34 @@
 package io.github.genesjc.microclimatefinder.viewmodel
 
-import io.github.genesjc.microclimatefinder.BuildInfo
+import io.github.genesjc.microclimatefinder.testutil.StopKoinRule
+import io.github.genesjc.microclimatefinder.testutil.restartKoin
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import java.io.File
 
 class AppBaseViewModelTest {
 
+    @get:Rule
+    val stopKoin = StopKoinRule()
+
     private class TestViewModel : AppBaseViewModel()
 
     @Test
-    fun exposesTheBuildLabel() {
-        assertEquals(BuildInfo.LABEL, TestViewModel().buildLabel)
+    fun exposesTheInjectedBuildConfig() {
+        restartKoin { single { AppConfig(isCommercial = true, buildLabel = "9.9") } }
+        val vm = TestViewModel()
+        assertEquals("9.9", vm.buildLabel)
+        assertTrue(vm.isCommercial)
+    }
+
+    @Test
+    fun readsTheConfigOnlyWhenAskedFor() {
+        // Nothing is registered: building the ViewModel must not need the config until a getter is used
+        restartKoin { }
+        assertFalse(TestViewModel().toString().isEmpty())
     }
 
     @Test
@@ -24,5 +40,18 @@ class AppBaseViewModelTest {
             }
             .toList()
         assertTrue("ViewModels extending ViewModel directly: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun noViewModelTakesConstructorArguments() {
+        val offenders = File("src/main/java").walk()
+            .filter { it.extension == "kt" && it.name.endsWith("ViewModel.kt") && it.name != "AppBaseViewModel.kt" }
+            .flatMap { file ->
+                file.readLines()
+                    .filter { Regex("""class \w+ViewModel\(""").containsMatchIn(it) }
+                    .map { file.name }
+            }
+            .toList()
+        assertTrue("ViewModels with constructor arguments: $offenders", offenders.isEmpty())
     }
 }

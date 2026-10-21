@@ -1,83 +1,72 @@
 package io.github.genesjc.microclimatefinder.ui.map
 
-import io.github.genesjc.microclimatefinder.data.local.ElevationHintStore
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
+import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
+import io.github.genesjc.microclimatefinder.data.local.ElevationHintStore
+import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testStation
+import io.github.genesjc.microclimatefinder.testutil.FakeHintStore
+import io.github.genesjc.microclimatefinder.testutil.FakeObservationSource
+import io.github.genesjc.microclimatefinder.testutil.FakeStationSource
+import io.github.genesjc.microclimatefinder.testutil.FakeTerrainSource
+import io.github.genesjc.microclimatefinder.testutil.MainDispatcherRule
+import io.github.genesjc.microclimatefinder.testutil.StopKoinRule
+import io.github.genesjc.microclimatefinder.testutil.restartKoin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelsTest {
 
-    private val dispatcher = UnconfinedTestDispatcher()
+    @get:Rule
+    val main = MainDispatcherRule()
+
+    @get:Rule
+    val stopKoin = StopKoinRule()
+
     private val dataset = StationDatasetInfo(
         regionId = "a", fileName = "a.txt", title = "North", subtitle = "Sample",
         stationCount = 2, minElevationMeters = 0, maxElevationMeters = 100
     )
     private val stations = listOf(testStation(id = "K1", name = "One"), testStation(id = "K2", name = "Two"))
-    private val terrainLoads = mutableListOf<String>()
-    private val skylineLoads = mutableListOf<String>()
-    private val fetched = mutableListOf<String>()
-
-    private class FakeHintStore(var launches: Int = 0, var tapped: Boolean = false) : ElevationHintStore {
-        override fun countLaunch() {
-            launches++
-        }
-
-        override fun shouldShow() = !tapped && launches <= 3
-        override fun markLineTapped() {
-            tapped = true
-        }
-    }
-
+    private val terrain = FakeTerrainSource()
+    private val cardFetches = mutableListOf<String>()
+    private val observations = FakeObservationSource()
     private val hints = FakeHintStore()
 
-    private fun topography() = StationMapViewModel(
-        stationsOf = { stations },
-        loadTerrain = { regionId -> terrainLoads += regionId; null },
-        cityNameOf = { it.name.uppercase() },
-        readings = testLiveReadings(CoroutineScope(dispatcher), fetched = fetched),
-        ioDispatcher = dispatcher
-    )
+    private fun register() = restartKoin {
+        single { StationRepository(FakeStationSource(stations)) }
+        single { TerrainRepository(terrain, Dispatchers.Unconfined) }
+        single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), fetched = cardFetches) }
+        single { LiveObservationCache(observations) }
+        single<ElevationHintStore> { hints }
+    }
 
-    private fun elevation() = ElevationViewModel(
-        stationsOf = { stations },
-        loadTerrain = { regionId -> terrainLoads += regionId; null },
-        cityNameOf = { it.name.uppercase() },
-        readings = testLiveReadings(CoroutineScope(dispatcher), fetched = fetched),
-        loadSkyline = { regionId -> skylineLoads += regionId; listOf(floatArrayOf(0f, 1f)) },
-        peekReading = { null },
-        fetchReading = { id -> fetched += id; ObservationResult.Failed },
-        hintStore = hints,
-        io = dispatcher
-    )
+    private fun topography(): StationMapViewModel {
+        register()
+        return StationMapViewModel()
+    }
 
-    @Before
-    fun setUp() = Dispatchers.setMain(dispatcher)
-
-    @After
-    fun tearDown() = Dispatchers.resetMain()
+    private fun elevation(): ElevationViewModel {
+        register()
+        return ElevationViewModel()
+    }
 
     @Test
     fun providesTheStationsAndTheLabelName() {
         val vm = topography()
         assertEquals(stations, vm.stationsFor(dataset))
-        assertEquals("ONE", vm.cityName(stations[0]))
+        assertEquals("One", vm.cityName(stations[0]))
     }
 
     @Test
@@ -85,16 +74,16 @@ class MapViewModelsTest {
         val vm = topography()
         assertSame(vm.terrain("a"), vm.terrain("a"))
         vm.terrain("b")
-        assertEquals(listOf("a", "b"), terrainLoads)
+        assertEquals(listOf("a", "b"), terrain.terrainLoads)
     }
 
     @Test
     fun aCardsReadingStartsAsAFetchAndSkipsStationsThatCannotReport() {
         val vm = topography()
         assertEquals(ObservationResult.Failed, vm.reading(stations[0]).value)
-        assertEquals(listOf("K1"), fetched)
+        assertEquals(listOf("K1"), cardFetches)
         assertEquals(ObservationResult.NoReading, vm.reading(testStation(id = "KNO", reportsTemp = false)).value)
-        assertEquals(listOf("K1"), fetched)
+        assertEquals(listOf("K1"), cardFetches)
     }
 
     @Test
@@ -103,7 +92,7 @@ class MapViewModelsTest {
         vm.terrain("a")
         vm.terrain("b")
         vm.terrain("a")
-        assertEquals(listOf("a", "b", "a"), terrainLoads)
+        assertEquals(listOf("a", "b", "a"), terrain.terrainLoads)
     }
 
     @Test
@@ -111,7 +100,7 @@ class MapViewModelsTest {
         val vm = elevation()
         assertEquals(1, vm.skyline("a").value?.size)
         vm.skyline("a")
-        assertEquals(listOf("a"), skylineLoads)
+        assertEquals(listOf("a"), terrain.skylineLoads)
     }
 
     @Test
@@ -119,10 +108,11 @@ class MapViewModelsTest {
         val vm = elevation()
         val silent = testStation(id = "KNO", reportsTemp = false)
         assertEquals(ObservationResult.NoReading, vm.latestReading(silent))
-        assertTrue(fetched.isEmpty())
+        assertTrue(observations.fetched.isEmpty())
         assertEquals(ObservationResult.Failed, vm.latestReading(stations[0]))
-        assertEquals(listOf("K1"), fetched)
-        assertNull(vm.knownReading("K1"))
+        assertEquals(listOf("K1"), observations.fetched)
+        assertEquals(ObservationResult.Failed, vm.knownReading("K1"))
+        assertNull(vm.knownReading("KOTHER"))
     }
 
     @Test

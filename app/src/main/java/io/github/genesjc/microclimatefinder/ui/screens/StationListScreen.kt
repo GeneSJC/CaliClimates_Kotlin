@@ -53,7 +53,7 @@ fun StationListScreen(
     selectedStationId: String?,
     onStationSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: StationListViewModel = viewModel(factory = StationListViewModel.factory(LocalContext.current))
+    viewModel: StationListViewModel = viewModel()
 ) {
     val state = remember(dataset, selectedStationId) { viewModel.stateFor(dataset, selectedStationId) }
     val pickerState = rememberRegionPickerState()

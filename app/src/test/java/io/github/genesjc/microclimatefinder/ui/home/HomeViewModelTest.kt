@@ -4,96 +4,64 @@ import io.github.genesjc.microclimatefinder.data.local.MapZoomStore
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
 import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
 import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
-import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
-import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
+import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.testLiveReadings
-import io.github.genesjc.microclimatefinder.testStation
+import io.github.genesjc.microclimatefinder.testutil.FakeDatasets
+import io.github.genesjc.microclimatefinder.testutil.FakeObservationSource
+import io.github.genesjc.microclimatefinder.testutil.FakeRegionStore
+import io.github.genesjc.microclimatefinder.testutil.FakeStationSource
+import io.github.genesjc.microclimatefinder.testutil.FakeStationStore
+import io.github.genesjc.microclimatefinder.testutil.FakeZoomStore
+import io.github.genesjc.microclimatefinder.testutil.MainDispatcherRule
+import io.github.genesjc.microclimatefinder.testutil.StopKoinRule
+import io.github.genesjc.microclimatefinder.testutil.restartKoin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeoutOrNull
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
 
-    private val dispatcher = UnconfinedTestDispatcher()
+    @get:Rule
+    val main = MainDispatcherRule()
 
-    private class FakeRegionStore(var saved: String) : SelectedRegionStore {
-        override fun load() = saved
-        override fun save(regionId: String) {
-            saved = regionId
-        }
-    }
-
-    private class FakeStationStore(var region: String? = null, var station: String? = null) : SelectedStationStore {
-        override fun load(regionId: String) = station?.takeIf { region == regionId }
-        override fun save(regionId: String, stationId: String?) {
-            region = regionId
-            station = stationId
-        }
-    }
-
-    private class FakeZoomStore(var region: String? = null, var zoom: Float = 1f) : MapZoomStore {
-        override fun load(regionId: String) = if (region == regionId) zoom else 1f
-        override fun save(regionId: String, zoom: Float) {
-            region = regionId
-            this.zoom = zoom
-        }
-    }
-
-    private class FakeDatasets : RegionDatasets {
-        override fun datasetFor(regionId: String) = StationDatasetInfo(
-            regionId = regionId, fileName = "$regionId.txt", title = regionId.uppercase(), subtitle = "",
-            stationCount = 1, minElevationMeters = 0, maxElevationMeters = 1
-        )
-
-        override fun defaultDataset() = datasetFor("default")
-        override fun fullDataRegionCount() = 5
-        override fun totalRegionCount() = 6
-    }
+    @get:Rule
+    val stopKoin = StopKoinRule()
 
     private val store = FakeRegionStore("a")
     private val zoomStore = FakeZoomStore()
     private val stationStore = FakeStationStore()
-    private val fetchedFor = mutableListOf<String>()
     private val cancelledFor = mutableListOf<String>()
+    private val observations = FakeObservationSource(onFetch = { id ->
+        try {
+            awaitCancellation()
+        } finally {
+            cancelledFor += id
+        }
+    })
 
-    private fun viewModel() = HomeViewModel(
-        regionStore = store,
-        stationStore = stationStore,
-        zoomStore = zoomStore,
-        datasets = FakeDatasets(),
-        stationsOf = { dataset -> listOf(testStation(id = dataset.regionId)) },
-        readings = testLiveReadings(CoroutineScope(dispatcher)),
-        prefetch = { stations: List<MicroclimateStation> ->
-            val regionId = stations.first().id
-            fetchedFor += regionId
-            try {
-                awaitCancellation()
-            } finally {
-                cancelledFor += regionId
-            }
-        },
-        ioDispatcher = dispatcher
-    )
-
-    @Before
-    fun setUp() = Dispatchers.setMain(dispatcher)
-
-    @After
-    fun tearDown() = Dispatchers.resetMain()
+    private fun viewModel(): HomeViewModel {
+        restartKoin {
+            single<SelectedRegionStore> { store }
+            single<SelectedStationStore> { stationStore }
+            single<MapZoomStore> { zoomStore }
+            single<RegionDatasets> { FakeDatasets() }
+            single { StationRepository(FakeStationSource()) }
+            single { LiveObservationCache(observations) }
+            single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined)) }
+        }
+        return HomeViewModel()
+    }
 
     @Test
     fun startsOnTheSavedRegion() {
@@ -170,18 +138,13 @@ class HomeViewModelTest {
         vm.setMapZoom(4f)
         assertEquals(4f, vm.mapZoom)
         assertEquals(1f, zoomStore.zoom)
-        dispatcher.scheduler.advanceTimeBy(600)
+        main.dispatcher.scheduler.advanceTimeBy(600)
         assertEquals("a", zoomStore.region)
         assertEquals(4f, zoomStore.zoom)
         vm.selectRegion("b")
         assertEquals(1f, vm.mapZoom)
         assertEquals("b", zoomStore.region)
         assertEquals(1f, zoomStore.zoom)
-    }
-
-    @Test
-    fun providesTheStationsOfARegionForHomesLists() {
-        assertEquals(listOf("b"), viewModel().stations("b").map { it.id })
     }
 
     @Test
@@ -202,6 +165,11 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun providesTheStationsOfARegionForHomesLists() {
+        assertEquals(listOf("b"), viewModel().stations("b").map { it.id })
+    }
+
+    @Test
     fun answersForTheDatasetsOfRegions() {
         val vm = viewModel()
         assertEquals("b", vm.datasetFor("b")?.regionId)
@@ -213,9 +181,9 @@ class HomeViewModelTest {
     @Test
     fun fetchesTheNewRegionAndCancelsThePreviousFetch() {
         val vm = viewModel()
-        assertEquals(listOf("a"), fetchedFor)
+        assertEquals(listOf("a"), observations.fetched)
         vm.selectRegion("b")
-        assertEquals(listOf("a", "b"), fetchedFor)
+        assertEquals(listOf("a", "b"), observations.fetched)
         assertEquals(listOf("a"), cancelledFor)
     }
 }

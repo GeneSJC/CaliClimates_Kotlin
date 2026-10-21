@@ -1,15 +1,24 @@
 package io.github.genesjc.microclimatefinder.ui.stationlist
 
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
+import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testStation
+import io.github.genesjc.microclimatefinder.testutil.FakeStationSource
+import io.github.genesjc.microclimatefinder.testutil.StopKoinRule
+import io.github.genesjc.microclimatefinder.testutil.restartKoin
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Rule
 import org.junit.Test
 
 class StationListViewModelTest {
+
+    @get:Rule
+    val stopKoin = StopKoinRule()
 
     private val dataset = StationDatasetInfo(
         regionId = "a", fileName = "a.txt", title = "North", subtitle = "Sample",
@@ -17,8 +26,13 @@ class StationListViewModelTest {
     )
     private val stations = listOf(testStation(id = "K1"), testStation(id = "K2"), testStation(id = "K3"))
 
-    private fun viewModel(list: List<io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation> = stations) =
-        StationListViewModel(stationsFor = { list }, readings = testLiveReadings(CoroutineScope(UnconfinedTestDispatcher())))
+    private fun viewModel(list: List<MicroclimateStation> = stations): StationListViewModel {
+        restartKoin {
+            single { StationRepository(FakeStationSource(list)) }
+            single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined)) }
+        }
+        return StationListViewModel()
+    }
 
     @Test
     fun marksTheStationSelectedOnHomeAndOpensThere() {

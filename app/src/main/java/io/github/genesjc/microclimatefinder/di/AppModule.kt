@@ -15,12 +15,16 @@ import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationSelectionPreferences
 import io.github.genesjc.microclimatefinder.data.local.StationSource
+import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainSource
 import io.github.genesjc.microclimatefinder.data.local.ThemePreferences
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.NwsObservationClient
 import io.github.genesjc.microclimatefinder.data.remote.ObservationSource
+import io.github.genesjc.microclimatefinder.BuildConfig
+import io.github.genesjc.microclimatefinder.BuildInfo
+import io.github.genesjc.microclimatefinder.viewmodel.AppConfig
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -31,6 +35,9 @@ import org.koin.dsl.module
  * Clocks, dispatchers and the app scope are default constructor arguments, so they are not listed here.
  */
 val appModule = module {
+    // Build constants, read once into one immutable object
+    single { AppConfig(isCommercial = BuildConfig.IS_COMMERCIAL, buildLabel = BuildInfo.LABEL) }
+
     // Platform edge: preference stores and data sources
     single<SelectedRegionStore> { RegionPreferences(androidContext()) }
     single<SelectedStationStore> { StationSelectionPreferences(androidContext()) }
@@ -43,6 +50,7 @@ val appModule = module {
 
     // Repositories
     single { StationRepository(get()) }
+    single { TerrainRepository(get()) }
     single<RegionDatasets> { StationDataStore(androidContext(), get()) }
     single { LiveObservationCache(get()) }
 

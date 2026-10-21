@@ -132,7 +132,7 @@ fun CaliforniaRegionsMapScreen(
     onNavigateBack: () -> Unit,
     onNavigateToActiveTransect: () -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: RegionPickerViewModel = viewModel(factory = RegionPickerViewModel.factory(androidx.compose.ui.platform.LocalContext.current))
+    viewModel: RegionPickerViewModel = viewModel()
 ) {
     val stateTerrain by viewModel.stateTerrain.collectAsStateWithLifecycle()
     val selectedRegion = remember(selectedRegionId) {
