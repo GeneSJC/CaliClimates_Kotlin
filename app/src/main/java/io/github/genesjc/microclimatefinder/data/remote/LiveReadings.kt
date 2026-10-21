@@ -1,24 +1,24 @@
 package io.github.genesjc.microclimatefinder.data.remote
 
+import io.github.genesjc.microclimatefinder.data.AppScope
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /**
- * The live readings the station cards show, as one observable value per station. It lives for the whole app, so a
- * load already under way finishes even if the screen that asked for it has gone.
+ * The live readings the station cards show, as one observable value per station. It lives for the whole app (one
+ * instance, built by the dependency container), so a load already under way finishes even if the screen that asked
+ * for it has gone. [scope] is the app-wide one; tests pass their own.
  *
  * A reading is null until the first answer arrives ("Checking..."); a station that cannot report goes straight to
  * [ObservationResult.NoReading]. The fetch itself is [fetch]; the underlying cache decides when a reading is stale.
  */
 class LiveReadings(
-    private val scope: CoroutineScope,
     private val peek: (String) -> ObservationResult?,
-    private val fetch: suspend (String) -> ObservationResult
+    private val fetch: suspend (String) -> ObservationResult,
+    private val scope: CoroutineScope = AppScope.scope
 ) {
     private val flows = HashMap<String, MutableStateFlow<ObservationResult?>>()
 
@@ -32,16 +32,5 @@ class LiveReadings(
             flow.value = if (station.canHaveLiveReading) fetch(station.id) else ObservationResult.NoReading
         }
         return flow
-    }
-
-    companion object {
-        /** The app's one instance, over the real cache. A stop-gap until the app has a dependency container. */
-        val shared: LiveReadings by lazy {
-            LiveReadings(
-                scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
-                peek = { LiveObservationCache.peek(it) },
-                fetch = { LiveObservationCache.get(it) }
-            )
-        }
     }
 }

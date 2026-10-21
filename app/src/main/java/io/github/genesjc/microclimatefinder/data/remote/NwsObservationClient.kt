@@ -33,13 +33,15 @@ sealed interface ObservationResult {
     object Failed : ObservationResult
 }
 
-/** Fetches one station's latest observation from api.weather.gov (no key needed). */
-object NwsObservationClient {
-    private const val TAG = "NwsClient"
-    private const val USER_AGENT =
-        "California Climate Finder (https://github.com/GeneSJC/Android_MicroClimateFinder)"
+/** Where a station's latest observation comes from (api.weather.gov; a fake in tests). */
+interface ObservationSource {
+    suspend fun fetchLatest(stationId: String): ObservationResult
+}
 
-    suspend fun fetchLatest(stationId: String): ObservationResult = withContext(Dispatchers.IO) {
+/** Fetches one station's latest observation from api.weather.gov (no key needed). */
+class NwsObservationClient : ObservationSource {
+
+    override suspend fun fetchLatest(stationId: String): ObservationResult = withContext(Dispatchers.IO) {
         try {
             fetch(stationId)
         } catch (e: Exception) {
@@ -66,43 +68,49 @@ object NwsObservationClient {
         }
     }
 
-    /** One api.weather.gov observation (GeoJSON text) as a result; [ObservationResult.NoReading] when it has no temperature. */
-    internal fun parseObservation(body: String): ObservationResult {
-        val props = JSONObject(body).getJSONObject("properties")
-        // Values can be null and carry a unit code; convert by unit code instead of assuming.
-        val tempC = number(props.optJSONObject("temperature"))?.let {
-            if (unit(props, "temperature").endsWith("degF")) (it - 32.0) * 5.0 / 9.0 else it
-        } ?: return ObservationResult.NoReading
-        val wind = number(props.optJSONObject("windSpeed"))?.let {
-            if (unit(props, "windSpeed").endsWith("m_s-1")) it * 3.6 else it
-        }
-        val pressure = number(props.optJSONObject("barometricPressure"))?.let {
-            // Pascals only: a unit already in hectopascals ("wmoUnit:hPa") also ends in "Pa"
-            if (unit(props, "barometricPressure").endsWith(":Pa")) it / 100.0 else it
-        }
-        return ObservationResult.Reading(
-            LiveObservation(
-                temperatureCelsius = tempC,
-                humidityPercent = number(props.optJSONObject("relativeHumidity")),
-                windSpeedKmh = wind,
-                pressureHpa = pressure,
-                observedAtMillis = parseTime(props.optString("timestamp"))
+    companion object {
+        private const val TAG = "NwsClient"
+        private const val USER_AGENT =
+            "Cali Climates (https://github.com/GeneSJC/Android_MicroClimateFinder)"
+
+        /** One api.weather.gov observation (GeoJSON text) as a result; [ObservationResult.NoReading] when it has no temperature. */
+        internal fun parseObservation(body: String): ObservationResult {
+            val props = JSONObject(body).getJSONObject("properties")
+            // Values can be null and carry a unit code; convert by unit code instead of assuming.
+            val tempC = number(props.optJSONObject("temperature"))?.let {
+                if (unit(props, "temperature").endsWith("degF")) (it - 32.0) * 5.0 / 9.0 else it
+            } ?: return ObservationResult.NoReading
+            val wind = number(props.optJSONObject("windSpeed"))?.let {
+                if (unit(props, "windSpeed").endsWith("m_s-1")) it * 3.6 else it
+            }
+            val pressure = number(props.optJSONObject("barometricPressure"))?.let {
+                // Pascals only: a unit already in hectopascals ("wmoUnit:hPa") also ends in "Pa"
+                if (unit(props, "barometricPressure").endsWith(":Pa")) it / 100.0 else it
+            }
+            return ObservationResult.Reading(
+                LiveObservation(
+                    temperatureCelsius = tempC,
+                    humidityPercent = number(props.optJSONObject("relativeHumidity")),
+                    windSpeedKmh = wind,
+                    pressureHpa = pressure,
+                    observedAtMillis = parseTime(props.optString("timestamp"))
+                )
             )
-        )
-    }
+        }
 
-    private fun number(obj: JSONObject?): Double? =
-        if (obj == null || obj.isNull("value")) null else obj.getDouble("value")
+        private fun number(obj: JSONObject?): Double? =
+            if (obj == null || obj.isNull("value")) null else obj.getDouble("value")
 
-    private fun unit(props: JSONObject, key: String): String =
-        props.optJSONObject(key)?.optString("unitCode").orEmpty()
+        private fun unit(props: JSONObject, key: String): String =
+            props.optJSONObject(key)?.optString("unitCode").orEmpty()
 
-    private fun parseTime(timestamp: String): Long? {
-        if (timestamp.isBlank()) return null
-        return try {
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).parse(timestamp)?.time
-        } catch (e: Exception) {
-            null
+        private fun parseTime(timestamp: String): Long? {
+            if (timestamp.isBlank()) return null
+            return try {
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).parse(timestamp)?.time
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 }

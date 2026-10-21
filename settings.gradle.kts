@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Micro Climate Finder"
+rootProject.name = "Cali Climates"
 include(":app")

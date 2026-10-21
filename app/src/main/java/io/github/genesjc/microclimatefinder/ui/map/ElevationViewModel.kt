@@ -11,7 +11,7 @@ import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
-import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
+import io.github.genesjc.microclimatefinder.data.local.TerrainSource
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.core.context.GlobalContext
 
 /**
  * The Elevation view's ViewModel: what [MapViewModel] provides, plus the region's skylines, the selected
@@ -72,18 +73,22 @@ class ElevationViewModel(
     companion object {
         /** Builds the real [ElevationViewModel] from the application context. */
         fun factory(context: Context): ViewModelProvider.Factory {
-            val app = context.applicationContext
+            // Until the ViewModels take their helpers with `by inject()`, the factory asks the container for them
             return viewModelFactory {
                 initializer {
+                    val koin = GlobalContext.get()
+                    val stations = koin.get<StationRepository>()
+                    val terrain = koin.get<TerrainSource>()
+                    val cache = koin.get<LiveObservationCache>()
                     ElevationViewModel(
-                        stationsOf = { StationRepository.stations(app, it) },
-                        loadTerrain = { TerrainMaps.load(app, it) },
+                        stationsOf = { stations.stations(it) },
+                        loadTerrain = { terrain.load(it) },
                         cityNameOf = { LocalNewsRepository.getCleanCityName(it.id, it.name) },
-                        readings = LiveReadings.shared,
-                        loadSkyline = { TerrainMaps.loadSkyline(app, it) },
-                        peekReading = { LiveObservationCache.peek(it) },
-                        fetchReading = { LiveObservationCache.get(it) },
-                        hintStore = ElevationHintPreferences(app)
+                        readings = koin.get(),
+                        loadSkyline = { terrain.loadSkyline(it) },
+                        peekReading = { cache.peek(it) },
+                        fetchReading = { cache.get(it) },
+                        hintStore = koin.get()
                     )
                 }
             }

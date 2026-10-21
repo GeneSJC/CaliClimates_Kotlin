@@ -54,7 +54,7 @@ private val LightColorScheme = lightColorScheme(
  * every phone. [darkTheme] is the user's choice in the menu, not the system setting.
  */
 @Composable
-fun MicroClimateFinderTheme(
+fun CaliClimatesTheme(
     darkTheme: Boolean,
     content: @Composable () -> Unit
 ) {

@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.core.context.GlobalContext
 
 /**
  * Everything Home shows that can change, in one immutable value. The screens read it and send events to
@@ -198,17 +199,20 @@ class HomeViewModel(
 
         /** Builds the real [HomeViewModel] from the application context. */
         fun factory(context: Context): ViewModelProvider.Factory {
-            val app = context.applicationContext
+            // Until the ViewModels take their helpers with `by inject()`, the factory asks the container for them
             return viewModelFactory {
                 initializer {
+                    val koin = GlobalContext.get()
+                    val stations = koin.get<StationRepository>()
+                    val cache = koin.get<LiveObservationCache>()
                     HomeViewModel(
-                        regionStore = RegionPreferences(app),
-                        stationStore = StationSelectionPreferences(app),
-                        zoomStore = MapZoomPreferences(app),
-                        datasets = StationDataStore(app),
-                        stationsOf = { StationRepository.stations(app, it) },
-                        prefetch = { LiveObservationCache.prefetch(it) },
-                        readings = LiveReadings.shared
+                        regionStore = koin.get(),
+                        stationStore = koin.get(),
+                        zoomStore = koin.get(),
+                        datasets = koin.get(),
+                        stationsOf = { stations.stations(it) },
+                        prefetch = { cache.prefetch(it) },
+                        readings = koin.get()
                     )
                 }
             }
