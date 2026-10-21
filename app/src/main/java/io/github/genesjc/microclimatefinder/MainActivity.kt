@@ -9,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.graphics.Color
 import io.github.genesjc.microclimatefinder.ui.theme.AppBackground
-import io.github.genesjc.microclimatefinder.data.local.ThemePreferences
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,13 +21,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import io.github.genesjc.microclimatefinder.data.local.StationDataStore
-import io.github.genesjc.microclimatefinder.data.local.RegionPreferences
-import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import io.github.genesjc.microclimatefinder.ui.screens.CaliforniaRegionsMapScreen
+import io.github.genesjc.microclimatefinder.ui.home.HomeEvent
 import io.github.genesjc.microclimatefinder.ui.home.HomeViewModel
+import io.github.genesjc.microclimatefinder.ui.root.AppRootViewModel
 import io.github.genesjc.microclimatefinder.ui.screens.LandingScreen
 import io.github.genesjc.microclimatefinder.ui.screens.RegionOption
 import io.github.genesjc.microclimatefinder.ui.screens.StationListScreen
@@ -38,16 +36,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // Dark mode is the default; the menu switches it, and the choice is remembered
-            val themePrefs = remember { ThemePreferences(applicationContext) }
-            var darkMode by remember { mutableStateOf(themePrefs.darkMode()) }
-            // The backdrop takes a soft tint of the selected region's colour (AppNavigation reports each change)
-            var backdropRegionId by remember { mutableStateOf(RegionPreferences(applicationContext).load()) }
+            // The look (dark or light, remembered between launches) and the backdrop's texture live in the ViewModel
+            val appRoot: AppRootViewModel = viewModel(factory = AppRootViewModel.factory(applicationContext))
+            val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory(applicationContext))
+            val darkMode by appRoot.darkMode.collectAsStateWithLifecycle()
+            val backdropTexture by appRoot.backdropTexture.collectAsStateWithLifecycle()
+            // The backdrop takes a soft tint of the selected region's colour
+            val backdropRegionId by homeViewModel.selectedRegionId.collectAsStateWithLifecycle()
             // The opening view shows once per launch (and not again after a rotation)
             var showIntro by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
             MicroClimateFinderTheme(darkTheme = darkMode) {
                 androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
-                AppBackground(darkTheme = darkMode, regionId = backdropRegionId) {
+                AppBackground(darkTheme = darkMode, regionId = backdropRegionId, texture = backdropTexture) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = Color.Transparent,
@@ -57,11 +57,8 @@ class MainActivity : ComponentActivity() {
                     ) {
                         AppNavigation(
                             darkMode = darkMode,
-                            onRegionChanged = { backdropRegionId = it },
-                            onDarkModeChange = {
-                                darkMode = it
-                                themePrefs.saveDarkMode(it)
-                            }
+                            onDarkModeChange = appRoot::setDarkMode,
+                            homeViewModel = homeViewModel
                         )
                     }
                 }
@@ -77,9 +74,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(
     darkMode: Boolean,
-    onRegionChanged: (String) -> Unit,
     onDarkModeChange: (Boolean) -> Unit,
-    homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory(LocalContext.current))
+    homeViewModel: HomeViewModel
 ) {
     var currentScreen by remember { mutableStateOf(AppScreen.LANDING) }
     // Where Back returns to from Regional Sections (Home icon or Demos & Previews)
@@ -88,22 +84,21 @@ fun AppNavigation(
     val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val selectedRegionId = homeState.selectedRegionId
-    // Tell the backdrop which region is selected, so it can take on the region's tint
-    LaunchedEffect(selectedRegionId) { onRegionChanged(selectedRegionId) }
     // A click when the region changes (not when the app first opens), so the change is felt as well as seen
-    var firstRegion by remember { mutableStateOf(true) }
-    LaunchedEffect(selectedRegionId) {
-        if (firstRegion) firstRegion = false
-        else io.github.genesjc.microclimatefinder.ui.components.RegionHaptics.tick(context)
+    LaunchedEffect(homeViewModel) {
+        homeViewModel.events.collect { event ->
+            when (event) {
+                HomeEvent.RegionChanged -> io.github.genesjc.microclimatefinder.ui.components.RegionHaptics.tick(context)
+            }
+        }
     }
 
-    // Station data per region: a CSV override in assets, else the region's bundled pack
-    val store = remember { StationDataStore(context) }
-    val fullDataRegions = remember { store.fullDataRegionCount() }
-    val regionDataset = remember(selectedRegionId) { store.datasetFor(selectedRegionId) }
+    // Station data per region: a CSV override in assets, else the region's bundled pack (HomeViewModel reads it)
+    val fullDataRegions = remember { homeViewModel.fullDataRegionCount() }
+    val regionDataset = remember(selectedRegionId) { homeViewModel.datasetFor(selectedRegionId) }
     // The Bay Area fallback dataset is only needed by the Station List when a region has none, and by the demos, so it
     // is read the first time it is wanted and not while the app is starting
-    val defaultDatasetLazy = remember { lazy { store.defaultDataset() } }
+    val defaultDatasetLazy = remember { lazy { homeViewModel.defaultDataset() } }
     // Changes the app-wide region and remembers it (Home, Topo Map and Station Feed pickers use this)
     fun pickRegion(regionId: String) = homeViewModel.selectRegion(regionId)
     // Rows for the quick region list on Home: names only (reading every region's stations just for a count slowed the
@@ -130,7 +125,7 @@ fun AppNavigation(
                 selectedRegionId = selectedRegionId,
                 dataset = regionDataset,
                 fullDataRegions = fullDataRegions,
-                totalRegions = store.totalRegionCount(),
+                totalRegions = homeViewModel.totalRegionCount(),
                 regionOptions = regionOptions,
                 onSelectRegion = { pickRegion(it) },
                 onNavigateTo = { targetScreen ->

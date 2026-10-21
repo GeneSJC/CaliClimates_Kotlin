@@ -65,6 +65,15 @@ object TerrainMaps {
         }
     }
 
+    /** The relief texture behind the light backdrop, or null when it is missing. */
+    fun loadBackdropRelief(context: Context): ImageBitmap? =
+        try {
+            context.assets.open("terrain/bg_relief.webp").use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
+        } catch (e: Exception) {
+            Log.w(TAG, "No backdrop relief picture", e)
+            null
+        }
+
     /** The whole state for the California picker, and its neighbours drawn quieter. Their pixels are linear in lon and lat. */
     val STATE_BOUNDS = GeoBounds(-124.5, -114.1, 31.9, 43.0)
 

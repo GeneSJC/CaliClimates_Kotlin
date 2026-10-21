@@ -24,7 +24,13 @@ import androidx.compose.ui.unit.dp
  * page is not one flat colour. Deep slate with an indigo glow in dark mode; in light mode a warm coral-yellow-coral wash: coral in the bottom left and top right corners, yellow across the middle.
  */
 @Composable
-fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Composable () -> Unit) {
+fun AppBackground(
+    darkTheme: Boolean,
+    regionId: String? = null,
+    /** The relief picture laid over the light backdrop, once loaded (null until then, or when there is none). */
+    texture: androidx.compose.ui.graphics.ImageBitmap? = null,
+    content: @Composable () -> Unit
+) {
     // In light mode the two corner colours follow the selected region, easing over when the region changes
     val corner by animateColorAsState(
         targetValue = regionBackdropTint(regionId),
@@ -36,17 +42,7 @@ fun AppBackground(darkTheme: Boolean, regionId: String? = null, content: @Compos
     val window = TEXTURE_WINDOWS[regionIndex % TEXTURE_WINDOWS.size]
     val windowX by animateFloatAsState(window.first, tween(BACKDROP_TRANSITION_MS), label = "textureX")
     val windowY by animateFloatAsState(window.second, tween(BACKDROP_TRANSITION_MS), label = "textureY")
-    // EXPERIMENT: a relief texture over the light backdrop, for a little depth. It is not tied to any real place
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val texture by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null) {
-        value = withContext(Dispatchers.IO) {
-            try {
-                context.assets.open("terrain/bg_relief.webp").use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
+    // A relief texture over the light backdrop, for a little depth. It is not tied to any real place
     Box(
         modifier = Modifier
             .fillMaxSize()

@@ -1,8 +1,10 @@
 package io.github.genesjc.microclimatefinder.ui.home
 
 import io.github.genesjc.microclimatefinder.data.local.MapZoomStore
+import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
 import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
 import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
+import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testStation
@@ -10,9 +12,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -48,6 +53,17 @@ class HomeViewModelTest {
         }
     }
 
+    private class FakeDatasets : RegionDatasets {
+        override fun datasetFor(regionId: String) = StationDatasetInfo(
+            regionId = regionId, fileName = "$regionId.txt", title = regionId.uppercase(), subtitle = "",
+            stationCount = 1, minElevationMeters = 0, maxElevationMeters = 1
+        )
+
+        override fun defaultDataset() = datasetFor("default")
+        override fun fullDataRegionCount() = 5
+        override fun totalRegionCount() = 6
+    }
+
     private val store = FakeRegionStore("a")
     private val zoomStore = FakeZoomStore()
     private val stationStore = FakeStationStore()
@@ -58,7 +74,8 @@ class HomeViewModelTest {
         regionStore = store,
         stationStore = stationStore,
         zoomStore = zoomStore,
-        stationsForRegion = { regionId -> listOf(testStation(id = regionId)) },
+        datasets = FakeDatasets(),
+        stationsOf = { dataset -> listOf(testStation(id = dataset.regionId)) },
         readings = testLiveReadings(CoroutineScope(dispatcher)),
         prefetch = { stations: List<MicroclimateStation> ->
             val regionId = stations.first().id
@@ -165,6 +182,32 @@ class HomeViewModelTest {
     @Test
     fun providesTheStationsOfARegionForHomesLists() {
         assertEquals(listOf("b"), viewModel().stations("b").map { it.id })
+    }
+
+    @Test
+    fun theRegionAloneIsAvailableForWhatSitsAboveHome() {
+        val vm = viewModel()
+        assertEquals("a", vm.selectedRegionId.value)
+        vm.selectRegion("b")
+        assertEquals("b", vm.selectedRegionId.value)
+    }
+
+    @Test
+    fun aRegionChangeSendsOneEventAndChoosingTheSameRegionSendsNone() = runTest {
+        val vm = viewModel()
+        vm.selectRegion("a")
+        assertNull(withTimeoutOrNull(1000) { vm.events.first() })
+        vm.selectRegion("b")
+        assertEquals(HomeEvent.RegionChanged, vm.events.first())
+    }
+
+    @Test
+    fun answersForTheDatasetsOfRegions() {
+        val vm = viewModel()
+        assertEquals("b", vm.datasetFor("b")?.regionId)
+        assertEquals("default", vm.defaultDataset().regionId)
+        assertEquals(5, vm.fullDataRegionCount())
+        assertEquals(6, vm.totalRegionCount())
     }
 
     @Test
