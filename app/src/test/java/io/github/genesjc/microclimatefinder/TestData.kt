@@ -39,7 +39,7 @@ fun testLiveReadings(
         io.github.genesjc.microclimatefinder.data.remote.ObservationResult.Failed,
     fetched: MutableList<String> = mutableListOf()
 ) = io.github.genesjc.microclimatefinder.data.remote.LiveReadings(
-    scope = scope,
     peek = { null },
-    fetch = { id -> fetched += id; result }
+    fetch = { id -> fetched += id; result },
+    scope = scope
 )

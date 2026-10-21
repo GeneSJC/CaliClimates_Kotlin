@@ -1,18 +1,10 @@
 package io.github.genesjc.microclimatefinder.ui.home
 
-import android.content.Context
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import io.github.genesjc.microclimatefinder.data.local.RegionPreferences
-import io.github.genesjc.microclimatefinder.data.local.MapZoomPreferences
 import io.github.genesjc.microclimatefinder.data.local.MapZoomStore
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
 import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
 import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
-import io.github.genesjc.microclimatefinder.data.local.StationSelectionPreferences
-import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
@@ -23,8 +15,6 @@ import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.screens.DEFAULT_PIN_SCALE
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
@@ -41,7 +31,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import org.koin.core.component.inject
 
 /**
  * Everything Home shows that can change, in one immutable value. The screens read it and send events to
@@ -77,26 +67,24 @@ sealed interface HomeEvent {
  * - Live readings: whenever the region changes, the new region's featured stations are fetched. A newer region
  *   cancels the previous region's fetch ([collectLatest]).
  *
- * Its collaborators are passed in as plain values, so tests can supply fakes, and [factory] builds the real ones.
- * This is a stop-gap until the app has a dependency container; the live-reading fetch also belongs in a state holder later.
+ * Its helpers come from the dependency container with `by inject()`, so it has no constructor arguments. The live-reading
+ * fetch belongs in a state holder later.
  */
 @OptIn(FlowPreview::class)
-class HomeViewModel(
-    private val regionStore: SelectedRegionStore,
+class HomeViewModel : AppBaseViewModel() {
+
+    private val regionStore: SelectedRegionStore by inject()
     /** Where the last selected station is remembered, so the app reopens on it. */
-    private val stationStore: SelectedStationStore,
+    private val stationStore: SelectedStationStore by inject()
     /** Where the map zoom is remembered, so the app reopens at the same zoom. */
-    private val zoomStore: MapZoomStore,
+    private val zoomStore: MapZoomStore by inject()
     /** The station dataset of each region, and how many regions have data. */
-    private val datasets: RegionDatasets,
-    /** The stations of a dataset. Called on [ioDispatcher] for the region fetch and the warm-up. */
-    private val stationsOf: (StationDatasetInfo) -> List<MicroclimateStation>,
+    private val datasets: RegionDatasets by inject()
+    private val stationRepository: StationRepository by inject()
     /** Fetches live readings for a region's stations; cancelled when the region changes. */
-    private val prefetch: suspend (List<MicroclimateStation>) -> Unit,
+    private val liveCache: LiveObservationCache by inject()
     /** The live readings the station tile and card show. */
-    private val readings: LiveReadings,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) : AppBaseViewModel() {
+    private val readings: LiveReadings by inject()
 
     private val _uiState = MutableStateFlow(
         regionStore.load().let { regionId ->
@@ -131,14 +119,13 @@ class HomeViewModel(
         }
         viewModelScope.launch {
             uiState.map { it.selectedRegionId }.distinctUntilChanged().collectLatest { regionId ->
-                val stations = withContext(ioDispatcher) { stationsForRegion(regionId) }
-                prefetch(stations)
+                liveCache.prefetch(datasets.stationsFor(regionId))
             }
         }
         // Once the first region is on its way, read the other regions' stations in the background, so changing
         // region later finds them already parsed instead of unzipping a pack on the main thread mid-transition
-        viewModelScope.launch(ioDispatcher) {
-            CaliforniaRegionalDefinitions.ALL_REGIONS.forEach { stationsForRegion(it.id) }
+        viewModelScope.launch {
+            CaliforniaRegionalDefinitions.ALL_REGIONS.forEach { datasets.stationsFor(it.id) }
         }
     }
 
@@ -157,10 +144,8 @@ class HomeViewModel(
      * The region's stations, for Home's dropdown, Terrain Legend and station card. Usually already read (the region's
      * fetch and the warm-up of the others do it in the background), so it is a lookup; call it from remember, not per frame.
      */
-    fun stations(regionId: String): List<MicroclimateStation> = stationsForRegion(regionId)
-
-    private fun stationsForRegion(regionId: String): List<MicroclimateStation> =
-        datasets.datasetFor(regionId)?.let(stationsOf) ?: emptyList()
+    fun stations(regionId: String): List<MicroclimateStation> =
+        datasets.datasetFor(regionId)?.let { stationRepository.stations(it) } ?: emptyList()
 
     /** The region's station dataset, or null when it has no data (Home then shows its limited-data banner). */
     fun datasetFor(regionId: String): StationDatasetInfo? = datasets.datasetFor(regionId)
@@ -193,25 +178,7 @@ class HomeViewModel(
 
     fun setInfoOpen(open: Boolean) = _uiState.update { it.copy(infoOpen = open) }
 
-    companion object {
-        private const val ZOOM_SAVE_DELAY_MS = 500L
-
-        /** Builds the real [HomeViewModel] from the application context. */
-        fun factory(context: Context): ViewModelProvider.Factory {
-            val app = context.applicationContext
-            return viewModelFactory {
-                initializer {
-                    HomeViewModel(
-                        regionStore = RegionPreferences(app),
-                        stationStore = StationSelectionPreferences(app),
-                        zoomStore = MapZoomPreferences(app),
-                        datasets = StationDataStore(app),
-                        stationsOf = { StationRepository.stations(app, it) },
-                        prefetch = { LiveObservationCache.prefetch(it) },
-                        readings = LiveReadings.shared
-                    )
-                }
-            }
-        }
+    private companion object {
+        const val ZOOM_SAVE_DELAY_MS = 500L
     }
 }

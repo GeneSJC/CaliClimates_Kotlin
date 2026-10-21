@@ -1,37 +1,34 @@
 package io.github.genesjc.microclimatefinder.ui.map
 
 import androidx.lifecycle.viewModelScope
+import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
+import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import org.koin.core.component.inject
 
 /**
- * What both map views (Topography and Elevation) need from the data: a region's stations, its terrain picture
- * and the name each station goes by on a label. A specialised base: it extends [AppBaseViewModel] and holds
- * data access for the map screens only.
- *
- * Collaborators are plain values so tests can supply fakes; the subclasses' factories build the real ones.
+ * What both map views (Topography and Elevation) need from the data: a region's stations, its terrain picture,
+ * the station's live reading for its card, and the name each station goes by on a label. A specialised base: it
+ * extends [AppBaseViewModel] and holds data access for the map screens only. Its helpers come from the container.
  */
-abstract class MapViewModel(
-    private val stationsOf: (StationDatasetInfo) -> List<MicroclimateStation>,
-    /** Loads a region's terrain picture (null when it has none). Called off the main thread. */
-    private val loadTerrain: (String) -> TerrainImage?,
-    private val cityNameOf: (MicroclimateStation) -> String,
-    private val readings: LiveReadings,
-    private val ioDispatcher: CoroutineDispatcher
-) : AppBaseViewModel() {
+abstract class MapViewModel : AppBaseViewModel() {
 
-    private val terrains = HashMap<String, MutableStateFlow<TerrainImage?>>()
+    private val repository: StationRepository by inject()
+    protected val terrains: TerrainRepository by inject()
+    private val readings: LiveReadings by inject()
 
-    fun stationsFor(dataset: StationDatasetInfo): List<MicroclimateStation> = stationsOf(dataset)
+    private val terrainFlows = HashMap<String, MutableStateFlow<TerrainImage?>>()
+
+    fun stationsFor(dataset: StationDatasetInfo): List<MicroclimateStation> = repository.stations(dataset)
 
     /**
      * The region's terrain picture: null until it has loaded (the map shows a plain base meanwhile). Loaded once
@@ -39,11 +36,11 @@ abstract class MapViewModel(
      * the decoded images are large.
      */
     fun terrain(regionId: String): StateFlow<TerrainImage?> {
-        terrains[regionId]?.let { return it }
-        terrains.clear()
+        terrainFlows[regionId]?.let { return it }
+        terrainFlows.clear()
         return MutableStateFlow<TerrainImage?>(null).also { flow ->
-            terrains[regionId] = flow
-            viewModelScope.launch { flow.value = withContext(ioDispatcher) { loadTerrain(regionId) } }
+            terrainFlows[regionId] = flow
+            viewModelScope.launch { flow.value = terrains.terrain(regionId) }
         }
     }
 
@@ -51,5 +48,5 @@ abstract class MapViewModel(
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 
     /** The name a station goes by on the maps' labels. */
-    fun cityName(station: MicroclimateStation): String = cityNameOf(station)
+    fun cityName(station: MicroclimateStation): String = LocalNewsRepository.getCleanCityName(station.id, station.name)
 }

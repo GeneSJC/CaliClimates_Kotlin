@@ -10,37 +10,22 @@ import kotlinx.coroutines.sync.withPermit
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * In-memory live readings, shared by the whole app. A reading is reused for 15 minutes (NWS stations
- * report about hourly); a station with no usable reading or a failed request is not retried for 5.
- * Compose screens can read [entries] and recompose as readings arrive.
+ * In-memory live readings, shared by the whole app (one instance, built by the dependency container). A reading is
+ * reused for 15 minutes (NWS stations report about hourly); a station with no usable reading or a failed request is not
+ * retried for 5. [source] is where readings come from and [now] is the clock; tests pass their own.
  */
-object LiveObservationCache {
-    private const val TAG = "NwsCache"
-    private const val READING_TTL_MS = 15 * 60_000L
-    private const val NEGATIVE_TTL_MS = 5 * 60_000L
-
-    /** Featured stations fetched when a region loads. The single ceiling; raise it if limits allow. */
-    const val PREFETCH_LIMIT = 40
-    private const val CONCURRENT_REQUESTS = 4
-
+class LiveObservationCache(
+    private val source: ObservationSource,
+    private val now: () -> Long = { System.currentTimeMillis() }
+) {
     private class Entry(val result: ObservationResult, val fetchedAtMs: Long) {
         fun isFresh(now: Long) = now - fetchedAtMs <
             if (result is ObservationResult.Reading) READING_TTL_MS else NEGATIVE_TTL_MS
     }
 
-    // Test hooks: the clock and the fetcher the cache uses (see LiveObservationCacheTest)
-    internal var now: () -> Long = { System.currentTimeMillis() }
-    internal var fetcher: suspend (String) -> ObservationResult = { NwsObservationClient.fetchLatest(it) }
-
     private val entries = mutableStateMapOf<String, ObservationResult>()
     private val stamps = ConcurrentHashMap<String, Entry>()
     private val gate = Semaphore(CONCURRENT_REQUESTS)
-
-    /** Forgets every reading. For tests. */
-    internal fun clear() {
-        entries.clear()
-        stamps.clear()
-    }
 
     /** Latest known result for a station without fetching; null if never fetched. */
     fun peek(stationId: String): ObservationResult? = entries[stationId]
@@ -49,7 +34,7 @@ object LiveObservationCache {
     suspend fun get(stationId: String): ObservationResult {
         stamps[stationId]?.takeIf { it.isFresh(now()) }?.let { return it.result }
         return gate.withPermit {
-            val result = fetcher(stationId)
+            val result = source.fetchLatest(stationId)
             stamps[stationId] = Entry(result, now())
             entries[stationId] = result
             result
@@ -69,5 +54,15 @@ object LiveObservationCache {
         }
         val got = targets.count { entries[it.id] is ObservationResult.Reading }
         Log.d(TAG, "prefetched ${targets.size} featured stations, $got readings, ${System.currentTimeMillis() - started} ms")
+    }
+
+    companion object {
+        private const val TAG = "NwsCache"
+        private const val READING_TTL_MS = 15 * 60_000L
+        private const val NEGATIVE_TTL_MS = 5 * 60_000L
+
+        /** Featured stations fetched when a region loads. The single ceiling; raise it if limits allow. */
+        const val PREFETCH_LIMIT = 40
+        private const val CONCURRENT_REQUESTS = 4
     }
 }

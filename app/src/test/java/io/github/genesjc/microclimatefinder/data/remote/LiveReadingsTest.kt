@@ -18,7 +18,7 @@ class LiveReadingsTest {
     @Test
     fun startsFromTheKnownReadingThenShowsTheFetchedOne() {
         val fetched = mutableListOf<String>()
-        val readings = LiveReadings(scope, peek = { ObservationResult.NoReading }, fetch = { fetched += it; reading })
+        val readings = LiveReadings(scope = scope, peek = { ObservationResult.NoReading }, fetch = { fetched += it; reading })
         val flow = readings.flowFor(testStation(id = "K1"))
         assertEquals(reading, flow.value)
         assertEquals(listOf("K1"), fetched)
@@ -27,7 +27,7 @@ class LiveReadingsTest {
     @Test
     fun aStationThatCannotReportIsNeverFetched() {
         var fetches = 0
-        val readings = LiveReadings(scope, peek = { null }, fetch = { fetches++; reading })
+        val readings = LiveReadings(scope = scope, peek = { null }, fetch = { fetches++; reading })
         val flow = readings.flowFor(testStation(id = "KNO", reportsTemp = false))
         assertEquals(ObservationResult.NoReading, flow.value)
         assertEquals(0, fetches)
@@ -36,7 +36,7 @@ class LiveReadingsTest {
     @Test
     fun oneValuePerStationAndEachAskRefreshesIt() {
         var fetches = 0
-        val readings = LiveReadings(scope, peek = { null }, fetch = { fetches++; reading })
+        val readings = LiveReadings(scope = scope, peek = { null }, fetch = { fetches++; reading })
         val station = testStation(id = "K1")
         assertSame(readings.flowFor(station), readings.flowFor(station))
         assertEquals(2, fetches)
@@ -45,7 +45,7 @@ class LiveReadingsTest {
     @Test
     fun isNullUntilTheFetchAnswers() {
         val hold = kotlinx.coroutines.CompletableDeferred<ObservationResult>()
-        val readings = LiveReadings(scope, peek = { null }, fetch = { hold.await() })
+        val readings = LiveReadings(scope = scope, peek = { null }, fetch = { hold.await() })
         val flow = readings.flowFor(testStation(id = "K1"))
         assertNull(flow.value)
         hold.complete(reading)

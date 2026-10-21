@@ -1,34 +1,25 @@
 package io.github.genesjc.microclimatefinder.ui.root
 
-import android.content.Context
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.genesjc.microclimatefinder.data.local.DarkModeStore
-import io.github.genesjc.microclimatefinder.data.local.TerrainMaps
-import io.github.genesjc.microclimatefinder.data.local.ThemePreferences
+import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import org.koin.core.component.inject
 
 /**
  * What sits above every screen: the dark or light look (remembered between launches) and the backdrop's relief
  * texture. The backdrop's region tint follows the region HomeViewModel owns, so it is not kept here.
- * Collaborators are plain values so tests can supply fakes; [factory] builds the real ones.
+ * Its helpers come from the dependency container.
  */
-class AppRootViewModel(
-    private val darkModeStore: DarkModeStore,
-    /** Loads the backdrop's relief picture (null when it is missing). Called off the main thread. */
-    private val loadBackdropTexture: () -> ImageBitmap?,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) : AppBaseViewModel() {
+class AppRootViewModel : AppBaseViewModel() {
+
+    private val darkModeStore: DarkModeStore by inject()
+    private val terrains: TerrainRepository by inject()
 
     private val _darkMode = MutableStateFlow(darkModeStore.darkMode())
     val darkMode: StateFlow<Boolean> = _darkMode.asStateFlow()
@@ -39,27 +30,12 @@ class AppRootViewModel(
     val backdropTexture: StateFlow<ImageBitmap?> = _backdropTexture.asStateFlow()
 
     init {
-        viewModelScope.launch { _backdropTexture.value = withContext(ioDispatcher) { loadBackdropTexture() } }
+        viewModelScope.launch { _backdropTexture.value = terrains.backdropRelief() }
     }
 
     /** Switches the look and remembers the choice. */
     fun setDarkMode(dark: Boolean) {
         darkModeStore.saveDarkMode(dark)
         _darkMode.value = dark
-    }
-
-    companion object {
-        /** Builds the real [AppRootViewModel] from the application context. */
-        fun factory(context: Context): ViewModelProvider.Factory {
-            val app = context.applicationContext
-            return viewModelFactory {
-                initializer {
-                    AppRootViewModel(
-                        darkModeStore = ThemePreferences(app),
-                        loadBackdropTexture = { TerrainMaps.loadBackdropRelief(app) }
-                    )
-                }
-            }
-        }
     }
 }

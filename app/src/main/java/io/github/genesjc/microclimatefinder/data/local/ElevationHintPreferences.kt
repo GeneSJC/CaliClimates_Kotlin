@@ -19,6 +19,9 @@ class ElevationHintPreferences(context: Context) : ElevationHintStore {
 
     private val prefs = context.getSharedPreferences("elevation_hint_prefs", Context.MODE_PRIVATE)
 
+    // One instance lives for the whole app run, so this is true once this launch has been counted
+    private var countedThisLaunch = false
+
     /** Counts this launch once, however many times the view is opened during it. */
     override fun countLaunch() {
         if (countedThisLaunch) return
@@ -36,6 +39,5 @@ class ElevationHintPreferences(context: Context) : ElevationHintStore {
         const val KEY_LAUNCHES = "launches"
         const val KEY_TAPPED = "line_tapped"
         const val MAX_LAUNCHES = 3
-        @Volatile var countedThisLaunch = false
     }
 }

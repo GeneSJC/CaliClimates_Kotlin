@@ -147,7 +147,7 @@ fun RegionPickerOverlay(
     selectedRegionId: String,
     onSelectRegion: (String) -> Unit,
     // Created when Home first shows, so the statewide terrain picture is loaded before the picker is first opened
-    viewModel: RegionPickerViewModel = viewModel(factory = RegionPickerViewModel.factory(LocalContext.current))
+    viewModel: RegionPickerViewModel = viewModel()
 ) {
     BackHandler(enabled = state.visible) { state.close() }
     if (!state.visible) return

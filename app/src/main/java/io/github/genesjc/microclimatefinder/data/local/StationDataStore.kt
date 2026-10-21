@@ -2,6 +2,10 @@ package io.github.genesjc.microclimatefinder.data.local
 
 import android.content.Context
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** A station dataset for one CA region: its bundled station pack, or a CSV override. */
 data class StationDatasetInfo(
@@ -27,6 +31,9 @@ interface RegionDatasets {
     fun fullDataRegionCount(): Int
 
     fun totalRegionCount(): Int
+
+    /** The region's stations (empty when it has none), read off the main thread. */
+    suspend fun stationsFor(regionId: String): List<MicroclimateStation>
 }
 
 /**
@@ -36,7 +43,11 @@ interface RegionDatasets {
  *  2. the region's station pack (a.txt to f.txt in assets).
  * A region neither can supply has no stations; the app shows its limited-data banner.
  */
-class StationDataStore(private val context: Context) : RegionDatasets {
+class StationDataStore(
+    private val context: Context,
+    private val repository: StationRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) : RegionDatasets {
 
     private val assetNames: Set<String> by lazy {
         try { context.assets.list("")?.toSet() ?: emptySet() } catch (e: Exception) { emptySet() }
@@ -51,6 +62,10 @@ class StationDataStore(private val context: Context) : RegionDatasets {
 
     override fun fullDataRegionCount(): Int =
         CaliforniaRegionalDefinitions.ALL_REGIONS.count { hasCsvOverride(it.id) || packFileFor(it.id) != null }
+
+    override suspend fun stationsFor(regionId: String): List<MicroclimateStation> = withContext(ioDispatcher) {
+        datasetFor(regionId)?.let { repository.stations(it) } ?: emptyList()
+    }
 
     override fun totalRegionCount(): Int = CaliforniaRegionalDefinitions.ALL_REGIONS.size
 
@@ -100,7 +115,7 @@ class StationDataStore(private val context: Context) : RegionDatasets {
             maxElevationMeters = 0,
             packFileName = packFile
         )
-        val stations = StationRepository.stations(context, base)
+        val stations = repository.stations(base)
         if (stations.isEmpty()) return null
         return base.copy(
             subtitle = "$kind • ${stations.size} stations",
