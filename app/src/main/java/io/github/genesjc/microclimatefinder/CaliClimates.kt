@@ -6,11 +6,11 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
 /** The app. It starts the dependency container once, before any screen or ViewModel exists. */
-class CaliforniaClimateFinder : Application() {
+class CaliClimates : Application() {
     override fun onCreate() {
         super.onCreate()
         startKoin {
-            androidContext(this@CaliforniaClimateFinder)
+            androidContext(this@CaliClimates)
             modules(appModule)
         }
     }
