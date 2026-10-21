@@ -213,7 +213,7 @@ fun ElevationProfileScreen(
     onSliderShownChange: ((Boolean) -> Unit)? = null,
     /** Home: 0 normally, 1 when the chart has grown out into the page margins (this view); eased between. */
     expandT: Float = 0f,
-    viewModel: ElevationViewModel = viewModel(factory = ElevationViewModel.factory(LocalContext.current)),
+    viewModel: ElevationViewModel = viewModel(),
 ) {
     val stations = remember(dataset) { viewModel.stationsFor(dataset) }
 

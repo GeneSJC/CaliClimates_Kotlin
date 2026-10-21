@@ -1,39 +1,37 @@
 package io.github.genesjc.microclimatefinder.ui.root
 
 import io.github.genesjc.microclimatefinder.data.local.DarkModeStore
+import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
+import io.github.genesjc.microclimatefinder.testutil.FakeDarkModeStore
+import io.github.genesjc.microclimatefinder.testutil.FakeTerrainSource
+import io.github.genesjc.microclimatefinder.testutil.MainDispatcherRule
+import io.github.genesjc.microclimatefinder.testutil.StopKoinRule
+import io.github.genesjc.microclimatefinder.testutil.restartKoin
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class AppRootViewModelTest {
 
-    private val dispatcher = UnconfinedTestDispatcher()
+    @get:Rule
+    val main = MainDispatcherRule()
 
-    private class FakeDarkModeStore(var dark: Boolean = false) : DarkModeStore {
-        override fun darkMode() = dark
-        override fun saveDarkMode(dark: Boolean) {
-            this.dark = dark
+    @get:Rule
+    val stopKoin = StopKoinRule()
+
+    private val terrain = FakeTerrainSource()
+
+    private fun viewModel(store: DarkModeStore): AppRootViewModel {
+        restartKoin {
+            single { store }
+            single { TerrainRepository(terrain, Dispatchers.Unconfined) }
         }
+        return AppRootViewModel()
     }
-
-    @Before
-    fun setUp() = Dispatchers.setMain(dispatcher)
-
-    @After
-    fun tearDown() = Dispatchers.resetMain()
-
-    private fun viewModel(store: DarkModeStore, loads: MutableList<String> = mutableListOf()) =
-        AppRootViewModel(store, loadBackdropTexture = { loads += "load"; null }, ioDispatcher = dispatcher)
 
     @Test
     fun startsWithTheSavedLook() {
@@ -52,9 +50,8 @@ class AppRootViewModelTest {
 
     @Test
     fun loadsTheBackdropTextureOnceAtStart() {
-        val loads = mutableListOf<String>()
-        val vm = viewModel(FakeDarkModeStore(), loads)
-        assertEquals(1, loads.size)
+        val vm = viewModel(FakeDarkModeStore())
+        assertEquals(1, terrain.backdropLoads)
         assertNull(vm.backdropTexture.value)
     }
 }

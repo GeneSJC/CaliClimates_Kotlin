@@ -143,7 +143,7 @@ fun StationMapScreen(
     onSelectedOffscreenChange: ((Boolean) -> Unit)? = null,
     /** Home: bumped to ask the map to bring the selected station back to the middle of the view. */
     recenterTick: Int = 0,
-    viewModel: StationMapViewModel = viewModel(factory = StationMapViewModel.factory(LocalContext.current)),
+    viewModel: StationMapViewModel = viewModel(),
 ) {
     val stations = remember(dataset) { viewModel.stationsFor(dataset) }
 

@@ -36,9 +36,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // The look (dark or light, remembered between launches) and the backdrop's texture live in the ViewModel
-            val appRoot: AppRootViewModel = viewModel(factory = AppRootViewModel.factory(applicationContext))
-            val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory(applicationContext))
+            // The look (dark or light, remembered between launches) and the backdrop's texture live in the ViewModel;
+            // the ViewModels are created by the standard factory and take their helpers from the dependency container
+            val appRoot: AppRootViewModel = viewModel()
+            val homeViewModel: HomeViewModel = viewModel()
             val darkMode by appRoot.darkMode.collectAsStateWithLifecycle()
             val backdropTexture by appRoot.backdropTexture.collectAsStateWithLifecycle()
             // The backdrop takes a soft tint of the selected region's colour

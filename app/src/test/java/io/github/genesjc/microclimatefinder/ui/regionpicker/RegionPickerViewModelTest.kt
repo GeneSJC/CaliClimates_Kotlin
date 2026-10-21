@@ -1,32 +1,30 @@
 package io.github.genesjc.microclimatefinder.ui.regionpicker
 
+import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
+import io.github.genesjc.microclimatefinder.testutil.FakeTerrainSource
+import io.github.genesjc.microclimatefinder.testutil.MainDispatcherRule
+import io.github.genesjc.microclimatefinder.testutil.StopKoinRule
+import io.github.genesjc.microclimatefinder.testutil.restartKoin
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RegionPickerViewModelTest {
 
-    private val dispatcher = UnconfinedTestDispatcher()
+    @get:Rule
+    val main = MainDispatcherRule()
 
-    @Before
-    fun setUp() = Dispatchers.setMain(dispatcher)
-
-    @After
-    fun tearDown() = Dispatchers.resetMain()
+    @get:Rule
+    val stopKoin = StopKoinRule()
 
     @Test
     fun loadsTheStatewidePictureOnceAsSoonAsItIsCreated() {
-        var loads = 0
-        val vm = RegionPickerViewModel(loadStateTerrain = { loads++; null }, ioDispatcher = dispatcher)
-        assertEquals(1, loads)
+        val terrain = FakeTerrainSource()
+        restartKoin { single { TerrainRepository(terrain, Dispatchers.Unconfined) } }
+        val vm = RegionPickerViewModel()
+        assertEquals(1, terrain.stateLoads)
         assertNull(vm.stateTerrain.value)
     }
 }
