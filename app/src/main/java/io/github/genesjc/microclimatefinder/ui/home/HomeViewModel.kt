@@ -145,7 +145,7 @@ class HomeViewModel : AppBaseViewModel() {
      * fetch and the warm-up of the others do it in the background), so it is a lookup; call it from remember, not per frame.
      */
     fun stations(regionId: String): List<MicroclimateStation> =
-        datasets.datasetFor(regionId)?.let { stationRepository.stations(it) } ?: emptyList()
+        datasets.datasetFor(regionId)?.let { stationRepository.peek(it) } ?: emptyList()
 
     /** The region's station dataset, or null when it has no data (Home then shows its limited-data banner). */
     fun datasetFor(regionId: String): StationDatasetInfo? = datasets.datasetFor(regionId)

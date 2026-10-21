@@ -55,7 +55,8 @@ fun StationListScreen(
     modifier: Modifier = Modifier,
     viewModel: StationListViewModel = viewModel()
 ) {
-    val state = remember(dataset, selectedStationId) { viewModel.stateFor(dataset, selectedStationId) }
+    val stations by remember(dataset) { viewModel.stations(dataset) }.collectAsStateWithLifecycle()
+    val state = remember(dataset, stations, selectedStationId) { viewModel.stateFor(dataset, stations, selectedStationId) }
     val pickerState = rememberRegionPickerState()
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -139,7 +140,9 @@ fun StationListScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        if (state.emptyMessage != null) {
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize())
+        } else if (state.emptyMessage != null) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
