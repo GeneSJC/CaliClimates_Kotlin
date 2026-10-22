@@ -19,6 +19,8 @@ import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainSource
 import io.github.genesjc.microclimatefinder.data.local.ThemePreferences
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
+import io.github.genesjc.microclimatefinder.data.remote.createNwsApi
+import io.github.genesjc.microclimatefinder.data.remote.createNwsHttpClient
 import io.github.genesjc.microclimatefinder.data.remote.NwsObservationClient
 import io.github.genesjc.microclimatefinder.data.remote.ObservationSource
 import io.github.genesjc.microclimatefinder.BuildConfig
@@ -45,7 +47,9 @@ val appModule = module {
     single<ElevationHintStore> { ElevationHintPreferences(androidContext()) }
     single<StationSource> { AssetStationSource(androidContext()) }
     single<TerrainSource> { AssetTerrainSource(androidContext()) }
-    single<ObservationSource> { NwsObservationClient() }
+    single { createNwsHttpClient() }
+    single { createNwsApi(get()) }
+    single<ObservationSource> { NwsObservationClient(get()) }
 
     // Repositories
     single { StationRepository(get()) }

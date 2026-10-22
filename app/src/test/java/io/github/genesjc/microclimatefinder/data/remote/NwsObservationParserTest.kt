@@ -1,7 +1,7 @@
 package io.github.genesjc.microclimatefinder.data.remote
 
 import java.time.Instant
-import org.json.JSONException
+import kotlinx.serialization.SerializationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -90,12 +90,12 @@ class NwsObservationParserTest {
         assertEquals(Instant.parse("2026-10-01T12:53:00Z").toEpochMilli(), o.observedAtMillis)
     }
 
-    @Test(expected = JSONException::class)
+    @Test(expected = SerializationException::class)
     fun textThatIsNotAnObservationThrowsForTheClientToCatch() {
         NwsObservationClient.parseObservation("<html>Service unavailable</html>")
     }
 
-    @Test(expected = JSONException::class)
+    @Test(expected = SerializationException::class)
     fun anObservationWithoutPropertiesThrowsForTheClientToCatch() {
         NwsObservationClient.parseObservation("""{"type":"Feature"}""")
     }
