@@ -1,14 +1,7 @@
 package io.github.genesjc.microclimatefinder.data.remote
 
 import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
-import java.text.SimpleDateFormat
-import java.util.Locale
+import kotlinx.coroutines.CancellationException
 
 /** A real reading from the National Weather Service. Only temperature is guaranteed. */
 data class LiveObservation(
@@ -38,79 +31,32 @@ interface ObservationSource {
     suspend fun fetchLatest(stationId: String): ObservationResult
 }
 
-/** Fetches one station's latest observation from api.weather.gov (no key needed). */
-class NwsObservationClient : ObservationSource {
+/**
+ * Fetches one station's latest observation from api.weather.gov (no key needed) through [api]. The answer is read into
+ * [ObservationDto] and turned into an [ObservationResult]; a failure of any kind is a result, not an exception
+ * (cancellation is the one exception and is passed on).
+ */
+class NwsObservationClient(private val api: NwsApi) : ObservationSource {
 
-    override suspend fun fetchLatest(stationId: String): ObservationResult = withContext(Dispatchers.IO) {
-        try {
-            fetch(stationId)
-        } catch (e: Exception) {
-            Log.w(TAG, "$stationId failed: ${e.javaClass.simpleName}: ${e.message}")
-            ObservationResult.Failed
+    override suspend fun fetchLatest(stationId: String): ObservationResult = try {
+        val response = api.latestObservation(stationId)
+        when {
+            response.code() == 404 -> ObservationResult.NoReading
+            !response.isSuccessful -> ObservationResult.Failed
+            else -> response.body()?.toResult() ?: ObservationResult.Failed
         }
-    }
-
-    private fun fetch(stationId: String): ObservationResult {
-        val url = URL("https://api.weather.gov/stations/${URLEncoder.encode(stationId, "UTF-8")}/observations/latest")
-        val conn = url.openConnection() as HttpURLConnection
-        conn.connectTimeout = 10_000
-        conn.readTimeout = 10_000
-        conn.setRequestProperty("User-Agent", USER_AGENT)
-        conn.setRequestProperty("Accept", "application/geo+json")
-        try {
-            val code = conn.responseCode
-            if (code == 404) return ObservationResult.NoReading
-            if (code !in 200..299) return ObservationResult.Failed
-            val body = conn.inputStream.bufferedReader().use { it.readText() }
-            return parseObservation(body)
-        } finally {
-            conn.disconnect()
-        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w(TAG, "$stationId failed: ${e.javaClass.simpleName}: ${e.message}")
+        ObservationResult.Failed
     }
 
     companion object {
         private const val TAG = "NwsClient"
-        private const val USER_AGENT =
-            "Cali Climates (https://github.com/GeneSJC/Android_MicroClimateFinder)"
 
         /** One api.weather.gov observation (GeoJSON text) as a result; [ObservationResult.NoReading] when it has no temperature. */
-        internal fun parseObservation(body: String): ObservationResult {
-            val props = JSONObject(body).getJSONObject("properties")
-            // Values can be null and carry a unit code; convert by unit code instead of assuming.
-            val tempC = number(props.optJSONObject("temperature"))?.let {
-                if (unit(props, "temperature").endsWith("degF")) (it - 32.0) * 5.0 / 9.0 else it
-            } ?: return ObservationResult.NoReading
-            val wind = number(props.optJSONObject("windSpeed"))?.let {
-                if (unit(props, "windSpeed").endsWith("m_s-1")) it * 3.6 else it
-            }
-            val pressure = number(props.optJSONObject("barometricPressure"))?.let {
-                // Pascals only: a unit already in hectopascals ("wmoUnit:hPa") also ends in "Pa"
-                if (unit(props, "barometricPressure").endsWith(":Pa")) it / 100.0 else it
-            }
-            return ObservationResult.Reading(
-                LiveObservation(
-                    temperatureCelsius = tempC,
-                    humidityPercent = number(props.optJSONObject("relativeHumidity")),
-                    windSpeedKmh = wind,
-                    pressureHpa = pressure,
-                    observedAtMillis = parseTime(props.optString("timestamp"))
-                )
-            )
-        }
-
-        private fun number(obj: JSONObject?): Double? =
-            if (obj == null || obj.isNull("value")) null else obj.getDouble("value")
-
-        private fun unit(props: JSONObject, key: String): String =
-            props.optJSONObject(key)?.optString("unitCode").orEmpty()
-
-        private fun parseTime(timestamp: String): Long? {
-            if (timestamp.isBlank()) return null
-            return try {
-                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).parse(timestamp)?.time
-            } catch (e: Exception) {
-                null
-            }
-        }
+        internal fun parseObservation(body: String): ObservationResult =
+            NwsJson.decodeFromString<ObservationDto>(body).toResult()
     }
 }

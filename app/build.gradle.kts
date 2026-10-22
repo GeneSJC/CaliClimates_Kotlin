@@ -10,6 +10,7 @@ import org.gradle.api.tasks.Input
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -89,6 +90,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     // Dependency injection: one container, started in the Application class (see di/AppModule.kt)
     implementation(libs.koin.android)
+    // The NWS observation call: Retrofit over OkHttp, JSON read into typed classes with kotlinx.serialization
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -98,8 +104,8 @@ dependencies {
     testImplementation(libs.junit)
     // runTest and a test dispatcher for the ViewModel tests
     testImplementation(libs.kotlinx.coroutines.test)
-    // org.json is part of Android but only stubbed in local unit tests; the real library lets them parse NWS data
-    testImplementation("org.json:json:20240303")
+    // A local web server, so the NWS client's requests and its handling of each answer can be tested on the JVM
+    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
