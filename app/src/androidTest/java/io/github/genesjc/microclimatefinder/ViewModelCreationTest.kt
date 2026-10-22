@@ -14,7 +14,6 @@ import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationSource
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainSource
-import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationSource
 import io.github.genesjc.microclimatefinder.ui.home.HomeViewModel
@@ -58,7 +57,7 @@ class ViewModelCreationTest {
             AppConfig::class, SelectedRegionStore::class, SelectedStationStore::class, MapZoomStore::class,
             DarkModeStore::class, ElevationHintStore::class, StationSource::class, TerrainSource::class,
             ObservationSource::class, StationRepository::class, TerrainRepository::class, RegionDatasets::class,
-            LiveObservationCache::class, LiveReadings::class
+            LiveReadings::class
         )
         types.forEach { type -> assertNotNull("Not registered: ${type.simpleName}", koin.get<Any>(type, null, null)) }
     }

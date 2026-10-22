@@ -5,7 +5,6 @@ import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
 import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
 import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
-import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testutil.FakeDatasets
 import io.github.genesjc.microclimatefinder.testutil.FakeObservationSource
@@ -60,8 +59,7 @@ class HomeViewModelTest {
             single<MapZoomStore> { zoomStore }
             single<RegionDatasets> { FakeDatasets() }
             single { repository }
-            single { LiveObservationCache(observations) }
-            single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined)) }
+            single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), observations) }
         }
         return HomeViewModel()
     }

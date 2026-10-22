@@ -32,14 +32,10 @@ fun testStation(
     isFeatured = isFeatured
 )
 
-/** Live readings over a fake cache: nothing known, every fetch answers [result]. Records the stations fetched. */
+/** Live readings over a fake source (every fetch answers Failed and is recorded) and a clock that stands still. */
 fun testLiveReadings(
     scope: kotlinx.coroutines.CoroutineScope,
-    result: io.github.genesjc.microclimatefinder.data.remote.ObservationResult =
-        io.github.genesjc.microclimatefinder.data.remote.ObservationResult.Failed,
-    fetched: MutableList<String> = mutableListOf()
-) = io.github.genesjc.microclimatefinder.data.remote.LiveReadings(
-    peek = { null },
-    fetch = { id -> fetched += id; result },
-    scope = scope
-)
+    source: io.github.genesjc.microclimatefinder.data.remote.ObservationSource =
+        io.github.genesjc.microclimatefinder.testutil.FakeObservationSource(),
+    now: () -> Long = { 0L }
+) = io.github.genesjc.microclimatefinder.data.remote.LiveReadings(source, scope, now)

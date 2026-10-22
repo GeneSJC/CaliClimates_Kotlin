@@ -18,7 +18,6 @@ import io.github.genesjc.microclimatefinder.data.local.StationSource
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainSource
 import io.github.genesjc.microclimatefinder.data.local.ThemePreferences
-import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.NwsObservationClient
 import io.github.genesjc.microclimatefinder.data.remote.ObservationSource
@@ -52,11 +51,7 @@ val appModule = module {
     single { StationRepository(get()) }
     single { TerrainRepository(get()) }
     single<RegionDatasets> { StationDataStore.fromAssets(androidContext(), get()) }
-    single { LiveObservationCache(get()) }
 
     // State holders
-    single {
-        val cache = get<LiveObservationCache>()
-        LiveReadings(peek = { cache.peek(it) }, fetch = { cache.get(it) })
-    }
+    single { LiveReadings(get()) }
 }
