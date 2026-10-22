@@ -4,7 +4,6 @@ import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.ElevationHintStore
-import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testStation
@@ -40,15 +39,13 @@ class MapViewModelsTest {
     )
     private val stations = listOf(testStation(id = "K1", name = "One"), testStation(id = "K2", name = "Two"))
     private val terrain = FakeTerrainSource()
-    private val cardFetches = mutableListOf<String>()
     private val observations = FakeObservationSource()
     private val hints = FakeHintStore()
 
     private fun register() = restartKoin {
         single { StationRepository(FakeStationSource(stations), Dispatchers.Unconfined) }
         single { TerrainRepository(terrain, Dispatchers.Unconfined) }
-        single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), fetched = cardFetches) }
-        single { LiveObservationCache(observations) }
+        single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), observations) }
         single<ElevationHintStore> { hints }
     }
 
@@ -82,9 +79,9 @@ class MapViewModelsTest {
     fun aCardsReadingStartsAsAFetchAndSkipsStationsThatCannotReport() {
         val vm = topography()
         assertEquals(ObservationResult.Failed, vm.reading(stations[0]).value)
-        assertEquals(listOf("K1"), cardFetches)
+        assertEquals(listOf("K1"), observations.fetched)
         assertEquals(ObservationResult.NoReading, vm.reading(testStation(id = "KNO", reportsTemp = false)).value)
-        assertEquals(listOf("K1"), cardFetches)
+        assertEquals(listOf("K1"), observations.fetched)
     }
 
     @Test

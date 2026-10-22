@@ -7,7 +7,6 @@ import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
 import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
-import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
@@ -23,7 +22,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -64,11 +62,10 @@ sealed interface HomeEvent {
  * - State: [uiState] is a [StateFlow]; the UI collects it and calls the functions below for every change.
  * - Region: choosing a region saves it and clears the selected station. The selected station and the map zoom
  *   are saved too, and come back on the next launch as long as they were set in the saved region.
- * - Live readings: whenever the region changes, the new region's featured stations are fetched. A newer region
- *   cancels the previous region's fetch ([collectLatest]).
+ * - Live readings: whenever the region changes, it opens a visit to the new region in [LiveReadings], which fetches
+ *   the region's featured stations and cancels the previous visit's fetch.
  *
- * Its helpers come from the dependency container with `by inject()`, so it has no constructor arguments. The live-reading
- * fetch belongs in a state holder later.
+ * Its helpers come from the dependency container with `by inject()`, so it has no constructor arguments.
  */
 @OptIn(FlowPreview::class)
 class HomeViewModel : AppBaseViewModel() {
@@ -81,9 +78,7 @@ class HomeViewModel : AppBaseViewModel() {
     /** The station dataset of each region, and how many regions have data. */
     private val datasets: RegionDatasets by inject()
     private val stationRepository: StationRepository by inject()
-    /** Fetches live readings for a region's stations; cancelled when the region changes. */
-    private val liveCache: LiveObservationCache by inject()
-    /** The live readings the station tile and card show. */
+    /** The live readings the station tile and card show; also fetches a region's featured stations when it is opened. */
     private val readings: LiveReadings by inject()
 
     private val _uiState = MutableStateFlow(
@@ -118,8 +113,8 @@ class HomeViewModel : AppBaseViewModel() {
             zoomChanges.debounce(ZOOM_SAVE_DELAY_MS).collect { zoomStore.save(uiState.value.selectedRegionId, it) }
         }
         viewModelScope.launch {
-            uiState.map { it.selectedRegionId }.distinctUntilChanged().collectLatest { regionId ->
-                liveCache.prefetch(datasets.stationsFor(regionId))
+            uiState.map { it.selectedRegionId }.distinctUntilChanged().collect { regionId ->
+                readings.open(datasets.stationsFor(regionId))
             }
         }
         // Once the first region is on its way, read the other regions' stations in the background, so changing

@@ -2,7 +2,6 @@ package io.github.genesjc.microclimatefinder.ui.map
 
 import androidx.lifecycle.viewModelScope
 import io.github.genesjc.microclimatefinder.data.local.ElevationHintStore
-import io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +15,6 @@ import org.koin.core.component.inject
  */
 class ElevationViewModel : MapViewModel() {
 
-    private val liveCache: LiveObservationCache by inject()
     private val hintStore: ElevationHintStore by inject()
 
     private val skylines = HashMap<String, MutableStateFlow<List<FloatArray>?>>()
@@ -32,11 +30,11 @@ class ElevationViewModel : MapViewModel() {
     }
 
     /** The station's latest known reading, without fetching. */
-    fun knownReading(stationId: String): ObservationResult? = liveCache.peek(stationId)
+    fun knownReading(stationId: String): ObservationResult? = readings.peek(stationId)
 
     /** The station's live reading (fetched when not fresh); [ObservationResult.NoReading] when it cannot report one. */
     suspend fun latestReading(station: MicroclimateStation): ObservationResult =
-        if (station.canHaveLiveReading) liveCache.get(station.id) else ObservationResult.NoReading
+        if (station.canHaveLiveReading) readings.get(station.id) else ObservationResult.NoReading
 
     /** Counts this visit to the view and says whether the hint in words should show. */
     fun startVisit(): Boolean {

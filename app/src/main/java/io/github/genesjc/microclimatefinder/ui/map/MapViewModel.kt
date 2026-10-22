@@ -24,7 +24,7 @@ abstract class MapViewModel : AppBaseViewModel() {
 
     private val repository: StationRepository by inject()
     protected val terrains: TerrainRepository by inject()
-    private val readings: LiveReadings by inject()
+    protected val readings: LiveReadings by inject()
 
     private val terrainFlows = HashMap<String, MutableStateFlow<TerrainImage?>>()
 
