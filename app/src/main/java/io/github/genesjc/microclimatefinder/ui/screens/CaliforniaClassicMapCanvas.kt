@@ -1,5 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StateTerrain
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -60,6 +62,17 @@ internal fun CaliforniaClassicMapCanvas(
 ) {
     val tintAlpha = if (terrain != null) 0.58f else 0.72f
     val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+    // The names drawn on the map are read here, because the drawing code below is not composable
+    val labelNorthern = stringResource(R.string.map_label_northern_california)
+    val labelBayArea = stringResource(R.string.map_label_bay_area)
+    val labelValley = stringResource(R.string.map_label_central_valley)
+    val labelCoast = stringResource(R.string.map_label_central_coast)
+    val labelLosAngeles = stringResource(R.string.map_label_los_angeles)
+    val labelSanDiego = stringResource(R.string.map_label_san_diego)
+    val labelOregon = stringResource(R.string.map_label_oregon)
+    val labelIdaho = stringResource(R.string.map_label_idaho)
+    val labelMexico = stringResource(R.string.map_label_mexico)
+    val labelNevada = stringResource(R.string.map_label_nevada)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -622,12 +635,12 @@ internal fun CaliforniaClassicMapCanvas(
                 )
                 drawText(layout, topLeft = Offset(left + pad, top + pad))
             }
-            regionLabel("Northern California", -122.2f, 40.9f)
-            regionLabel("Bay Area", -122.2f, 38.45f)
-            regionLabel("Central Valley", -119.6f, 36.9f)
-            regionLabel("Central Coast", -121.2f, 35.4f)
-            regionLabel("Los Angeles", -117.0f, 34.45f)
-            regionLabel("San Diego", -116.3f, 32.95f)
+            regionLabel(labelNorthern, -122.2f, 40.9f)
+            regionLabel(labelBayArea, -122.2f, 38.45f)
+            regionLabel(labelValley, -119.6f, 36.9f)
+            regionLabel(labelCoast, -121.2f, 35.4f)
+            regionLabel(labelLosAngeles, -117.0f, 34.45f)
+            regionLabel(labelSanDiego, -116.3f, 32.95f)
             // The neighbours, quietly
             val neighbourStyle = androidx.compose.ui.text.TextStyle(
                 color = Color(0xFF6B5636).copy(alpha = 0.75f),
@@ -635,11 +648,11 @@ internal fun CaliforniaClassicMapCanvas(
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 2.sp
             )
-            label("OREGON", -121.9f, 42.55f, neighbourStyle)
-            label("IDAHO", -115.3f, 42.55f, neighbourStyle)
-            label("MEXICO", -115.9f, 32.15f, neighbourStyle)
+            label(labelOregon, -121.9f, 42.55f, neighbourStyle)
+            label(labelIdaho, -115.3f, 42.55f, neighbourStyle)
+            label(labelMexico, -115.9f, 32.15f, neighbourStyle)
             label(
-                "NEVADA", -116.9f, 39.3f,
+                labelNevada, -116.9f, 39.3f,
                 androidx.compose.ui.text.TextStyle(
                     color = Color(0xFF6B5636).copy(alpha = 0.8f),
                     fontSize = 13.sp,

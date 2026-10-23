@@ -12,7 +12,7 @@ import org.junit.Test
 class StationRepositoryTest {
 
     private val dataset = StationDatasetInfo(
-        regionId = "a", fileName = "a.txt", title = "North", subtitle = "",
+        regionId = "a", fileName = "a.txt", kind = DatasetKind.BUNDLED_PACK,
         stationCount = 1, minElevationMeters = 0, maxElevationMeters = 1, packFileName = "a.txt"
     )
     private var reads = 0

@@ -106,7 +106,7 @@ fun IntroOverlay(onDone: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Explore California's Climates",
+                    text = stringResource(R.string.tagline),
                     color = Color(0xFFBAE6FD),
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center

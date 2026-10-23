@@ -1,10 +1,13 @@
 package io.github.genesjc.microclimatefinder.domain.model
 
-enum class TerrainType(val label: String) {
-    COASTAL("Coastal Zone"),
-    RIDGE("Mountain Ridge"),
-    VALLEY_BASIN("Valley Basin"),
-    URBAN_CANYON("Urban Corridor")
+import androidx.annotation.StringRes
+import io.github.genesjc.microclimatefinder.R
+
+enum class TerrainType(@StringRes val labelRes: Int) {
+    COASTAL(R.string.terrain_type_coastal),
+    RIDGE(R.string.terrain_type_ridge),
+    VALLEY_BASIN(R.string.terrain_type_valley_basin),
+    URBAN_CANYON(R.string.terrain_type_urban_canyon)
 }
 
 data class WeatherReading(
@@ -27,7 +30,9 @@ data class MicroclimateStation(
     val elevationMeters: Int,
     val terrain: TerrainType,
     val currentReading: WeatherReading,
-    val microclimateDescription: String,
+    // The station's own note from the data files; null when the files have none (the screens then say something
+    // general about its terrain type and height)
+    val microclimateNote: String?,
     // From the station data files: whether the station is known to report each live measurement.
     // null means the files do not say (not checked, or the column is missing).
     val reportsTemp: Boolean? = null,

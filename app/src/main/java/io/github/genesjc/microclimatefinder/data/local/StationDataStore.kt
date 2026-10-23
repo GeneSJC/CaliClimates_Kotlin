@@ -7,12 +7,14 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/** Where a dataset's stations come from. The screens turn this into words; the data layer only reports it. */
+enum class DatasetKind { BUNDLED_PACK, CSV_OVERRIDE, NONE }
+
 /** A station dataset for one CA region: its bundled station pack, or a CSV override. */
 data class StationDatasetInfo(
     val regionId: String,
     val fileName: String,
-    val title: String,
-    val subtitle: String,
+    val kind: DatasetKind,
     val stationCount: Int,
     val minElevationMeters: Int,
     val maxElevationMeters: Int,
@@ -71,11 +73,11 @@ class StationDataStore(
         val region = CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == regionId }
             ?: return null
         if (hasCsvOverride(regionId)) {
-            build(region.id, region.name, fileNameFor(regionId), kind = "CSV override")
+            build(region.id, fileNameFor(regionId), kind = DatasetKind.CSV_OVERRIDE)
                 ?.let { return it }
         }
         packFileFor(regionId)?.let { pack ->
-            build(region.id, region.name, pack, kind = "Bundled dataset", packFile = pack)
+            build(region.id, pack, kind = DatasetKind.BUNDLED_PACK, packFile = pack)
                 ?.let { return it }
         }
         return null
@@ -87,8 +89,7 @@ class StationDataStore(
             ?: StationDatasetInfo(
                 regionId = bayArea.id,
                 fileName = PACK_FILES.getValue(bayArea.id),
-                title = bayArea.name,
-                subtitle = "No stations found",
+                kind = DatasetKind.NONE,
                 stationCount = 0,
                 minElevationMeters = 0,
                 maxElevationMeters = 0,
@@ -98,16 +99,14 @@ class StationDataStore(
 
     private fun build(
         regionId: String,
-        regionName: String,
         fileName: String,
-        kind: String,
+        kind: DatasetKind,
         packFile: String? = null
     ): StationDatasetInfo? {
         val base = StationDatasetInfo(
             regionId = regionId,
             fileName = fileName,
-            title = regionName,
-            subtitle = "",
+            kind = kind,
             stationCount = 0,
             minElevationMeters = 0,
             maxElevationMeters = 0,
@@ -116,7 +115,6 @@ class StationDataStore(
         val stations = repository.stations(base)
         if (stations.isEmpty()) return null
         return base.copy(
-            subtitle = "$kind • ${stations.size} stations",
             stationCount = stations.size,
             minElevationMeters = stations.minOf { it.elevationMeters },
             maxElevationMeters = stations.maxOf { it.elevationMeters }

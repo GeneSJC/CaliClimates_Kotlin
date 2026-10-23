@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Click labels and content descriptions read by screen readers. -->
+
+    <!-- Map controls -->
+    <string name="map_shrink_label">Shrink the map</string>
+    <string name="map_expand_label">Expand the map</string>
+    <string name="map_view_show">Show the %1$s view</string>
+    <string name="zoom_slider_hide">Hide the zoom slider</string>
+    <string name="zoom_slider_show">Show the zoom slider</string>
+    <string name="region_picker_change">Change region</string>
+    <string name="stations_choose">Choose a station</string>
+    <string name="stations_search_clear">Clear the search</string>
+    <string name="menu_open">Open the menu</string>
+    <string name="map_locate_selected">Show the selected station</string>
+
+    <!-- Terrain legend -->
+    <string name="legend_show">Show the Terrain Legend</string>
+    <string name="legend_hide">Hide the Terrain Legend</string>
+    <string name="legend_fold">Fold the Terrain Legend</string>
+    <string name="legend_open">Open the Terrain Legend</string>
+
+    <!-- Region info -->
+    <string name="region_info_close">Close the region info</string>
+    <string name="region_info_open">Open the region info</string>
+    <string name="region_show_more">Show more about %1$s</string>
+    <string name="region_show_less">Show less about %1$s</string>
+    <string name="station_list_open">Open the Station List</string>
+
+    <!-- Station card -->
+    <string name="station_card_show">Show the full station card</string>
+    <string name="station_card_hide">Hide the full station card</string>
+
+    <!-- Home -->
+    <string name="region_choose">Choose region</string>
+    <string name="limited_data_about">About limited station data</string>
+</resources>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Interface text: labels, headings, captions, menu items and the like. -->
+
+    <!-- Station card -->
+    <string name="metric_humidity">Humidity</string>
+    <string name="metric_wind">Wind</string>
+    <string name="metric_updated">Updated</string>
+    <string name="metric_solar">Solar</string>
+    <string name="metric_pressure">Pressure</string>
+    <string name="news_title">Local News</string>
+    <string name="news_subtitle">%1$s • What\'s happening in this location</string>
+    <string name="news_source">Google News RSS • %1$s Area</string>
+    <string name="news_tap_to_open">Tap to open in app viewer</string>
+    <string name="news_read_story">Read story</string>
+
+    <!-- About dialog -->
+    <string name="about_live_title">Live readings</string>
+    <string name="about_terrain_title">Terrain</string>
+    <string name="about_elevation_title">Elevation in plain terms</string>
+    <string name="about_regions_title">Six regions</string>
+    <string name="about_live_badge">LIVE</string>
+
+    <!-- Map controls -->
+    <string name="map_shrink_button">↕ Shrink</string>
+    <string name="map_expand_button">↕ Expand</string>
+
+    <!-- Zoom slider -->
+    <string name="zoom_caption">ZOOM</string>
+    <string name="zoom_value">%1$.1fx</string>
+    <string name="zoom_font_caption">FONT</string>
+
+    <!-- Menu -->
+    <string name="menu_demos">Demos &amp; Previews</string>
+    <string name="menu_dark_mode">Dark mode</string>
+    <string name="menu_about">About</string>
+
+    <!-- Terrain legend -->
+    <string name="legend_title">Terrain Legend</string>
+    <string name="legend_item_count">%1$s %2$d</string>
+
+    <!-- Stations dropdown -->
+    <string name="stations_title">Stations</string>
+    <string name="stations_search">Search stations</string>
+
+    <!-- Region info -->
+    <string name="region_terrain_mix">Terrain mix</string>
+    <string name="region_what_shapes">What shapes the weather here</string>
+    <string name="region_key_places">Key places</string>
+    <string name="region_info_title">Region Info</string>
+    <string name="station_list_button">Station List ›</string>
+
+    <!-- Home -->
+    <string name="tab_elevation">Elevation</string>
+    <string name="tab_topography">Topography</string>
+    <string name="limited_data_title">Limited station data</string>
+    <string name="no_data_title">No station data loaded</string>
+    <string name="region_info_link">« Info</string>
+
+    <!-- Station map -->
+    <string name="map_dot_size">Dot size</string>
+
+    <!-- California map labels -->
+    <string name="map_label_northern_california">Northern California</string>
+    <string name="map_label_bay_area">Bay Area</string>
+    <string name="map_label_central_valley">Central Valley</string>
+    <string name="map_label_central_coast">Central Coast</string>
+    <string name="map_label_los_angeles">Los Angeles</string>
+    <string name="map_label_san_diego">San Diego</string>
+    <string name="map_label_oregon">OREGON</string>
+    <string name="map_label_idaho">IDAHO</string>
+    <string name="map_label_mexico">MEXICO</string>
+    <string name="map_label_nevada">NEVADA</string>
+
+    <!-- Regions screen -->
+    <string name="region_picker_title">Pick a region</string>
+    <string name="regions_screen_title">California Regional Sections</string>
+    <string name="regions_screen_subtitle">Macro Climatic Constraints &amp; Regional Boundaries</string>
+    <string name="regions_map_title">Interactive California Section Map</string>
+    <string name="regions_map_hint">Tap region to inspect</string>
+    <string name="region_planned_badge">PLANNED</string>
+    <string name="regions_key_dynamics">KEY MICROCLIMATIC DYNAMICS</string>
+
+    <!-- Station list -->
+    <string name="station_list_showing_on_map">Showing on map</string>
+</resources>

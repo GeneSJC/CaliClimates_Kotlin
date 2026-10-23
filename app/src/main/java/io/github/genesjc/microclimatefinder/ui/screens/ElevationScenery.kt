@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -227,7 +228,7 @@ internal fun heightTint(elevationMeters: Float): Color {
 // Data class for atmospheric sky gradient & weather condition above the elevation profile
 internal data class SkyAtmosphereTheme(
     val colors: List<Color>,
-    val condition: String,
+    @StringRes val conditionRes: Int,
     val icon: String,
     val accent: Color,
     val badgeBg: Color

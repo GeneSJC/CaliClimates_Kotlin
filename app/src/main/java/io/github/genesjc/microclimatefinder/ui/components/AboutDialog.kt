@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import kotlinx.coroutines.delay
 
@@ -109,13 +111,13 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = "Explore California's Climates",
+                                text = stringResource(R.string.tagline),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "Build $buildLabel",
+                                text = stringResource(R.string.build_label, buildLabel),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                             )
@@ -129,7 +131,7 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                             .offset(x = 10.dp, y = (-10).dp)
                             .size(44.dp)
                             .clip(CircleShape)
-                            .clickable(onClickLabel = "Close", role = Role.Button, onClick = onClose),
+                            .clickable(onClickLabel = stringResource(R.string.action_close), role = Role.Button, onClick = onClose),
                         contentAlignment = Alignment.Center
                     ) {
                         Canvas(modifier = Modifier.size(14.dp)) {
@@ -151,34 +153,30 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                     Reveal(0) {
                         AboutSection(
                             icon = "📡",
-                            title = "Live readings",
+                            title = stringResource(R.string.about_live_title),
                             accent = Color(0xFF16A34A),
                             badge = { LiveBadge() }
                         ) {
                             Text(
-                                text = "Temperature, humidity, wind and pressure come from the National Weather " +
-                                    "Service (weather.gov). Stations report about once an hour, so a reading can be " +
-                                    "an hour or more old. Each card shows when it was taken.",
+                                text = stringResource(R.string.about_live_body),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                     Reveal(1) {
-                        AboutSection(icon = "🗺️", title = "Terrain", accent = Color(0xFFB8860B)) {
+                        AboutSection(icon = "🗺️", title = stringResource(R.string.about_terrain_title), accent = Color(0xFFB8860B)) {
                             Text(
-                                text = "The shading under the stations is drawn from public elevation data " +
-                                    "(USGS 3DEP, NASA SRTM and other public sources), via AWS Open Data Terrain Tiles.",
+                                text = stringResource(R.string.about_terrain_body),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                     Reveal(2) {
-                        AboutSection(icon = "⛰️", title = "Elevation in plain terms", accent = Color(0xFF7C3AED)) {
+                        AboutSection(icon = "⛰️", title = stringResource(R.string.about_elevation_title), accent = Color(0xFF7C3AED)) {
                             Text(
-                                text = "Heights are in feet, in six bands, with a rule of thumb for how much " +
-                                    "cooler it usually is up high.",
+                                text = stringResource(R.string.about_elevation_body),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -187,7 +185,7 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                         }
                     }
                     Reveal(3) {
-                        AboutSection(icon = "🧭", title = "Six regions", accent = Color(0xFF2563EB)) {
+                        AboutSection(icon = "🧭", title = stringResource(R.string.about_regions_title), accent = Color(0xFF2563EB)) {
                             FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -206,7 +204,7 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                                             Box(Modifier.size(8.dp).clip(CircleShape).background(color))
                                             Spacer(Modifier.width(6.dp))
                                             Text(
-                                                text = region.name,
+                                                text = stringResource(region.nameRes),
                                                 style = MaterialTheme.typography.labelMedium,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = MaterialTheme.colorScheme.onSurface
@@ -219,7 +217,7 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                     }
                     Reveal(4) {
                         Text(
-                            text = "Readings are for general interest, not for safety or aviation decisions.",
+                            text = stringResource(R.string.about_disclaimer),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
                         )
@@ -300,7 +298,7 @@ private fun LiveBadge() {
         Box(Modifier.size(8.dp).alpha(glow).clip(CircleShape).background(Color(0xFF16A34A)))
         Spacer(Modifier.width(5.dp))
         Text(
-            text = "LIVE",
+            text = stringResource(R.string.about_live_badge),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.ExtraBold,
             color = Color(0xFF16A34A)
@@ -321,9 +319,9 @@ private fun BandBar() {
         }
         Spacer(modifier = Modifier.height(4.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Near sea level", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Foothills", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("High country", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.elevation_band_near_sea_level), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.elevation_band_foothills), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.elevation_band_high_country), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

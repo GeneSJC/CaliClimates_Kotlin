@@ -13,8 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import io.github.genesjc.microclimatefinder.R
 
 /**
  * The small button that tucks the vertical zoom slider away and brings it back. Its chevron points up while the
@@ -29,7 +31,7 @@ fun SliderToggleButton(shown: Boolean, onToggle: () -> Unit, modifier: Modifier 
         modifier = modifier
             .size(32.dp)
             .clickable(
-                onClickLabel = if (shown) "Hide the zoom slider" else "Show the zoom slider",
+                onClickLabel = stringResource(if (shown) R.string.zoom_slider_hide else R.string.zoom_slider_show),
                 role = Role.Button,
                 onClick = onToggle
             )

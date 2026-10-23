@@ -32,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -175,7 +177,7 @@ fun ZoomSlider(
     /** The range and caption; the defaults make it the zoom slider. */
     minValue: Float = 1f,
     maxValue: Float = MAX_MAP_ZOOM,
-    caption: String = "ZOOM"
+    caption: String? = null
 ) {
     val density = LocalDensity.current
     val currentOnValueChange by rememberUpdatedState(onValueChange)
@@ -213,7 +215,7 @@ fun ZoomSlider(
             )
 
             Text(
-                text = caption,
+                text = caption ?: stringResource(R.string.zoom_caption),
                 fontSize = 8.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -313,7 +315,7 @@ fun ZoomSlider(
             )
 
             Text(
-                text = "${(value * 10).toInt() / 10f}x",
+                text = stringResource(R.string.zoom_value, (value * 10).toInt() / 10f),
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary

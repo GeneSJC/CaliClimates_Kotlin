@@ -1,10 +1,13 @@
 package io.github.genesjc.microclimatefinder.ui.stationlist
 
+import io.github.genesjc.microclimatefinder.R
+import io.github.genesjc.microclimatefinder.data.local.DatasetKind
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.microclimatefinder.ui.text.regionNameRes
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,21 +59,31 @@ class StationListViewModel : AppBaseViewModel() {
 
     fun stateFor(dataset: StationDatasetInfo, stations: List<MicroclimateStation>?, selectedStationId: String?): StationListUiState {
         if (stations == null) {
-            return StationListUiState(dataset.title, dataset.subtitle, emptyList(), null, 0, SELECTED_LABEL, null, isLoading = true)
+            return StationListUiState(titleFor(dataset), subtitleFor(dataset), emptyList(), null, 0, string(R.string.station_list_showing_on_map), null, isLoading = true)
         }
         val activeId = stations.firstOrNull { it.id == selectedStationId }?.id ?: stations.firstOrNull()?.id
         return StationListUiState(
-            title = dataset.title,
-            subtitle = dataset.subtitle,
+            title = titleFor(dataset),
+            subtitle = subtitleFor(dataset),
             stations = stations,
             activeStationId = activeId,
             initialIndex = stations.indexOfFirst { it.id == activeId }.coerceAtLeast(0),
-            selectedLabel = SELECTED_LABEL,
-            emptyMessage = if (stations.isEmpty()) "No stations loaded from: ${dataset.fileName}" else null
+            selectedLabel = string(R.string.station_list_showing_on_map),
+            emptyMessage = if (stations.isEmpty()) string(R.string.station_list_empty, dataset.fileName) else null
         )
     }
 
-    companion object {
-        const val SELECTED_LABEL = "Showing on map"
+    /** The dataset's region name, or its id when it is not one of the regions. */
+    private fun titleFor(dataset: StationDatasetInfo): String =
+        regionNameRes(dataset.regionId)?.let { string(it) } ?: dataset.regionId
+
+    /** Where the stations come from and how many there are. */
+    private fun subtitleFor(dataset: StationDatasetInfo): String {
+        val count = string.plural(R.plurals.station_count, dataset.stationCount, dataset.stationCount)
+        return when (dataset.kind) {
+            DatasetKind.BUNDLED_PACK -> string(R.string.dataset_subtitle, string(R.string.dataset_kind_bundled), count)
+            DatasetKind.CSV_OVERRIDE -> string(R.string.dataset_subtitle, string(R.string.dataset_kind_csv), count)
+            DatasetKind.NONE -> string(R.string.dataset_kind_none)
+        }
     }
 }

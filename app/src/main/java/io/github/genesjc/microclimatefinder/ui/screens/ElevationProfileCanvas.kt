@@ -1,6 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
-import io.github.genesjc.microclimatefinder.domain.Elevation
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -34,6 +35,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import io.github.genesjc.microclimatefinder.ui.text.elevationFeetText
+import io.github.genesjc.microclimatefinder.ui.text.rememberFeetFormatter
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import androidx.compose.ui.unit.IntSize
@@ -108,8 +111,9 @@ internal fun ElevationProfileCanvas(
     // Stations ranked for labels; the first few are the ones the sky badge cycles through
     val rankedLandmarks = remember(sorted) { rankLandmarkIndexes(sorted) }
     // Each station's label text, made once (label placement runs on every zoom and pan frame)
+    val feetText = rememberFeetFormatter()
     val labelTexts = remember(sorted) {
-        sorted.map { cityName(it) + " ${Elevation.formatFeet(it.elevationMeters)}" }
+        sorted.map { cityName(it) + " ${feetText(it.elevationMeters)}" }
     }
     val ridgeCache = remember { RidgeHeights() }
     val cycleIds = remember(sorted) {
@@ -190,7 +194,7 @@ internal fun ElevationProfileCanvas(
                     Color(0xFF94A3B8).copy(alpha = 0.20f),
                     Color(0xFFE2E8F0).copy(alpha = 0.05f)
                 ),
-                condition = "No current reading",
+                conditionRes = R.string.reading_none,
                 icon = "⛰️",
                 accent = Color(0xFFCBD5E1),
                 badgeBg = Color(0xFF1E293B)
@@ -201,7 +205,7 @@ internal fun ElevationProfileCanvas(
                     Color(0xFFF59E0B).copy(alpha = 0.22f),
                     Color(0xFFFEF08A).copy(alpha = 0.05f)
                 ),
-                condition = "Valley Solar Heat",
+                conditionRes = R.string.sky_valley_heat,
                 icon = "☀️",
                 accent = Color(0xFFF59E0B),
                 badgeBg = Color(0xFF451A03)
@@ -212,7 +216,7 @@ internal fun ElevationProfileCanvas(
                     Color(0xFF38BDF8).copy(alpha = 0.22f),
                     Color(0xFFFEF3C7).copy(alpha = 0.05f)
                 ),
-                condition = "Fair Foothills",
+                conditionRes = R.string.sky_fair_foothills,
                 icon = "🌤️",
                 accent = Color(0xFF38BDF8),
                 badgeBg = Color(0xFF082F49)
@@ -223,7 +227,7 @@ internal fun ElevationProfileCanvas(
                     Color(0xFF06B6D4).copy(alpha = 0.22f),
                     Color(0xFF94A3B8).copy(alpha = 0.05f)
                 ),
-                condition = "Temperate Ridge",
+                conditionRes = R.string.sky_temperate_ridge,
                 icon = "⛅",
                 accent = Color(0xFF06B6D4),
                 badgeBg = Color(0xFF164E63)
@@ -234,7 +238,7 @@ internal fun ElevationProfileCanvas(
                     Color(0xFF6366F1).copy(alpha = 0.25f),
                     Color(0xFF38BDF8).copy(alpha = 0.06f)
                 ),
-                condition = "Crisp Sub-Alpine",
+                conditionRes = R.string.sky_crisp_alpine,
                 icon = "🏔️",
                 accent = Color(0xFFA78BFA),
                 badgeBg = Color(0xFF1E1B4B)
@@ -800,7 +804,7 @@ internal fun ElevationProfileCanvas(
                     .graphicsLayer { alpha = hintAlpha.value }
             ) {
                 Text(
-                    text = "Tap anywhere on the line to pick a station",
+                    text = stringResource(R.string.elevation_hint_tap_line),
                     color = Color.White,
                     // A third smaller than before; fixed, not tied to the font slider
                     fontSize = 12.sp,
@@ -836,14 +840,14 @@ internal fun ElevationProfileCanvas(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = tempF?.let { "${it.toInt()}°F" } ?: "—°F",
+                            text = tempF?.let { stringResource(R.string.sky_temp_f, it.toInt()) } ?: stringResource(R.string.sky_temp_missing),
                             fontSize = ms(11f),
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = currentStation?.name?.let { if (it.length > 26) it.take(25) + "\u2026" else it } ?: "Sacramento",
+                            text = currentStation?.name?.let { if (it.length > 26) it.take(25) + "\u2026" else it } ?: "",
                             fontSize = ms(9f),
                             fontWeight = FontWeight.Medium,
                             color = Color.White.copy(alpha = 0.9f),
@@ -851,7 +855,7 @@ internal fun ElevationProfileCanvas(
                         )
                     }
                     Text(
-                        text = "${skyTheme.condition} • ${currentStation?.let { Elevation.formatFeet(it.elevationMeters) }} elev",
+                        text = stringResource(R.string.sky_condition_line, stringResource(skyTheme.conditionRes), currentStation?.let { elevationFeetText(it.elevationMeters) }.orEmpty()),
                         fontSize = ms(8f),
                         color = skyTheme.accent,
                         fontWeight = FontWeight.SemiBold
@@ -923,7 +927,7 @@ internal fun ElevationProfileCanvas(
                 onValueChange = { MapText.scale = it },
                 minValue = MapText.MIN_SCALE,
                 maxValue = MapText.MAX_SCALE,
-                caption = "FONT",
+                caption = stringResource(R.string.zoom_font_caption),
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(top = sliderTop, start = 4.dp + 5.dp * expandT, bottom = 4.dp)

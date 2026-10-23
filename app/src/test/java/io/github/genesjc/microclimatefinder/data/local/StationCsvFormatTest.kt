@@ -26,7 +26,7 @@ class StationCsvFormatTest {
         assertEquals(-121.49, s.longitude, 1e-9)
         assertEquals(5, s.elevationMeters)
         assertEquals(TerrainType.VALLEY_BASIN, s.terrain)
-        assertEquals("Hot and flat", s.microclimateDescription)
+        assertEquals("Hot and flat", s.microclimateNote)
         assertTrue(s.isFeatured)
     }
 
@@ -124,15 +124,14 @@ class StationCsvFormatTest {
     }
 
     @Test
-    fun withoutANoteTheDescriptionIsWrittenFromTheTerrainAndHeightInFeet() {
+    fun withoutANoteTheStationHasNoNoteAndTheScreensWriteOneFromTheTerrain() {
+        // The data layer reports the missing note as a fact; the wording is a string resource chosen by the screen
         val ridge = parse("id,name,elevation_meters\nR,Ridge,1000\n").single()
-        assertTrue(ridge.microclimateDescription, ridge.microclimateDescription.startsWith("High-elevation montane ridge (3,281 ft)"))
+        assertNull(ridge.microclimateNote)
+        assertEquals(TerrainType.RIDGE, ridge.terrain)
         val coast = parse("id,name,terrain_type,elevation_meters\nC,Coast,coast,10\n").single()
-        assertTrue(coast.microclimateDescription, coast.microclimateDescription.startsWith("Low-lying coastal or delta site (33 ft)"))
-        val urban = parse("id,name,terrain_type,elevation_meters\nU,Urban,urban,50\n").single()
-        assertTrue(urban.microclimateDescription, urban.microclimateDescription.startsWith("Dense urban heat-island core (164 ft)"))
-        val valley = parse("id,name,elevation_meters\nV,Valley,20\n").single()
-        assertTrue(valley.microclimateDescription, valley.microclimateDescription.startsWith("Interior valley or basin site (66 ft)"))
+        assertNull(coast.microclimateNote)
+        assertEquals(TerrainType.COASTAL, coast.terrain)
     }
 
     @Test

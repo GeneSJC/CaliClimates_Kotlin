@@ -25,6 +25,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,7 +108,7 @@ internal fun PinSizeSlider(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Dot size",
+            text = stringResource(R.string.map_dot_size),
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -133,7 +135,7 @@ internal fun PinSizeSlider(
         ) {}
         Spacer(modifier = Modifier.width(10.dp))
         Text(
-            text = "${(value * 10).toInt() / 10f}x",
+            text = stringResource(R.string.zoom_value, (value * 10).toInt() / 10f),
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary

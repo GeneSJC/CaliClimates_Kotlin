@@ -1,7 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import androidx.annotation.StringRes
 import io.github.genesjc.microclimatefinder.ui.components.regionPickerColors
-import io.github.genesjc.microclimatefinder.domain.Elevation
 import io.github.genesjc.microclimatefinder.ui.components.HOME_TILE_BAND
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -94,7 +94,7 @@ import kotlinx.coroutines.launch
 /** The height of the three header widgets on Home. */
 private val HEADER_HEIGHT = 42.dp
 
-data class RegionOption(val id: String, val name: String, val stationCount: Int?)
+data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
 
 @Composable
@@ -273,14 +273,14 @@ fun LandingScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .clickable(onClickLabel = "Choose region", role = Role.Button) {
+                                    .clickable(onClickLabel = stringResource(R.string.region_choose), role = Role.Button) {
                                         showRegionMenu = true
                                     }
                                     .padding(vertical = 0.dp)
                             ) {
                                 Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = region.name,
+                                        text = stringResource(region.nameRes),
                                         style = MaterialTheme.typography.titleLarge,
                                         // 25% smaller than the title style, so more of a long name shows
                                         fontSize = 20.6.sp,
@@ -360,7 +360,7 @@ fun LandingScreen(
                                                 )
                                                 Spacer(modifier = Modifier.width(12.dp))
                                                 Text(
-                                                    text = option.name,
+                                                    text = stringResource(option.nameRes),
                                                     fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
                                                     color = MaterialTheme.colorScheme.onSurface,
                                                     modifier = Modifier.weight(1f)
@@ -393,6 +393,11 @@ fun LandingScreen(
             val shown = if (dataset != null) {
                 snapshotStations.firstOrNull { it.id == selectedStationId } ?: snapshotStations.firstOrNull()
             } else null
+            // Read here, because the locate button's click handler is not composable
+            val centeringMessage = stringResource(
+                R.string.map_centering_on,
+                shown?.name ?: stringResource(R.string.map_selected_station)
+            )
             run {
                 Column {
                     // This region has no station data in this build
@@ -407,7 +412,7 @@ fun LandingScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable(
-                                    onClickLabel = "About limited station data",
+                                    onClickLabel = stringResource(R.string.limited_data_about),
                                     role = Role.Button
                                 ) { showLimitedDataDialog = true }
                         ) {
@@ -416,7 +421,7 @@ fun LandingScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Limited station data",
+                                    text = stringResource(R.string.limited_data_title),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -448,14 +453,13 @@ fun LandingScreen(
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = "No station data loaded",
+                                    text = stringResource(R.string.no_data_title),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Station data isn't included in this build for this region. " +
-                                        "Tap the California button at the top right to switch regions.",
+                                    text = stringResource(R.string.no_data_body),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -546,14 +550,14 @@ fun LandingScreen(
                                 Box(
                                     modifier = Modifier
                                         .clickable(
-                                            onClickLabel = if (infoOpen) "Close the region info" else "Open the region info",
+                                            onClickLabel = stringResource(if (infoOpen) R.string.region_info_close else R.string.region_info_open),
                                             role = Role.Button
                                         ) { if (infoOpen) closeInfo() else openInfo() }
                                         .padding(horizontal = 4.dp, vertical = 2.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "\u00AB Info",
+                                        text = stringResource(R.string.region_info_link),
                                         style = MaterialTheme.typography.titleLarge,
                                         fontSize = 15.84.sp,
                                         lineHeight = 22.sp,
@@ -600,7 +604,7 @@ fun LandingScreen(
                                 scope.launch {
                                     snackbarHostState.currentSnackbarData?.dismiss()
                                     snackbarHostState.showSnackbar(
-                                        message = "Centering the map on ${shown?.name ?: "the selected station"}",
+                                        message = centeringMessage,
                                         duration = SnackbarDuration.Short
                                     )
                                 }
@@ -616,9 +620,9 @@ fun LandingScreen(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.Top
                         ) {
-                            MapViewButton(label = "Elevation", index = 1, selected = homeTab, onSelect = onHomeTabChange)
+                            MapViewButton(label = stringResource(R.string.tab_elevation), index = 1, selected = homeTab, onSelect = onHomeTabChange)
                             MapViewButton(
-                                label = "Topography",
+                                label = stringResource(R.string.tab_topography),
                                 index = 0,
                                 selected = homeTab,
                                 onSelect = onHomeTabChange,
@@ -670,20 +674,12 @@ fun LandingScreen(
     if (showLimitedDataDialog) {
         AlertDialog(
             onDismissRequest = { showLimitedDataDialog = false },
-            title = { Text("Limited station data") },
+            title = { Text(stringResource(R.string.limited_data_title)) },
             text = {
-                Text(
-                    "$fullDataRegions of $totalRegions regions have station data in this build. " +
-                        "A region without it shows no stations. Readings for the stations that are " +
-                        "shown are live from the National Weather Service.\n\n" +
-                        "Each region's stations ship in a small data file in the app's assets " +
-                        "(a.txt to f.txt). A region with none has a missing or damaged file: check " +
-                        "Logcat (tag StationPack). To try other data, add stations_<regionId>.csv to " +
-                        "app/src/debug/assets and rebuild."
-                )
+                Text(stringResource(R.string.limited_data_body, fullDataRegions, totalRegions))
             },
             confirmButton = {
-                TextButton(onClick = { showLimitedDataDialog = false }) { Text("OK") }
+                TextButton(onClick = { showLimitedDataDialog = false }) { Text(stringResource(R.string.action_ok)) }
             }
         )
     }

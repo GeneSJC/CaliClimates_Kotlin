@@ -1,8 +1,11 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StateTerrain
 import io.github.genesjc.microclimatefinder.ui.regionpicker.RegionPickerViewModel
 import androidx.compose.foundation.background
@@ -73,7 +76,7 @@ fun CaliforniaRegionPickerPanel(
             modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp)
         ) {
             Text(
-                text = "Pick a region",
+                text = stringResource(R.string.region_picker_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -85,7 +88,7 @@ fun CaliforniaRegionPickerPanel(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .size(32.dp)
-                    .clickable(onClickLabel = "Close", onClick = onClose)
+                    .clickable(onClickLabel = stringResource(R.string.action_close), onClick = onClose)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
@@ -133,7 +136,7 @@ fun CaliforniaRegionsMapScreen(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                text = "California Regional Sections",
+                                text = stringResource(R.string.regions_screen_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -151,7 +154,7 @@ fun CaliforniaRegionsMapScreen(
                             }
                         }
                         Text(
-                            text = "Macro Climatic Constraints & Regional Boundaries",
+                            text = stringResource(R.string.regions_screen_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                         )
@@ -209,12 +212,12 @@ fun CaliforniaRegionsMapScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Interactive California Section Map",
+                                text = stringResource(R.string.regions_map_title),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Tap region to inspect",
+                                text = stringResource(R.string.regions_map_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -272,7 +275,7 @@ fun CaliforniaRegionsMapScreen(
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = selectedRegion.name,
+                                            text = stringResource(selectedRegion.nameRes),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -289,7 +292,7 @@ fun CaliforniaRegionsMapScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "Select",
+                                            text = stringResource(R.string.action_select),
                                             fontSize = 11.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -340,7 +343,7 @@ fun CaliforniaRegionsMapScreen(
                                                     )
                                                     Spacer(modifier = Modifier.width(8.dp))
                                                     Text(
-                                                        text = region.name,
+                                                        text = stringResource(region.nameRes),
                                                         fontSize = 13.sp,
                                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
@@ -395,13 +398,13 @@ fun CaliforniaRegionsMapScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = selectedRegion.title,
+                                    text = stringResource(selectedRegion.titleRes),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = selectedRegion.subtitle,
+                                    text = stringResource(selectedRegion.subtitleRes),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -415,7 +418,11 @@ fun CaliforniaRegionsMapScreen(
                                 }
                             ) {
                                 Text(
-                                    text = if (selectedRegion.status == RegionStatus.ACTIVE_TRANSECT) "ACTIVE (36 STATIONS)" else "PLANNED",
+                                    text = if (selectedRegion.status == RegionStatus.ACTIVE_TRANSECT) {
+                                        pluralStringResource(R.plurals.region_active_badge, selectedRegion.activeStationCount, selectedRegion.activeStationCount)
+                                    } else {
+                                        stringResource(R.string.region_planned_badge)
+                                    },
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (selectedRegion.status == RegionStatus.ACTIVE_TRANSECT) {
@@ -430,7 +437,7 @@ fun CaliforniaRegionsMapScreen(
 
                         // Description
                         Text(
-                            text = selectedRegion.description,
+                            text = stringResource(selectedRegion.descriptionRes),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                             lineHeight = 20.sp
@@ -439,13 +446,13 @@ fun CaliforniaRegionsMapScreen(
                         // Microclimate Features
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
-                                text = "KEY MICROCLIMATIC DYNAMICS",
+                                text = stringResource(R.string.regions_key_dynamics),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 letterSpacing = 0.5.sp
                             )
-                            selectedRegion.microclimateTraits.forEach { trait ->
+                            selectedRegion.microclimateTraitRes.forEach { traitRes ->
                                 Row(
                                     verticalAlignment = Alignment.Top,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -457,7 +464,7 @@ fun CaliforniaRegionsMapScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        text = trait,
+                                        text = stringResource(traitRes),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         lineHeight = 16.sp
@@ -477,7 +484,7 @@ fun CaliforniaRegionsMapScreen(
                                 )
                             ) {
                                 Text(
-                                    text = "Open Active Transect (36 Stations)",
+                                    text = pluralStringResource(R.plurals.region_open_active_transect, selectedRegion.activeStationCount, selectedRegion.activeStationCount),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
