@@ -2,7 +2,7 @@ package io.github.genesjc.microclimatefinder.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaCA
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -41,17 +41,17 @@ class AppSettingsPreferencesTest {
         every { editor.apply() } just Runs
     }
 
-    private val north = CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id
-    private val bay = CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id
+    private val north = StateUsaCA.NORTHERN_CALIFORNIA.id
+    private val bay = StateUsaCA.BAY_AREA_SACRAMENTO.id
 
     /** A new instance over the same preferences: the app after a restart. */
-    private fun launch() = AppSettingsPreferences(prefs)
+    private fun launch() = AppSettingsPreferences(prefs, StateUsaCA)
 
     @Test
     fun opensItsOwnFileInPrivateMode() {
         val context = mockk<Context>()
         every { context.getSharedPreferences(any(), any()) } returns prefs
-        AppSettingsPreferences(context)
+        AppSettingsPreferences(context, StateUsaCA)
         verify(exactly = 1) { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
     }
 

@@ -4,7 +4,8 @@ import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.DatasetKind
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaCA
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaDefinition
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testStation
@@ -44,6 +45,7 @@ class StationListViewModelTest {
             single { StationRepository(FakeStationSource(list), Dispatchers.Unconfined) }
             single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined)) }
             single<StringResolver> { FakeStringResolver }
+            single<StateUsaDefinition> { StateUsaCA }
         }
         return StationListViewModel()
     }
@@ -79,8 +81,8 @@ class StationListViewModelTest {
 
     @Test
     fun namesTheRegionWithItsResource() {
-        val bay = dataset.copy(regionId = CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
-        assertEquals(s(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.nameRes), viewModel().stateFor(bay, stations, null).title)
+        val bay = dataset.copy(regionId = StateUsaCA.BAY_AREA_SACRAMENTO.id)
+        assertEquals(s(StateUsaCA.BAY_AREA_SACRAMENTO.nameRes), viewModel().stateFor(bay, stations, null).title)
     }
 
     @Test

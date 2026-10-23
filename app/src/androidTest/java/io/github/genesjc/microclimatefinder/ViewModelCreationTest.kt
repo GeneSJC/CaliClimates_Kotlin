@@ -12,6 +12,7 @@ import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainSource
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationSource
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaDefinition
 import io.github.genesjc.microclimatefinder.ui.home.HomeViewModel
 import io.github.genesjc.microclimatefinder.ui.map.ElevationViewModel
 import io.github.genesjc.microclimatefinder.ui.map.StationMapViewModel
@@ -51,7 +52,7 @@ class ViewModelCreationTest {
     fun everyRegisteredObjectCanBeBuilt() {
         val koin = GlobalContext.get()
         val types: List<KClass<*>> = listOf(
-            AppConfig::class, AppSettings::class, StringResolver::class, StationSource::class, TerrainSource::class,
+            AppConfig::class, StateUsaDefinition::class, AppSettings::class, StringResolver::class, StationSource::class, TerrainSource::class,
             ObservationSource::class, StationRepository::class, TerrainRepository::class, RegionDatasets::class,
             LiveReadings::class
         )

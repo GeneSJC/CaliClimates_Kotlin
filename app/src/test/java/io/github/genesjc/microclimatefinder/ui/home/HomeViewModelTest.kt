@@ -3,6 +3,8 @@ package io.github.genesjc.microclimatefinder.ui.home
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.testLiveReadings
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaCA
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaDefinition
 import io.github.genesjc.microclimatefinder.testutil.FakeDatasets
 import io.github.genesjc.microclimatefinder.testutil.FakeObservationSource
 import io.github.genesjc.microclimatefinder.data.local.AppSettings
@@ -50,6 +52,7 @@ class HomeViewModelTest {
         restartKoin {
             single<AppSettings> { settings }
             single<RegionDatasets> { FakeDatasets() }
+            single<StateUsaDefinition> { StateUsaCA }
             single { repository }
             single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), observations) }
         }

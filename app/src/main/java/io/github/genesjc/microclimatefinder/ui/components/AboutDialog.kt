@@ -57,7 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.genesjc.microclimatefinder.R
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.ui.theme.LocalStateUsa
 import kotlinx.coroutines.delay
 
 /**
@@ -81,7 +81,7 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                 .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.88f).dp)
         ) {
             Column {
-                // Header: a wash of the app's colours, the California icon and the name
+                // Header: a wash of the app's colours, the state icon and the name
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -96,7 +96,7 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                         .padding(horizontal = 20.dp, vertical = 18.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        CaliforniaOutlineIcon(
+                        StateUsaOutlineIcon(
                             fill = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
                             stroke = MaterialTheme.colorScheme.onPrimaryContainer,
                             regionColors = regionPickerColors(),
@@ -111,7 +111,7 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = stringResource(R.string.tagline),
+                                text = stringResource(LocalStateUsa.current.taglineRes),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                             )
@@ -190,7 +190,7 @@ fun AboutDialog(appName: String, buildLabel: String, onClose: () -> Unit) {
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                CaliforniaRegionalDefinitions.ALL_REGIONS.forEach { region ->
+                                LocalStateUsa.current.regions.forEach { region ->
                                     val color = Color(android.graphics.Color.parseColor(region.colorHex))
                                     Surface(
                                         shape = RoundedCornerShape(50),

@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.R
+import io.github.genesjc.microclimatefinder.ui.theme.LocalStateUsa
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -106,7 +107,7 @@ fun IntroOverlay(onDone: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = stringResource(R.string.tagline),
+                    text = stringResource(LocalStateUsa.current.taglineRes),
                     color = Color(0xFFBAE6FD),
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center

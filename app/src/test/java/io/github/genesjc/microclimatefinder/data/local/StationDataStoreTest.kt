@@ -1,6 +1,6 @@
 package io.github.genesjc.microclimatefinder.data.local
 
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaCA
 import io.github.genesjc.microclimatefinder.testStation
 import io.github.genesjc.microclimatefinder.testutil.FakeStationSource
 import kotlinx.coroutines.CoroutineDispatcher
@@ -15,8 +15,8 @@ import kotlin.coroutines.CoroutineContext
 
 class StationDataStoreTest {
 
-    private val north = CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id
-    private val bay = CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id
+    private val north = StateUsaCA.NORTHERN_CALIFORNIA.id
+    private val bay = StateUsaCA.BAY_AREA_SACRAMENTO.id
     private val stations = listOf(testStation(id = "K1", elevationMeters = 10), testStation(id = "K2", elevationMeters = 900))
 
     /** Counts how often work is handed to it, then runs it where it stands. */
@@ -32,6 +32,7 @@ class StationDataStoreTest {
         StationDataStore(
             listAssets = { assets },
             repository = StationRepository(FakeStationSource(stations), Dispatchers.Unconfined),
+            stateUsa = StateUsaCA,
             ioDispatcher = dispatcher
         )
 
@@ -72,7 +73,7 @@ class StationDataStoreTest {
     @Test
     fun countsTheRegionsThatHaveData() {
         assertEquals(2, store(setOf("a.txt", "b.txt")).fullDataRegionCount())
-        assertEquals(CaliforniaRegionalDefinitions.ALL_REGIONS.size, store(emptySet()).totalRegionCount())
+        assertEquals(StateUsaCA.regions.size, store(emptySet()).totalRegionCount())
     }
 
     @Test

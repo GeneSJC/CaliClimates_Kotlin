@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.domain.Elevation
+import io.github.genesjc.microclimatefinder.ui.theme.LocalStateUsa
 
 /** "1,115 ft" */
 @Composable
@@ -27,7 +28,8 @@ fun elevationRangeText(minMeters: Int, maxMeters: Int): String =
  */
 @Composable
 fun elevationNoteText(meters: Int, regionId: String?): String {
-    val note = Elevation.note(meters, regionId)
+    val landmarks = LocalStateUsa.current.landmarks[regionId].orEmpty()
+    val note = Elevation.note(meters, landmarks)
     val landmark = note.landmark?.let {
         if (it.isNear) stringResource(R.string.elevation_note_about, it.name, it.feet)
         else stringResource(R.string.elevation_note_higher, it.name, it.feet)

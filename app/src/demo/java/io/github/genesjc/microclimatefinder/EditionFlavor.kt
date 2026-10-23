@@ -39,7 +39,7 @@ fun EditionScreens(nav: EditionNavigation) {
     when (nav.screen) {
         AppScreen.DEMOS_AND_PREVIEWS -> DemosAndPreviewsScreen(
             onNavigateTo = { target ->
-                if (target == AppScreen.CALIFORNIA_REGIONS) nav.setRegionsReturn(AppScreen.DEMOS_AND_PREVIEWS)
+                if (target == AppScreen.STATE_USA_REGIONS) nav.setRegionsReturn(AppScreen.DEMOS_AND_PREVIEWS)
                 nav.navigate(target)
             },
             onNavigateBack = { nav.navigate(AppScreen.LANDING) }

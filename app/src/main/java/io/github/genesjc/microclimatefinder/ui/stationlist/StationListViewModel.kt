@@ -7,7 +7,6 @@ import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
-import io.github.genesjc.microclimatefinder.ui.text.regionNameRes
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,7 +74,7 @@ class StationListViewModel : AppBaseViewModel() {
 
     /** The dataset's region name, or its id when it is not one of the regions. */
     private fun titleFor(dataset: StationDatasetInfo): String =
-        regionNameRes(dataset.regionId)?.let { string(it) } ?: dataset.regionId
+        stateUsa.region(dataset.regionId)?.nameRes?.let { string(it) } ?: dataset.regionId
 
     /** Where the stations come from and how many there are. */
     private fun subtitleFor(dataset: StationDatasetInfo): String {

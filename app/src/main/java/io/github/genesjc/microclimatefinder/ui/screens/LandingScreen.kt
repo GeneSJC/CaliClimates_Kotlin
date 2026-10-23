@@ -84,7 +84,7 @@ import kotlin.math.roundToInt
 import io.github.genesjc.microclimatefinder.EditionConfig
 import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.ui.theme.LocalStateUsa
 import io.github.genesjc.microclimatefinder.ui.components.AboutDialog
 import io.github.genesjc.microclimatefinder.ui.components.MenuDrawerContent
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
@@ -129,9 +129,9 @@ fun LandingScreen(
     onDarkModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val region = remember(selectedRegionId) {
-        CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == selectedRegionId }
-            ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
+    val stateUsa = LocalStateUsa.current
+    val region = remember(stateUsa, selectedRegionId) {
+        stateUsa.region(selectedRegionId) ?: stateUsa.defaultRegion()
     }
     val hasStationData = dataset != null
     val snapshotStations = remember(dataset) {

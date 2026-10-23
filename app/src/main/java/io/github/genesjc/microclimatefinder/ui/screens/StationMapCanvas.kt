@@ -2,6 +2,7 @@ package io.github.genesjc.microclimatefinder.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import io.github.genesjc.microclimatefinder.R
+import io.github.genesjc.microclimatefinder.ui.theme.LocalStateUsa
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -96,6 +97,7 @@ internal fun SpatialMapCanvas(
     onSliderShownChange: ((Boolean) -> Unit)? = null,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
+    val outline = LocalStateUsa.current.outline
     if (stations.isEmpty()) return
 
     // The selected station; when none is selected yet (or the id is not in this region) Home shows the first one, so this does too
@@ -293,6 +295,7 @@ internal fun SpatialMapCanvas(
                 )
             } else {
                 drawNeutralBase(
+                    outline = outline,
                     minLon = minLon, maxLon = maxLon, minLat = minLat, maxLat = maxLat,
                     padding = paddingPx, mapX = ::mapX, mapY = ::mapY,
                     zoom = zoom, textMeasurer = textMeasurer

@@ -36,7 +36,7 @@ import io.github.genesjc.microclimatefinder.R
 private const val SHOW_DARK_MODE_OPTION = false
 
 /**
- * What the menu drawer holds, in the About dialog's style: the same gradient header (with the California
+ * What the menu drawer holds, in the About dialog's style: the same gradient header (with the state
  * icon, the name and the build), and menu rows with tinted icon tiles. It only dresses the existing items.
  */
 @Composable
@@ -58,7 +58,7 @@ fun MenuDrawerContent(
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                CaliforniaOutlineIcon(
+                StateUsaOutlineIcon(
                     fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f),
                     stroke = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                     regionColors = regionPickerColors(),

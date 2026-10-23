@@ -4,8 +4,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CaliforniaRegionalDefinitionsTest {
-    private val regions = CaliforniaRegionalDefinitions.ALL_REGIONS
+/** The regions and facts of the California definition (the checks every definition must pass are in StateUsaDefinitionContractTest). */
+class StateUsaCATest {
+    private val regions = StateUsaCA.regions
 
     @Test
     fun thereAreSixRegionsInTheirNorthToSouthOrder() {

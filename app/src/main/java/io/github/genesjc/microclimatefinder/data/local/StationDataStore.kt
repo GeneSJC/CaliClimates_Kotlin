@@ -1,8 +1,8 @@
 package io.github.genesjc.microclimatefinder.data.local
 
 import android.content.Context
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaDefinition
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 /** Where a dataset's stations come from. The screens turn this into words; the data layer only reports it. */
 enum class DatasetKind { BUNDLED_PACK, CSV_OVERRIDE, NONE }
 
-/** A station dataset for one CA region: its bundled station pack, or a CSV override. */
+/** A station dataset for one region: its bundled station pack, or a CSV override. */
 data class StationDatasetInfo(
     val regionId: String,
     val fileName: String,
@@ -26,7 +26,7 @@ data class StationDatasetInfo(
 interface RegionDatasets {
     fun datasetFor(regionId: String): StationDatasetInfo?
 
-    /** Bay Area / Sacramento data, or an empty placeholder if it cannot be loaded. */
+    /** The default region's data, or an empty placeholder if it cannot be loaded. */
     fun defaultDataset(): StationDatasetInfo
 
     /** Number of regions with full station data (a CSV override or a pack), not just the sample. */
@@ -48,6 +48,7 @@ interface RegionDatasets {
 class StationDataStore(
     private val listAssets: () -> Set<String>,
     private val repository: StationRepository,
+    private val stateUsa: StateUsaDefinition,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : RegionDatasets {
 
@@ -58,20 +59,19 @@ class StationDataStore(
     private fun hasCsvOverride(regionId: String) = fileNameFor(regionId) in assetNames
 
     private fun packFileFor(regionId: String): String? =
-        PACK_FILES[regionId]?.takeIf { it in assetNames }
+        stateUsa.stationPacks[regionId]?.takeIf { it in assetNames }
 
     override fun fullDataRegionCount(): Int =
-        CaliforniaRegionalDefinitions.ALL_REGIONS.count { hasCsvOverride(it.id) || packFileFor(it.id) != null }
+        stateUsa.regions.count { hasCsvOverride(it.id) || packFileFor(it.id) != null }
 
     override suspend fun stationsFor(regionId: String): List<MicroclimateStation> = withContext(ioDispatcher) {
         datasetFor(regionId)?.let { repository.stations(it) } ?: emptyList()
     }
 
-    override fun totalRegionCount(): Int = CaliforniaRegionalDefinitions.ALL_REGIONS.size
+    override fun totalRegionCount(): Int = stateUsa.regions.size
 
     override fun datasetFor(regionId: String): StationDatasetInfo? {
-        val region = CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == regionId }
-            ?: return null
+        val region = stateUsa.region(regionId) ?: return null
         if (hasCsvOverride(regionId)) {
             build(region.id, fileNameFor(regionId), kind = DatasetKind.CSV_OVERRIDE)
                 ?.let { return it }
@@ -84,16 +84,16 @@ class StationDataStore(
     }
 
     override fun defaultDataset(): StationDatasetInfo {
-        val bayArea = CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
-        return datasetFor(bayArea.id)
+        val default = stateUsa.defaultRegion()
+        return datasetFor(default.id)
             ?: StationDatasetInfo(
-                regionId = bayArea.id,
-                fileName = PACK_FILES.getValue(bayArea.id),
+                regionId = default.id,
+                fileName = stateUsa.stationPacks.getValue(default.id),
                 kind = DatasetKind.NONE,
                 stationCount = 0,
                 minElevationMeters = 0,
                 maxElevationMeters = 0,
-                packFileName = PACK_FILES.getValue(bayArea.id)
+                packFileName = stateUsa.stationPacks.getValue(default.id)
             )
     }
 
@@ -123,19 +123,10 @@ class StationDataStore(
 
     companion object {
         /** The store over the app's real assets; a missing or unreadable asset folder reads as no data. */
-        fun fromAssets(context: Context, repository: StationRepository) = StationDataStore(
+        fun fromAssets(context: Context, repository: StationRepository, stateUsa: StateUsaDefinition) = StationDataStore(
             listAssets = { try { context.assets.list("")?.toSet() ?: emptySet() } catch (e: Exception) { emptySet() } },
-            repository = repository
-        )
-
-        // Station pack per region, named by the app's region order: north to south, then west to east
-        private val PACK_FILES = mapOf(
-            CaliforniaRegionalDefinitions.NORTHERN_CALIFORNIA.id to "a.txt",
-            CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id to "b.txt",
-            CaliforniaRegionalDefinitions.CENTRAL_COAST.id to "c.txt",
-            CaliforniaRegionalDefinitions.CENTRAL_VALLEY.id to "d.txt",
-            CaliforniaRegionalDefinitions.LOS_ANGELES.id to "e.txt",
-            CaliforniaRegionalDefinitions.SAN_DIEGO.id to "f.txt"
+            repository = repository,
+            stateUsa = stateUsa
         )
     }
 }

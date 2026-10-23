@@ -6,7 +6,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.genesjc.microclimatefinder.R
-import io.github.genesjc.microclimatefinder.data.local.StateTerrain
+import io.github.genesjc.microclimatefinder.data.local.StateUsaTerrain
 import io.github.genesjc.microclimatefinder.ui.regionpicker.RegionPickerViewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,7 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.ui.theme.LocalStateUsa
 import io.github.genesjc.microclimatefinder.domain.model.RegionStatus
 
 /** How much the picker's map is stretched vertically (1 = true shape). Taller, at the cost of some skew. */
@@ -63,9 +63,9 @@ internal const val PICKER_VERTICAL_STRETCH = 1.35f
  * the map is the choice itself ([onPickRegion]); there is no Confirm button.
  */
 @Composable
-fun CaliforniaRegionPickerPanel(
+fun StateUsaRegionPickerPanel(
     pendingRegionId: String,
-    terrain: StateTerrain?,
+    terrain: StateUsaTerrain?,
     onPickRegion: (String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
@@ -101,7 +101,7 @@ fun CaliforniaRegionPickerPanel(
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        CaliforniaClassicMapCanvas(
+        StateUsaClassicMapCanvas(
             selectedRegionId = pendingRegionId,
             terrain = terrain,
             onSelectRegion = onPickRegion,
@@ -115,7 +115,7 @@ fun CaliforniaRegionPickerPanel(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CaliforniaRegionsMapScreen(
+fun StateUsaRegionsMapScreen(
     selectedRegionId: String,
     onSelectRegion: (String) -> Unit,
     onNavigateBack: () -> Unit,
@@ -124,9 +124,9 @@ fun CaliforniaRegionsMapScreen(
     viewModel: RegionPickerViewModel = viewModel()
 ) {
     val stateTerrain by viewModel.stateTerrain.collectAsStateWithLifecycle()
-    val selectedRegion = remember(selectedRegionId) {
-        CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == selectedRegionId }
-            ?: CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO
+    val stateUsa = LocalStateUsa.current
+    val selectedRegion = remember(stateUsa, selectedRegionId) {
+        stateUsa.region(selectedRegionId) ?: stateUsa.defaultRegion()
     }
 
     Scaffold(
@@ -136,7 +136,7 @@ fun CaliforniaRegionsMapScreen(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                text = stringResource(R.string.regions_screen_title),
+                                text = stringResource(stateUsa.regionsScreenTitleRes),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -196,7 +196,7 @@ fun CaliforniaRegionsMapScreen(
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // Interactive California Spatial Map Card
+            // Interactive state map card
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),
@@ -212,7 +212,7 @@ fun CaliforniaRegionsMapScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = stringResource(R.string.regions_map_title),
+                                text = stringResource(stateUsa.regionsMapTitleRes),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold
                             )
@@ -226,7 +226,7 @@ fun CaliforniaRegionsMapScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         // Map Viewport (Strict Light Mode)
-                        CaliforniaClassicMapCanvas(
+                        StateUsaClassicMapCanvas(
                             selectedRegionId = selectedRegionId,
                             terrain = stateTerrain,
                             onSelectRegion = onSelectRegion
@@ -320,7 +320,7 @@ fun CaliforniaRegionsMapScreen(
                                         RoundedCornerShape(14.dp)
                                     )
                             ) {
-                                CaliforniaRegionalDefinitions.ALL_REGIONS.forEach { region ->
+                                stateUsa.regions.forEach { region ->
                                     val isSelected = region.id == selectedRegionId
                                     DropdownMenuItem(
                                         text = {

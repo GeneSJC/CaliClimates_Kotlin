@@ -15,6 +15,7 @@ import kotlin.math.abs
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import io.github.genesjc.microclimatefinder.domain.model.TreeKind
 
 internal class Fish(
     val lengthDp: Float,
@@ -129,31 +130,21 @@ private fun sampleSkyline(values: FloatArray, t: Float): Float {
     return values[i] + (values[i + 1] - values[i]) * (pos - i)
 }
 
-internal enum class TreeKind { CONIFER, OAK, PALM }
-
-/** The kinds of tree along the near hills, by region (repeats make a kind more common). */
-private val TREE_MIX = mapOf(
-    "northern_california" to listOf(TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.OAK),
-    "bay_area_sacramento" to listOf(TreeKind.CONIFER, TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),
-    "central_coast" to listOf(TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),
-    "central_valley" to listOf(TreeKind.OAK, TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),
-    "los_angeles" to listOf(TreeKind.PALM, TreeKind.OAK, TreeKind.OAK),
-    "san_diego" to listOf(TreeKind.PALM, TreeKind.PALM, TreeKind.OAK)
-)
+/** The trees for a region the state definition does not list. */
+internal val DEFAULT_TREE_MIX = listOf(TreeKind.OAK, TreeKind.CONIFER)
 
 private fun pseudoRandom(i: Int, seed: Int): Float = (((i * 73856093) xor (seed * 19349663)) and 0xFFFF) / 65535f
 
-/** Little trees standing along a ridgeline ([points] run left to right, evenly spaced). Decoration. */
+/** Little trees standing along a ridgeline ([points] run left to right, evenly spaced), of the kinds in [mix]. Decoration. */
 internal fun DrawScope.drawTrees(
     points: List<Offset>,
-    regionId: String,
+    mix: List<TreeKind>,
     sizePx: Float,
     color: Color,
     seed: Int,
     xMin: Float,
     xMax: Float
 ) {
-    val mix = TREE_MIX[regionId] ?: listOf(TreeKind.OAK, TreeKind.CONIFER)
     val first = points.first().x
     val last = points.last().x
     if (last <= first) return

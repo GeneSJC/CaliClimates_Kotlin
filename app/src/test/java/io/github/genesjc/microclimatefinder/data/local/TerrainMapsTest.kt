@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.data.local
 
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaCA
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -40,7 +41,7 @@ class TerrainMapsTest {
     @Test
     fun everyRegionHasATerrainPicture() {
         for ((_, regionId) in packs) {
-            assertNotNull("No bounds for $regionId", TerrainMaps.BOUNDS[regionId])
+            assertNotNull("No bounds for $regionId", StateUsaCA.terrainBounds[regionId])
             val file = File("src/main/assets/${TerrainMaps.assetPath(regionId)}")
             assertTrue("${file.path} is missing", file.exists())
             // A WebP file starts with "RIFF", then a size, then "WEBP"
@@ -70,7 +71,7 @@ class TerrainMapsTest {
     @Test
     fun everyPictureCoversItsStationsWithRoomAround() {
         for ((packFile, regionId) in packs) {
-            val bounds = TerrainMaps.BOUNDS.getValue(regionId)
+            val bounds = StateUsaCA.terrainBounds.getValue(regionId)
             val points = stationPoints(packFile)
             assertTrue("$regionId has no stations", points.isNotEmpty())
             val lats = points.map { it.first }

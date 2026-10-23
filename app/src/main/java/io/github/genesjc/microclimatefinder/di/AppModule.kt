@@ -11,6 +11,8 @@ import io.github.genesjc.microclimatefinder.data.local.StationSource
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainSource
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaCA
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaDefinition
 import io.github.genesjc.microclimatefinder.data.remote.createNwsApi
 import io.github.genesjc.microclimatefinder.data.remote.createNwsHttpClient
 import io.github.genesjc.microclimatefinder.data.remote.NwsObservationClient
@@ -33,11 +35,14 @@ val appModule = module {
     // Build constants, read once into one immutable object
     single { AppConfig(isCommercial = BuildConfig.IS_COMMERCIAL, buildLabel = BuildInfo.LABEL) }
 
+    // The USA state the app is built for: its regions, geography and artwork (California only today)
+    single<StateUsaDefinition> { StateUsaCA }
+
     // Platform edge: preference stores and data sources
-    single<AppSettings> { AppSettingsPreferences(androidContext()) }
+    single<AppSettings> { AppSettingsPreferences(androidContext(), get()) }
     single<StringResolver> { ContextStringResolver(androidContext()) }
     single<StationSource> { AssetStationSource(androidContext()) }
-    single<TerrainSource> { AssetTerrainSource(androidContext()) }
+    single<TerrainSource> { AssetTerrainSource(androidContext(), get()) }
     single { createNwsHttpClient() }
     single { createNwsApi(get()) }
     single<ObservationSource> { NwsObservationClient(get()) }
@@ -45,7 +50,7 @@ val appModule = module {
     // Repositories
     single { StationRepository(get()) }
     single { TerrainRepository(get()) }
-    single<RegionDatasets> { StationDataStore.fromAssets(androidContext(), get()) }
+    single<RegionDatasets> { StationDataStore.fromAssets(androidContext(), get(), get()) }
 
     // State holders
     single { LiveReadings(get()) }

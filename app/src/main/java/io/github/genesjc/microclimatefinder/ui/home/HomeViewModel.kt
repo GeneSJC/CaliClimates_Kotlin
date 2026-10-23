@@ -7,7 +7,6 @@ import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.screens.DEFAULT_PIN_SCALE
@@ -115,7 +114,7 @@ class HomeViewModel : AppBaseViewModel() {
         // Once the first region is on its way, read the other regions' stations in the background, so changing
         // region later finds them already parsed instead of unzipping a pack on the main thread mid-transition
         viewModelScope.launch {
-            CaliforniaRegionalDefinitions.ALL_REGIONS.forEach { datasets.stationsFor(it.id) }
+            stateUsa.regions.forEach { datasets.stationsFor(it.id) }
         }
     }
 
