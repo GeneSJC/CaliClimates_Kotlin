@@ -18,6 +18,8 @@ import io.github.genesjc.microclimatefinder.data.remote.ObservationSource
 import io.github.genesjc.microclimatefinder.BuildConfig
 import io.github.genesjc.microclimatefinder.BuildInfo
 import io.github.genesjc.microclimatefinder.viewmodel.AppConfig
+import io.github.genesjc.microclimatefinder.viewmodel.ContextStringResolver
+import io.github.genesjc.microclimatefinder.viewmodel.StringResolver
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -33,6 +35,7 @@ val appModule = module {
 
     // Platform edge: preference stores and data sources
     single<AppSettings> { AppSettingsPreferences(androidContext()) }
+    single<StringResolver> { ContextStringResolver(androidContext()) }
     single<StationSource> { AssetStationSource(androidContext()) }
     single<TerrainSource> { AssetTerrainSource(androidContext()) }
     single { createNwsHttpClient() }

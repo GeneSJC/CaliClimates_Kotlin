@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- California's region content. Every name here starts with ca_ so that it moves cleanly to a state's own resources. -->
+
+    <!-- Region san_diego -->
+    <string name="ca_san_diego_name">San Diego</string>
+    <string name="ca_san_diego_title">San Diego &amp; South Coast</string>
+    <string name="ca_san_diego_subtitle">Border Marine Layer to Anza-Borrego Desert</string>
+    <string name="ca_san_diego_description">South Coast transect spanning coastal ocean waters, inland mesas, alpine pine peaks, and dropping 5,000 feet into the Anza-Borrego desert rain shadow within a 50-mile drive.</string>
+    <string name="ca_san_diego_trait_1">Persistent May Gray / June Gloom marine stratus</string>
+    <string name="ca_san_diego_trait_2">Sharp inland heating over coastal mesas and chaparral</string>
+    <string name="ca_san_diego_trait_3">Cuyamaca / Laguna Mountain pine-oak temperate transition</string>
+    <string name="ca_san_diego_trait_4">Rain-shadow drop into extreme Colorado/Sonoran Desert</string>
+
+    <!-- Region los_angeles -->
+    <string name="ca_los_angeles_name">Los Angeles Area</string>
+    <string name="ca_los_angeles_title">Los Angeles &amp; Inland Empire</string>
+    <string name="ca_los_angeles_subtitle">Santa Monica Basin to San Gabriel Crest</string>
+    <string name="ca_los_angeles_description">Dense coastal urban basin bounded by sheer transverse mountain walls that generate severe marine layer thermal capping and sharp 30°F gradients across individual ridgelines.</string>
+    <string name="ca_los_angeles_trait_1">Severe marine layer entrapment beneath thermal inversion lids</string>
+    <string name="ca_los_angeles_trait_2">Pass-driven heating across Sepulveda &amp; Cahuenga into San Fernando Valley</string>
+    <string name="ca_los_angeles_trait_3">Inland Empire high diurnal swing and thermal inertia</string>
+    <string name="ca_los_angeles_trait_4">Subalpine pine zones across 10,000-foot San Gabriel peaks</string>
+
+    <!-- Region central_coast -->
+    <string name="ca_central_coast_name">Central Coast</string>
+    <string name="ca_central_coast_title">Central Coast &amp; Valleys</string>
+    <string name="ca_central_coast_subtitle">Big Sur Cliffs to Salinas Valley Fog Funnel</string>
+    <string name="ca_central_coast_description">World-renowned maritime upwelling zones and steep Santa Lucia coastal scarps channeling cold marine air deep into interior agricultural valleys.</string>
+    <string name="ca_central_coast_trait_1">Steepest coastal elevation gradient in contiguous US (Cone Peak 5,155 ft within 3 miles)</string>
+    <string name="ca_central_coast_trait_2">Salinas Valley agricultural marine wind and fog funnel</string>
+    <string name="ca_central_coast_trait_3">Paso Robles extreme diurnal swings (up to 50°F day-night shift)</string>
+    <string name="ca_central_coast_trait_4">Santa Ynez maritime-to-continental wine microclimates</string>
+
+    <!-- Region central_valley -->
+    <string name="ca_central_valley_name">Central Valley</string>
+    <string name="ca_central_valley_title">San Joaquin &amp; Central Valley</string>
+    <string name="ca_central_valley_subtitle">Interior Basin, Tule Fog &amp; Extreme Diurnal Cycles</string>
+    <string name="ca_central_valley_description">Expansive 400-mile flat interior basin protected by coastal ranges and the Sierra Nevada, characterized by high thermal accumulation and severe winter radiation inversions.</string>
+    <string name="ca_central_valley_trait_1">Interior continental summer heat basin (frequent 100°F+ temperatures)</string>
+    <string name="ca_central_valley_trait_2">Winter radiation inversion generating dense Tule radiation fog</string>
+    <string name="ca_central_valley_trait_3">Pronounced day-to-night temperature swings (35°F to 45°F)</string>
+    <string name="ca_central_valley_trait_4">Dry adiabatic lapse rate along Sierra foothills</string>
+
+    <!-- Region bay_area_sacramento -->
+    <string name="ca_bay_area_sacramento_name">Bay Area / Sacramento</string>
+    <string name="ca_bay_area_sacramento_title">Bay Area &amp; Sacramento</string>
+    <string name="ca_bay_area_sacramento_subtitle">Golden Gate Gap to Sierra Foothills (Active Transect)</string>
+    <string name="ca_bay_area_sacramento_description">The primary baseline transect: fully unified draggable and zoomable coordinate space covering stations from Pacific tidepools to alpine ridge tops.</string>
+    <string name="ca_bay_area_sacramento_trait_1">Active NOAA transect of real-time recording stations</string>
+    <string name="ca_bay_area_sacramento_trait_2">Golden Gate ocean cold-water marine surge into the Delta Breeze</string>
+    <string name="ca_bay_area_sacramento_trait_3">Diablo Range rain shadow and thermal inland transition</string>
+    <string name="ca_bay_area_sacramento_trait_4">Lapse-rate cooling up Western Sierra Nevada slope to 1406m</string>
+
+    <!-- Region northern_california -->
+    <string name="ca_northern_california_name">Northern CA</string>
+    <string name="ca_northern_california_title">Northern California &amp; Cascades</string>
+    <string name="ca_northern_california_subtitle">Redwood Temperate Rainforest to Mt. Shasta</string>
+    <string name="ca_northern_california_description">Vast, rugged territory encompassing temperate coastal rainforests, volcanic Cascade peaks, high alpine passes, and extreme rain shadow transitions.</string>
+    <string name="ca_northern_california_trait_1">Hyper-maritime coastal redwood rain forest (70+ inches annual rain)</string>
+    <string name="ca_northern_california_trait_2">Extreme inland heat funnel in northern Sacramento Valley at Redding</string>
+    <string name="ca_northern_california_trait_3">Glaciated alpine microclimates on 14,179 ft Mt. Shasta</string>
+    <string name="ca_northern_california_trait_4">High-elevation Great Basin / Sierra cold sink basins in Truckee</string>
+</resources>

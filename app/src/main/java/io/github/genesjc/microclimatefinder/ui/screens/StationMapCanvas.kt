@@ -1,6 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
-import io.github.genesjc.microclimatefinder.domain.Elevation
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -29,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
+import io.github.genesjc.microclimatefinder.ui.text.rememberFeetFormatter
 import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -120,11 +122,12 @@ internal fun SpatialMapCanvas(
     // View transform: zoom about the map centre plus a pan in pixels
     // The labels' text and widths, made once per station list (the placement below runs on every zoom and pan frame)
     val textScale = MapText.scale
+    val feetText = rememberFeetFormatter()
     val landmarkLabels = remember(landmarks, textScale) {
         landmarks.map { station ->
             val city = cityName(station)
                 .let { if (it.length > 18) it.take(17) + "\u2026" else it }
-            val elevText = Elevation.formatFeet(station.elevationMeters)
+            val elevText = feetText(station.elevationMeters)
             // Estimated label width at the current text scale; labels that would pass the right edge end at the pin instead
             LandmarkLabel(station, city, elevText, ((city.length + elevText.length + 1) * 4.9f * textScale + 12f).dp)
         }
@@ -442,7 +445,7 @@ internal fun SpatialMapCanvas(
                         .background(Color(0xFF334155))
                 )
                 Text(
-                    text = "$scaleMiles mi ($scaleKm km)",
+                    text = stringResource(R.string.map_scale_bar, scaleMiles, scaleKm),
                     fontSize = ms(7.5f),
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF334155)
@@ -467,7 +470,7 @@ internal fun SpatialMapCanvas(
                 onValueChange = { MapText.scale = it },
                 minValue = MapText.MIN_SCALE,
                 maxValue = MapText.MAX_SCALE,
-                caption = "FONT",
+                caption = stringResource(R.string.zoom_font_caption),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = sliderTop, end = 4.dp + 5.dp * expandT, bottom = 4.dp)

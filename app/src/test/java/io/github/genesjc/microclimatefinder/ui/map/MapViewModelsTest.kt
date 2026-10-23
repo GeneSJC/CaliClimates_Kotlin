@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.map
 
+import io.github.genesjc.microclimatefinder.data.local.DatasetKind
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
@@ -34,7 +35,7 @@ class MapViewModelsTest {
     val stopKoin = StopKoinRule()
 
     private val dataset = StationDatasetInfo(
-        regionId = "a", fileName = "a.txt", title = "North", subtitle = "Sample",
+        regionId = "a", fileName = "a.txt", kind = DatasetKind.BUNDLED_PACK,
         stationCount = 2, minElevationMeters = 0, maxElevationMeters = 100
     )
     private val stations = listOf(testStation(id = "K1", name = "One"), testStation(id = "K2", name = "Two"))

@@ -1,6 +1,5 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
-import io.github.genesjc.microclimatefinder.domain.Elevation
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
@@ -41,20 +40,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.annotation.StringRes
 import io.github.genesjc.microclimatefinder.AppFeatures
+import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.domain.Units
-import java.util.Locale
+import io.github.genesjc.microclimatefinder.ui.text.elevationDescribeText
+import io.github.genesjc.microclimatefinder.ui.text.terrainDescriptionText
 
 @Composable
 fun StationCard(
@@ -133,7 +137,7 @@ fun StationCard(
                         color = terrainBadgeColor.copy(alpha = 0.14f)
                     ) {
                         Text(
-                            text = station.terrain.label,
+                            text = stringResource(station.terrain.labelRes),
                             color = terrainBadgeColor,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -153,7 +157,7 @@ fun StationCard(
                 }
 
                 Text(
-                    text = "${Elevation.describe(station.elevationMeters)}",
+                    text = elevationDescribeText(station.elevationMeters),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium,
@@ -178,7 +182,7 @@ fun StationCard(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = station.microclimateDescription,
+                        text = station.microclimateNote ?: terrainDescriptionText(station.terrain, station.elevationMeters),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2
@@ -189,14 +193,14 @@ fun StationCard(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "—",
+                        text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "—",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) }
-                            ?: display.status.orEmpty(),
+                        text = display.tempC?.let { stringResource(R.string.reading_temp_c, it) }
+                            ?: display.status?.fullText().orEmpty(),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -217,14 +221,14 @@ fun StationCard(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    MetricPill(label = "Humidity", value = display.humidity)
-                    MetricPill(label = "Wind", value = display.wind)
-                    MetricPill(label = display.thirdLabel, value = display.thirdValue)
+                    MetricPill(label = stringResource(R.string.metric_humidity), value = display.humidityText())
+                    MetricPill(label = stringResource(R.string.metric_wind), value = display.windText())
+                    MetricPill(label = stringResource(display.thirdLabelRes), value = display.thirdText())
                     // The age of the reading, as a fourth column (its value wraps if it must)
-                    if (display.tempC != null && display.status != null) {
+                    if (display.tempC != null && display.status is CardStatus.Updated) {
                         MetricPill(
-                            label = "Updated",
-                            value = display.status.removePrefix("Updated").removePrefix(":").trim(),
+                            label = stringResource(R.string.metric_updated),
+                            value = display.status.ageText(),
                             modifier = Modifier.widthIn(max = 76.dp)
                         )
                     }
@@ -263,13 +267,13 @@ fun StationCard(
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Local News",
+                                text = stringResource(R.string.news_title),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "$cleanCity • What's happening in this location",
+                                text = stringResource(R.string.news_subtitle, cleanCity),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.labelSmall,
@@ -285,7 +289,7 @@ fun StationCard(
                             modifier = Modifier.padding(end = 8.dp)
                         ) {
                             Text(
-                                text = "${newsStories.size} stories",
+                                text = pluralStringResource(R.plurals.news_story_count, newsStories.size, newsStories.size),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
@@ -381,7 +385,7 @@ fun StationCard(
                                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                                         ) {
                                             Text(
-                                                text = "${newsStories.size} stories",
+                                                text = pluralStringResource(R.plurals.news_story_count, newsStories.size, newsStories.size),
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = MaterialTheme.colorScheme.primary,
@@ -390,7 +394,7 @@ fun StationCard(
                                         }
                                     }
                                     Text(
-                                        text = "Google News RSS • ${station.id} Area",
+                                        text = stringResource(R.string.news_source, station.id),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -508,14 +512,14 @@ fun StationCard(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
-                                                text = "Tap to open in app viewer",
+                                                text = stringResource(R.string.news_tap_to_open),
                                                 fontSize = 10.sp,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
 
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Text(
-                                                    text = "Read story",
+                                                    text = stringResource(R.string.news_read_story),
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = MaterialTheme.colorScheme.primary
@@ -575,15 +579,15 @@ private fun CompactStationBody(
         // Row 2: the temperature in °F, with °C (or why there is no reading) beside it
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Text(
-                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
+                text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "\u2014",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = display.tempC?.let { String.format(Locale.US, "%.1f°C", it) }
-                    ?: display.status.orEmpty(),
+                text = display.tempC?.let { stringResource(R.string.reading_temp_c, it) }
+                    ?: display.status?.fullText().orEmpty(),
                 fontSize = ms(12f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 4.dp)
@@ -592,7 +596,7 @@ private fun CompactStationBody(
             if (display.tempC != null && display.status != null) {
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = display.status,
+                    text = display.status.fullText(),
                     fontSize = ms(10f),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -606,9 +610,9 @@ private fun CompactStationBody(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            CompactMetric("Humidity", display.humidity)
-            CompactMetric("Wind", display.wind)
-            CompactMetric(display.thirdLabel, display.thirdValue)
+            CompactMetric(stringResource(R.string.metric_humidity), display.humidityText())
+            CompactMetric(stringResource(R.string.metric_wind), display.windText())
+            CompactMetric(stringResource(display.thirdLabelRes), display.thirdText())
         }
         Spacer(modifier = Modifier.height(6.dp))
         // Row 4: terrain chip and elevation on the left; the footer (the region's elevation range) on the right
@@ -619,7 +623,7 @@ private fun CompactStationBody(
                     color = badgeColor.copy(alpha = 0.14f)
                 ) {
                     Text(
-                        text = station.terrain.label,
+                        text = stringResource(station.terrain.labelRes),
                         color = badgeColor,
                         fontSize = ms(10f),
                         fontWeight = FontWeight.Bold,
@@ -628,7 +632,7 @@ private fun CompactStationBody(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = Elevation.describe(station.elevationMeters),
+                    text = elevationDescribeText(station.elevationMeters),
                     fontSize = ms(11f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -682,7 +686,7 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
     ) {
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = display.tempC?.let { String.format(Locale.US, "%.1f°F", Units.fahrenheit(it)) } ?: "\u2014",
+                text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "\u2014",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -715,24 +719,47 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
     }
 }
 
-/** What the card shows for the current conditions. Null temperature means no reading to show. */
+/** How current the card's reading is, or why there is none. The words are string resources, chosen where it is shown. */
+private sealed interface CardStatus {
+    /** A reading; [minutes] is its age, or null when the station gave no time. */
+    class Updated(val minutes: Long?) : CardStatus
+    object Checking : CardStatus
+    object Failed : CardStatus
+    object NoReading : CardStatus
+}
+
+/** What the card shows for the current conditions, as numbers. Null temperature means no reading to show. */
 private class CardDisplay(
     val tempC: Double?,
-    val humidity: String,
-    val wind: String,
-    val thirdLabel: String,
-    val thirdValue: String,
-    val status: String?
-)
+    val humidityPercent: Double?,
+    val windMph: Double?,
+    @StringRes val thirdLabelRes: Int,
+    /** W/m\u00B2 for the sample solar value, inHg for pressure. */
+    val thirdValue: Double?,
+    val thirdIsSolar: Boolean,
+    val status: CardStatus?
+) {
+    @Composable
+    fun humidityText(): String = humidityPercent?.let { stringResource(R.string.reading_humidity_value, it) } ?: "\u2014"
+
+    @Composable
+    fun windText(): String = windMph?.let { stringResource(R.string.reading_wind_value, it) } ?: "\u2014"
+
+    @Composable
+    fun thirdText(): String = thirdValue?.let {
+        if (thirdIsSolar) stringResource(R.string.reading_solar_value, it) else stringResource(R.string.reading_pressure_value, it)
+    } ?: "\u2014"
+}
 
 private fun mockDisplay(station: MicroclimateStation): CardDisplay {
     val r = station.currentReading
     return CardDisplay(
         tempC = r.temperatureCelsius,
-        humidity = "${r.humidityPercent}%",
-        wind = String.format(Locale.US, "%.1f mph", Units.mph(r.windSpeedKmh)),
-        thirdLabel = "Solar",
-        thirdValue = String.format(Locale.US, "%.0f W/m²", r.solarIrradianceWm2),
+        humidityPercent = r.humidityPercent.toDouble(),
+        windMph = Units.mph(r.windSpeedKmh),
+        thirdLabelRes = R.string.metric_solar,
+        thirdValue = r.solarIrradianceWm2,
+        thirdIsSolar = true,
         status = null
     )
 }
@@ -742,32 +769,56 @@ private fun liveDisplay(result: ObservationResult?): CardDisplay {
     return when (val r = result) {
         is ObservationResult.Reading -> {
             val o = r.observation
-            val age = o.ageMinutes()
             CardDisplay(
                 tempC = o.temperatureCelsius,
-                humidity = o.humidityPercent?.let { String.format(Locale.US, "%.0f%%", it) } ?: "—",
-                wind = o.windSpeedKmh?.let { String.format(Locale.US, "%.1f mph", Units.mph(it)) } ?: "—",
-                thirdLabel = "Pressure",
-                thirdValue = o.pressureHpa?.let { String.format(Locale.US, "%.2f inHg", Units.inHg(it)) } ?: "—",
-                status = when {
-                    age == null -> "Updated: time unknown"
-                    age < 90 -> "Updated $age min ago"
-                    else -> "Updated ${age / 60} h ago"
-                }
+                humidityPercent = o.humidityPercent,
+                windMph = o.windSpeedKmh?.let { Units.mph(it) },
+                thirdLabelRes = R.string.metric_pressure,
+                thirdValue = o.pressureHpa?.let { Units.inHg(it) },
+                thirdIsSolar = false,
+                status = CardStatus.Updated(o.ageMinutes())
             )
         }
         else -> CardDisplay(
             tempC = null,
-            humidity = "—",
-            wind = "—",
-            thirdLabel = "Pressure",
-            thirdValue = "—",
+            humidityPercent = null,
+            windMph = null,
+            thirdLabelRes = R.string.metric_pressure,
+            thirdValue = null,
+            thirdIsSolar = false,
             status = when (r) {
-                null -> "Checking…"
-                ObservationResult.Failed -> "Couldn't load reading"
-                else -> "No current reading"
+                null -> CardStatus.Checking
+                ObservationResult.Failed -> CardStatus.Failed
+                else -> CardStatus.NoReading
             }
         )
+    }
+}
+
+/** The status as a full line: "Updated 5 min ago", or why there is no reading. */
+@Composable
+private fun CardStatus.fullText(): String = when (this) {
+    is CardStatus.Updated -> {
+        val m = minutes
+        when {
+            m == null -> stringResource(R.string.reading_updated_unknown)
+            m < 90 -> pluralStringResource(R.plurals.reading_updated_minutes, m.toInt(), m.toInt())
+            else -> pluralStringResource(R.plurals.reading_updated_hours, (m / 60).toInt(), (m / 60).toInt())
+        }
+    }
+    CardStatus.Checking -> stringResource(R.string.reading_checking)
+    CardStatus.Failed -> stringResource(R.string.reading_failed)
+    CardStatus.NoReading -> stringResource(R.string.reading_none)
+}
+
+/** Just the age, for the column under the "Updated" label: "5 min ago". */
+@Composable
+private fun CardStatus.Updated.ageText(): String {
+    val m = minutes
+    return when {
+        m == null -> stringResource(R.string.reading_age_unknown)
+        m < 90 -> pluralStringResource(R.plurals.reading_age_minutes, m.toInt(), m.toInt())
+        else -> pluralStringResource(R.plurals.reading_age_hours, (m / 60).toInt(), (m / 60).toInt())
     }
 }
 

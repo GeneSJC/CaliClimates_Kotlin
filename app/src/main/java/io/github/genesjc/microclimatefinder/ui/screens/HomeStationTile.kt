@@ -1,6 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
-import io.github.genesjc.microclimatefinder.domain.Elevation
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
@@ -18,6 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
+import io.github.genesjc.microclimatefinder.ui.text.elevationNoteText
+import io.github.genesjc.microclimatefinder.ui.text.elevationRangeText
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,8 +49,8 @@ internal fun StationHeroTile(
         tileBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
         // The card draws its own tint and border; this backs it so nothing shows through
         panelColor = MaterialTheme.colorScheme.background,
-        openLabel = "Show the full station card",
-        closeLabel = "Hide the full station card",
+        openLabel = stringResource(R.string.station_card_show),
+        closeLabel = stringResource(R.string.station_card_hide),
         // Stays open when another station is picked from the map, and the map stays tappable behind it
         passThrough = true,
         // Half the rounding of the other cards
@@ -63,13 +66,13 @@ internal fun StationHeroTile(
                 // Tapping the card folds it back, like Less
                 onSelect = close,
                 compact = true,
-                elevationNote = Elevation.note(station.elevationMeters, regionId),
+                elevationNote = elevationNoteText(station.elevationMeters, regionId),
                 // Inside the card's border: the region's elevation range, and the way to fold it back
                 // The region's elevation range, at the right of the terrain chip's line
                 compactFooter = {
                     if (regionStations.isNotEmpty()) {
                         Text(
-                            text = "Region elevation ${Elevation.rangeFeet(regionStations.minOf { it.elevationMeters }, regionStations.maxOf { it.elevationMeters })}",
+                            text = stringResource(R.string.region_elevation_range, elevationRangeText(regionStations.minOf { it.elevationMeters }, regionStations.maxOf { it.elevationMeters })),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1
@@ -79,12 +82,12 @@ internal fun StationHeroTile(
                 // Less at the right of the title row, where the other open cards have theirs
                 compactHeaderAction = {
                     Text(
-                        text = "Less \u25B2",
+                        text = stringResource(R.string.action_less),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .clickable(onClickLabel = "Hide the full station card", role = Role.Button) { close() }
+                            .clickable(onClickLabel = stringResource(R.string.station_card_hide), role = Role.Button) { close() }
                             .padding(start = 12.dp, top = 4.dp, bottom = 4.dp)
                     )
                 }

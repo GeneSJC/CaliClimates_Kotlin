@@ -27,7 +27,7 @@ fun testStation(
         solarIrradianceWm2 = 800.0,
         pressureHpa = 1013.0
     ),
-    microclimateDescription = "Test",
+    microclimateNote = "Test",
     reportsTemp = reportsTemp,
     isFeatured = isFeatured
 )

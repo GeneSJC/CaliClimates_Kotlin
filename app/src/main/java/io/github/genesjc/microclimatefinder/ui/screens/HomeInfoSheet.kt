@@ -38,8 +38,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import io.github.genesjc.microclimatefinder.R
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -98,7 +100,7 @@ internal fun BoxScope.InfoSideSheet(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClickLabel = "Close the region info"
+                onClickLabel = stringResource(R.string.region_info_close)
             ) { onClose() }
     )
     var originY by remember { mutableStateOf(0f) }

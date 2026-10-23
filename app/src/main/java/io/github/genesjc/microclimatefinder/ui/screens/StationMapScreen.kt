@@ -1,6 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
-import io.github.genesjc.microclimatefinder.domain.Elevation
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -48,6 +49,7 @@ import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.microclimatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
+import io.github.genesjc.microclimatefinder.ui.text.datasetHeaderText
 
 @Composable
 fun StationMapScreen(
@@ -145,12 +147,12 @@ fun StationMapScreen(
 
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                 Text(
-                    text = "Topography",
+                    text = stringResource(R.string.tab_topography),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${dataset.title} • ${dataset.stationCount} stations",
+                    text = datasetHeaderText(dataset),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -181,7 +183,7 @@ fun StationMapScreen(
             ) {
                 Box(modifier = Modifier.padding(20.dp), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "Tap any station pin on the map to inspect microclimate data",
+                        text = stringResource(R.string.map_hint_topography),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

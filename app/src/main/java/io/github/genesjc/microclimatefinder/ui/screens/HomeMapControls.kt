@@ -1,6 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
-import io.github.genesjc.microclimatefinder.domain.Elevation
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import androidx.compose.animation.AnimatedVisibility
 import io.github.genesjc.microclimatefinder.ui.components.ms
 import androidx.compose.animation.fadeIn
@@ -91,7 +92,7 @@ internal fun MapControlRow(
 ) {
     val blue = Color(0xFF0284C7)
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        MapControlButton("Open the menu", onMenu, Modifier.onGloballyPositioned { onMenuTop(it.positionInRoot().y) }) {
+        MapControlButton(stringResource(R.string.menu_open), onMenu, Modifier.onGloballyPositioned { onMenuTop(it.positionInRoot().y) }) {
             Text(text = "\u2630", fontSize = 18.sp, color = blue)
         }
         if (onElevation) {
@@ -117,7 +118,7 @@ internal fun MapControlRow(
                 enter = androidx.compose.animation.fadeIn(),
                 exit = androidx.compose.animation.fadeOut()
             ) {
-                MapControlButton("Show the selected station", onLocate) {
+                MapControlButton(stringResource(R.string.map_locate_selected), onLocate) {
                     Canvas(modifier = Modifier.size(16.dp)) {
                         val stroke = 2.dp.toPx()
                         val arm = size.width * 0.38f
@@ -154,10 +155,10 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, selectedStatio
             border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
             modifier = Modifier
                 .height(32.dp)
-                .clickable(onClickLabel = "Choose a station", role = Role.Button) { open = true }
+                .clickable(onClickLabel = stringResource(R.string.stations_choose), role = Role.Button) { open = true }
         ) {
             Row(modifier = Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "Stations", fontSize = ms(9f), fontWeight = FontWeight.Bold, color = ink)
+                Text(text = stringResource(R.string.stations_title), fontSize = ms(9f), fontWeight = FontWeight.Bold, color = ink)
                 Text(text = " \u25BE", fontSize = ms(9f), fontWeight = FontWeight.Bold, color = ink)
             }
         }
@@ -193,7 +194,7 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, selectedStatio
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(modifier = Modifier.weight(1f)) {
-                    if (query.isEmpty()) Text("Search stations", fontSize = ms(9f), color = ink.copy(alpha = 0.55f))
+                    if (query.isEmpty()) Text(stringResource(R.string.stations_search), fontSize = ms(9f), color = ink.copy(alpha = 0.55f))
                     androidx.compose.foundation.text.BasicTextField(
                         value = query,
                         onValueChange = { query = it },
@@ -210,7 +211,7 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, selectedStatio
                         color = ink,
                         modifier = Modifier
                             .clip(CircleShape)
-                            .clickable(onClickLabel = "Clear the search") { query = "" }
+                            .clickable(onClickLabel = stringResource(R.string.stations_search_clear)) { query = "" }
                             .padding(start = 8.dp)
                     )
                 }
@@ -223,7 +224,7 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, selectedStatio
             ) {
                 if (matches.isEmpty()) {
                     Text(
-                        text = "No stations match",
+                        text = stringResource(R.string.stations_no_match),
                         fontSize = ms(9f),
                         color = ink.copy(alpha = 0.7f),
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)

@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -16,6 +17,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.Surface
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import kotlin.math.roundToInt
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -129,7 +132,7 @@ fun TerrainLegend(
                     headerRootX = it.positionInRoot().x
                     headerHeightPx = it.size.height
                 }
-                .clickable(onClickLabel = "Show the Terrain Legend", role = Role.Button) { openPanel() }
+                .clickable(onClickLabel = stringResource(R.string.legend_show), role = Role.Button) { openPanel() }
         )
         if (open) {
             val p = reveal.value
@@ -173,7 +176,7 @@ fun TerrainLegend(
                                     .align(headerAlignment)
                                     .padding(end = headerEndInset)
                                     .clickable(
-                                        onClickLabel = "Hide the Terrain Legend",
+                                        onClickLabel = stringResource(R.string.legend_hide),
                                         role = Role.Button
                                     ) { closePanel() }
                             )
@@ -202,14 +205,14 @@ private fun LegendBody(stations: List<MicroclimateStation>, extra: (@Composable 
             listOf(TerrainType.RIDGE, TerrainType.VALLEY_BASIN, TerrainType.COASTAL, TerrainType.URBAN_CANYON)
                 .forEach { type ->
                     val count = stations.count { it.terrain == type }
-                    if (count > 0) LegendItem(color = legendColor(type), label = "${legendName(type)} $count",
+                    if (count > 0) LegendItem(color = legendColor(type), label = stringResource(R.string.legend_item_count, stringResource(legendNameRes(type)), count),
                         dotScale = dotScale ?: 1f,
                         // With the Dot size setting in play, the dot gets a fixed slot (the biggest dot, 2.5x) so the text stays put
                         dotSlot = if (dotScale != null) 8.dp * 2.5f else 8.dp)
                 }
         }
         Text(
-            text = "Ridge / highland: ridge, foothill or mountain terrain, or above 1,640 ft",
+            text = stringResource(R.string.legend_ridge_rule),
             fontSize = 10.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp)
@@ -244,20 +247,20 @@ fun TerrainLegendCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(
-                        onClickLabel = if (open) "Fold the Terrain Legend" else "Open the Terrain Legend",
+                        onClickLabel = stringResource(if (open) R.string.legend_fold else R.string.legend_open),
                         role = androidx.compose.ui.semantics.Role.Button
                     ) { open = !open },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Terrain Legend",
+                    text = stringResource(R.string.legend_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = if (open) "Less \u25B2" else "More \u25BC",
+                    text = stringResource(if (open) R.string.action_less else R.string.action_more),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
@@ -279,7 +282,7 @@ private fun LegendHeader(expanded: Boolean, fontSize: TextUnit, modifier: Modifi
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Terrain Legend",
+            text = stringResource(R.string.legend_title),
             fontSize = fontSize,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary
@@ -300,9 +303,10 @@ private fun legendColor(type: TerrainType): Color = when (type) {
     TerrainType.URBAN_CANYON -> Color(0xFF475569)
 }
 
-private fun legendName(type: TerrainType): String = when (type) {
-    TerrainType.RIDGE -> "Ridge / highland"
-    TerrainType.VALLEY_BASIN -> "Valley basin"
-    TerrainType.COASTAL -> "Coast / delta"
-    TerrainType.URBAN_CANYON -> "Urban"
+@StringRes
+private fun legendNameRes(type: TerrainType): Int = when (type) {
+    TerrainType.RIDGE -> R.string.terrain_legend_ridge
+    TerrainType.VALLEY_BASIN -> R.string.terrain_legend_valley
+    TerrainType.COASTAL -> R.string.terrain_legend_coastal
+    TerrainType.URBAN_CANYON -> R.string.terrain_legend_urban
 }

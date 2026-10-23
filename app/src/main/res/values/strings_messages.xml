@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Generated wording and status text: formats with arguments, plurals and messages. -->
+
+    <!-- Elevation text -->
+    <string name="elevation_feet">%1$,d ft</string>
+    <string name="elevation_described">%1$s · %2$s</string>
+    <string name="elevation_range">%1$,d–%2$,d ft</string>
+    <string name="elevation_note_about">About as high as %1$s (%2$,d ft).</string>
+    <string name="elevation_note_higher">Higher than %1$s (%2$,d ft).</string>
+    <string name="elevation_note_cooler">Typically about %1$d°F cooler than at sea level.</string>
+    <string name="elevation_note_sea_level">About sea level, so no cooling from height.</string>
+    <string name="elevation_note_joined">%1$s %2$s</string>
+
+    <!-- Live readings -->
+    <string name="reading_temp_f">%1$.1f°F</string>
+    <string name="reading_temp_c">%1$.1f°C</string>
+    <string name="reading_humidity_value">%1$.0f%%</string>
+    <string name="reading_wind_value">%1$.1f mph</string>
+    <string name="reading_pressure_value">%1$.2f inHg</string>
+    <string name="reading_solar_value">%1$.0f W/m²</string>
+    <string name="reading_updated_unknown">Updated: time unknown</string>
+    <string name="reading_checking">Checking…</string>
+    <string name="reading_failed">Couldn\'t load reading</string>
+    <string name="reading_none">No current reading</string>
+    <string name="reading_age_unknown">time unknown</string>
+    <plurals name="reading_updated_minutes">
+        <item quantity="one">Updated %1$d min ago</item>
+        <item quantity="other">Updated %1$d min ago</item>
+    </plurals>
+    <plurals name="reading_updated_hours">
+        <item quantity="one">Updated %1$d h ago</item>
+        <item quantity="other">Updated %1$d h ago</item>
+    </plurals>
+    <plurals name="reading_age_minutes">
+        <item quantity="one">%1$d min ago</item>
+        <item quantity="other">%1$d min ago</item>
+    </plurals>
+    <plurals name="reading_age_hours">
+        <item quantity="one">%1$d h ago</item>
+        <item quantity="other">%1$d h ago</item>
+    </plurals>
+    <plurals name="news_story_count">
+        <item quantity="one">%1$d story</item>
+        <item quantity="other">%1$d stories</item>
+    </plurals>
+
+    <!-- Terrain descriptions -->
+    <string name="terrain_description_ridge">High-elevation montane ridge (%1$s). Cooler adiabatic temps with brisk mountain breezes.</string>
+    <string name="terrain_description_coastal">Low-lying coastal or delta site (%1$s). Maritime breeze and enhanced humidity.</string>
+    <string name="terrain_description_urban">Dense urban heat-island core (%1$s) with daytime thermal storage.</string>
+    <string name="terrain_description_valley">Interior valley or basin site (%1$s). Warm, sunny climate with strong diurnal swings.</string>
+
+    <!-- Stations dropdown -->
+    <string name="stations_no_match">No stations match</string>
+
+    <!-- Station card -->
+    <string name="region_elevation_range">Region elevation %1$s</string>
+
+    <!-- Home -->
+    <string name="map_centering_on">Centering the map on %1$s</string>
+    <string name="map_selected_station">the selected station</string>
+
+    <!-- Station dataset -->
+    <string name="dataset_header">%1$s • %2$s</string>
+    <plurals name="station_count">
+        <item quantity="one">%1$d station</item>
+        <item quantity="other">%1$d stations</item>
+    </plurals>
+    <string name="elevation_plotted">%1$d Plotted</string>
+    <string name="dataset_subtitle">%1$s • %2$s</string>
+
+    <!-- Map hints -->
+    <string name="map_hint_topography">Tap any station pin on the map to inspect microclimate data</string>
+    <string name="map_hint_elevation">Tap any station along the slope to inspect microclimate data</string>
+
+    <!-- Elevation view -->
+    <string name="elevation_hint_tap_line">Tap anywhere on the line to pick a station</string>
+    <string name="sky_temp_f">%1$d°F</string>
+    <string name="sky_temp_missing">—°F</string>
+    <string name="sky_condition_line">%1$s • %2$s elev</string>
+
+    <!-- Station map -->
+    <string name="map_scale_bar">%1$s mi (%2$s km)</string>
+
+    <!-- Regions screen -->
+    <plurals name="region_active_badge">
+        <item quantity="one">ACTIVE (%1$d STATION)</item>
+        <item quantity="other">ACTIVE (%1$d STATIONS)</item>
+    </plurals>
+    <plurals name="region_open_active_transect">
+        <item quantity="one">Open Active Transect (%1$d Station)</item>
+        <item quantity="other">Open Active Transect (%1$d Stations)</item>
+    </plurals>
+
+    <!-- Station list -->
+    <string name="station_list_empty">No stations loaded from: %1$s</string>
+</resources>

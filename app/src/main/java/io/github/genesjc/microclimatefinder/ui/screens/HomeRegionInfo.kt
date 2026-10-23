@@ -1,5 +1,8 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.ui.components.regionPickerColors
 import io.github.genesjc.microclimatefinder.ui.components.MapText
 import androidx.compose.ui.unit.Density
@@ -60,7 +63,7 @@ private fun TerrainMixCard(stations: List<MicroclimateStation>) {
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
             Text(
-                text = "Terrain mix",
+                text = stringResource(R.string.region_terrain_mix),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -86,7 +89,7 @@ private fun TerrainMixCard(stations: List<MicroclimateStation>) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 mix.forEach { (type, count) ->
-                    LegendItem(color = terrainColor(type), label = "${terrainShortName(type)} $count")
+                    LegendItem(color = terrainColor(type), label = stringResource(R.string.legend_item_count, stringResource(terrainShortNameRes(type)), count))
                 }
             }
         }
@@ -101,11 +104,12 @@ private fun terrainColor(type: TerrainType): Color = when (type) {
     TerrainType.URBAN_CANYON -> Color(0xFF475569)
 }
 
-private fun terrainShortName(type: TerrainType): String = when (type) {
-    TerrainType.RIDGE -> "Ridge"
-    TerrainType.VALLEY_BASIN -> "Valley"
-    TerrainType.COASTAL -> "Coastal"
-    TerrainType.URBAN_CANYON -> "Urban"
+@StringRes
+private fun terrainShortNameRes(type: TerrainType): Int = when (type) {
+    TerrainType.RIDGE -> R.string.terrain_short_ridge
+    TerrainType.VALLEY_BASIN -> R.string.terrain_short_valley
+    TerrainType.COASTAL -> R.string.terrain_short_coastal
+    TerrainType.URBAN_CANYON -> R.string.terrain_short_urban
 }
 
 /**
@@ -119,8 +123,8 @@ private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int, folded
         fullWidthPx = fullWidthPx,
         tileColor = cardColor,
         panelColor = cardColor.compositeOver(MaterialTheme.colorScheme.background),
-        openLabel = "Show more about ${region.name}",
-        closeLabel = "Show less about ${region.name}",
+        openLabel = stringResource(R.string.region_show_more, stringResource(region.nameRes)),
+        closeLabel = stringResource(R.string.region_show_less, stringResource(region.nameRes)),
         resetKey = region.id,
         forceClosed = folded,
         tile = { RegionDetailsTile(region) },
@@ -134,7 +138,7 @@ private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int, folded
 private fun RegionDetailsTile(region: CaliforniaRegion) {
     Column(modifier = Modifier.padding(12.dp)) {
         Text(
-            text = region.title,
+            text = stringResource(region.titleRes),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             maxLines = 2,
@@ -142,7 +146,7 @@ private fun RegionDetailsTile(region: CaliforniaRegion) {
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = region.description,
+            text = stringResource(region.descriptionRes),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2,
@@ -150,7 +154,7 @@ private fun RegionDetailsTile(region: CaliforniaRegion) {
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "More \u25BC",
+            text = stringResource(R.string.action_more),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary
@@ -165,18 +169,18 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = region.title,
+                    text = stringResource(region.titleRes),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = region.subtitle,
+                    text = stringResource(region.subtitleRes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
-                text = if (expanded) "Less ▲" else "More ▼",
+                text = stringResource(if (expanded) R.string.action_less else R.string.action_more),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
@@ -185,7 +189,7 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = region.description,
+            text = stringResource(region.descriptionRes),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = if (expanded) Int.MAX_VALUE else 3,
@@ -194,13 +198,13 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
         if (expanded) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "What shapes the weather here",
+                text = stringResource(R.string.region_what_shapes),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold
             )
-            region.microclimateTraits.forEach { trait ->
+            region.microclimateTraitRes.forEach { traitRes ->
                 Text(
-                    text = "\u2022 $trait",
+                    text = "\u2022 ${stringResource(traitRes)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
@@ -208,7 +212,7 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Key places",
+                text = stringResource(R.string.region_key_places),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -256,7 +260,7 @@ internal fun RegionInfoContent(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Region Info",
+                        text = stringResource(R.string.region_info_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         // Off-white, not pure white, so it is easier on the eyes against the dark band
@@ -271,10 +275,10 @@ internal fun RegionInfoContent(
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f)),
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            .clickable(onClickLabel = "Open the Station List", role = Role.Button) { onOpenStationList() }
+                            .clickable(onClickLabel = stringResource(R.string.station_list_open), role = Role.Button) { onOpenStationList() }
                     ) {
                         Text(
-                            text = "Station List \u203A",
+                            text = stringResource(R.string.station_list_button),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.86f),
