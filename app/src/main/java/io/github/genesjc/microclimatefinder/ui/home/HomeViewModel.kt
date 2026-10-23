@@ -1,10 +1,8 @@
 package io.github.genesjc.microclimatefinder.ui.home
 
 import androidx.lifecycle.viewModelScope
-import io.github.genesjc.microclimatefinder.data.local.MapZoomStore
+import io.github.genesjc.microclimatefinder.data.local.AppSettings
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
-import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
-import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
@@ -70,11 +68,8 @@ sealed interface HomeEvent {
 @OptIn(FlowPreview::class)
 class HomeViewModel : AppBaseViewModel() {
 
-    private val regionStore: SelectedRegionStore by inject()
-    /** Where the last selected station is remembered, so the app reopens on it. */
-    private val stationStore: SelectedStationStore by inject()
-    /** Where the map zoom is remembered, so the app reopens at the same zoom. */
-    private val zoomStore: MapZoomStore by inject()
+    /** What is remembered between launches: the region, and the station and map zoom set in it. */
+    private val settings: AppSettings by inject()
     /** The station dataset of each region, and how many regions have data. */
     private val datasets: RegionDatasets by inject()
     private val stationRepository: StationRepository by inject()
@@ -82,8 +77,8 @@ class HomeViewModel : AppBaseViewModel() {
     private val readings: LiveReadings by inject()
 
     private val _uiState = MutableStateFlow(
-        regionStore.load().let { regionId ->
-            HomeUiState(selectedRegionId = regionId, selectedStationId = stationStore.load(regionId))
+        settings.selectedRegionId().let { regionId ->
+            HomeUiState(selectedRegionId = regionId, selectedStationId = settings.selectedStationId(regionId))
         }
     )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -103,14 +98,14 @@ class HomeViewModel : AppBaseViewModel() {
      * The map zoom shared by both map views. A plain value, not part of [uiState]: it changes on every frame of a
      * pinch, so only the maps follow it and nothing recomposes. Saved a moment after the last change.
      */
-    var mapZoom: Float = zoomStore.load(_uiState.value.selectedRegionId).coerceIn(1f, MAX_MAP_ZOOM)
+    var mapZoom: Float = settings.mapZoom(_uiState.value.selectedRegionId).coerceIn(1f, MAX_MAP_ZOOM)
         private set
 
     private val zoomChanges = MutableSharedFlow<Float>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     init {
         viewModelScope.launch {
-            zoomChanges.debounce(ZOOM_SAVE_DELAY_MS).collect { zoomStore.save(uiState.value.selectedRegionId, it) }
+            zoomChanges.debounce(ZOOM_SAVE_DELAY_MS).collect { settings.saveMapZoom(uiState.value.selectedRegionId, it) }
         }
         viewModelScope.launch {
             uiState.map { it.selectedRegionId }.distinctUntilChanged().collect { regionId ->
@@ -127,10 +122,10 @@ class HomeViewModel : AppBaseViewModel() {
     /** Changes the app-wide region, remembers it, and clears (and forgets) the station chosen in the old one. */
     fun selectRegion(regionId: String) {
         val changed = regionId != _uiState.value.selectedRegionId
-        regionStore.save(regionId)
-        stationStore.save(regionId, null)
+        settings.saveSelectedRegionId(regionId)
+        settings.saveSelectedStationId(regionId, null)
         mapZoom = 1f
-        zoomStore.save(regionId, 1f)
+        settings.saveMapZoom(regionId, 1f)
         _uiState.update { it.copy(selectedRegionId = regionId, selectedStationId = null) }
         if (changed) _events.trySend(HomeEvent.RegionChanged)
     }
@@ -156,7 +151,7 @@ class HomeViewModel : AppBaseViewModel() {
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 
     fun selectStation(stationId: String?) {
-        stationStore.save(_uiState.value.selectedRegionId, stationId)
+        settings.saveSelectedStationId(_uiState.value.selectedRegionId, stationId)
         _uiState.update { it.copy(selectedStationId = stationId) }
     }
 
