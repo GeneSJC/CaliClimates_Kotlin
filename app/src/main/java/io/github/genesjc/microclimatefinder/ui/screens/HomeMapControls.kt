@@ -48,6 +48,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -83,11 +85,13 @@ internal fun MapControlRow(
     stations: List<MicroclimateStation> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
+    /** Told where the menu button's top edge is on the screen (px), so the menu panel can open level with it. */
+    onMenuTop: (Float) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val blue = Color(0xFF0284C7)
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        MapControlButton("Open the menu", onMenu) {
+        MapControlButton("Open the menu", onMenu, Modifier.onGloballyPositioned { onMenuTop(it.positionInRoot().y) }) {
             Text(text = "\u2630", fontSize = 18.sp, color = blue)
         }
         if (onElevation) {
