@@ -2,6 +2,7 @@ package io.github.genesjc.microclimatefinder.testutil
 
 import androidx.compose.ui.graphics.ImageBitmap
 import io.github.genesjc.microclimatefinder.data.local.AppSettings
+import io.github.genesjc.microclimatefinder.data.local.DatasetKind
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
 import io.github.genesjc.microclimatefinder.data.local.StateTerrain
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
@@ -12,6 +13,7 @@ import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.data.remote.ObservationSource
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.testStation
+import io.github.genesjc.microclimatefinder.viewmodel.StringResolver
 
 /** Fakes for the platform edge, shared by the ViewModel tests. Each records what a test wants to check. */
 
@@ -60,7 +62,7 @@ class FakeAppSettings(
 /** A dataset for any region id, with one featured station named after the region. */
 class FakeDatasets : RegionDatasets {
     override fun datasetFor(regionId: String) = StationDatasetInfo(
-        regionId = regionId, fileName = "$regionId.txt", title = regionId.uppercase(), subtitle = "",
+        regionId = regionId, fileName = "$regionId.txt", kind = DatasetKind.BUNDLED_PACK,
         stationCount = 1, minElevationMeters = 0, maxElevationMeters = 1
     )
 
@@ -117,4 +119,15 @@ class FakeObservationSource(
         onFetch(stationId)
         return result
     }
+}
+
+/**
+ * A [StringResolver] that echoes the resource id and arguments, so a test builds the expected text with the same call
+ * and checks that the code chose the right resource with the right arguments (not the English sentence).
+ */
+object FakeStringResolver : StringResolver {
+    override fun invoke(id: Int, vararg args: Any): String = "string:$id${args.joinToString(prefix = "(", postfix = ")")}"
+
+    override fun plural(id: Int, count: Int, vararg args: Any): String =
+        "plural:$id:$count${args.joinToString(prefix = "(", postfix = ")")}"
 }

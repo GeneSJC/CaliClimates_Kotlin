@@ -25,10 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.genesjc.microclimatefinder.R
 
 /** Whether the menu offers the dark look. Off for now; the setting, the theme and the switch stay in the code. */
 private const val SHOW_DARK_MODE_OPTION = false
@@ -73,7 +75,7 @@ fun MenuDrawerContent(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Build $buildLabel",
+                        text = stringResource(R.string.build_label, buildLabel),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.65f)
                     )
@@ -86,19 +88,19 @@ fun MenuDrawerContent(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             if (showDemos) {
-                MenuRow(icon = "▦", title = "Demos & Previews", accent = Color(0xFF2563EB), onClick = onOpenDemos)
+                MenuRow(icon = "▦", title = stringResource(R.string.menu_demos), accent = Color(0xFF2563EB), onClick = onOpenDemos)
             }
             @Suppress("KotlinConstantConditions")
             if (SHOW_DARK_MODE_OPTION) {
                 MenuRow(
                     icon = "◐",
-                    title = "Dark mode",
+                    title = stringResource(R.string.menu_dark_mode),
                     accent = Color(0xFF7C3AED),
                     onClick = { onDarkModeChange(!darkMode) },
                     trailing = { Switch(checked = darkMode, onCheckedChange = onDarkModeChange) }
                 )
             }
-            MenuRow(icon = "ℹ️", title = "About", accent = Color(0xFF0D9488), onClick = onOpenAbout)
+            MenuRow(icon = "ℹ️", title = stringResource(R.string.menu_about), accent = Color(0xFF0D9488), onClick = onOpenAbout)
         }
     }
 }

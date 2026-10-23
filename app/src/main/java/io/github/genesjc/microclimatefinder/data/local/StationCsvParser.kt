@@ -1,6 +1,5 @@
 package io.github.genesjc.microclimatefinder.data.local
 
-import io.github.genesjc.microclimatefinder.domain.Elevation
 import android.content.Context
 import android.util.Log
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
@@ -106,7 +105,7 @@ internal object StationCsvFormat {
             elevationMeters = elev,
             terrain = terrain,
             currentReading = reading,
-            microclimateDescription = getField(tokens, indices, "note") ?: describeMicroclimate(terrain, elev, stationName),
+            microclimateNote = getField(tokens, indices, "note"),
             reportsTemp = parseFlag(getField(tokens, indices, "reports_temp")),
             reportsHumidity = parseFlag(getField(tokens, indices, "reports_humidity")),
             reportsWind = parseFlag(getField(tokens, indices, "reports_wind")),
@@ -128,15 +127,6 @@ internal object StationCsvFormat {
             clean.contains("coast") || clean.contains("delta") -> TerrainType.COASTAL
             clean.contains("urban") || clean.contains("city") -> TerrainType.URBAN_CANYON
             else -> TerrainType.VALLEY_BASIN
-        }
-    }
-
-    private fun describeMicroclimate(terrain: TerrainType, elevationMeters: Int, name: String): String {
-        return when (terrain) {
-            TerrainType.RIDGE -> "High-elevation montane ridge (${Elevation.formatFeet(elevationMeters)}). Cooler adiabatic temps with brisk mountain breezes."
-            TerrainType.COASTAL -> "Low-lying coastal or delta site (${Elevation.formatFeet(elevationMeters)}). Maritime breeze and enhanced humidity."
-            TerrainType.URBAN_CANYON -> "Dense urban heat-island core (${Elevation.formatFeet(elevationMeters)}) with daytime thermal storage."
-            TerrainType.VALLEY_BASIN -> "Interior valley or basin site (${Elevation.formatFeet(elevationMeters)}). Warm, sunny climate with strong diurnal swings."
         }
     }
 

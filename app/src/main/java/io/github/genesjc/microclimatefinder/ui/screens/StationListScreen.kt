@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
@@ -36,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.microclimatefinder.ui.components.RegionPickerOverlay
@@ -91,7 +93,7 @@ fun StationListScreen(
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
                     modifier = Modifier
                         .size(36.dp)
-                        .clickable(onClickLabel = "Back", onClick = onNavigateBack)
+                        .clickable(onClickLabel = stringResource(R.string.action_back), onClick = onNavigateBack)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(

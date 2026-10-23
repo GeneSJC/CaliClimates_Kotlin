@@ -21,18 +21,18 @@ class CaliforniaRegionalDefinitionsTest {
     @Test
     fun idsAndNamesAreUnique() {
         assertEquals(regions.size, regions.map { it.id }.toSet().size)
-        assertEquals(regions.size, regions.map { it.name }.toSet().size)
+        assertEquals(regions.size, regions.map { it.nameRes }.toSet().size)
     }
 
     @Test
     fun everyRegionHasItsTextFilledIn() {
         for (r in regions) {
-            assertTrue("${r.id} name", r.name.isNotBlank())
-            assertTrue("${r.id} title", r.title.isNotBlank())
-            assertTrue("${r.id} subtitle", r.subtitle.isNotBlank())
-            assertTrue("${r.id} description", r.description.isNotBlank())
+            assertTrue("${r.id} name", r.nameRes != 0)
+            assertTrue("${r.id} title", r.titleRes != 0)
+            assertTrue("${r.id} subtitle", r.subtitleRes != 0)
+            assertTrue("${r.id} description", r.descriptionRes != 0)
             assertTrue("${r.id} key cities", r.keyCities.isNotEmpty())
-            assertTrue("${r.id} traits", r.microclimateTraits.isNotEmpty())
+            assertTrue("${r.id} traits", r.microclimateTraitRes.isNotEmpty() && r.microclimateTraitRes.all { it != 0 })
         }
     }
 

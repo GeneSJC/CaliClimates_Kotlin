@@ -1,6 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.screens
 
-import io.github.genesjc.microclimatefinder.domain.Elevation
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.ui.components.TerrainLegend
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
+import io.github.genesjc.microclimatefinder.ui.text.datasetHeaderText
 
 internal const val LANDMARK_COUNT = 6
 
@@ -149,12 +151,12 @@ fun ElevationProfileScreen(
 
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                 Text(
-                    text = "Elevation",
+                    text = stringResource(R.string.tab_elevation),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${dataset.title} • ${dataset.stationCount} stations",
+                    text = datasetHeaderText(dataset),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -165,7 +167,7 @@ fun ElevationProfileScreen(
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Text(
-                    text = "${stations.size} Plotted",
+                    text = stringResource(R.string.elevation_plotted, stations.size),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -254,7 +256,7 @@ fun ElevationProfileScreen(
             ) {
                 Box(modifier = Modifier.padding(20.dp), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "Tap any station along the slope to inspect microclimate data",
+                        text = stringResource(R.string.map_hint_elevation),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

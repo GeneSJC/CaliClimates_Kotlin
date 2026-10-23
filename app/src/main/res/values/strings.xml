@@ -1,3 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Shared words and the app name. Strings are kept by category, not by screen: see the string resource conventions. -->
     <string name="app_name">Cali Climates</string>
+
+    <!-- Shared words -->
+    <string name="tagline">Explore California\'s Climates</string>
+    <string name="build_label">Build %1$s</string>
+    <string name="action_close">Close</string>
+    <string name="action_more">More ▼</string>
+    <string name="action_less">Less ▲</string>
+    <string name="action_ok">OK</string>
+    <string name="action_back">Back</string>
+    <string name="action_select">Select</string>
 </resources>

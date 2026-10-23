@@ -6,7 +6,8 @@ import org.koin.core.component.inject
 
 /**
  * The parent of every screen ViewModel. It exposes app-level values only: no repository, no state holder, no logic and
- * no coroutines, so a value added here later reaches every screen without touching them. It is the one place that
+ * no coroutines, so a value added here later reaches every screen without touching them. It also carries the
+ * cross-cutting helper for wording ([string]), which knows nothing about any one feature. It is the one place that
  * is a [KoinComponent]; the concrete ViewModels inherit it and declare their own helpers with `by inject()`.
  */
 abstract class AppBaseViewModel : ViewModel(), KoinComponent {
@@ -14,4 +15,7 @@ abstract class AppBaseViewModel : ViewModel(), KoinComponent {
 
     val isCommercial: Boolean get() = config.isCommercial
     val buildLabel: String get() = config.buildLabel
+
+    /** Resolves a string resource: `string(R.string.x, args)`. Wording built from facts is chosen here, not in the data layer. */
+    protected val string: StringResolver by inject()
 }

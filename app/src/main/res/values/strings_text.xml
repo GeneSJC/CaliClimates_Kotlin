@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Long-form text: the About dialog, explanations and notes. -->
+
+    <!-- About dialog -->
+    <string name="about_live_body">Temperature, humidity, wind and pressure come from the National Weather Service (weather.gov). Stations report about once an hour, so a reading can be an hour or more old. Each card shows when it was taken.</string>
+    <string name="about_terrain_body">The shading under the stations is drawn from public elevation data (USGS 3DEP, NASA SRTM and other public sources), via AWS Open Data Terrain Tiles.</string>
+    <string name="about_elevation_body">Heights are in feet, in six bands, with a rule of thumb for how much cooler it usually is up high.</string>
+    <string name="about_disclaimer">Readings are for general interest, not for safety or aviation decisions.</string>
+
+    <!-- Terrain legend -->
+    <string name="legend_ridge_rule">Ridge / highland: ridge, foothill or mountain terrain, or above 1,640 ft</string>
+
+    <!-- Home -->
+    <string name="no_data_body">Station data isn\'t included in this build for this region. Tap the California button at the top right to switch regions.</string>
+    <string name="limited_data_body">%1$d of %2$d regions have station data in this build. A region without it shows no stations. Readings for the stations that are shown are live from the National Weather Service.\n\nEach region\'s stations ship in a small data file in the app\'s assets (a.txt to f.txt). A region with none has a missing or damaged file: check Logcat (tag StationPack). To try other data, add stations_&lt;regionId&gt;.csv to app/src/debug/assets and rebuild.</string>
+</resources>

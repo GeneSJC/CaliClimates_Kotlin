@@ -1,5 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.components
 
+import androidx.compose.ui.res.stringResource
+import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.ui.screens.PICKER_VERTICAL_STRETCH
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.border
@@ -110,7 +112,7 @@ fun RegionPickerButton(
             .size(size)
             .clickable(
                 enabled = !state.visible,
-                onClickLabel = "Change region",
+                onClickLabel = stringResource(R.string.region_picker_change),
                 role = Role.Button
             ) { state.open(selectedRegionId) }
     ) {

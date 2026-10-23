@@ -1,18 +1,18 @@
 package io.github.genesjc.microclimatefinder.ui.navigation
 
-enum class AppScreen(val title: String) {
-    LANDING("Demo Hub"),
-    DEMOS_AND_PREVIEWS("Demos & Previews"),
-    STATION_CARD_PREVIEW("Station Card Preview"),
-    STATION_LIST("Station List Feed"),
-    STATION_MAP("Topography"),
-    ELEVATION_PROFILE("Elevation"),
-    DRAGGABLE_MAP("Draggable Topo Map"),
-    UNIFIED_DRAGGABLE_MAP("Bay Area Transect Map"),
-    CALIFORNIA_REGIONS("California Regional Sections"),
-    ANIMATION_PREVIEWS("Animation Previews"),
-    ANIMATION_FIXED_CLOUD_V1("Fixed Cloud v1.0 Animation"),
-    ANIMATION_MOVING_CLOUDS_V2("Moving Clouds v2.0 Animation"),
-    ANIMATION_WEB_VIEW("Web Vector Animation (WebView)"),
-    NEWS_STORY_VIEWER("Local News Story")
+enum class AppScreen {
+    LANDING,
+    DEMOS_AND_PREVIEWS,
+    STATION_CARD_PREVIEW,
+    STATION_LIST,
+    STATION_MAP,
+    ELEVATION_PROFILE,
+    DRAGGABLE_MAP,
+    UNIFIED_DRAGGABLE_MAP,
+    CALIFORNIA_REGIONS,
+    ANIMATION_PREVIEWS,
+    ANIMATION_FIXED_CLOUD_V1,
+    ANIMATION_MOVING_CLOUDS_V2,
+    ANIMATION_WEB_VIEW,
+    NEWS_STORY_VIEWER
 }

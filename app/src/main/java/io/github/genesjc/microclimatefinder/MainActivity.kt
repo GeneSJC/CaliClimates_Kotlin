@@ -105,7 +105,7 @@ fun AppNavigation(
     // Rows for the quick region list on Home: names only (reading every region's stations just for a count slowed the
     // start-up by seconds, and the list no longer shows counts)
     val regionOptions = remember {
-        CaliforniaRegionalDefinitions.ALL_REGIONS.map { r -> RegionOption(r.id, r.name, null) }
+        CaliforniaRegionalDefinitions.ALL_REGIONS.map { r -> RegionOption(r.id, r.nameRes, null) }
     }
 
     // (Live readings for the region's featured stations are fetched by HomeViewModel whenever the region changes.)

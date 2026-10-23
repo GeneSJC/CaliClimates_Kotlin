@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Named categories the app shows: elevation bands, terrain types and the like. -->
+
+    <!-- Region status -->
+    <string name="region_status_active">Active Transect</string>
+    <string name="region_status_planned">Planned Regional Constraints</string>
+
+    <!-- Elevation bands -->
+    <string name="elevation_band_near_sea_level">Near sea level</string>
+    <string name="elevation_band_lowlands">Lowlands</string>
+    <string name="elevation_band_foothills">Foothills</string>
+    <string name="elevation_band_hills">Hills</string>
+    <string name="elevation_band_mountains">Mountains</string>
+    <string name="elevation_band_high_country">High country</string>
+
+    <!-- Terrain types (station card) -->
+    <string name="terrain_type_coastal">Coastal Zone</string>
+    <string name="terrain_type_ridge">Mountain Ridge</string>
+    <string name="terrain_type_valley_basin">Valley Basin</string>
+    <string name="terrain_type_urban_canyon">Urban Corridor</string>
+
+    <!-- Terrain legend -->
+    <string name="terrain_legend_ridge">Ridge / highland</string>
+    <string name="terrain_legend_valley">Valley basin</string>
+    <string name="terrain_legend_coastal">Coast / delta</string>
+    <string name="terrain_legend_urban">Urban</string>
+
+    <!-- Region info -->
+    <string name="terrain_short_ridge">Ridge</string>
+    <string name="terrain_short_valley">Valley</string>
+    <string name="terrain_short_coastal">Coastal</string>
+    <string name="terrain_short_urban">Urban</string>
+
+    <!-- Elevation view -->
+    <string name="sky_valley_heat">Valley Solar Heat</string>
+    <string name="sky_fair_foothills">Fair Foothills</string>
+    <string name="sky_temperate_ridge">Temperate Ridge</string>
+    <string name="sky_crisp_alpine">Crisp Sub-Alpine</string>
+
+    <!-- Station dataset -->
+    <string name="dataset_kind_bundled">Bundled dataset</string>
+    <string name="dataset_kind_csv">CSV override</string>
+    <string name="dataset_kind_none">No stations found</string>
+</resources>
