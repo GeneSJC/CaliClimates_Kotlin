@@ -30,6 +30,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** Whether the menu offers the dark look. Off for now; the setting, the theme and the switch stay in the code. */
+private const val SHOW_DARK_MODE_OPTION = false
+
 /**
  * What the menu drawer holds, in the About dialog's style: the same gradient header (with the California
  * icon, the name and the build), and menu rows with tinted icon tiles. It only dresses the existing items.
@@ -85,13 +88,16 @@ fun MenuDrawerContent(
             if (showDemos) {
                 MenuRow(icon = "▦", title = "Demos & Previews", accent = Color(0xFF2563EB), onClick = onOpenDemos)
             }
-            MenuRow(
-                icon = "◐",
-                title = "Dark mode",
-                accent = Color(0xFF7C3AED),
-                onClick = { onDarkModeChange(!darkMode) },
-                trailing = { Switch(checked = darkMode, onCheckedChange = onDarkModeChange) }
-            )
+            @Suppress("KotlinConstantConditions")
+            if (SHOW_DARK_MODE_OPTION) {
+                MenuRow(
+                    icon = "◐",
+                    title = "Dark mode",
+                    accent = Color(0xFF7C3AED),
+                    onClick = { onDarkModeChange(!darkMode) },
+                    trailing = { Switch(checked = darkMode, onCheckedChange = onDarkModeChange) }
+                )
+            }
             MenuRow(icon = "ℹ️", title = "About", accent = Color(0xFF0D9488), onClick = onOpenAbout)
         }
     }
