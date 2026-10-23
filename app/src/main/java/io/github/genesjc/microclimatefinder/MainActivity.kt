@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import io.github.genesjc.microclimatefinder.ui.ads.AdsViewModel
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,8 +36,12 @@ import io.github.genesjc.microclimatefinder.ui.screens.StationListScreen
 import io.github.genesjc.microclimatefinder.ui.theme.CaliClimatesTheme
 
 class MainActivity : ComponentActivity() {
+    private val adsViewModel: AdsViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Consent, then the ads software; does nothing in the open build
+        adsViewModel.start(this)
         setContent {
             // The look (dark or light, remembered between launches) and the backdrop's texture live in the ViewModel;
             // the ViewModels are created by the standard factory and take their helpers from the dependency container

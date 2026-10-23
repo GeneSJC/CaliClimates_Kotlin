@@ -60,6 +60,12 @@
     <!-- Station map -->
     <string name="map_dot_size">Dot size</string>
 
+    <!-- Ads (the commercial build only shows them; the words live here so the shared screens can draw them) -->
+    <string name="menu_privacy_options">Privacy options</string>
+    <string name="action_hide_ads">Hide ads for 1 hour</string>
+    <string name="ad_free_remaining">Ad-free: %1$d min</string>
+    <string name="ad_banner_offline">You\'re offline</string>
+
     <!-- Regions screen -->
     <string name="region_picker_title">Pick a region</string>
     <string name="regions_screen_subtitle">Macro Climatic Constraints &amp; Regional Boundaries</string>
