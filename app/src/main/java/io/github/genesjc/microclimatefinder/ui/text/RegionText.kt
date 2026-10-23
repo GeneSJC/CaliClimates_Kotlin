@@ -1,22 +1,16 @@
 package io.github.genesjc.microclimatefinder.ui.text
 
-import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
-
-/** The string resource holding the name of the region with this id, or null for an id that is not a region. */
-@StringRes
-fun regionNameRes(regionId: String): Int? =
-    CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == regionId }?.nameRes
+import io.github.genesjc.microclimatefinder.ui.theme.LocalStateUsa
 
 /** The dataset's region name, shown as its title. */
 @Composable
 fun datasetTitleText(dataset: StationDatasetInfo): String =
-    regionNameRes(dataset.regionId)?.let { stringResource(it) } ?: dataset.regionId
+    LocalStateUsa.current.region(dataset.regionId)?.nameRes?.let { stringResource(it) } ?: dataset.regionId
 
 /** "Bay Area / Sacramento • 60 stations" */
 @Composable

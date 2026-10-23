@@ -12,6 +12,6 @@
     <string name="legend_ridge_rule">Ridge / highland: ridge, foothill or mountain terrain, or above 1,640 ft</string>
 
     <!-- Home -->
-    <string name="no_data_body">Station data isn\'t included in this build for this region. Tap the California button at the top right to switch regions.</string>
+    <string name="no_data_body">Station data isn\'t included in this build for this region. Tap the region button at the top right to switch regions.</string>
     <string name="limited_data_body">%1$d of %2$d regions have station data in this build. A region without it shows no stations. Readings for the stations that are shown are live from the National Weather Service.\n\nEach region\'s stations ship in a small data file in the app\'s assets (a.txt to f.txt). A region with none has a missing or damaged file: check Logcat (tag StationPack). To try other data, add stations_&lt;regionId&gt;.csv to app/src/debug/assets and rebuild.</string>
 </resources>

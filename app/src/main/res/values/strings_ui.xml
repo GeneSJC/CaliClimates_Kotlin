@@ -60,23 +60,9 @@
     <!-- Station map -->
     <string name="map_dot_size">Dot size</string>
 
-    <!-- California map labels -->
-    <string name="map_label_northern_california">Northern California</string>
-    <string name="map_label_bay_area">Bay Area</string>
-    <string name="map_label_central_valley">Central Valley</string>
-    <string name="map_label_central_coast">Central Coast</string>
-    <string name="map_label_los_angeles">Los Angeles</string>
-    <string name="map_label_san_diego">San Diego</string>
-    <string name="map_label_oregon">OREGON</string>
-    <string name="map_label_idaho">IDAHO</string>
-    <string name="map_label_mexico">MEXICO</string>
-    <string name="map_label_nevada">NEVADA</string>
-
     <!-- Regions screen -->
     <string name="region_picker_title">Pick a region</string>
-    <string name="regions_screen_title">California Regional Sections</string>
     <string name="regions_screen_subtitle">Macro Climatic Constraints &amp; Regional Boundaries</string>
-    <string name="regions_map_title">Interactive California Section Map</string>
     <string name="regions_map_hint">Tap region to inspect</string>
     <string name="region_planned_badge">PLANNED</string>
     <string name="regions_key_dynamics">KEY MICROCLIMATIC DYNAMICS</string>

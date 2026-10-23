@@ -47,8 +47,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegion
-import io.github.genesjc.microclimatefinder.ui.components.CaliforniaOutlineIcon
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaRegion
+import io.github.genesjc.microclimatefinder.ui.components.StateUsaOutlineIcon
 
 /** The mix of terrain types in the region, as a bar with counts. */
 @Composable
@@ -117,7 +117,7 @@ private fun terrainShortNameRes(type: TerrainType): Int = when (type) {
  * full-width panel floating over the page, so nothing on the page moves.
  */
 @Composable
-private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int, folded: Boolean) {
+private fun RegionDetailsCard(region: StateUsaRegion, fullWidthPx: Int, folded: Boolean) {
     val cardColor = sheetCardColor()
     HeroTile(
         fullWidthPx = fullWidthPx,
@@ -135,7 +135,7 @@ private fun RegionDetailsCard(region: CaliforniaRegion, fullWidthPx: Int, folded
 
 /** The half-width tile: title, a short summary, and the More link. */
 @Composable
-private fun RegionDetailsTile(region: CaliforniaRegion) {
+private fun RegionDetailsTile(region: StateUsaRegion) {
     Column(modifier = Modifier.padding(12.dp)) {
         Text(
             text = stringResource(region.titleRes),
@@ -164,7 +164,7 @@ private fun RegionDetailsTile(region: CaliforniaRegion) {
 
 /** The expanded region panel: title, description, traits and key places. */
 @Composable
-private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true) {
+private fun RegionDetailsBody(region: StateUsaRegion, expanded: Boolean = true) {
     Column(modifier = Modifier.padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
@@ -230,7 +230,7 @@ private fun RegionDetailsBody(region: CaliforniaRegion, expanded: Boolean = true
 /** What the info sheet holds: the region tile and stats, then the terrain mix. */
 @Composable
 internal fun RegionInfoContent(
-    region: CaliforniaRegion,
+    region: StateUsaRegion,
     hasStationData: Boolean,
     stations: List<MicroclimateStation>,
     onOpenStationList: () -> Unit,
@@ -241,7 +241,7 @@ internal fun RegionInfoContent(
     var topRowWidthPx by remember { mutableStateOf(0) }
     Column {
         // The title band: a solid, deeper colour than the lavender header widgets above it and the pale body
-        // below, so it reads as its own bar. A California icon with this region lit, the title, and the
+        // below, so it reads as its own bar. A state icon with this region lit, the title, and the
         // Station List link as a pill
         Box(
             modifier = Modifier
@@ -250,7 +250,7 @@ internal fun RegionInfoContent(
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                CaliforniaOutlineIcon(
+                StateUsaOutlineIcon(
                     fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.16f),
                     stroke = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                     regionColors = regionPickerColors(),

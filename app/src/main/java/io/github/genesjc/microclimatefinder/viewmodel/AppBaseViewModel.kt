@@ -1,6 +1,7 @@
 package io.github.genesjc.microclimatefinder.viewmodel
 
 import androidx.lifecycle.ViewModel
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaDefinition
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -12,9 +13,13 @@ import org.koin.core.component.inject
  */
 abstract class AppBaseViewModel : ViewModel(), KoinComponent {
     private val config: AppConfig by inject()
+    private val stateUsaDefinition: StateUsaDefinition by inject()
 
     val isCommercial: Boolean get() = config.isCommercial
     val buildLabel: String get() = config.buildLabel
+
+    /** The USA state the app is built for (its regions and geography); the root hands it to the screens. */
+    val stateUsa: StateUsaDefinition get() = stateUsaDefinition
 
     /** Resolves a string resource: `string(R.string.x, args)`. Wording built from facts is chosen here, not in the data layer. */
     protected val string: StringResolver by inject()

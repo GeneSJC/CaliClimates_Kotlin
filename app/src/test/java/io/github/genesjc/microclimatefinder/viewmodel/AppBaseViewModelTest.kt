@@ -1,5 +1,7 @@
 package io.github.genesjc.microclimatefinder.viewmodel
 
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaCA
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaDefinition
 import io.github.genesjc.microclimatefinder.testutil.StopKoinRule
 import io.github.genesjc.microclimatefinder.testutil.restartKoin
 import org.junit.Assert.assertEquals
@@ -22,6 +24,12 @@ class AppBaseViewModelTest {
         val vm = TestViewModel()
         assertEquals("9.9", vm.buildLabel)
         assertTrue(vm.isCommercial)
+    }
+
+    @Test
+    fun exposesTheInjectedStateUsaDefinition() {
+        restartKoin { single<StateUsaDefinition> { StateUsaCA } }
+        assertEquals(StateUsaCA, TestViewModel().stateUsa)
     }
 
     @Test

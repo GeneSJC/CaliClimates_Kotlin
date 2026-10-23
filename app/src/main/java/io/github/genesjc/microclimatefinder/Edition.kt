@@ -13,7 +13,7 @@ import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 class EditionNavigation(
     val screen: AppScreen,
     val navigate: (AppScreen) -> Unit,
-    /** Sets where Back goes from the California Regional Sections screen. */
+    /** Sets where Back goes from the Regional Sections screen. */
     val setRegionsReturn: (AppScreen) -> Unit,
     val regionDataset: StationDatasetInfo?,
     val defaultDataset: StationDatasetInfo,

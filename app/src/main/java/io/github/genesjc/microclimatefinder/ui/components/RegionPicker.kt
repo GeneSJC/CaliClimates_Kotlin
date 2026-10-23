@@ -5,7 +5,7 @@ import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.ui.screens.PICKER_VERTICAL_STRETCH
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.border
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.ui.theme.LocalStateUsa
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -51,14 +51,14 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
-import io.github.genesjc.microclimatefinder.ui.screens.CaliforniaRegionPickerPanel
+import io.github.genesjc.microclimatefinder.ui.screens.StateUsaRegionPickerPanel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
  * State of the region picker overlay: whether it is showing, how far its open animation is, the
- * pending (not yet confirmed) region, and where the California button sits so the panel can grow
+ * pending (not yet confirmed) region, and where the state button sits so the panel can grow
  * out of it.
  */
 @Stable
@@ -90,7 +90,7 @@ fun rememberRegionPickerState(): RegionPickerState {
 }
 
 /**
- * The California button that opens the region picker. Colors default to a chip that suits a plain
+ * The state button that opens the region picker. Colors default to a chip that suits a plain
  * screen header; Home passes tinted ones for its colored header card.
  */
 @Composable
@@ -133,13 +133,16 @@ fun RegionPickerButton(
 
 /** The regions' colours, the same ones the picker's map uses. */
 @Composable
-internal fun regionPickerColors(): Map<String, Color> = remember {
-    CaliforniaRegionalDefinitions.ALL_REGIONS.associate { it.id to Color(android.graphics.Color.parseColor(it.colorHex)) }
+internal fun regionPickerColors(): Map<String, Color> {
+    val stateUsa = LocalStateUsa.current
+    return remember(stateUsa) {
+        stateUsa.regions.associate { it.id to Color(android.graphics.Color.parseColor(it.colorHex)) }
+    }
 }
 
 /**
  * The region picker overlay. Place it last inside a full-screen Box so it covers the screen: the
- * California icon grows into a panel (about 75% of the height, with a 40% scrim) holding the region
+ * state icon grows into a panel (about 75% of the height, with a 40% scrim) holding the region
  * map. Tapping a region on the map picks it and closes the panel. Back, the scrim and the close button
  * cancel.
  */
@@ -224,7 +227,7 @@ fun RegionPickerOverlay(
                     .alpha((1f - t * 2f).coerceAtLeast(0f))
             )
             if (t > 0.5f) {
-                CaliforniaRegionPickerPanel(
+                StateUsaRegionPickerPanel(
                     pendingRegionId = state.pendingRegionId,
                     terrain = stateTerrain,
                     // A pick is the choice: no Confirm button

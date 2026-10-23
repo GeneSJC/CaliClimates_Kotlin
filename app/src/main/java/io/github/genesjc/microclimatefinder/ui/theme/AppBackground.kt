@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaDefinition
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -31,14 +31,15 @@ fun AppBackground(
     texture: androidx.compose.ui.graphics.ImageBitmap? = null,
     content: @Composable () -> Unit
 ) {
+    val stateUsa = LocalStateUsa.current
     // In light mode the two corner colours follow the selected region, easing over when the region changes
     val corner by animateColorAsState(
-        targetValue = regionBackdropTint(regionId),
+        targetValue = regionBackdropTint(stateUsa, regionId),
         animationSpec = tween(BACKDROP_TRANSITION_MS),
         label = "backdropTint"
     )
     // Each region looks at a different part of the relief picture; the window slides over when the region changes
-    val regionIndex = CaliforniaRegionalDefinitions.ALL_REGIONS.indexOfFirst { it.id == regionId }.coerceAtLeast(0)
+    val regionIndex = stateUsa.regions.indexOfFirst { it.id == regionId }.coerceAtLeast(0)
     val window = TEXTURE_WINDOWS[regionIndex % TEXTURE_WINDOWS.size]
     val windowX by animateFloatAsState(window.first, tween(BACKDROP_TRANSITION_MS), label = "textureX")
     val windowY by animateFloatAsState(window.second, tween(BACKDROP_TRANSITION_MS), label = "textureY")
@@ -129,8 +130,8 @@ private val TEXTURE_WINDOWS = listOf(
  * A soft tint of the region's picker colour for the backdrop corners: the muted earth tone, about a quarter of the way to white,
  * so every region has a gentle, similar lightness.
  */
-private fun regionBackdropTint(regionId: String?): Color {
-    val hex = CaliforniaRegionalDefinitions.ALL_REGIONS.firstOrNull { it.id == regionId }?.colorHex
+private fun regionBackdropTint(stateUsa: StateUsaDefinition, regionId: String?): Color {
+    val hex = stateUsa.regions.firstOrNull { it.id == regionId }?.colorHex
         ?: return DEFAULT_CORNER
     return androidx.compose.ui.graphics.lerp(Color(android.graphics.Color.parseColor(hex)), Color.White, 0.26f)
 }

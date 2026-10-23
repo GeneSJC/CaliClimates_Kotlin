@@ -21,9 +21,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import androidx.compose.runtime.CompositionLocalProvider
+import io.github.genesjc.microclimatefinder.ui.theme.LocalStateUsa
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
-import io.github.genesjc.microclimatefinder.ui.screens.CaliforniaRegionsMapScreen
+import io.github.genesjc.microclimatefinder.ui.screens.StateUsaRegionsMapScreen
 import io.github.genesjc.microclimatefinder.ui.home.HomeEvent
 import io.github.genesjc.microclimatefinder.ui.home.HomeViewModel
 import io.github.genesjc.microclimatefinder.ui.root.AppRootViewModel
@@ -46,26 +47,28 @@ class MainActivity : ComponentActivity() {
             val backdropRegionId by homeViewModel.selectedRegionId.collectAsStateWithLifecycle()
             // The opening view shows once per launch (and not again after a rotation)
             var showIntro by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
-            CaliClimatesTheme(darkTheme = darkMode) {
-                androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
-                AppBackground(darkTheme = darkMode, regionId = backdropRegionId, texture = backdropTexture) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = Color.Transparent,
-                        // The default text colour for everything below, so text without its own colour is
-                        // dark on light and light on dark
-                        contentColor = MaterialTheme.colorScheme.onBackground
-                    ) {
-                        AppNavigation(
-                            darkMode = darkMode,
-                            onDarkModeChange = appRoot::setDarkMode,
-                            homeViewModel = homeViewModel
-                        )
+            CompositionLocalProvider(LocalStateUsa provides appRoot.stateUsa) {
+                CaliClimatesTheme(darkTheme = darkMode) {
+                    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+                    AppBackground(darkTheme = darkMode, regionId = backdropRegionId, texture = backdropTexture) {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = Color.Transparent,
+                            // The default text colour for everything below, so text without its own colour is
+                            // dark on light and light on dark
+                            contentColor = MaterialTheme.colorScheme.onBackground
+                        ) {
+                            AppNavigation(
+                                darkMode = darkMode,
+                                onDarkModeChange = appRoot::setDarkMode,
+                                homeViewModel = homeViewModel
+                            )
+                        }
                     }
-                }
-                if (showIntro) {
-                    io.github.genesjc.microclimatefinder.ui.components.IntroOverlay(onDone = { showIntro = false })
-                }
+                    if (showIntro) {
+                        io.github.genesjc.microclimatefinder.ui.components.IntroOverlay(onDone = { showIntro = false })
+                    }
+                    }
                 }
             }
         }
@@ -104,8 +107,9 @@ fun AppNavigation(
     fun pickRegion(regionId: String) = homeViewModel.selectRegion(regionId)
     // Rows for the quick region list on Home: names only (reading every region's stations just for a count slowed the
     // start-up by seconds, and the list no longer shows counts)
-    val regionOptions = remember {
-        CaliforniaRegionalDefinitions.ALL_REGIONS.map { r -> RegionOption(r.id, r.nameRes, null) }
+    val stateUsa = LocalStateUsa.current
+    val regionOptions = remember(stateUsa) {
+        stateUsa.regions.map { r -> RegionOption(r.id, r.nameRes, null) }
     }
 
     // (Live readings for the region's featured stations are fetched by HomeViewModel whenever the region changes.)
@@ -114,7 +118,7 @@ fun AppNavigation(
     if (currentScreen != AppScreen.LANDING) {
         BackHandler {
             currentScreen = when {
-                currentScreen == AppScreen.CALIFORNIA_REGIONS -> regionsReturnScreen
+                currentScreen == AppScreen.STATE_USA_REGIONS -> regionsReturnScreen
                 else -> editionBackTarget(currentScreen) ?: AppScreen.LANDING
             }
         }
@@ -131,7 +135,7 @@ fun AppNavigation(
                 regionOptions = regionOptions,
                 onSelectRegion = { pickRegion(it) },
                 onNavigateTo = { targetScreen ->
-                    if (targetScreen == AppScreen.CALIFORNIA_REGIONS) regionsReturnScreen = AppScreen.LANDING
+                    if (targetScreen == AppScreen.STATE_USA_REGIONS) regionsReturnScreen = AppScreen.LANDING
                     currentScreen = targetScreen
                 },
                 infoOpen = homeState.infoOpen,
@@ -164,14 +168,14 @@ fun AppNavigation(
                 onStationSelected = homeViewModel::selectStation
             )
         }
-        AppScreen.CALIFORNIA_REGIONS -> {
+        AppScreen.STATE_USA_REGIONS -> {
             // Opened from Demos & Previews the screen is a standalone demo with its own region
             // state; opened from the Home button it still sets the app-wide region.
             val isDemo = regionsReturnScreen == AppScreen.DEMOS_AND_PREVIEWS
             var demoRegionId by remember {
-                mutableStateOf(CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id)
+                mutableStateOf(stateUsa.defaultRegionId)
             }
-            CaliforniaRegionsMapScreen(
+            StateUsaRegionsMapScreen(
                 selectedRegionId = if (isDemo) demoRegionId else selectedRegionId,
                 onSelectRegion = {
                     if (isDemo) {

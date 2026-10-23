@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
+import io.github.genesjc.microclimatefinder.ui.theme.LocalStateUsa
 import io.github.genesjc.microclimatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.microclimatefinder.ui.components.ZoomSlider
 import io.github.genesjc.microclimatefinder.ui.components.MapText
@@ -105,6 +106,7 @@ internal fun ElevationProfileCanvas(
 ) {
     if (stations.isEmpty()) return
 
+    val treeMix = LocalStateUsa.current.treeMix[regionId] ?: DEFAULT_TREE_MIX
     // Sort stations by elevation ascending (valley 5m -> ridge 1406m)
     val sorted = remember(stations) { stations.sortedBy { it.elevationMeters } }
     val maxElevation = remember(sorted) { (sorted.maxOfOrNull { it.elevationMeters } ?: 1500).toFloat() }
@@ -491,7 +493,7 @@ internal fun ElevationProfileCanvas(
                         val treeScale = 1f + (zoom - 1f) * spec.follow
                         drawTrees(
                             points = points,
-                            regionId = regionId,
+                            mix = treeMix,
                             sizePx = spec.treeSizeDp.dp.toPx() * treeScale,
                             color = lerp(top, Color(0xFF0F2F2A), 0.55f).copy(alpha = (spec.alpha + 0.15f).coerceAtMost(0.95f)),
                             seed = seed + layer * 101,

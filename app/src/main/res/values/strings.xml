@@ -4,7 +4,6 @@
     <string name="app_name">Cali Climates</string>
 
     <!-- Shared words -->
-    <string name="tagline">Explore California\'s Climates</string>
     <string name="build_label">Build %1$s</string>
     <string name="action_close">Close</string>
     <string name="action_more">More ▼</string>

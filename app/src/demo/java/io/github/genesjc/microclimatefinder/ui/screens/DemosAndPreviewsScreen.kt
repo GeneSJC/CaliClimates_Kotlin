@@ -76,7 +76,7 @@ private val DEMOS_AND_PREVIEWS_ENTRIES = listOf(
         title = "California Regional Sections",
         description = "Interactive map of CA's 6 macro climatic sections: San Diego, Los Angeles Area, Central Valley, Central Coast, Bay Area/Sacramento, and Northern CA with coordinate constraints.",
         iconChar = "🧭",
-        target = AppScreen.CALIFORNIA_REGIONS
+        target = AppScreen.STATE_USA_REGIONS
     )
 )
 

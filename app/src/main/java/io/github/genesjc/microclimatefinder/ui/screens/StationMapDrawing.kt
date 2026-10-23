@@ -23,8 +23,8 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.dp
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaGeography
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaOutline
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import io.github.genesjc.microclimatefinder.ui.components.ms
 
@@ -56,6 +56,7 @@ internal const val MAP_LABEL_COUNT = 6
 
 /** Plain base map with no terrain artwork: land, ocean, state border, coast and a lat/lon grid. */
 internal fun DrawScope.drawNeutralBase(
+    outline: StateUsaOutline,
     minLon: Double,
     maxLon: Double,
     minLat: Double,
@@ -67,13 +68,13 @@ internal fun DrawScope.drawNeutralBase(
     textMeasurer: TextMeasurer
 ) {
     val far = 5000f
-    val coast = CaliforniaGeography.COAST
-    val border = CaliforniaGeography.LAND_BORDER
+    val coast = outline.coast
+    val border = outline.landBorder
 
     // Land
     drawRect(color = Color(0xFFF1F6EC))
 
-    // Outside California (Nevada, Arizona, Oregon): everything past the land border
+    // Outside the state (its neighbours): everything past the land border
     val outside = Path().apply {
         moveTo(mapX(border.first().first), mapY(border.first().second))
         for (i in 1 until border.size) lineTo(mapX(border[i].first), mapY(border[i].second))

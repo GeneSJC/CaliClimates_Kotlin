@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import io.github.genesjc.microclimatefinder.data.local.AppSettings
 import io.github.genesjc.microclimatefinder.data.local.DatasetKind
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
-import io.github.genesjc.microclimatefinder.data.local.StateTerrain
+import io.github.genesjc.microclimatefinder.data.local.StateUsaTerrain
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationSource
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
@@ -96,7 +96,7 @@ class FakeTerrainSource : TerrainSource {
         return listOf(floatArrayOf(0f, 1f))
     }
 
-    override fun loadState(): StateTerrain? {
+    override fun loadState(): StateUsaTerrain? {
         stateLoads++
         return null
     }

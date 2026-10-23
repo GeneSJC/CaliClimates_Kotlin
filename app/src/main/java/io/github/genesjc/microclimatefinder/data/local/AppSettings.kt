@@ -2,7 +2,7 @@ package io.github.genesjc.microclimatefinder.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
-import io.github.genesjc.microclimatefinder.domain.model.CaliforniaRegionalDefinitions
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaDefinition
 
 /**
  * Everything the app remembers between launches, in one place (a seam so tests can use a fake): the chosen region, the
@@ -41,20 +41,20 @@ interface AppSettings {
 }
 
 /** [AppSettings] kept in one SharedPreferences file, with one key per value. */
-class AppSettingsPreferences(private val prefs: SharedPreferences) : AppSettings {
+class AppSettingsPreferences(
+    private val prefs: SharedPreferences,
+    private val stateUsa: StateUsaDefinition
+) : AppSettings {
 
-    constructor(context: Context) : this(context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE))
+    constructor(context: Context, stateUsa: StateUsaDefinition) :
+        this(context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE), stateUsa)
 
     // One instance lives for the whole app run, so this is true once this launch has been counted
     private var countedThisLaunch = false
 
     override fun selectedRegionId(): String {
         val saved = prefs.getString(KEY_REGION, null)
-        return if (CaliforniaRegionalDefinitions.ALL_REGIONS.any { it.id == saved }) {
-            saved!!
-        } else {
-            CaliforniaRegionalDefinitions.BAY_AREA_SACRAMENTO.id
-        }
+        return if (stateUsa.regions.any { it.id == saved }) saved!! else stateUsa.defaultRegionId
     }
 
     override fun saveSelectedRegionId(regionId: String) {
