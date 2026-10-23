@@ -4,12 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import io.github.genesjc.microclimatefinder.data.local.DarkModeStore
-import io.github.genesjc.microclimatefinder.data.local.ElevationHintStore
-import io.github.genesjc.microclimatefinder.data.local.MapZoomStore
+import io.github.genesjc.microclimatefinder.data.local.AppSettings
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
-import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
-import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationSource
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
@@ -54,8 +50,7 @@ class ViewModelCreationTest {
     fun everyRegisteredObjectCanBeBuilt() {
         val koin = GlobalContext.get()
         val types: List<KClass<*>> = listOf(
-            AppConfig::class, SelectedRegionStore::class, SelectedStationStore::class, MapZoomStore::class,
-            DarkModeStore::class, ElevationHintStore::class, StationSource::class, TerrainSource::class,
+            AppConfig::class, AppSettings::class, StationSource::class, TerrainSource::class,
             ObservationSource::class, StationRepository::class, TerrainRepository::class, RegionDatasets::class,
             LiveReadings::class
         )

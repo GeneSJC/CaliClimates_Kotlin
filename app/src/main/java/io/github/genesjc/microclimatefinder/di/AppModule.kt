@@ -1,23 +1,15 @@
 package io.github.genesjc.microclimatefinder.di
 
+import io.github.genesjc.microclimatefinder.data.local.AppSettings
+import io.github.genesjc.microclimatefinder.data.local.AppSettingsPreferences
 import io.github.genesjc.microclimatefinder.data.local.AssetStationSource
 import io.github.genesjc.microclimatefinder.data.local.AssetTerrainSource
-import io.github.genesjc.microclimatefinder.data.local.DarkModeStore
-import io.github.genesjc.microclimatefinder.data.local.ElevationHintPreferences
-import io.github.genesjc.microclimatefinder.data.local.ElevationHintStore
-import io.github.genesjc.microclimatefinder.data.local.MapZoomPreferences
-import io.github.genesjc.microclimatefinder.data.local.MapZoomStore
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
-import io.github.genesjc.microclimatefinder.data.local.RegionPreferences
-import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
-import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
-import io.github.genesjc.microclimatefinder.data.local.StationSelectionPreferences
 import io.github.genesjc.microclimatefinder.data.local.StationSource
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainSource
-import io.github.genesjc.microclimatefinder.data.local.ThemePreferences
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
 import io.github.genesjc.microclimatefinder.data.remote.createNwsApi
 import io.github.genesjc.microclimatefinder.data.remote.createNwsHttpClient
@@ -40,11 +32,7 @@ val appModule = module {
     single { AppConfig(isCommercial = BuildConfig.IS_COMMERCIAL, buildLabel = BuildInfo.LABEL) }
 
     // Platform edge: preference stores and data sources
-    single<SelectedRegionStore> { RegionPreferences(androidContext()) }
-    single<SelectedStationStore> { StationSelectionPreferences(androidContext()) }
-    single<MapZoomStore> { MapZoomPreferences(androidContext()) }
-    single<DarkModeStore> { ThemePreferences(androidContext()) }
-    single<ElevationHintStore> { ElevationHintPreferences(androidContext()) }
+    single<AppSettings> { AppSettingsPreferences(androidContext()) }
     single<StationSource> { AssetStationSource(androidContext()) }
     single<TerrainSource> { AssetTerrainSource(androidContext()) }
     single { createNwsHttpClient() }

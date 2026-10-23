@@ -1,7 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.map
 
 import androidx.lifecycle.viewModelScope
-import io.github.genesjc.microclimatefinder.data.local.ElevationHintStore
+import io.github.genesjc.microclimatefinder.data.local.AppSettings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +15,7 @@ import org.koin.core.component.inject
  */
 class ElevationViewModel : MapViewModel() {
 
-    private val hintStore: ElevationHintStore by inject()
+    private val settings: AppSettings by inject()
 
     private val skylines = HashMap<String, MutableStateFlow<List<FloatArray>?>>()
 
@@ -38,10 +38,10 @@ class ElevationViewModel : MapViewModel() {
 
     /** Counts this visit to the view and says whether the hint in words should show. */
     fun startVisit(): Boolean {
-        hintStore.countLaunch()
-        return hintStore.shouldShow()
+        settings.countElevationHintLaunch()
+        return settings.shouldShowElevationHint()
     }
 
     /** The user tapped the line, so the hint in words stops showing. */
-    fun lineTapped() = hintStore.markLineTapped()
+    fun lineTapped() = settings.markElevationLineTapped()
 }

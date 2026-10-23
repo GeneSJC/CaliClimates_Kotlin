@@ -1,8 +1,8 @@
 package io.github.genesjc.microclimatefinder.ui.root
 
-import io.github.genesjc.microclimatefinder.data.local.DarkModeStore
+import io.github.genesjc.microclimatefinder.data.local.AppSettings
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
-import io.github.genesjc.microclimatefinder.testutil.FakeDarkModeStore
+import io.github.genesjc.microclimatefinder.testutil.FakeAppSettings
 import io.github.genesjc.microclimatefinder.testutil.FakeTerrainSource
 import io.github.genesjc.microclimatefinder.testutil.MainDispatcherRule
 import io.github.genesjc.microclimatefinder.testutil.StopKoinRule
@@ -25,7 +25,7 @@ class AppRootViewModelTest {
 
     private val terrain = FakeTerrainSource()
 
-    private fun viewModel(store: DarkModeStore): AppRootViewModel {
+    private fun viewModel(store: AppSettings): AppRootViewModel {
         restartKoin {
             single { store }
             single { TerrainRepository(terrain, Dispatchers.Unconfined) }
@@ -35,13 +35,13 @@ class AppRootViewModelTest {
 
     @Test
     fun startsWithTheSavedLook() {
-        assertFalse(viewModel(FakeDarkModeStore(dark = false)).darkMode.value)
-        assertTrue(viewModel(FakeDarkModeStore(dark = true)).darkMode.value)
+        assertFalse(viewModel(FakeAppSettings(dark = false)).darkMode.value)
+        assertTrue(viewModel(FakeAppSettings(dark = true)).darkMode.value)
     }
 
     @Test
     fun switchingTheLookSavesIt() {
-        val store = FakeDarkModeStore()
+        val store = FakeAppSettings()
         val vm = viewModel(store)
         vm.setDarkMode(true)
         assertTrue(vm.darkMode.value)
@@ -50,7 +50,7 @@ class AppRootViewModelTest {
 
     @Test
     fun loadsTheBackdropTextureOnceAtStart() {
-        val vm = viewModel(FakeDarkModeStore())
+        val vm = viewModel(FakeAppSettings())
         assertEquals(1, terrain.backdropLoads)
         assertNull(vm.backdropTexture.value)
     }
