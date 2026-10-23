@@ -1,17 +1,13 @@
 package io.github.genesjc.microclimatefinder.ui.home
 
-import io.github.genesjc.microclimatefinder.data.local.MapZoomStore
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
-import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
-import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testutil.FakeDatasets
 import io.github.genesjc.microclimatefinder.testutil.FakeObservationSource
-import io.github.genesjc.microclimatefinder.testutil.FakeRegionStore
+import io.github.genesjc.microclimatefinder.data.local.AppSettings
+import io.github.genesjc.microclimatefinder.testutil.FakeAppSettings
 import io.github.genesjc.microclimatefinder.testutil.FakeStationSource
-import io.github.genesjc.microclimatefinder.testutil.FakeStationStore
-import io.github.genesjc.microclimatefinder.testutil.FakeZoomStore
 import io.github.genesjc.microclimatefinder.testutil.MainDispatcherRule
 import io.github.genesjc.microclimatefinder.testutil.StopKoinRule
 import io.github.genesjc.microclimatefinder.testutil.restartKoin
@@ -38,9 +34,7 @@ class HomeViewModelTest {
     @get:Rule
     val stopKoin = StopKoinRule()
 
-    private val store = FakeRegionStore("a")
-    private val zoomStore = FakeZoomStore()
-    private val stationStore = FakeStationStore()
+    private val settings = FakeAppSettings(region = "a")
     private val cancelledFor = mutableListOf<String>()
     private val observations = FakeObservationSource(onFetch = { id ->
         try {
@@ -54,9 +48,7 @@ class HomeViewModelTest {
 
     private fun viewModel(): HomeViewModel {
         restartKoin {
-            single<SelectedRegionStore> { store }
-            single<SelectedStationStore> { stationStore }
-            single<MapZoomStore> { zoomStore }
+            single<AppSettings> { settings }
             single<RegionDatasets> { FakeDatasets() }
             single { repository }
             single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), observations) }
@@ -76,7 +68,7 @@ class HomeViewModelTest {
         val vm = viewModel()
         vm.selectStation("KXYZ")
         vm.selectRegion("b")
-        assertEquals("b", store.saved)
+        assertEquals("b", settings.region)
         assertEquals("b", vm.uiState.value.selectedRegionId)
         assertNull(vm.uiState.value.selectedStationId)
     }
@@ -99,13 +91,13 @@ class HomeViewModelTest {
 
     @Test
     fun reopensOnTheLastSelectedStationOfTheSavedRegion() {
-        stationStore.save("a", "KXYZ")
+        settings.saveSelectedStationId("a", "KXYZ")
         assertEquals("KXYZ", viewModel().uiState.value.selectedStationId)
     }
 
     @Test
     fun ignoresASavedStationFromAnotherRegion() {
-        stationStore.save("b", "KXYZ")
+        settings.saveSelectedStationId("b", "KXYZ")
         assertNull(viewModel().uiState.value.selectedStationId)
     }
 
@@ -113,22 +105,22 @@ class HomeViewModelTest {
     fun rememberingFollowsSelectionAndForgetsOnRegionChange() {
         val vm = viewModel()
         vm.selectStation("KXYZ")
-        assertEquals("a", stationStore.region)
-        assertEquals("KXYZ", stationStore.station)
+        assertEquals("a", settings.stationRegion)
+        assertEquals("KXYZ", settings.station)
         vm.selectRegion("b")
-        assertEquals("b", stationStore.region)
-        assertNull(stationStore.station)
+        assertEquals("b", settings.stationRegion)
+        assertNull(settings.station)
     }
 
     @Test
     fun reopensAtTheSavedZoomOfTheSavedRegion() {
-        zoomStore.save("a", 3f)
+        settings.saveMapZoom("a", 3f)
         assertEquals(3f, viewModel().mapZoom)
     }
 
     @Test
     fun ignoresASavedZoomFromAnotherRegion() {
-        zoomStore.save("b", 3f)
+        settings.saveMapZoom("b", 3f)
         assertEquals(1f, viewModel().mapZoom)
     }
 
@@ -138,14 +130,14 @@ class HomeViewModelTest {
         vm.setMapZoom(2f)
         vm.setMapZoom(4f)
         assertEquals(4f, vm.mapZoom)
-        assertEquals(1f, zoomStore.zoom)
+        assertEquals(1f, settings.zoom)
         main.dispatcher.scheduler.advanceTimeBy(600)
-        assertEquals("a", zoomStore.region)
-        assertEquals(4f, zoomStore.zoom)
+        assertEquals("a", settings.zoomRegion)
+        assertEquals(4f, settings.zoom)
         vm.selectRegion("b")
         assertEquals(1f, vm.mapZoom)
-        assertEquals("b", zoomStore.region)
-        assertEquals(1f, zoomStore.zoom)
+        assertEquals("b", settings.zoomRegion)
+        assertEquals(1f, settings.zoom)
     }
 
     @Test

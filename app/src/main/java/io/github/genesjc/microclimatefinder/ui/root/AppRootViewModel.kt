@@ -2,7 +2,7 @@ package io.github.genesjc.microclimatefinder.ui.root
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.viewModelScope
-import io.github.genesjc.microclimatefinder.data.local.DarkModeStore
+import io.github.genesjc.microclimatefinder.data.local.AppSettings
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.viewmodel.AppBaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,10 +18,10 @@ import org.koin.core.component.inject
  */
 class AppRootViewModel : AppBaseViewModel() {
 
-    private val darkModeStore: DarkModeStore by inject()
+    private val settings: AppSettings by inject()
     private val terrains: TerrainRepository by inject()
 
-    private val _darkMode = MutableStateFlow(darkModeStore.darkMode())
+    private val _darkMode = MutableStateFlow(settings.darkMode())
     val darkMode: StateFlow<Boolean> = _darkMode.asStateFlow()
 
     private val _backdropTexture = MutableStateFlow<ImageBitmap?>(null)
@@ -35,7 +35,7 @@ class AppRootViewModel : AppBaseViewModel() {
 
     /** Switches the look and remembers the choice. */
     fun setDarkMode(dark: Boolean) {
-        darkModeStore.saveDarkMode(dark)
+        settings.saveDarkMode(dark)
         _darkMode.value = dark
     }
 }

@@ -77,8 +77,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import io.github.genesjc.microclimatefinder.EditionConfig
 import io.github.genesjc.microclimatefinder.R
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
@@ -167,6 +169,8 @@ fun LandingScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var rowWidthPx by remember { mutableStateOf(0) }
     var stationTileTopPx by remember { mutableStateOf(0f) }
+    // Where the menu button's top edge is, so the menu panel opens level with it (0 until it has been placed)
+    var menuButtonTopPx by remember { mutableStateOf(0f) }
     val sheetTopPx = stationTileTopPx
     val openInfo: () -> Unit = {
         onInfoOpenChange(true)
@@ -184,7 +188,7 @@ fun LandingScreen(
         // The menu button opens it; a swipe must not compete with the map's drag to pan (it still closes by swipe)
         gesturesEnabled = drawerState.isOpen,
         drawerContent = {
-            // A narrow side panel only as tall as its content, starting at the header's top edge (the Region Info
+            // A narrow side panel only as tall as its content, starting level with the menu button's top edge (the Region Info
             // sheet comes in lower, from the right edge, so the two stagger). The page shows behind it; a tap there,
             // a swipe to the left, or Back closes it.
             val menuWidth = (LocalConfiguration.current.screenWidthDp * 0.66f).dp
@@ -192,10 +196,10 @@ fun LandingScreen(
                 shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
                 color = Color.Transparent,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 14.dp)
-                    .width(menuWidth)
+                modifier = (
+                    if (menuButtonTopPx > 0f) Modifier.offset { IntOffset(0, menuButtonTopPx.roundToInt()) }
+                    else Modifier.statusBarsPadding().padding(top = 14.dp)
+                ).width(menuWidth)
             ) {
               Box {
                 Box(modifier = Modifier.background(sheetBrush())) {
@@ -395,7 +399,7 @@ fun LandingScreen(
                     if (dataset == null) {
                         // No map to hold the buttons: the menu and About sit here
                         Spacer(modifier = Modifier.height(6.dp))
-                        MapControlRow(onElevation = false, onMenu = { scope.launch { drawerState.open() } })
+                        MapControlRow(onElevation = false, onMenu = { scope.launch { drawerState.open() } }, onMenuTop = { menuButtonTopPx = it })
                         Spacer(modifier = Modifier.height(6.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -588,6 +592,7 @@ fun LandingScreen(
                             selectedStationId = selectedStationId,
                             onPickStation = onStationSelected,
                             onMenu = { scope.launch { drawerState.open() } },
+                            onMenuTop = { menuButtonTopPx = it },
                             showLocate = selectedOffscreen && homeTab == 0,
                             onLocate = {
                                 recenterTick++

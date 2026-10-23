@@ -106,6 +106,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     // A local web server, so the NWS client's requests and its handling of each answer can be tested on the JVM
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.mockk)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

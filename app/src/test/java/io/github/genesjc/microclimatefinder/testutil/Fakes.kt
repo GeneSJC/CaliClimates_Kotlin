@@ -1,12 +1,8 @@
 package io.github.genesjc.microclimatefinder.testutil
 
 import androidx.compose.ui.graphics.ImageBitmap
-import io.github.genesjc.microclimatefinder.data.local.DarkModeStore
-import io.github.genesjc.microclimatefinder.data.local.ElevationHintStore
-import io.github.genesjc.microclimatefinder.data.local.MapZoomStore
+import io.github.genesjc.microclimatefinder.data.local.AppSettings
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
-import io.github.genesjc.microclimatefinder.data.local.SelectedRegionStore
-import io.github.genesjc.microclimatefinder.data.local.SelectedStationStore
 import io.github.genesjc.microclimatefinder.data.local.StateTerrain
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationSource
@@ -19,43 +15,44 @@ import io.github.genesjc.microclimatefinder.testStation
 
 /** Fakes for the platform edge, shared by the ViewModel tests. Each records what a test wants to check. */
 
-class FakeRegionStore(var saved: String = "a") : SelectedRegionStore {
-    override fun load() = saved
-    override fun save(regionId: String) {
-        saved = regionId
-    }
-}
-
-class FakeStationStore(var region: String? = null, var station: String? = null) : SelectedStationStore {
-    override fun load(regionId: String) = station?.takeIf { region == regionId }
-    override fun save(regionId: String, stationId: String?) {
+class FakeAppSettings(
+    var region: String = "a",
+    var stationRegion: String? = null,
+    var station: String? = null,
+    var zoomRegion: String? = null,
+    var zoom: Float = 1f,
+    var dark: Boolean = false,
+    var launches: Int = 0,
+    var tapped: Boolean = false
+) : AppSettings {
+    override fun selectedRegionId() = region
+    override fun saveSelectedRegionId(regionId: String) {
         region = regionId
+    }
+
+    override fun selectedStationId(regionId: String) = station?.takeIf { stationRegion == regionId }
+    override fun saveSelectedStationId(regionId: String, stationId: String?) {
+        stationRegion = regionId
         station = stationId
     }
-}
 
-class FakeZoomStore(var region: String? = null, var zoom: Float = 1f) : MapZoomStore {
-    override fun load(regionId: String) = if (region == regionId) zoom else 1f
-    override fun save(regionId: String, zoom: Float) {
-        region = regionId
+    override fun mapZoom(regionId: String) = if (zoomRegion == regionId) zoom else 1f
+    override fun saveMapZoom(regionId: String, zoom: Float) {
+        zoomRegion = regionId
         this.zoom = zoom
     }
-}
 
-class FakeDarkModeStore(var dark: Boolean = false) : DarkModeStore {
     override fun darkMode() = dark
     override fun saveDarkMode(dark: Boolean) {
         this.dark = dark
     }
-}
 
-class FakeHintStore(var launches: Int = 0, var tapped: Boolean = false) : ElevationHintStore {
-    override fun countLaunch() {
+    override fun countElevationHintLaunch() {
         launches++
     }
 
-    override fun shouldShow() = !tapped && launches <= 3
-    override fun markLineTapped() {
+    override fun shouldShowElevationHint() = !tapped && launches <= 3
+    override fun markElevationLineTapped() {
         tapped = true
     }
 }

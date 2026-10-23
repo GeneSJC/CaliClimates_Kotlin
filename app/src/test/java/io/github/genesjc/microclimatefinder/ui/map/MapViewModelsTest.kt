@@ -3,11 +3,11 @@ package io.github.genesjc.microclimatefinder.ui.map
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
-import io.github.genesjc.microclimatefinder.data.local.ElevationHintStore
+import io.github.genesjc.microclimatefinder.data.local.AppSettings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
 import io.github.genesjc.microclimatefinder.testLiveReadings
 import io.github.genesjc.microclimatefinder.testStation
-import io.github.genesjc.microclimatefinder.testutil.FakeHintStore
+import io.github.genesjc.microclimatefinder.testutil.FakeAppSettings
 import io.github.genesjc.microclimatefinder.testutil.FakeObservationSource
 import io.github.genesjc.microclimatefinder.testutil.FakeStationSource
 import io.github.genesjc.microclimatefinder.testutil.FakeTerrainSource
@@ -40,13 +40,13 @@ class MapViewModelsTest {
     private val stations = listOf(testStation(id = "K1", name = "One"), testStation(id = "K2", name = "Two"))
     private val terrain = FakeTerrainSource()
     private val observations = FakeObservationSource()
-    private val hints = FakeHintStore()
+    private val hints = FakeAppSettings()
 
     private fun register() = restartKoin {
         single { StationRepository(FakeStationSource(stations), Dispatchers.Unconfined) }
         single { TerrainRepository(terrain, Dispatchers.Unconfined) }
         single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), observations) }
-        single<ElevationHintStore> { hints }
+        single<AppSettings> { hints }
     }
 
     private fun topography(): StationMapViewModel {
