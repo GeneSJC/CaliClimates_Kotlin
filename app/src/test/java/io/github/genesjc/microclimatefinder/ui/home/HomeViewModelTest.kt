@@ -22,6 +22,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
+import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -48,15 +50,49 @@ class HomeViewModelTest {
 
     private val repository = StationRepository(FakeStationSource(), Dispatchers.Unconfined)
 
-    private fun viewModel(): HomeViewModel {
+    private fun viewModel(datasets: RegionDatasets = FakeDatasets()): HomeViewModel {
         restartKoin {
             single<AppSettings> { settings }
-            single<RegionDatasets> { FakeDatasets() }
+            single<RegionDatasets> { datasets }
             single<StateUsaDefinition> { StateUsaCA }
             single { repository }
             single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), observations) }
         }
         return HomeViewModel()
+    }
+
+    /** Datasets where reading the stations of the region called "slow" waits until the test lets it finish. */
+    private class GatedDatasets(private val gate: CompletableDeferred<Unit>) : RegionDatasets by FakeDatasets() {
+        override suspend fun stationsFor(regionId: String): List<MicroclimateStation> {
+            if (regionId == "slow") gate.await()
+            return FakeDatasets().stationsFor(regionId)
+        }
+    }
+
+    @Test
+    fun aRegionIsReadBeforeTheScreenSwitchesToIt() {
+        val gate = CompletableDeferred<Unit>()
+        val vm = viewModel(GatedDatasets(gate))
+        vm.selectRegion("slow")
+        // Still reading it: nothing has changed yet, so the screen is not asked to read it on the main thread
+        assertEquals("a", vm.uiState.value.selectedRegionId)
+        assertEquals("a", settings.region)
+        gate.complete(Unit)
+        assertEquals("slow", vm.uiState.value.selectedRegionId)
+        assertEquals("slow", settings.region)
+    }
+
+    @Test
+    fun choosingAnotherRegionWhileOneIsLoadingReplacesIt() {
+        val gate = CompletableDeferred<Unit>()
+        val vm = viewModel(GatedDatasets(gate))
+        vm.selectRegion("slow")
+        vm.selectRegion("b")
+        assertEquals("b", vm.uiState.value.selectedRegionId)
+        gate.complete(Unit)
+        // The first choice was replaced, so it does not switch the screen back
+        assertEquals("b", vm.uiState.value.selectedRegionId)
+        assertEquals("b", settings.region)
     }
 
     @Test

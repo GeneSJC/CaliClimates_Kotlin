@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
 
@@ -57,7 +58,7 @@ sealed interface HomeEvent {
  * Owns Home's state and the work that follows from it.
  *
  * - State: [uiState] is a [StateFlow]; the UI collects it and calls the functions below for every change.
- * - Region: choosing a region saves it and clears the selected station. The selected station and the map zoom
+ * - Region: choosing a region reads its stations off the main thread, then saves it and clears the selected station. The selected station and the map zoom
  *   are saved too, and come back on the next launch as long as they were set in the saved region.
  * - Live readings: whenever the region changes, it opens a visit to the new region in [LiveReadings], which fetches
  *   the region's featured stations and cancels the previous visit's fetch.
@@ -118,9 +119,28 @@ class HomeViewModel : AppBaseViewModel() {
         }
     }
 
-    /** Changes the app-wide region, remembers it, and clears (and forgets) the station chosen in the old one. */
+    private var regionLoad: Job? = null
+
+    /**
+     * Changes the app-wide region, remembers it, and clears (and forgets) the station chosen in the old one. A region
+     * whose stations have not been read yet is read first, off the main thread, and the screen switches when they are
+     * ready: switching first would make the screen read the region's pack on the main thread, which on a cold start (the
+     * first run after an install, before the background warm-up has reached that region) freezes the app. Choosing
+     * another region while one is still loading replaces it.
+     */
     fun selectRegion(regionId: String) {
-        val changed = regionId != _uiState.value.selectedRegionId
+        regionLoad?.cancel()
+        if (regionId == _uiState.value.selectedRegionId) {
+            applyRegion(regionId, changed = false)
+            return
+        }
+        regionLoad = viewModelScope.launch {
+            datasets.stationsFor(regionId)
+            applyRegion(regionId, changed = true)
+        }
+    }
+
+    private fun applyRegion(regionId: String, changed: Boolean) {
         settings.saveSelectedRegionId(regionId)
         settings.saveSelectedStationId(regionId, null)
         mapZoom = 1f
