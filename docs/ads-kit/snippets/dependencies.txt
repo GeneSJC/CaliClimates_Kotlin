@@ -1,0 +1,10 @@
+// In dependencies { }:
+add("commercialImplementation", libs.play.services.ads)
+
+// In each build type (debug and release), next to your other settings:
+manifestPlaceholders["admobAppId"] = admobSampleAppId
+manifestPlaceholders["admobAppId"] = releaseAdmobAppId
+
+# In gradle/libs.versions.toml, under [versions] and [libraries]:
+playServicesAds = "25.4.0"
+play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }

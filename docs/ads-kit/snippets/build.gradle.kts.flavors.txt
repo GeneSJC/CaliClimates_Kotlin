@@ -1,0 +1,27 @@
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("foss") {
+            dimension = "distribution"
+            isDefault = true // a fresh checkout builds and runs the open build
+            applicationId = "__PACKAGE__"
+            versionNameSuffix = "-foss"
+        }
+        create("commercial") {
+            dimension = "distribution"
+            applicationId = "__PACKAGE__.commercial"
+            versionNameSuffix = "-commercial"
+            // The banner ad unit for release builds: Google's sample unit unless this is a production build
+            // (see the advertising block at the top). Debug builds ignore it and always use the sample unit.
+            buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$releaseAdmobBannerUnitId\"")
+            // The same for the rewarded video behind the ad-free offer.
+            buildConfigField("String", "ADMOB_REWARDED_UNIT_ID", "\"$releaseAdmobRewardedUnitId\"")
+            // Your device's test id, which the ads SDK prints in the log, set as ADMOB_TEST_DEVICE_ID in
+            // local.properties. In every build that is not a production build it is registered as a test device,
+            // and in a debug build it also lets the consent form be seen outside the EU. Empty by default.
+            buildConfigField(
+                "String",
+                "ADMOB_TEST_DEVICE_ID",
+                "\"${localProperties.getProperty("ADMOB_TEST_DEVICE_ID", "")}\"",
+            )
+        }
+    }

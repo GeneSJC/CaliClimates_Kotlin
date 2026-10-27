@@ -1,0 +1,4 @@
+    <string name="menu_privacy_options">Privacy options</string>
+    <string name="action_hide_ads">Hide ads for 1 hour</string>
+    <string name="ad_free_remaining">Ad-free: %1$d min</string>
+    <string name="ad_banner_offline">You\'re offline</string>
