@@ -113,7 +113,7 @@ in code (every word is a string resource), and every USA state definition must s
 
 </details>
 
-## 🏗️ Architecture
+## 🧱 Architecture
 
 One direction only, with every layer doing one job:
 
@@ -225,7 +225,7 @@ app/src/core/  demo/  foss/  commercial/   per-flavor code      docs/   restore 
 | [`docs/news-restore.md`](docs/news-restore.md) | What the parked local-news feature was and how to bring it back |
 | [`docs/images/README.md`](docs/images/README.md) | The README artwork: what each image is and how to regenerate it |
 
-## 🗺️ Status
+## 📊 Status
 
 | | |
 |---|---|
@@ -236,7 +236,7 @@ app/src/core/  demo/  foss/  commercial/   per-flavor code      docs/   restore 
 
 <a id="parked-features"></a>
 
-## ⏸️ Parked features
+## 📦 Parked features
 
 Two features were built or started and then taken out of the main line so the code base only holds what ships. Each is
 kept by an annotated git tag, and has a restore guide in this repository (Markdown, in `docs/`) that says what is in the
