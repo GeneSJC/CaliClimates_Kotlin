@@ -8,6 +8,7 @@ import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
 import io.github.genesjc.microclimatefinder.data.local.StationDataStore
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.StationSource
+import io.github.genesjc.microclimatefinder.data.local.StationTowns
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainSource
 import io.github.genesjc.microclimatefinder.data.remote.LiveReadings
@@ -41,7 +42,8 @@ val appModule = module {
     // Platform edge: preference stores and data sources
     single<AppSettings> { AppSettingsPreferences(androidContext(), get()) }
     single<StringResolver> { ContextStringResolver(androidContext()) }
-    single<StationSource> { AssetStationSource(androidContext()) }
+    single { StationTowns(get<StateUsaDefinition>().stationTowns) }
+    single<StationSource> { AssetStationSource(androidContext(), get()) }
     single<TerrainSource> { AssetTerrainSource(androidContext(), get()) }
     single { createNwsHttpClient() }
     single { createNwsApi(get()) }

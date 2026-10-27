@@ -9,6 +9,16 @@ class StateUsaCATest {
     private val regions = StateUsaCA.regions
 
     @Test
+    fun stationTownsNameATownForEveryEntry() {
+        val towns = StateUsaCA.stationTowns
+        assertTrue(towns.isNotEmpty())
+        assertTrue(towns.all { (id, town) -> id.isNotBlank() && town.isNotBlank() })
+        assertEquals("Jackson", towns["MTZC1"])
+        assertEquals("Sacramento", towns["KSMF"])
+        assertEquals("Sacramento", towns["KSAC"])
+    }
+
+    @Test
     fun thereAreSixRegionsInTheirNorthToSouthOrder() {
         assertEquals(
             listOf(

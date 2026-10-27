@@ -224,6 +224,46 @@ object StateUsaCA : StateUsaDefinition {
         SAN_DIEGO.id to "f.txt"
     )
 
+    /** The town each station is in, by station id, for the names on the maps and cards (not every station has one). */
+    override val stationTowns: Map<String, String> = mapOf(
+        "KVCB" to "Vacaville",
+        "KSUU" to "Fairfield",
+        "KSMF" to "Sacramento",
+        "KSAC" to "Sacramento",
+        "KMHR" to "Rancho Cordova",
+        "KEDU" to "Davis",
+        "KLHM" to "Lincoln",
+        "KAUN" to "Auburn",
+        "KMYV" to "Marysville",
+        "KSCK" to "Stockton",
+        "KPAO" to "Palo Alto",
+        "KHAF" to "Half Moon Bay",
+        "MTHC1" to "San Jose",
+        "SCZC1" to "Santa Cruz",
+        "KWVI" to "Watsonville",
+        "MSLC1" to "Moss Landing",
+        "KSNS" to "Salinas",
+        "KMRY" to "Monterey",
+        "PMSC1" to "Pacific Grove",
+        "CARC1" to "Carmel Valley",
+        "CHWC1" to "Carmel Valley",
+        "BIGC1" to "Big Sur",
+        "PINC1" to "Paicines",
+        "KCVH" to "Hollister",
+        "KPRB" to "Paso Robles",
+        "PLTC1" to "Pilot Hill",
+        "BENC1" to "Georgetown",
+        "BDMC1" to "Foresthill",
+        "KGOO" to "Grass Valley",
+        "SETC1" to "Colfax",
+        "RRRC1" to "Penn Valley",
+        "FSHC1" to "Chico",
+        "BNGC1" to "Oroville",
+        "BKSC1" to "Brooks",
+        "MTZC1" to "Jackson",
+        "ESPC1" to "Placerville"
+    )
+
     // Approximate heights, for comparisons in plain words
     override val landmarks: Map<String, List<Landmark>> = mapOf(
         "bay_area_sacramento" to listOf(

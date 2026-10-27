@@ -8,7 +8,7 @@ import io.github.genesjc.microclimatefinder.domain.model.WeatherReading
 import java.io.BufferedReader
 import java.io.StringReader
 
-class StationCsvParser(private val context: Context) {
+class StationCsvParser(private val context: Context, private val towns: StationTowns) {
 
     fun loadStationsFromCsv(fileName: String): List<MicroclimateStation> =
         try {
@@ -37,11 +37,11 @@ class StationCsvParser(private val context: Context) {
             emptyList()
         }
 
-    fun parse(reader: BufferedReader): List<MicroclimateStation> = StationCsvFormat.parse(reader)
+    fun parse(reader: BufferedReader): List<MicroclimateStation> = StationCsvFormat(towns).parse(reader)
 }
 
 /** The station CSV format itself: no Android classes, so it can be tested on the JVM. */
-internal object StationCsvFormat {
+internal class StationCsvFormat(private val towns: StationTowns) {
     fun parse(reader: BufferedReader): List<MicroclimateStation> {
         val stations = mutableListOf<MicroclimateStation>()
         val header = reader.readLine() ?: return emptyList()
@@ -75,7 +75,7 @@ internal object StationCsvFormat {
         val id = getField(tokens, indices, "id", "station_id") ?: "STATION_$index"
         val stationName = getField(tokens, indices, "display_name", "name", "station_name") ?: "Station $index"
         // The town and the station together where they differ ("Jackson (Mount Zion)"); the maps' labels use the town
-        val name = StationTowns.displayName(id, stationName)
+        val name = towns.displayName(id, stationName)
         val lat = getField(tokens, indices, "latitude", "lat")?.toDoubleOrNull() ?: 38.5816
         val lon = getField(tokens, indices, "longitude", "lon")?.toDoubleOrNull() ?: -121.4944
         val elev = getField(tokens, indices, "elevation_meters", "elevation_m", "elevation")?.toIntOrNull() ?: 15

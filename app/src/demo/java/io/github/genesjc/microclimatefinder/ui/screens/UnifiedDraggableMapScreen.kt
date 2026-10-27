@@ -98,7 +98,7 @@ fun UnifiedDraggableMapScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val parser = remember { StationCsvParser(context) }
+    val parser = remember { StationCsvParser(context, io.github.genesjc.microclimatefinder.data.local.StationTowns(io.github.genesjc.microclimatefinder.domain.model.StateUsaCA.stationTowns)) }
     val stations = remember(config) {
         try {
             val unified = parser.loadStationsFromCsv(config.assetFileName)

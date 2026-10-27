@@ -25,6 +25,7 @@ abstract class MapViewModel : AppBaseViewModel() {
     private val repository: StationRepository by inject()
     protected val terrains: TerrainRepository by inject()
     protected val readings: LiveReadings by inject()
+    private val towns: StationTowns by inject()
 
     private val terrainFlows = HashMap<String, MutableStateFlow<TerrainImage?>>()
 
@@ -62,5 +63,5 @@ abstract class MapViewModel : AppBaseViewModel() {
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 
     /** The name a station goes by on the maps' labels. */
-    fun cityName(station: MicroclimateStation): String = StationTowns.getCleanCityName(station.id, station.name)
+    fun cityName(station: MicroclimateStation): String = towns.getCleanCityName(station.id, station.name)
 }

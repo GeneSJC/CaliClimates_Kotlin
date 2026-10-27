@@ -79,7 +79,7 @@ fun DraggableMapScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.fileName) { StationCsvParser(context) }
+    val parser = remember(dataset.fileName) { StationCsvParser(context, io.github.genesjc.microclimatefinder.data.local.StationTowns(io.github.genesjc.microclimatefinder.domain.model.StateUsaCA.stationTowns)) }
     val stations = remember(dataset) { parser.loadStations(dataset) }
 
     var selectedStation by remember {

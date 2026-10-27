@@ -2,13 +2,23 @@ package io.github.genesjc.microclimatefinder.data.local
 
 import io.github.genesjc.microclimatefinder.domain.placeAndStationName
 
+// Words that describe the facility, not the place
+private val FACILITY_WORDS = Regex(
+    "\\b(International|Intl|Airport|Airfield|Airpark|Air Park|Air Terminal|Air Force Base|" +
+        "Municipal|Regional|Metropolitan|Public|County|Executive|Field|Weather Station|" +
+        "Meteorological Site)\\b",
+    RegexOption.IGNORE_CASE
+)
+
 /**
  * Station names as the app shows them: the town a station is in, and the cleaned-up station name where there is no
- * town on record. (This object also held the local news code, which is parked; see docs/news-restore.md.)
+ * town on record. The table of towns is the USA state's ([io.github.genesjc.microclimatefinder.domain.model.StateUsaDefinition.stationTowns]);
+ * the container builds this over the registered definition's table. (The local news code that once shared this file is
+ * parked; see docs/news-restore.md.)
  */
-object StationTowns {
+class StationTowns(private val towns: Map<String, String>) {
 
-    /** The short name the maps' labels use: the station's town when it has one in the list below, else its cleaned name. */
+    /** The short name the maps' labels use: the station's town when the state has one on record, else its cleaned name. */
     fun getCleanCityName(stationId: String, stationName: String): String =
         mappedCity(stationId) ?: cityFromStationName(stationName)
 
@@ -16,53 +26,7 @@ object StationTowns {
     fun displayName(stationId: String, stationName: String): String =
         mappedCity(stationId)?.let { placeAndStationName(it, stationName) } ?: stationName
 
-    private fun mappedCity(stationId: String): String? {
-        return when (stationId) {
-            "KVCB" -> "Vacaville"
-            "KSUU" -> "Fairfield"
-            "KSMF", "KSAC" -> "Sacramento"
-            "KMHR" -> "Rancho Cordova"
-            "KEDU" -> "Davis"
-            "KLHM" -> "Lincoln"
-            "KAUN" -> "Auburn"
-            "KMYV" -> "Marysville"
-            "KSCK" -> "Stockton"
-            "KPAO" -> "Palo Alto"
-            "KHAF" -> "Half Moon Bay"
-            "MTHC1" -> "San Jose"
-            "SCZC1" -> "Santa Cruz"
-            "KWVI" -> "Watsonville"
-            "MSLC1" -> "Moss Landing"
-            "KSNS" -> "Salinas"
-            "KMRY" -> "Monterey"
-            "PMSC1" -> "Pacific Grove"
-            "CARC1", "CHWC1" -> "Carmel Valley"
-            "BIGC1" -> "Big Sur"
-            "PINC1" -> "Paicines"
-            "KCVH" -> "Hollister"
-            "KPRB" -> "Paso Robles"
-            "PLTC1" -> "Pilot Hill"
-            "BENC1" -> "Georgetown"
-            "BDMC1" -> "Foresthill"
-            "KGOO" -> "Grass Valley"
-            "SETC1" -> "Colfax"
-            "RRRC1" -> "Penn Valley"
-            "FSHC1" -> "Chico"
-            "BNGC1" -> "Oroville"
-            "BKSC1" -> "Brooks"
-            "MTZC1" -> "Jackson"
-            "ESPC1" -> "Placerville"
-            else -> null
-        }
-    }
-
-    // Words that describe the facility, not the place
-    private val FACILITY_WORDS = Regex(
-        "\\b(International|Intl|Airport|Airfield|Airpark|Air Park|Air Terminal|Air Force Base|" +
-            "Municipal|Regional|Metropolitan|Public|County|Executive|Field|Weather Station|" +
-            "Meteorological Site)\\b",
-        RegexOption.IGNORE_CASE
-    )
+    private fun mappedCity(stationId: String): String? = towns[stationId]
 
     /** Keeps the place part of a station name, up to three words (for example "Santa Barbara"). */
     private fun cityFromStationName(stationName: String): String {
