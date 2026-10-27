@@ -21,7 +21,7 @@ NAME = "Cali Climates"
 TAGLINE = "Explore California's climates,"
 TAGLINE2 = "region by region."
 CHIPS = [("live NWS readings", (14, 116, 144)), ("terrain relief", (146, 94, 40)), ("six regions", (91, 74, 140))]
-SLATE, SLATE2, SKY = (10, 22, 40), (21, 54, 92), (125, 211, 252)
+SLATE, SLATE2, SKY = (20, 56, 100), (36, 112, 168), (125, 211, 252)  # a mid blue: the icon's dark lower half must stand out
 BOUNDS = (-124.5, -114.1, 31.9, 43.0)  # the statewide picture: lon min, lon max, lat min, lat max
 
 def font(path, size): return ImageFont.truetype(path, size)
@@ -99,7 +99,12 @@ def banner(path):
     mask = Image.new("L", icon.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, 249, 249), radius=56, fill=255)
     icon.putalpha(Image.composite(icon.split()[-1], Image.new("L", icon.size, 0), mask))
-    shadowed(img, icon, (88, 135))
+    # A light rim and a soft glow, so the icon's dark lower half does not melt into the background
+    glow = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    ImageDraw.Draw(glow).rounded_rectangle((88 - 6, 135 - 6, 88 + 256, 135 + 256), radius=62, fill=(190, 230, 255, 120))
+    img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(14)))
+    shadowed(img, icon, (88, 135), opacity=70)
+    ImageDraw.Draw(img).rounded_rectangle((88 - 2, 135 - 2, 88 + 251, 135 + 251), radius=58, outline=(220, 240, 255, 235), width=4)
     x = 380
     d.text((x, 118), NAME, font=font(FONT_BOLD, 92), fill=(255, 255, 255))
     d.rectangle((x, 238, x + 150, 246), fill=(251, 191, 36))
