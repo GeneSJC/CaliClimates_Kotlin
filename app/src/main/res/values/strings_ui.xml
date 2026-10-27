@@ -8,11 +8,6 @@
     <string name="metric_updated">Updated</string>
     <string name="metric_solar">Solar</string>
     <string name="metric_pressure">Pressure</string>
-    <string name="news_title">Local News</string>
-    <string name="news_subtitle">%1$s • What\'s happening in this location</string>
-    <string name="news_source">Google News RSS • %1$s Area</string>
-    <string name="news_tap_to_open">Tap to open in app viewer</string>
-    <string name="news_read_story">Read story</string>
 
     <!-- About dialog -->
     <string name="about_live_title">Live readings</string>

@@ -68,9 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.microclimatefinder.data.local.TransectConfig
-import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
 import io.github.genesjc.microclimatefinder.data.local.StationCsvParser
-import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.microclimatefinder.ui.components.StationCard
 import kotlinx.coroutines.isActive
@@ -92,14 +90,12 @@ import kotlin.math.roundToInt
  *  - Quick-jump region anchor chips: [📍 Sacramento], [🌊 Monterey Bay], [🗺️ View All].
  *  - Real-time pan & zoom HUD readout with live offset display.
  *  - Floating +/- zoom controls and tap-to-inspect StationCard integration.
- *  - Expandable Local News panel with direct story links and in-app viewer.
  */
 @Composable
 fun UnifiedDraggableMapScreen(
     config: TransectConfig,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenNewsStory: ((LocalNewsStory, String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val parser = remember { StationCsvParser(context) }
@@ -1058,9 +1054,6 @@ fun UnifiedDraggableMapScreen(
             exit = fadeOut()
         ) {
             selectedStation?.let { st ->
-                val cleanCity = remember(st.id, st.name) {
-                    LocalNewsRepository.getCleanCityName(st.id, st.name)
-                }
                 // The demo edition reads the live cache directly (it has no ViewModel)
                 val reading by androidx.compose.runtime.produceState<io.github.genesjc.microclimatefinder.data.remote.ObservationResult?>(
                     io.github.genesjc.microclimatefinder.data.remote.LiveObservationCache.peek(st.id), st.id
@@ -1074,10 +1067,7 @@ fun UnifiedDraggableMapScreen(
                 StationCard(
                     station = st,
                     isSelected = true,
-                    reading = reading,
-                    onOpenStory = { story ->
-                        onOpenNewsStory?.invoke(story, cleanCity)
-                    }
+                    reading = reading
                 )
             }
         }

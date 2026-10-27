@@ -19,3 +19,8 @@ The app has two build flavor dimensions:
 Run the default variant (`coreFossDebug`) for a clean app with nothing else. Pick `demoFossDebug` in
 Android Studio's *Build Variants* panel to see the demos. Edition-specific code lives in `app/src/core`
 and `app/src/demo`; `app/src/main` is shared by both.
+
+### Local news (parked)
+
+An early Local News block on the station card (sample stories, never shown to users) has been taken out of the app. Its
+code is kept by the tag `news-parked-2026-10-27`; see `docs/news-restore.md` for what was removed and how to bring it back.

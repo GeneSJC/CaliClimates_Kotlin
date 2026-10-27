@@ -8,7 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import io.github.genesjc.microclimatefinder.data.local.TransectConfigs
-import io.github.genesjc.microclimatefinder.domain.model.LocalNewsStory
 import io.github.genesjc.microclimatefinder.ui.navigation.AppScreen
 import io.github.genesjc.microclimatefinder.ui.screens.AnimationPreviewsScreen
 import io.github.genesjc.microclimatefinder.ui.screens.DemosAndPreviewsScreen
@@ -16,7 +15,6 @@ import io.github.genesjc.microclimatefinder.ui.screens.DraggableMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.ElevationProfileScreen
 import io.github.genesjc.microclimatefinder.ui.screens.FixedCloudSplashScreen
 import io.github.genesjc.microclimatefinder.ui.screens.MovingCloudsSplashScreen
-import io.github.genesjc.microclimatefinder.ui.screens.NewsStoryViewerScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationCardPreviewScreen
 import io.github.genesjc.microclimatefinder.ui.screens.StationMapScreen
 import io.github.genesjc.microclimatefinder.ui.screens.UnifiedDraggableMapScreen
@@ -30,12 +28,6 @@ object EditionConfig {
 /** The screens the demo edition adds to the app's navigation. */
 @Composable
 fun EditionScreens(nav: EditionNavigation) {
-    // The news story a demo opened, and the screen to return to from it
-    var newsStory by remember { mutableStateOf<LocalNewsStory?>(null) }
-    var newsCity by remember { mutableStateOf("") }
-    var newsReturn by remember { mutableStateOf(AppScreen.LANDING) }
-    BackHandler(enabled = nav.screen == AppScreen.NEWS_STORY_VIEWER) { nav.navigate(newsReturn) }
-
     when (nav.screen) {
         AppScreen.DEMOS_AND_PREVIEWS -> DemosAndPreviewsScreen(
             onNavigateTo = { target ->
@@ -64,13 +56,7 @@ fun EditionScreens(nav: EditionNavigation) {
         AppScreen.UNIFIED_DRAGGABLE_MAP -> UnifiedDraggableMapScreen(
             // A demo: always the Bay Area transect, whichever region the app is on
             config = TransectConfigs.DEFAULT,
-            onNavigateBack = { nav.navigate(AppScreen.DEMOS_AND_PREVIEWS) },
-            onOpenNewsStory = { story, city ->
-                newsStory = story
-                newsCity = city
-                newsReturn = AppScreen.UNIFIED_DRAGGABLE_MAP
-                nav.navigate(AppScreen.NEWS_STORY_VIEWER)
-            }
+            onNavigateBack = { nav.navigate(AppScreen.DEMOS_AND_PREVIEWS) }
         )
         AppScreen.ANIMATION_PREVIEWS -> AnimationPreviewsScreen(
             onNavigateBack = { nav.navigate(AppScreen.DEMOS_AND_PREVIEWS) },
@@ -85,20 +71,6 @@ fun EditionScreens(nav: EditionNavigation) {
         AppScreen.ANIMATION_WEB_VIEW -> WebSplashAnimationScreen(
             onNavigateBack = { nav.navigate(AppScreen.ANIMATION_PREVIEWS) }
         )
-        AppScreen.NEWS_STORY_VIEWER -> {
-            val story = newsStory
-            if (story != null) {
-                NewsStoryViewerScreen(
-                    storyTitle = story.title,
-                    storyUrl = story.url,
-                    cityName = newsCity,
-                    source = story.source,
-                    onBackToApp = { nav.navigate(newsReturn) }
-                )
-            } else {
-                LaunchedEffect(Unit) { nav.navigate(AppScreen.LANDING) }
-            }
-        }
         else -> Unit
     }
 }

@@ -68,7 +68,7 @@ private val DEMOS_AND_PREVIEWS_ENTRIES = listOf(
     ),
     DemoEntry(
         title = "Bay Area Transect Map",
-        description = "The original Bay Area transect: continuous 4-way pan and zoom from Sacramento to Monterey Bay, with a Local News panel and story viewer. A reference demo, kept as it was.",
+        description = "The original Bay Area transect: continuous 4-way pan and zoom from Sacramento to Monterey Bay. A reference demo, kept as it was.",
         iconChar = "🗺️",
         target = AppScreen.UNIFIED_DRAGGABLE_MAP
     ),
