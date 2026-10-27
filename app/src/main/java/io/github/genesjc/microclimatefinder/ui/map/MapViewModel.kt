@@ -1,7 +1,7 @@
 package io.github.genesjc.microclimatefinder.ui.map
 
 import androidx.lifecycle.viewModelScope
-import io.github.genesjc.microclimatefinder.data.local.LocalNewsRepository
+import io.github.genesjc.microclimatefinder.data.local.StationTowns
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainImage
@@ -62,5 +62,5 @@ abstract class MapViewModel : AppBaseViewModel() {
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 
     /** The name a station goes by on the maps' labels. */
-    fun cityName(station: MicroclimateStation): String = LocalNewsRepository.getCleanCityName(station.id, station.name)
+    fun cityName(station: MicroclimateStation): String = StationTowns.getCleanCityName(station.id, station.name)
 }

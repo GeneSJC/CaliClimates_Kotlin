@@ -40,10 +40,6 @@
         <item quantity="one">%1$d h ago</item>
         <item quantity="other">%1$d h ago</item>
     </plurals>
-    <plurals name="news_story_count">
-        <item quantity="one">%1$d story</item>
-        <item quantity="other">%1$d stories</item>
-    </plurals>
 
     <!-- Terrain descriptions -->
     <string name="terrain_description_ridge">High-elevation montane ridge (%1$s). Cooler adiabatic temps with brisk mountain breezes.</string>
