@@ -1,5 +1,6 @@
 package io.github.genesjc.microclimatefinder.data.local
 
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaCA
 import io.github.genesjc.microclimatefinder.domain.model.TerrainType
 import java.io.BufferedReader
 import java.io.StringReader
@@ -12,7 +13,9 @@ import org.junit.Test
 /** The station CSV format: columns, aliases, defaults, flags and the terrain rules. */
 class StationCsvFormatTest {
 
-    private fun parse(csv: String) = StationCsvFormat.parse(BufferedReader(StringReader(csv)))
+    private val format = StationCsvFormat(StationTowns(StateUsaCA.stationTowns))
+
+    private fun parse(csv: String) = format.parse(BufferedReader(StringReader(csv)))
 
     @Test
     fun readsTheColumnsOfOneStation() {
