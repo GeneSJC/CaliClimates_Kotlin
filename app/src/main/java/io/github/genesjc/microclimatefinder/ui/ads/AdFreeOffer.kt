@@ -33,8 +33,7 @@ fun adFreeMinutesLeft(untilMs: Long, nowMs: Long): Int {
 /**
  * The small line in the title bar for the ad-free period: an offer to hide ads when one can be made, the
  * time left while a period runs, and nothing otherwise (always nothing in the open build). It never asks
- * anyone to look at or tap an ad; the wording is only about getting time without ads. Nothing is drawn while
- * [ADS_ENABLED] is false.
+ * anyone to look at or tap an ad; the wording is only about getting time without ads.
  */
 @Composable
 fun AdFreeOfferLine(
@@ -43,7 +42,6 @@ fun AdFreeOfferLine(
     onOffer: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (!ADS_ENABLED) return
     val nowMs = rememberNowMillis(adFreeUntilMs)
     val minutesLeft = adFreeMinutesLeft(adFreeUntilMs, nowMs)
     when {

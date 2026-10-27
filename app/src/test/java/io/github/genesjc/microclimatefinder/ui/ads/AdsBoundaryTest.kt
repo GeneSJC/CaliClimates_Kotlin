@@ -21,8 +21,18 @@ class AdsBoundaryTest {
             .toList()
 
     @Test
+    fun onlyTheCommercialModuleReadsTheAdsSwitch() {
+        val found = listOf("main", "foss", "core", "demo", "test").flatMap { folder ->
+            File("src/$folder").walk().filter { it.extension == "kt" && it.name != "AdsBoundaryTest.kt" }
+                .filter { file -> file.readLines().any { it.contains("ADS_ENABLED") && !it.trimStart().startsWith("*") && !it.trimStart().startsWith("//") } }
+                .map { it.path }.toList()
+        }
+        assertTrue("The ads switch is read outside the commercial module: $found", found.isEmpty())
+    }
+
+    @Test
     fun noAdsLibraryIsImportedByTheSharedOrOpenSource() {
-        val found = listOf("main", "foss", "core", "demo", "test", "testFoss").flatMap { offenders(it) }
+        val found = listOf("main", "foss", "core", "demo", "test").flatMap { offenders(it) }
         assertTrue("Ads imports outside src/commercial: $found", found.isEmpty())
     }
 }

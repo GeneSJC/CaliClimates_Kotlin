@@ -1,3 +1,5 @@
+import java.io.StringReader
+import java.util.Properties
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
@@ -12,6 +14,28 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
+
+// ---- The ads switch ----
+// Ads are built into the commercial flavor but OFF by default: the app is not published with ads for now. With the switch
+// off the commercial build binds the do-nothing controller (no consent form, no ad software started, no banner, no
+// offer). Turn them on without editing a committed file, by any of:
+//     adsEnabled=true      in local.properties (this machine only)
+//     adsEnabled=true      in ~/.gradle/gradle.properties
+//     -PadsEnabled=true    on the command line
+// It becomes BuildConfig.ADS_ENABLED in the commercial flavor only, and is read in one place: the commercial adsModule.
+// The open (foss) flavor has no such field and never has ads.
+val localProperties = Properties().apply {
+    // Read as a tracked input, so a change to local.properties is noticed even with the configuration cache on
+    val text = providers.fileContents(rootProject.layout.projectDirectory.file("local.properties")).asText.orNull
+    if (text != null) load(StringReader(text))
+}
+
+/** A private property: a Gradle property (-P or the user-level gradle.properties), else local.properties. */
+fun privateProperty(name: String): String? =
+    providers.gradleProperty(name).orNull?.takeIf { it.isNotBlank() }
+        ?: localProperties.getProperty(name)?.takeIf { it.isNotBlank() }
+
+val adsEnabled = privateProperty("adsEnabled") == "true"
 
 android {
     namespace = "io.github.genesjc.microclimatefinder"
@@ -56,6 +80,8 @@ android {
             versionNameSuffix = "-commercial"
             buildConfigField("String", "FLAVOR_TYPE", "\"COMMERCIAL\"")
             buildConfigField("Boolean", "IS_COMMERCIAL", "true")
+            // Off unless asked for (see the ads switch above); read only by the commercial adsModule
+            buildConfigField("Boolean", "ADS_ENABLED", "$adsEnabled")
         }
     }
 
@@ -130,15 +156,23 @@ abstract class PrintBuildLabelAtStart : DefaultTask() {
     @get:Input
     abstract val label: Property<String>
 
+    @get:Input
+    abstract val adsLine: Property<String>
+
     @TaskAction
     fun print() {
         println("")
         println("=== Build label: ${label.get()} ===")
+        println(adsLine.get())
     }
 }
 
 val printBuildLabelAtStart = tasks.register<PrintBuildLabelAtStart>("printBuildLabel") {
     label.set(buildLabel)
+    adsLine.set(
+        if (adsEnabled) "=== Ads: ON in the commercial flavor (adsEnabled=true); the open flavor has none ==="
+        else "=== Ads: OFF (set adsEnabled=true in local.properties to turn them on in the commercial flavor) ==="
+    )
 }
 
 // Every build of the app starts with preBuild, so hang the print there

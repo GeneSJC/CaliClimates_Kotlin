@@ -19,3 +19,12 @@ The app has two build flavor dimensions:
 Run the default variant (`coreFossDebug`) for a clean app with nothing else. Pick `demoFossDebug` in
 Android Studio's *Build Variants* panel to see the demos. Edition-specific code lives in `app/src/core`
 and `app/src/demo`; `app/src/main` is shared by both.
+
+### Ads
+
+The `foss` build never has ads: it contains no ads library, no ads manifest entry and no advertising-id permission.
+The `commercial` build carries the ads code, but **ads are off by default** (the app is not published with ads for
+now). While they are off the commercial build binds a controller that does nothing: no consent form, no ad
+requests, no banner, no ad-free offer. To turn them on for a local build, put `adsEnabled=true` in `local.properties`
+(or in `~/.gradle/gradle.properties`, or pass `-PadsEnabled=true`). The build prints whether ads are on or off at the
+start of every build.
