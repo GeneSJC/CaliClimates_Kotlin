@@ -43,7 +43,7 @@ def region_shapes():
     start = text.index("override val regionShapes")
     block = text[text.index("mapOf(", start):text.index("override val pickerMap")]
     shapes = {}
-    for m in re.finditer(r'"(\w+)" to listOf\((.*?)\)\s*(?:,\s*"|\s*\))', block, re.S):
+    for m in re.finditer(r'"(\w+)" to listOf\((.*?)\)(?=\s*,\s*"|\s*\))', block, re.S):
         pts = []
         for tok in re.finditer(r"(-?\d+\.\d+)f to (-?\d+\.\d+)f|(\w+)", m.group(2)):
             if tok.group(1): pts.append((float(tok.group(1)), float(tok.group(2))))
@@ -64,7 +64,7 @@ def california(height):
     d = ImageDraw.Draw(tint)
     for rid, pts in shapes.items():
         poly = [xy(p) for p in pts]
-        d.polygon(poly, fill=colors.get(rid, (200, 200, 200)) + (120,))
+        d.polygon(poly, fill=colors.get(rid, (200, 200, 200)) + (200,))
     for rid, pts in shapes.items():
         poly = [xy(p) for p in pts]
         d.line(poly + [poly[0]], fill=(58, 42, 30, 220), width=5, joint="curve")
