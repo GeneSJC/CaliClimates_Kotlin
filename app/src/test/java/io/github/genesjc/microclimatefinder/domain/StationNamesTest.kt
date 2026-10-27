@@ -1,10 +1,13 @@
 package io.github.genesjc.microclimatefinder.domain
 
 import io.github.genesjc.microclimatefinder.data.local.StationTowns
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaCA
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class StationNamesTest {
+
+    private val towns = StationTowns(StateUsaCA.stationTowns)
 
     @Test
     fun putsTheTownFirstWhenTheStationNameDoesNotSayIt() {
@@ -25,15 +28,15 @@ class StationNamesTest {
 
     @Test
     fun theTownListGivesTheCombinedNameAndTheShortLabel() {
-        assertEquals("Jackson (Mount Zion)", StationTowns.displayName("MTZC1", "Mount Zion"))
-        assertEquals("Jackson", StationTowns.getCleanCityName("MTZC1", "Mount Zion"))
+        assertEquals("Jackson (Mount Zion)", towns.displayName("MTZC1", "Mount Zion"))
+        assertEquals("Jackson", towns.getCleanCityName("MTZC1", "Mount Zion"))
         // the label does not change when the name already carries the town
-        assertEquals("Jackson", StationTowns.getCleanCityName("MTZC1", "Jackson (Mount Zion)"))
+        assertEquals("Jackson", towns.getCleanCityName("MTZC1", "Jackson (Mount Zion)"))
     }
 
     @Test
     fun aStationOutsideTheTownListKeepsItsOwnName() {
-        assertEquals("Rose Peak", StationTowns.displayName("RSPC1", "Rose Peak"))
-        assertEquals("Rose Peak", StationTowns.getCleanCityName("RSPC1", "Rose Peak"))
+        assertEquals("Rose Peak", towns.displayName("RSPC1", "Rose Peak"))
+        assertEquals("Rose Peak", towns.getCleanCityName("RSPC1", "Rose Peak"))
     }
 }

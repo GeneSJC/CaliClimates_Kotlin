@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.genesjc.microclimatefinder.data.local.AppSettings
 import io.github.genesjc.microclimatefinder.data.local.RegionDatasets
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
+import io.github.genesjc.microclimatefinder.data.local.StationTowns
 import io.github.genesjc.microclimatefinder.data.local.StationSource
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.TerrainSource
@@ -52,7 +53,7 @@ class ViewModelCreationTest {
     fun everyRegisteredObjectCanBeBuilt() {
         val koin = GlobalContext.get()
         val types: List<KClass<*>> = listOf(
-            AppConfig::class, StateUsaDefinition::class, AppSettings::class, StringResolver::class, StationSource::class, TerrainSource::class,
+            AppConfig::class, StateUsaDefinition::class, StationTowns::class, AppSettings::class, StringResolver::class, StationSource::class, TerrainSource::class,
             ObservationSource::class, StationRepository::class, TerrainRepository::class, RegionDatasets::class,
             LiveReadings::class
         )

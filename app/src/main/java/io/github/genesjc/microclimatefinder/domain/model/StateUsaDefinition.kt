@@ -87,6 +87,9 @@ interface StateUsaDefinition {
     /** The station pack (a file in the app's assets) of each region, by region id. */
     val stationPacks: Map<String, String>
 
+    /** The town each station is in, by station id; a station without an entry is named from its own station name. */
+    val stationTowns: Map<String, String>
+
     /** Landmarks to compare a height with, by region id. */
     val landmarks: Map<String, List<Landmark>>
 

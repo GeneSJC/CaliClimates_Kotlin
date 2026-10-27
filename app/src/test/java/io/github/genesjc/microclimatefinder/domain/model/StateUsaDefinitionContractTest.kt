@@ -76,6 +76,14 @@ class StateUsaDefinitionContractTest {
     }
 
     @Test
+    fun everyStationTownEntryIsFilledIn() = eachDefinition { d, _ ->
+        for ((id, town) in d.stationTowns) {
+            assertTrue("${d.code} station id '$id'", id.isNotBlank() && id == id.trim())
+            assertTrue("${d.code} town for $id", town.isNotBlank())
+        }
+    }
+
+    @Test
     fun boundsAreOrdered() = eachDefinition { d, _ ->
         for ((id, b) in d.terrainBounds + ("state" to d.stateBounds) + ("view" to d.pickerMap.view)) {
             assertTrue("${d.code} $id lon order", b.minLon < b.maxLon)

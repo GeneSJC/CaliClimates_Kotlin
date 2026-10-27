@@ -13,8 +13,8 @@ interface StationSource {
 }
 
 /** Reads a dataset's stations from the station packs (or a CSV override) in the app's assets. */
-class AssetStationSource(context: Context) : StationSource {
-    private val parser = StationCsvParser(context.applicationContext)
+class AssetStationSource(context: Context, towns: StationTowns) : StationSource {
+    private val parser = StationCsvParser(context.applicationContext, towns)
 
     override fun loadStations(dataset: StationDatasetInfo): List<MicroclimateStation> = parser.loadStations(dataset)
 }

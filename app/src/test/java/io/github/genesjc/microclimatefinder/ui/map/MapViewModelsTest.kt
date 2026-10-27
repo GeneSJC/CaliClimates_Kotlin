@@ -3,6 +3,8 @@ package io.github.genesjc.microclimatefinder.ui.map
 import io.github.genesjc.microclimatefinder.data.local.DatasetKind
 import io.github.genesjc.microclimatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.microclimatefinder.data.local.StationRepository
+import io.github.genesjc.microclimatefinder.data.local.StationTowns
+import io.github.genesjc.microclimatefinder.domain.model.StateUsaCA
 import io.github.genesjc.microclimatefinder.data.local.TerrainRepository
 import io.github.genesjc.microclimatefinder.data.local.AppSettings
 import io.github.genesjc.microclimatefinder.data.remote.ObservationResult
@@ -45,6 +47,7 @@ class MapViewModelsTest {
 
     private fun register() = restartKoin {
         single { StationRepository(FakeStationSource(stations), Dispatchers.Unconfined) }
+        single { StationTowns(StateUsaCA.stationTowns) }
         single { TerrainRepository(terrain, Dispatchers.Unconfined) }
         single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), observations) }
         single<AppSettings> { hints }
