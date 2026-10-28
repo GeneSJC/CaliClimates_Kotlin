@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import io.github.genesjc.climatefinder.ui.text.rememberFeetFormatter
 import io.github.genesjc.climatefinder.ui.text.rememberMilesFormatter
+import io.github.genesjc.climatefinder.domain.DepthCue
 import io.github.genesjc.climatefinder.domain.StationDistance
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -124,6 +125,9 @@ internal fun ElevationProfileCanvas(
     val milesFromSelected = remember(sorted, selectedStationId) {
         sorted.find { it.id == selectedStationId }?.let { StationDistance.milesFrom(it, sorted) }.orEmpty()
     }
+    // Each station's depth from the selected one (0 here, 1 across the region); null for all when nothing is selected
+    val spanMiles = remember(sorted) { StationDistance.spanMiles(sorted) }
+    fun depthOf(id: String): Float? = milesFromSelected[id]?.let { StationDistance.depth(it.toDouble(), spanMiles) }
     val ridgeCache = remember { RidgeHeights() }
     val cycleIds = remember(sorted) {
         rankedLandmarks.take(LANDMARK_COUNT).sorted().map { sorted[it].id }
@@ -346,7 +350,7 @@ internal fun ElevationProfileCanvas(
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
                 val text = milesFromSelected[station.id]?.let { labelTexts[idx] + " · " + milesText(it) } ?: labelTexts[idx]
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
-                val labelW = text.length * 5.4f + 10f
+                val labelW = text.length * 5.4f * (depthOf(station.id)?.let { DepthCue.textScale(it) } ?: 1f) + 10f
                 val left = (if (pinX - 24f + labelW > widthDp.value * 0.97f) pinX - labelW else pinX - 24f).coerceAtLeast(2f)
                 // High pins stay on the lowest height so the label stays inside the chart
                 val maxLevel = if (elevRatio > 0.8f) 0 else 2
@@ -722,14 +726,17 @@ internal fun ElevationProfileCanvas(
                     )
                 }
 
+                val depth = depthOf(station.id)
+                val dotCue = depth?.let { DepthCue.dotScale(it) } ?: 1f
+                val fadeCue = depth?.let { DepthCue.alpha(it) } ?: 1f
                 drawCircle(
-                    color = Color.White,
-                    radius = (if (isSelected) 8f else (if (isLandmark) 6.5f else 4.5f)) * dotGrowth,
+                    color = Color.White.copy(alpha = fadeCue),
+                    radius = (if (isSelected) 8f else (if (isLandmark) 6.5f else 4.5f)) * dotGrowth * dotCue,
                     center = Offset(x, y)
                 )
                 drawCircle(
-                    color = if (isSelected) skyTheme.accent else pinColor,
-                    radius = (if (isSelected) 6f else (if (isLandmark) 4.8f else 3.2f)) * dotGrowth,
+                    color = (if (isSelected) skyTheme.accent else pinColor).copy(alpha = fadeCue),
+                    radius = (if (isSelected) 6f else (if (isLandmark) 4.8f else 3.2f)) * dotGrowth * dotCue,
                     center = Offset(x, y)
                 )
 
@@ -879,6 +886,7 @@ internal fun ElevationProfileCanvas(
             val isSelected = station.id == selectedStationId
             val fade = labelFades[station.id] ?: 0f
             if (fade <= 0.01f) return@forEach
+            val depth = depthOf(station.id)
 
             Surface(
                 shape = RoundedCornerShape(6.dp),
@@ -893,12 +901,12 @@ internal fun ElevationProfileCanvas(
                 ),
                 modifier = Modifier
                     .offset(x = label.xDp.dp, y = label.yDp.dp)
-                    .alpha(fade)
+                    .alpha(fade * (depth?.let { DepthCue.alpha(it) } ?: 1f))
                     .clickable { onSelectStation(station) }
             ) {
                 Text(
                     text = label.text,
-                    fontSize = ms(9f),
+                    fontSize = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f)),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
