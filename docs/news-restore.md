@@ -54,6 +54,19 @@ The strings, verbatim:
 
 ## How to restore
 
+> [!IMPORTANT]
+> **Package fix-up for files copied from the tag.** The tag's files and folders use the package
+> `io.github.genesjc.microclimatefinder`; this repository's package is `io.github.genesjc.climatefinder`. The paths in the
+> commands below are the tag's paths. After copying, move the files under `.../genesjc/climatefinder/` and fix the package
+> name in them, for example (from the repository root, after the `git checkout` below):
+> ```
+> for d in $(find app/src -type d -path "*/io/github/genesjc/microclimatefinder"); do
+>   mkdir -p "$(dirname "$d")/climatefinder" && cp -R "$d"/. "$(dirname "$d")/climatefinder/" && rm -rf "$d"
+> done
+> grep -rl "io.github.genesjc.microclimatefinder" app scripts 2>/dev/null | xargs sed -i 's/io\.github\.genesjc\.microclimatefinder/io.github.genesjc.climatefinder/g'
+> ```
+> The kit under `docs/ads-kit/` uses placeholders (`PACKAGE_PATH`, `__PACKAGE__`), so it takes this repository's package directly.
+
 1. Branch from the latest `develop`: `git checkout develop && git pull && git checkout -b feature-set/localNews`.
 2. Copy the removed files from the tag:
    ```

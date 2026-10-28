@@ -165,6 +165,8 @@ flowchart LR
     class CA,W b;
 ```
 
+That is why the code's package is `io.github.genesjc.climatefinder` and not the app's name: Cali Climates is the California edition of a state-neutral code base, and another state is an addition, not a rewrite.
+
 ### Principles at a glance
 
 - 🧱 **Dependencies point one way.** Screens never reach a repository; the data layer never knows about screens.
@@ -179,7 +181,7 @@ flowchart LR
 | Dimension | Flavors | Meaning |
 |---|---|---|
 | `edition` | `core` (default), `demo` | **core** is the app alone. **demo** adds a *Demos & Previews* hub with legacy and prototype screens behind it. The demo edition is held back and does not build at the moment. |
-| `distribution` | `foss` (default), `commercial` | Who publishes the build. `foss` is `io.github.genesjc.microclimatefinder` (version suffix `-foss`); `commercial` is `com.genetech.microclimatefinder` (suffix `-commercial`). The ids differ, so both install side by side. |
+| `distribution` | `foss` (default), `commercial` | Who publishes the build. `foss` is `io.github.genesjc.climatefinder` (version suffix `-foss`); `commercial` is `io.github.genesjc.climatefinder.commercial` (suffix `-commercial`). The ids differ, so both install side by side. |
 
 Run the default variant, `coreFossDebug`, for a clean app. Edition-specific code lives in `app/src/core` and `app/src/demo`,
 distribution-specific code in `app/src/foss` and `app/src/commercial`; `app/src/main` is shared. Neither distribution
@@ -188,7 +190,7 @@ contains any advertising code or library today.
 ### Where things live
 
 ```text
-app/src/main/java/io/github/genesjc/microclimatefinder/
+app/src/main/java/io/github/genesjc/climatefinder/
 ├── data/         repositories, the live-readings holder, the NWS client, saved settings
 ├── di/           AppModule: the one place Koin is told how things are built
 ├── domain/       the plain model: stations, regions, the USA state definition, elevation facts

@@ -1,0 +1,189 @@
+package io.github.genesjc.climatefinder.ui.screens
+
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import io.github.genesjc.climatefinder.R
+import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.ui.components.RegionPickerButton
+import io.github.genesjc.climatefinder.ui.components.RegionPickerOverlay
+import io.github.genesjc.climatefinder.ui.components.rememberRegionPickerState
+import io.github.genesjc.climatefinder.ui.components.StationCard
+import io.github.genesjc.climatefinder.ui.stationlist.StationListViewModel
+
+@Composable
+fun StationListScreen(
+    dataset: StationDatasetInfo,
+    selectedRegionId: String,
+    onSelectRegion: (String) -> Unit,
+    onNavigateBack: () -> Unit,
+    /** The station selected on Home (the same one both map views use), and a way to change it from here. */
+    selectedStationId: String?,
+    onStationSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: StationListViewModel = viewModel()
+) {
+    val stations by remember(dataset) { viewModel.stations(dataset) }.collectAsStateWithLifecycle()
+    val state = remember(dataset, stations, selectedStationId) { viewModel.stateFor(dataset, stations, selectedStationId) }
+    val pickerState = rememberRegionPickerState()
+
+    Box(modifier = modifier.fillMaxSize()) {
+    // The same margins and header card as Home
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 22.dp, start = 10.dp, end = 10.dp)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = Color.Transparent
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.85f)
+                            )
+                        )
+                    )
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Back, in the same tile as Home's menu button
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clickable(onClickLabel = stringResource(R.string.action_back), onClick = onNavigateBack)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "\u2190",
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = state.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontSize = 16.5.sp,
+                        lineHeight = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = state.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                // The region picker, the same chip as Home's
+                RegionPickerButton(
+                    state = pickerState,
+                    selectedRegionId = selectedRegionId,
+                    background = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                    content = MaterialTheme.colorScheme.onPrimaryContainer,
+                    size = 52.dp,
+                    iconSize = 40.dp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize())
+        } else if (state.emptyMessage != null) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = state.emptyMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        } else {
+            // Opens with the selected station in view
+            val listState = androidx.compose.foundation.lazy.rememberLazyListState(
+                initialFirstVisibleItemIndex = state.initialIndex
+            )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(state.stations, key = { it.id }) { station ->
+                    val reading by remember(station.id) { viewModel.reading(station) }.collectAsStateWithLifecycle()
+                    StationCard(
+                        station = station,
+                        reading = reading,
+                        isSelected = station.id == state.activeStationId,
+                        // Tapping a card makes it the selected station for both map views; Back returns to the map
+                        onSelect = { onStationSelected(station.id) },
+                        selectedLabel = state.selectedLabel
+                    )
+                }
+            }
+        }
+    }
+    RegionPickerOverlay(
+        state = pickerState,
+        selectedRegionId = selectedRegionId,
+        onSelectRegion = onSelectRegion
+    )
+    }
+}

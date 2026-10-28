@@ -14,13 +14,13 @@ plugins {
 }
 
 android {
-    namespace = "io.github.genesjc.microclimatefinder"
+    namespace = "io.github.genesjc.climatefinder"
     compileSdk {
         version = release(version = 37)
     }
 
     defaultConfig {
-        applicationId = "io.github.genesjc.microclimatefinder"
+        applicationId = "io.github.genesjc.climatefinder"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
@@ -45,14 +45,14 @@ android {
         create("foss") {
             dimension = "distribution"
             isDefault = true
-            applicationId = "io.github.genesjc.microclimatefinder"
+            applicationId = "io.github.genesjc.climatefinder"
             versionNameSuffix = "-foss"
             buildConfigField("String", "FLAVOR_TYPE", "\"FOSS\"")
             buildConfigField("Boolean", "IS_COMMERCIAL", "false")
         }
         create("commercial") {
             dimension = "distribution"
-            applicationId = "com.genetech.microclimatefinder"
+            applicationId = "io.github.genesjc.climatefinder.commercial"
             versionNameSuffix = "-commercial"
             buildConfigField("String", "FLAVOR_TYPE", "\"COMMERCIAL\"")
             buildConfigField("Boolean", "IS_COMMERCIAL", "true")
@@ -119,7 +119,7 @@ dependencies {
 // build has finished, so it is visible without scrolling. Uses Gradle's build-finished hook (works
 // with the configuration cache). The label is read as a file input so a label change is picked up.
 val buildLabel = providers.fileContents(
-    layout.projectDirectory.file("src/main/java/io/github/genesjc/microclimatefinder/BuildInfo.kt")
+    layout.projectDirectory.file("src/main/java/io/github/genesjc/climatefinder/BuildInfo.kt")
 ).asText.map { text ->
     Regex("LABEL = \"([^\"]+)\"").find(text)?.groupValues?.get(1) ?: "unknown"
 }
