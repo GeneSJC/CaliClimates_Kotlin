@@ -13,7 +13,7 @@ ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 SRC = os.path.join(ROOT, "app", "src", "main")
 ICON = os.path.join(SRC, "ic_launcher-playstore.png")
 RELIEF = os.path.join(SRC, "assets", "terrain", "california.webp")
-STATE = os.path.join(SRC, "java", "io", "github", "genesjc", "microclimatefinder", "domain", "model", "StateUsaCA.kt")
+STATE = os.path.join(SRC, "java", "io", "github", "genesjc", "climatefinder", "domain", "model", "StateUsaCA.kt")
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 FONT_TEXT = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
 

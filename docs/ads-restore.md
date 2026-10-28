@@ -47,12 +47,12 @@ The ads switch (Build 97.3): `adsEnabled` in `app/build.gradle.kts` (a private p
 `commercial` flavor only, and a line printed at the start of every build saying whether ads are on or off.
 
 The kit, verbatim, in the tag under `docs/ads-kit/` (16 source files, Gradle and string snippets, the foss-clean script, two design
-documents). Package placeholders: `PACKAGE_PATH` in paths and `__PACKAGE__` in code; this app's package is
-`io.github.genesjc.microclimatefinder`. The kit's `README.md` is its own integration guide.
+documents). Package placeholders: `PACKAGE_PATH` in paths and `__PACKAGE__` in code; this repository's package is
+`io.github.genesjc.climatefinder`. The kit's `README.md` is its own integration guide.
 
 ## Before bringing ads back (the reasons it was parked)
 
-1. An AdMob account in good standing, and the app (`com.genetech.microclimatefinder`) registered with a banner unit and a
+1. An AdMob account in good standing, and the app (`io.github.genesjc.climatefinder.commercial`) registered with a banner unit and a
    rewarded unit.
 2. A privacy policy that covers advertising, and a consent message configured in AdMob for the EU and UK.
 3. The store declarations: the Play Console asks whether the app contains ads and whether it uses the advertising ID.
@@ -62,6 +62,19 @@ documents). Package placeholders: `PACKAGE_PATH` in paths and `__PACKAGE__` in c
    check the account standing first.
 
 ## How to restore
+
+> [!IMPORTANT]
+> **Package fix-up for files copied from the tag.** The tag's files and folders use the package
+> `io.github.genesjc.microclimatefinder`; this repository's package is `io.github.genesjc.climatefinder`. The paths in the
+> commands below are the tag's paths. After copying, move the files under `.../genesjc/climatefinder/` and fix the package
+> name in them, for example (from the repository root, after the `git checkout` below):
+> ```
+> for d in $(find app/src -type d -path "*/io/github/genesjc/microclimatefinder"); do
+>   mkdir -p "$(dirname "$d")/climatefinder" && cp -R "$d"/. "$(dirname "$d")/climatefinder/" && rm -rf "$d"
+> done
+> grep -rl "io.github.genesjc.microclimatefinder" app scripts 2>/dev/null | xargs sed -i 's/io\.github\.genesjc\.microclimatefinder/io.github.genesjc.climatefinder/g'
+> ```
+> The kit under `docs/ads-kit/` uses placeholders (`PACKAGE_PATH`, `__PACKAGE__`), so it takes this repository's package directly.
 
 Do not merge the tag. Copy files from the tag onto a fresh branch from the then-current `develop`:
 
