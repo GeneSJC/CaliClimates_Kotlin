@@ -23,7 +23,7 @@ internal val NwsJson = Json { ignoreUnknownKeys = true }
 
 const val NWS_BASE_URL = "https://api.weather.gov/"
 
-private const val USER_AGENT = "Cali Climates (https://github.com/GeneSJC/Android_MicroClimateFinder)"
+private const val USER_AGENT = "Cali Climates (https://github.com/GeneSJC/CaliClimates_Kotlin)"
 private const val TIMEOUT_SECONDS = 10L
 
 /** The HTTP client for the NWS: 10-second timeouts and an identifying User-Agent, which the NWS asks for. */
