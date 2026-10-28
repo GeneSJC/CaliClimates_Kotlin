@@ -5,6 +5,7 @@
     <!-- Elevation text -->
     <string name="elevation_feet">%1$,d ft</string>
     <string name="elevation_described">%1$s · %2$s</string>
+    <string name="distance_miles_away">%1$,d mi away</string>
     <string name="elevation_range">%1$,d–%2$,d ft</string>
     <string name="elevation_note_about">About as high as %1$s (%2$,d ft).</string>
     <string name="elevation_note_higher">Higher than %1$s (%2$,d ft).</string>

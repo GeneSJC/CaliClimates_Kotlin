@@ -37,6 +37,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import io.github.genesjc.climatefinder.ui.text.rememberFeetFormatter
+import io.github.genesjc.climatefinder.ui.text.rememberMilesAwayFormatter
+import io.github.genesjc.climatefinder.domain.StationDistance
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import androidx.compose.ui.unit.IntSize
@@ -116,6 +118,11 @@ internal fun ElevationProfileCanvas(
     val feetText = rememberFeetFormatter()
     val labelTexts = remember(sorted) {
         sorted.map { cityName(it) + " ${feetText(it.elevationMeters)}" }
+    }
+    // How far each station is from the selected one (nothing selected: no distances), added to the other labels
+    val milesAwayText = rememberMilesAwayFormatter()
+    val milesFromSelected = remember(sorted, selectedStationId) {
+        sorted.find { it.id == selectedStationId }?.let { StationDistance.milesFrom(it, sorted) }.orEmpty()
     }
     val ridgeCache = remember { RidgeHeights() }
     val cycleIds = remember(sorted) {
@@ -337,7 +344,7 @@ internal fun ElevationProfileCanvas(
                 val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
                 val pinY = with(density) { viewY(paddingPx + profileFrac(elevRatio) * heightPx).toDp().value }
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
-                val text = labelTexts[idx]
+                val text = milesFromSelected[station.id]?.let { labelTexts[idx] + " · " + milesAwayText(it) } ?: labelTexts[idx]
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
                 val labelW = text.length * 5.4f + 10f
                 val left = (if (pinX - 24f + labelW > widthDp.value * 0.97f) pinX - labelW else pinX - 24f).coerceAtLeast(2f)
