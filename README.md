@@ -88,8 +88,8 @@ each, and how the numbers change as the ground climbs.
 **You need** Android Studio (current stable). The app runs on Android 7.0 (API 24) and newer.
 
 ```bash
-git clone https://github.com/GeneSJC/Android_MicroClimateFinder.git
-cd Android_MicroClimateFinder
+git clone https://github.com/GeneSJC/CaliClimates_Kotlin.git
+cd CaliClimates_Kotlin
 ```
 
 1. Open the folder in Android Studio and let Gradle sync.
