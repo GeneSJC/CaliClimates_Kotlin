@@ -165,6 +165,8 @@ flowchart LR
     class CA,W b;
 ```
 
+That is why the code's package is `io.github.genesjc.climatefinder` and not the app's name: Cali Climates is the California edition of a state-neutral code base, and another state is an addition, not a rewrite.
+
 ### Principles at a glance
 
 - 🧱 **Dependencies point one way.** Screens never reach a repository; the data layer never knows about screens.
