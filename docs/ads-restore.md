@@ -52,7 +52,7 @@ documents). Package placeholders: `PACKAGE_PATH` in paths and `__PACKAGE__` in c
 
 ## Before bringing ads back (the reasons it was parked)
 
-1. An AdMob account in good standing, and the app (`com.genetech.microclimatefinder`) registered with a banner unit and a
+1. An AdMob account in good standing, and the app (`io.github.genesjc.microclimatefinder.commercial`) registered with a banner unit and a
    rewarded unit.
 2. A privacy policy that covers advertising, and a consent message configured in AdMob for the EU and UK.
 3. The store declarations: the Play Console asks whether the app contains ads and whether it uses the advertising ID.

@@ -52,7 +52,7 @@ android {
         }
         create("commercial") {
             dimension = "distribution"
-            applicationId = "com.genetech.microclimatefinder"
+            applicationId = "io.github.genesjc.microclimatefinder.commercial"
             versionNameSuffix = "-commercial"
             buildConfigField("String", "FLAVOR_TYPE", "\"COMMERCIAL\"")
             buildConfigField("Boolean", "IS_COMMERCIAL", "true")
