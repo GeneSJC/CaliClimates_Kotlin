@@ -60,8 +60,9 @@ fun LayerLegend(
     val names = listOf(R.string.elevation_band_south, R.string.elevation_band_central, R.string.elevation_band_north)
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color.White.copy(alpha = 0.92f),
-        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        // Dark and a little see-through, like the weather badge and the notice, so the bar sits back in the chart
+        color = Color(0xE61E293B),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
         shadowElevation = 2.dp,
         modifier = modifier.alpha(alpha)
     ) {
@@ -90,7 +91,7 @@ fun LayerLegend(
                         text = name,
                         fontSize = 12.sp,
                         fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                        color = if (active) Color.White else color.copy(alpha = if (enabled) 0.95f else 0.35f)
+                        color = if (active) Color.White else lerp(color, Color.White, 0.55f).copy(alpha = if (enabled) 1f else 0.4f)
                     )
                 }
             }
