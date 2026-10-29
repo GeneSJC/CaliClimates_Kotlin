@@ -39,4 +39,10 @@ class StationNamesTest {
         assertEquals("Rose Peak", towns.displayName("RSPC1", "Rose Peak"))
         assertEquals("Rose Peak", towns.getCleanCityName("RSPC1", "Rose Peak"))
     }
+
+    @Test
+    fun countyIsDroppedFromAFacilityNameButKeptInCountyLine() {
+        assertEquals("Yuba", towns.getCleanCityName("KMYV", "Yuba County Airport"))
+        assertEquals("County Line", towns.getCleanCityName("CLNC1", "County Line"))
+    }
 }
