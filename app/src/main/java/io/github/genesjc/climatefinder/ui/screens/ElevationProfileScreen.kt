@@ -53,6 +53,9 @@ internal const val LANDMARK_COUNT = 6
 // Chart margin in pixels; the Canvas and the label overlay must use the same value
 internal const val CHART_PADDING_PX = 32f
 
+/** How far past the chart's edges the Elevation view can be dragged, as a share of the viewport (Topography has its own, MAP_OVERSCROLL). */
+internal const val ELEVATION_OVERSCROLL = 0.40f
+
 // The profile sits between a little headroom and sea level; the bottom of the chart is ocean, so sea level
 // is in view and the cities spread over more of the height
 internal const val PROFILE_HEAD = 0.15f

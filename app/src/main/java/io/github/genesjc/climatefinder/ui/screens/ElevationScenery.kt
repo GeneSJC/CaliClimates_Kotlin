@@ -220,7 +220,7 @@ internal fun heightTint(elevationMeters: Float): Color {
 internal data class SkyAtmosphereTheme(
     val colors: List<Color>,
     @StringRes val conditionRes: Int,
-    val icon: String,
+    val icon: String?,
     val accent: Color,
     val badgeBg: Color
 )
