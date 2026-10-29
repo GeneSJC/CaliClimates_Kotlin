@@ -45,7 +45,11 @@ data class HomeUiState(
     /** Whether the maps' zoom slider is showing: one setting for both map views. */
     val sliderShown: Boolean = true,
     /** Whether the Region Info sheet is open; kept here so it survives a trip to the Station List. */
-    val infoOpen: Boolean = false
+    val infoOpen: Boolean = false,
+    /** The station dataset of [selectedRegionId]; null when the region has no data (Home then shows its limited-data banner). */
+    val regionDataset: StationDatasetInfo? = null,
+    /** True while the first region's stations are being read at start-up; Home shows a loading view until they are in. */
+    val loading: Boolean = true
 )
 
 /** Something Home's screen does once, in answer to a change. */
@@ -58,8 +62,10 @@ sealed interface HomeEvent {
  * Owns Home's state and the work that follows from it.
  *
  * - State: [uiState] is a [StateFlow]; the UI collects it and calls the functions below for every change.
- * - Region: choosing a region reads its stations off the main thread, then saves it and clears the selected station. The selected station and the map zoom
- *   are saved too, and come back on the next launch as long as they were set in the saved region.
+ * - Region: the saved region's stations are read off the main thread when Home starts ([HomeUiState.loading] is true until
+ *   they are in). Choosing a region reads its stations off the main thread too, then saves it and clears the selected
+ *   station. The selected station and the map zoom are saved too, and come back on the next launch as long as they were
+ *   set in the saved region.
  * - Live readings: whenever the region changes, it opens a visit to the new region in [LiveReadings], which fetches
  *   the region's featured stations and cancels the previous visit's fetch.
  *
@@ -103,6 +109,9 @@ class HomeViewModel : AppBaseViewModel() {
 
     private val zoomChanges = MutableSharedFlow<Float>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
+    /** The region being read (at start-up, or after a choice); a newer choice replaces it. */
+    private var regionLoad: Job? = null
+
     init {
         viewModelScope.launch {
             zoomChanges.debounce(ZOOM_SAVE_DELAY_MS).collect { settings.saveMapZoom(uiState.value.selectedRegionId, it) }
@@ -112,6 +121,12 @@ class HomeViewModel : AppBaseViewModel() {
                 readings.open(datasets.stationsFor(regionId))
             }
         }
+        // Read the saved region's stations off the main thread; Home shows its loading view until they are in
+        regionLoad = viewModelScope.launch {
+            val regionId = _uiState.value.selectedRegionId
+            val dataset = readRegion(regionId)
+            _uiState.update { it.copy(regionDataset = dataset, loading = false) }
+        }
         // Once the first region is on its way, read the other regions' stations in the background, so changing
         // region later finds them already parsed instead of unzipping a pack on the main thread mid-transition
         viewModelScope.launch {
@@ -119,7 +134,11 @@ class HomeViewModel : AppBaseViewModel() {
         }
     }
 
-    private var regionLoad: Job? = null
+    /** Reads the region's stations and its dataset summary off the main thread, so the screen only looks them up. */
+    private suspend fun readRegion(regionId: String): StationDatasetInfo? {
+        datasets.stationsFor(regionId)
+        return datasets.datasetFor(regionId)
+    }
 
     /**
      * Changes the app-wide region, remembers it, and clears (and forgets) the station chosen in the old one. A region
@@ -130,37 +149,39 @@ class HomeViewModel : AppBaseViewModel() {
      */
     fun selectRegion(regionId: String) {
         regionLoad?.cancel()
-        if (regionId == _uiState.value.selectedRegionId) {
-            applyRegion(regionId, changed = false)
+        val current = _uiState.value
+        if (regionId == current.selectedRegionId && !current.loading) {
+            applyRegion(regionId, current.regionDataset, changed = false)
             return
         }
         regionLoad = viewModelScope.launch {
-            datasets.stationsFor(regionId)
-            applyRegion(regionId, changed = true)
+            val dataset = readRegion(regionId)
+            applyRegion(regionId, dataset, changed = regionId != _uiState.value.selectedRegionId)
         }
     }
 
-    private fun applyRegion(regionId: String, changed: Boolean) {
+    private fun applyRegion(regionId: String, dataset: StationDatasetInfo?, changed: Boolean) {
         settings.saveSelectedRegionId(regionId)
         settings.saveSelectedStationId(regionId, null)
         mapZoom = 1f
         settings.saveMapZoom(regionId, 1f)
-        _uiState.update { it.copy(selectedRegionId = regionId, selectedStationId = null) }
+        _uiState.update { it.copy(selectedRegionId = regionId, selectedStationId = null, regionDataset = dataset, loading = false) }
         if (changed) _events.trySend(HomeEvent.RegionChanged)
     }
 
     /**
-     * The region's stations, for Home's dropdown, Terrain Legend and station card. Usually already read (the region's
-     * fetch and the warm-up of the others do it in the background), so it is a lookup; call it from remember, not per frame.
+     * The region's stations, for Home's dropdown, Terrain Legend and station card. Already read once Home has loaded (the
+     * region's own read and the warm-up of the others do it in the background), so it is a lookup that never reads a
+     * pack; call it from remember, not per frame.
      */
     fun stations(regionId: String): List<MicroclimateStation> =
-        datasets.datasetFor(regionId)?.let { stationRepository.peek(it) } ?: emptyList()
+        datasets.cachedDatasetFor(regionId)?.let { stationRepository.peek(it) } ?: emptyList()
 
-    /** The region's station dataset, or null when it has no data (Home then shows its limited-data banner). */
-    fun datasetFor(regionId: String): StationDatasetInfo? = datasets.datasetFor(regionId)
+    /** The default region's dataset, for the Station List when a region has none; read (off the main thread) only when asked. */
+    suspend fun defaultDataset(): StationDatasetInfo = datasets.defaultDataset()
 
-    /** The Bay Area dataset, for the Station List when a region has none; read only when asked. */
-    fun defaultDataset(): StationDatasetInfo = datasets.defaultDataset()
+    /** An empty stand-in for the default dataset, for while [defaultDataset] is being read. */
+    fun emptyDefaultDataset(): StationDatasetInfo = datasets.emptyDefaultDataset()
 
     fun fullDataRegionCount(): Int = datasets.fullDataRegionCount()
 

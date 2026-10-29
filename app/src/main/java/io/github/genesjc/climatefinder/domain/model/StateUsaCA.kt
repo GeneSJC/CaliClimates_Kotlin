@@ -227,7 +227,6 @@ object StateUsaCA : StateUsaDefinition {
     /** The town each station is in, by station id, for the names on the maps and cards (not every station has one). */
     override val stationTowns: Map<String, String> = mapOf(
         "KVCB" to "Vacaville",
-        "KSUU" to "Fairfield",
         "KSMF" to "Sacramento",
         "KSAC" to "Sacramento",
         "KMHR" to "Rancho Cordova",
