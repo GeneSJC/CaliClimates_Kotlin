@@ -200,7 +200,7 @@ internal fun ElevationProfileCanvas(
     fun animateZoomTo(newZoom: Float, anchor: Offset, w: Float, h: Float) {
         zoomJob?.cancel()
         zoomJob = zoomScope.launch {
-            animateZoom(zoom, pan, newZoom, anchor, w, h, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL) { z, p -> zoom = z; pan = p }
+            animateZoom(zoom, pan, newZoom, anchor, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL) { z, p -> zoom = z; pan = p }
         }
     }
 
@@ -292,8 +292,8 @@ internal fun ElevationProfileCanvas(
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
-                    val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL)
-                    pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL)
+                    val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL)
+                    pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL)
                     zoom = newZoom
                 }
             }
@@ -382,7 +382,7 @@ internal fun ElevationProfileCanvas(
             val from = pan
             val target = clampPan(
                 Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
-                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL
+                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL
             )
             val startedAt = System.nanoTime()
             androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(LAYERS_FADE_MS, easing = FastOutSlowInEasing)) { v, _ ->
@@ -408,7 +408,7 @@ internal fun ElevationProfileCanvas(
             val from = pan
             val target = clampPan(
                 Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
-                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL
+                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL
             )
             val startedAt = System.nanoTime()
             androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(BRING_INTO_VIEW_MS, easing = FastOutSlowInEasing)) { v, _ ->
@@ -553,20 +553,26 @@ internal fun ElevationProfileCanvas(
             val h = size.height - (padding * 2)
 
             // 1. DYNAMIC SKY GRADIENT FILL: fills the open space above & to the left of the slope
+            // The sky and the ground run well past the chart's edges, so the buffer beyond the first and last
+            // stations (see ELEVATION_OVERSCROLL) shows the same scenery instead of the app backdrop
+            val bleedLeft = -size.width
+            val bleedRight = size.width * 2f
+            val bleedTop = -size.height
             val skyPath = Path().apply {
                 if (layered) {
                     // Layered: the ridges are drawn behind each band's ground, so the sky is the whole chart
-                    moveTo(viewX(padding), viewY(padding))
-                    lineTo(viewX(size.width - padding), viewY(padding))
-                    lineTo(viewX(size.width - padding), viewY(size.height - padding))
-                    lineTo(viewX(padding), viewY(size.height - padding))
+                    moveTo(bleedLeft, bleedTop)
+                    lineTo(bleedRight, bleedTop)
+                    lineTo(bleedRight, size.height * 3f)
+                    lineTo(bleedLeft, size.height * 3f)
                 } else {
-                    moveTo(viewX(padding), viewY(padding))
-                    lineTo(viewX(size.width - padding), viewY(padding))
-                    lineTo(viewX(size.width - padding), viewY(pinBaseY(sorted.lastIndex.coerceAtLeast(0))))
+                    moveTo(bleedLeft, bleedTop)
+                    lineTo(bleedRight, bleedTop)
+                    lineTo(bleedRight, viewY(pinBaseY(sorted.lastIndex.coerceAtLeast(0))))
                     for (i in (sorted.size - 1) downTo 0) {
                         lineTo(viewX(padding + (i.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w), viewY(pinBaseY(i)))
                     }
+                    lineTo(bleedLeft, viewY(pinBaseY(0)))
                 }
                 close()
             }
@@ -700,8 +706,8 @@ internal fun ElevationProfileCanvas(
                 val terrainPath = Path()
                 val linePath = Path()
                 val floor = viewY(size.height - padding)
-                val leftEdge = viewX(padding)
-                val rightEdge = viewX(size.width - padding)
+                val leftEdge = bleedLeft
+                val rightEdge = bleedRight
 
                 members.forEachIndexed { k, index ->
                     val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
@@ -1155,7 +1161,7 @@ internal fun ElevationProfileCanvas(
             onValueChange = { newZoom ->
                 // Zoom about the point on the line nearest the middle of the view, not the (often empty) middle itself
                 zoomJob?.cancel()
-                pan = panForZoom(pan, zoom, newZoom, nearestLinePoint(), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL)
+                pan = panForZoom(pan, zoom, newZoom, nearestLinePoint(), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL)
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) },
