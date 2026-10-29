@@ -228,7 +228,7 @@ internal fun ElevationProfileCanvas(
                     Color(0xFFE2E8F0).copy(alpha = 0.05f)
                 ),
                 conditionRes = R.string.reading_none,
-                icon = "⛰️",
+                icon = null,
                 accent = Color(0xFFCBD5E1),
                 badgeBg = Color(0xFF1E293B)
             )
@@ -272,7 +272,7 @@ internal fun ElevationProfileCanvas(
                     Color(0xFF38BDF8).copy(alpha = 0.06f)
                 ),
                 conditionRes = R.string.sky_crisp_alpine,
-                icon = "🏔️",
+                icon = "❄️",
                 accent = Color(0xFFA78BFA),
                 badgeBg = Color(0xFF1E1B4B)
             )
@@ -1002,7 +1002,7 @@ internal fun ElevationProfileCanvas(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                Text(text = skyTheme.icon, fontSize = ms(14f))
+                skyTheme.icon?.let { Text(text = it, fontSize = ms(14f)) }
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
