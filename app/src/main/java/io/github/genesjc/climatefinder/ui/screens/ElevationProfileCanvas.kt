@@ -200,7 +200,7 @@ internal fun ElevationProfileCanvas(
     fun animateZoomTo(newZoom: Float, anchor: Offset, w: Float, h: Float) {
         zoomJob?.cancel()
         zoomJob = zoomScope.launch {
-            animateZoom(zoom, pan, newZoom, anchor, w, h, CHART_PADDING_PX, CHART_PADDING_PX) { z, p -> zoom = z; pan = p }
+            animateZoom(zoom, pan, newZoom, anchor, w, h, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL) { z, p -> zoom = z; pan = p }
         }
     }
 
@@ -292,8 +292,8 @@ internal fun ElevationProfileCanvas(
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
-                    val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX)
-                    pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX)
+                    val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL)
+                    pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL)
                     zoom = newZoom
                 }
             }
@@ -382,7 +382,7 @@ internal fun ElevationProfileCanvas(
             val from = pan
             val target = clampPan(
                 Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
-                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX
+                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL
             )
             val startedAt = System.nanoTime()
             androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(LAYERS_FADE_MS, easing = FastOutSlowInEasing)) { v, _ ->
@@ -408,7 +408,7 @@ internal fun ElevationProfileCanvas(
             val from = pan
             val target = clampPan(
                 Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
-                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX
+                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL
             )
             val startedAt = System.nanoTime()
             androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(BRING_INTO_VIEW_MS, easing = FastOutSlowInEasing)) { v, _ ->
@@ -1155,7 +1155,7 @@ internal fun ElevationProfileCanvas(
             onValueChange = { newZoom ->
                 // Zoom about the point on the line nearest the middle of the view, not the (often empty) middle itself
                 zoomJob?.cancel()
-                pan = panForZoom(pan, zoom, newZoom, nearestLinePoint(), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX)
+                pan = panForZoom(pan, zoom, newZoom, nearestLinePoint(), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, MAP_OVERSCROLL)
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) },
