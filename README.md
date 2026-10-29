@@ -46,7 +46,7 @@ each, and how the numbers change as the ground climbs.
   <tr>
     <td valign="top">
       <h4>📈 Elevation view</h4>
-      The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes.
+      The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes. Switch on <b>Elevation Bands</b> and the stations separate into three layers by latitude, north at the back, with distance from the selected station on every label.
     </td>
     <td valign="top">
       <h4>🪪 Station cards and lists</h4>
