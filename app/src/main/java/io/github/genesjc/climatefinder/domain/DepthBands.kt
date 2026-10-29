@@ -10,7 +10,7 @@ object DepthBands {
     const val COUNT = 3
 
     private val SQUASH = floatArrayOf(1f, 0.85f, 0.7f)
-    private val HAZE = floatArrayOf(0f, 0.22f, 0.4f)
+    private val HAZE = floatArrayOf(0f, 0.3f, 0.45f)
     private val LINE = floatArrayOf(1f, 0.75f, 0.5f)
 
     /** How much of the lift (see [layeredY]) a band gets, as a share of the room it leaves above itself. */

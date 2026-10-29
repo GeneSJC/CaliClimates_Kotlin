@@ -62,6 +62,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -75,6 +76,7 @@ import io.github.genesjc.climatefinder.ui.components.ZoomSlider
 import io.github.genesjc.climatefinder.ui.components.MapText
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
+import io.github.genesjc.climatefinder.ui.components.LayerColors
 import io.github.genesjc.climatefinder.ui.components.LayersToggleButton
 import io.github.genesjc.climatefinder.ui.components.SliderToggleButton
 import io.github.genesjc.climatefinder.ui.components.ms
@@ -313,15 +315,23 @@ internal fun ElevationProfileCanvas(
 
         // Layers: each station's band by latitude (all band 0 with the layers off, which is the plain profile), and
         // its pin's place on the page with the band's squash and lift
-        val bandIndex = remember(sorted, layersOn) {
-            if (layersOn) DepthBands.byLatitude(sorted.map { it.latitude }) else IntArray(sorted.size)
+        // The switch fades in and out: the squash, lift, haze and colours follow layerMix, 0 (single line) to 1 (layers)
+        val layerMix by animateFloatAsState(
+            targetValue = if (layersOn) 1f else 0f,
+            animationSpec = tween(LAYERS_FADE_MS, easing = FastOutSlowInEasing),
+            label = "layerMix"
+        )
+        val bandsActive = layersOn || layerMix > 0.001f
+        val bandIndex = remember(sorted, bandsActive) {
+            if (bandsActive) DepthBands.byLatitude(sorted.map { it.latitude }) else IntArray(sorted.size)
         }
         val layered = bandIndex.any { it > 0 }
         val layerTopY = paddingPx + PROFILE_HEAD * heightPx
         val layerSeaY = paddingPx + (1f - SEA_FRACTION) * heightPx
-        fun pinBaseY(idx: Int): Float = DepthBands.layeredY(
-            paddingPx + profileFrac(sorted[idx].elevationMeters / maxElevation) * heightPx, bandIndex[idx], layerTopY, layerSeaY
-        )
+        fun pinBaseY(idx: Int): Float {
+            val plain = paddingPx + profileFrac(sorted[idx].elevationMeters / maxElevation) * heightPx
+            return plain + (DepthBands.layeredY(plain, bandIndex[idx], layerTopY, layerSeaY) - plain) * layerMix
+        }
 
         // When the selected station changes (from the Stations list, the tile or the other view) and it is not in
         // view at this zoom and pan, ease the chart over so it is
@@ -709,8 +719,9 @@ internal fun ElevationProfileCanvas(
                 }
 
                 // The farther layers are hazed toward the sky, and their ridge lines fainter and thinner
-                if (band > 0) drawPath(terrainPath, Color(0xFF9DB4CC).copy(alpha = DepthBands.haze(band)))
-                val lineFade = DepthBands.lineFade(band)
+                if (band > 0) drawPath(terrainPath, LayerHazeColors[band].copy(alpha = DepthBands.haze(band) * layerMix))
+                val lineFade = 1f + (DepthBands.lineFade(band) - 1f) * layerMix
+                val lineColor = lerp(LayerColors[0], LayerColors[band], layerMix)
                 // A lit edge along the profile, like the sun catching the ridge
                 drawPath(
                     path = linePath,
@@ -720,7 +731,7 @@ internal fun ElevationProfileCanvas(
                 // Top ridge line
                 drawPath(
                     path = linePath,
-                    color = Color(0xFF7C3AED).copy(alpha = lineFade),
+                    color = lineColor.copy(alpha = lineFade),
                     style = Stroke(width = 3f * (1f - 0.15f * band), cap = StrokeCap.Round)
                 )
             }

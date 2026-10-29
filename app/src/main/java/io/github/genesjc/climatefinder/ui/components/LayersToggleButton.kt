@@ -1,5 +1,6 @@
 package io.github.genesjc.climatefinder.ui.components
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -18,35 +19,42 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.genesjc.climatefinder.R
 
-/** The Elevation chart's button for its layers view: three stacked ridges, lit while the layers are [on]. */
+/** The line colour of each layer, nearest (front) first: the purple of the single line, then teal, then blue. */
+val LayerColors = listOf(Color(0xFF7C3AED), Color(0xFF0D9488), Color(0xFF2563EB))
+
+/**
+ * The Elevation chart's button for its layers view. It shows the view the chart is in: one vertical bar for the
+ * single line, three stacked bars in the layers' colours for the layers (the farthest at the top, shortest).
+ */
 @Composable
 fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
-    val ink = if (on) Color.White else Color(0xFF0284C7)
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = if (on) Color(0xFF0284C7) else Color.White.copy(alpha = 0.90f),
-        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        color = Color.White.copy(alpha = 0.92f),
+        border = BorderStroke(if (on) 2.dp else 1.dp, if (on) LayerColors[1] else Color(0xFFCBD5E1)),
         modifier = modifier
-            .size(32.dp)
+            .size(36.dp)
             .clickable(
                 onClickLabel = stringResource(if (on) R.string.elevation_layers_hide else R.string.elevation_layers_show),
                 role = Role.Button,
                 onClick = onToggle
             )
     ) {
-        Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 7.dp, vertical = 8.dp)) {
-            val stroke = 2.2.dp.toPx()
-            val w = size.width
-            val h = size.height
-            // Three lines, the nearest (bottom) longest and solid, the farthest (top) short and faint
-            for (row in 0..2) {
-                val y = h * (0.1f + 0.4f * row)
-                val inset = w * 0.2f * (2 - row)
-                drawLine(
-                    ink.copy(alpha = 0.45f + 0.275f * row),
-                    Offset(inset, y), Offset(w - inset, y),
-                    strokeWidth = stroke, cap = StrokeCap.Round
-                )
+        Crossfade(targetState = on, label = "layersIcon") { layers ->
+            Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 8.dp)) {
+                val stroke = 3.dp.toPx()
+                val w = size.width
+                val h = size.height
+                if (layers) {
+                    // Three bars: the nearest (bottom) longest, the farthest (top) shortest
+                    for (row in 0..2) {
+                        val y = h * (0.12f + 0.38f * (2 - row))
+                        val inset = w * 0.17f * row
+                        drawLine(LayerColors[row], Offset(inset, y), Offset(w - inset, y), strokeWidth = stroke, cap = StrokeCap.Round)
+                    }
+                } else {
+                    drawLine(LayerColors[0], Offset(w / 2f, 0f), Offset(w / 2f, h), strokeWidth = stroke, cap = StrokeCap.Round)
+                }
             }
         }
     }

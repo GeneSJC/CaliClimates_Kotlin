@@ -516,7 +516,13 @@ fun LandingScreen(
                             onZoomChange = onMapZoomChange,
                             sliderShownShared = sliderShown,
                             onSliderShownChange = onSliderShownChange,
-                            expandT = expandT
+                            expandT = expandT,
+                            onNotice = { message ->
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
+                                }
+                            }
                         )
                     }
                     // The tile and the buttons keep their place on the screen while the map grows out underneath them
