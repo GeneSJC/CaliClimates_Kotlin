@@ -51,3 +51,10 @@ fun rememberFeetFormatter(): (Int) -> String {
     val resources = LocalContext.current.resources
     return remember(resources) { { meters: Int -> resources.getString(R.string.elevation_feet, Elevation.feet(meters)) } }
 }
+
+/** "128 mi" as a function, for the same kind of text as [rememberFeetFormatter]. */
+@Composable
+fun rememberMilesFormatter(): (Int) -> String {
+    val resources = LocalContext.current.resources
+    return remember(resources) { { miles: Int -> resources.getString(R.string.distance_miles, miles) } }
+}

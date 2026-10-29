@@ -37,6 +37,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import io.github.genesjc.climatefinder.ui.text.rememberFeetFormatter
+import io.github.genesjc.climatefinder.ui.text.rememberMilesFormatter
+import io.github.genesjc.climatefinder.domain.DepthCue
+import io.github.genesjc.climatefinder.domain.StationDistance
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import androidx.compose.ui.unit.IntSize
@@ -114,9 +117,18 @@ internal fun ElevationProfileCanvas(
     val rankedLandmarks = remember(sorted) { rankLandmarkIndexes(sorted) }
     // Each station's label text, made once (label placement runs on every zoom and pan frame)
     val feetText = rememberFeetFormatter()
+    val labelNames = remember(sorted) { sorted.map { cityName(it) } }
     val labelTexts = remember(sorted) {
-        sorted.map { cityName(it) + " ${feetText(it.elevationMeters)}" }
+        sorted.mapIndexed { i, station -> labelNames[i] + " ${feetText(station.elevationMeters)}" }
     }
+    // How far each station is from the selected one (nothing selected: no distances), added to the other labels
+    val milesText = rememberMilesFormatter()
+    val milesFromSelected = remember(sorted, selectedStationId) {
+        sorted.find { it.id == selectedStationId }?.let { StationDistance.milesFrom(it, sorted) }.orEmpty()
+    }
+    // Each station's depth from the selected one (0 here, 1 across the region); null for all when nothing is selected
+    val spanMiles = remember(sorted) { StationDistance.spanMiles(sorted) }
+    fun depthOf(id: String): Float? = milesFromSelected[id]?.let { StationDistance.depth(it.toDouble(), spanMiles) }
     val ridgeCache = remember { RidgeHeights() }
     val cycleIds = remember(sorted) {
         rankedLandmarks.take(LANDMARK_COUNT).sorted().map { sorted[it].id }
@@ -317,8 +329,10 @@ internal fun ElevationProfileCanvas(
         }
 
         // Which labels have room at this zoom: more as the profile spreads out. Only the target (room
-        // or no room) is decided here; each label's opacity eases toward it on its own.
-        val placedLabels = run {
+        // or no room) is decided here; each label's opacity eases toward it on its own. With a station selected, the
+        // others show their distance and no height, except [feetIds]: a few reference points for the heights in between
+        // (see [referenceStationIds]).
+        fun layOut(feetIds: Set<String>): List<PlacedLabel> {
             val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
             val taken = mutableListOf(
                 if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
@@ -337,17 +351,26 @@ internal fun ElevationProfileCanvas(
                 val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
                 val pinY = with(density) { viewY(paddingPx + profileFrac(elevRatio) * heightPx).toDp().value }
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
-                val text = labelTexts[idx]
-                // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
-                val labelW = text.length * 5.4f + 10f
-                val left = (if (pinX - 24f + labelW > widthDp.value * 0.97f) pinX - labelW else pinX - 24f).coerceAtLeast(2f)
+                val miles = milesFromSelected[station.id]
+                val fullText = when {
+                    miles == null -> labelTexts[idx]
+                    station.id in feetIds -> labelTexts[idx] + " · " + milesText(miles)
+                    else -> labelNames[idx] + " · " + milesText(miles)
+                }
                 // High pins stay on the lowest height so the label stays inside the chart
                 val maxLevel = if (elevRatio > 0.8f) 0 else 2
-                if (allow) {
+                val textScale = depthOf(station.id)?.let { DepthCue.textScale(it) } ?: 1f
+                fun widthFor(text: String) = text.length * 5.4f * textScale + 10f
+                // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
+                fun leftFor(text: String) =
+                    (if (pinX - 24f + widthFor(text) > widthDp.value * 0.97f) pinX - widthFor(text) else pinX - 24f).coerceAtLeast(2f)
+                // A spot for this text, or null when there is no room
+                fun tryPlace(text: String): PlacedLabel? {
+                    val left = leftFor(text)
                     for (level in 0..maxLevel) {
                         val top = pinY - 26f - 16f * level
                         if (top < 0f) continue
-                        val right = left + labelW
+                        val right = left + widthFor(text)
                         val bottom = top + LABEL_HEIGHT_DP
                         val free = taken.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
                         if (free || force) {
@@ -355,7 +378,15 @@ internal fun ElevationProfileCanvas(
                             return PlacedLabel(station, text, left, top, hasRoom = true)
                         }
                     }
+                    return null
                 }
+                if (allow) {
+                    tryPlace(fullText)?.let { return it }
+                    // No room for the longer text: the name alone (the position, size and fade still say the rest)
+                    if (miles != null) tryPlace(labelNames[idx])?.let { return it }
+                }
+                val text = fullText
+                val left = leftFor(text)
                 return PlacedLabel(station, text, left, pinY - 26f, hasRoom = false)
             }
             val plans = mutableListOf<PlacedLabel>()
@@ -375,8 +406,15 @@ internal fun ElevationProfileCanvas(
                     }
                 }
             }
-            plans
+            return plans
         }
+        val firstPass = layOut(emptySet())
+        val feetIds = if (milesFromSelected.isEmpty()) emptySet() else {
+            val selected = sorted.find { it.id == selectedStationId }
+            val others = firstPass.filter { it.hasRoom && it.station.id != selectedStationId }.map { it.station }
+            if (selected == null) emptySet() else referenceStationIds(others, selected.elevationMeters)
+        }
+        val placedLabels = if (feetIds.isEmpty()) firstPass else layOut(feetIds)
         val placedIds = placedLabels.filter { it.hasRoom }.map { it.station.id }.toSet()
         val labelFades = rememberLabelFades(placedLabels.associate { it.station.id to if (it.hasRoom) 1f else 0f })
 
@@ -715,14 +753,17 @@ internal fun ElevationProfileCanvas(
                     )
                 }
 
+                val depth = depthOf(station.id)
+                val dotCue = depth?.let { DepthCue.dotScale(it) } ?: 1f
+                val fadeCue = depth?.let { DepthCue.alpha(it) } ?: 1f
                 drawCircle(
-                    color = Color.White,
-                    radius = (if (isSelected) 8f else (if (isLandmark) 6.5f else 4.5f)) * dotGrowth,
+                    color = Color.White.copy(alpha = fadeCue),
+                    radius = (if (isSelected) 8f else (if (isLandmark) 6.5f else 4.5f)) * dotGrowth * dotCue,
                     center = Offset(x, y)
                 )
                 drawCircle(
-                    color = if (isSelected) skyTheme.accent else pinColor,
-                    radius = (if (isSelected) 6f else (if (isLandmark) 4.8f else 3.2f)) * dotGrowth,
+                    color = (if (isSelected) skyTheme.accent else pinColor).copy(alpha = fadeCue),
+                    radius = (if (isSelected) 6f else (if (isLandmark) 4.8f else 3.2f)) * dotGrowth * dotCue,
                     center = Offset(x, y)
                 )
 
@@ -872,6 +913,7 @@ internal fun ElevationProfileCanvas(
             val isSelected = station.id == selectedStationId
             val fade = labelFades[station.id] ?: 0f
             if (fade <= 0.01f) return@forEach
+            val depth = depthOf(station.id)
 
             Surface(
                 shape = RoundedCornerShape(6.dp),
@@ -886,12 +928,12 @@ internal fun ElevationProfileCanvas(
                 ),
                 modifier = Modifier
                     .offset(x = label.xDp.dp, y = label.yDp.dp)
-                    .alpha(fade)
+                    .alpha(fade * (depth?.let { DepthCue.alpha(it) } ?: 1f))
                     .clickable { onSelectStation(station) }
             ) {
                 Text(
                     text = label.text,
-                    fontSize = ms(9f),
+                    fontSize = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f)),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)

@@ -11,12 +11,14 @@ fun testStation(
     elevationMeters: Int = 10,
     terrain: TerrainType = TerrainType.VALLEY_BASIN,
     reportsTemp: Boolean? = null,
-    isFeatured: Boolean = false
+    isFeatured: Boolean = false,
+    latitude: Double = 38.5,
+    longitude: Double = -121.5
 ) = MicroclimateStation(
     id = id,
     name = name,
-    latitude = 38.5,
-    longitude = -121.5,
+    latitude = latitude,
+    longitude = longitude,
     elevationMeters = elevationMeters,
     terrain = terrain,
     currentReading = WeatherReading(
