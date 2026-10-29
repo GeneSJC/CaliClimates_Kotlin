@@ -231,10 +231,10 @@ app/src/core/  demo/  foss/  commercial/   per-flavor code      docs/   restore 
 
 | | |
 |---|---|
-| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread |
+| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread, and an Elevation view with distance cues and Elevation Bands (stations in three latitude layers) |
 | ⏸️ **Parked** | Ads (AdMob banner and a one-hour ad-free reward) and a local-news block, each kept recoverable by a tag and a restore guide |
 | 🔜 **Next** | A first release (store listing, privacy policy, signing), real screenshots for this page, and continuous integration |
-| 💡 **Later** | A second USA state, localized place names, search on the Station List |
+| 💡 **Later** | A second USA state, localized place names, search on the Station List, and a cross-section chart (distance along a line) for the Elevation view |
 
 <a id="parked-features"></a>
 
