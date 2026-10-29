@@ -67,12 +67,15 @@ class FakeAppSettings(
 
 /** A dataset for any region id, with one featured station named after the region. */
 class FakeDatasets : RegionDatasets {
-    override fun datasetFor(regionId: String) = StationDatasetInfo(
+    override suspend fun datasetFor(regionId: String) = cachedDatasetFor(regionId)
+
+    override fun cachedDatasetFor(regionId: String) = StationDatasetInfo(
         regionId = regionId, fileName = "$regionId.txt", kind = DatasetKind.BUNDLED_PACK,
         stationCount = 1, minElevationMeters = 0, maxElevationMeters = 1
     )
 
-    override fun defaultDataset() = datasetFor("default")
+    override suspend fun defaultDataset() = cachedDatasetFor("default")
+    override fun emptyDefaultDataset() = cachedDatasetFor("empty")
     override fun fullDataRegionCount() = 5
     override fun totalRegionCount() = 6
     override suspend fun stationsFor(regionId: String): List<MicroclimateStation> =
