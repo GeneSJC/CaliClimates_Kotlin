@@ -43,7 +43,7 @@ const val LAYER_LEGEND_WIDTH_DP = 3 * 64f + 2 * 2f + 6f
 const val LAYER_LEGEND_HEIGHT_DP = 40f
 
 /**
- * The key to the Elevation Bands view, and a way to move between the bands: a bar of three segments, North, Central
+ * The key to the bands (shown in the single-line view too, where the tags carry the band's colour as a stripe), and a way to move between them: a bar of three segments, North, Central
  * and South from left to right (the back ridge first), each in its band's colour. The active band's segment, the one
  * holding the selected station, is filled with a darker tone of that band's ground colour on the chart, with white text, and outlined in its line colour. Tapping another band's segment calls [onPick] with that band; a band with
  * no stations ([hasStations] false) is greyed out. It floats in one place whatever the pan and zoom, and [alpha]

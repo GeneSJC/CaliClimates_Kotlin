@@ -34,7 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import io.github.genesjc.climatefinder.ui.text.rememberFeetFormatter
@@ -326,13 +328,18 @@ internal fun ElevationProfileCanvas(
             label = "layerMix"
         )
         val bandsActive = layersOn || layerMix > 0.001f
-        val bandIndex = remember(sorted, bandsActive) {
-            if (bandsActive) DepthBands.byLatitude(sorted.map { it.latitude }) else IntArray(sorted.size)
+        // Every station's latitude band, always: the tags and the key use it in both views; the layout only when the
+        // Elevation Bands are on (otherwise everything is in band 0, the plain profile)
+        val latBands = remember(sorted) { DepthBands.byLatitude(sorted.map { it.latitude }) }
+        val bandIndex = remember(sorted, bandsActive, latBands) {
+            if (bandsActive) latBands else IntArray(sorted.size)
         }
         val layered = bandIndex.any { it > 0 }
         // The layer that holds the selected station is the active one; the others step back (null: no layers)
         val activeIdx = sorted.indexOfFirst { it.id == currentStation?.id }
         val activeBand: Int? = if (activeIdx >= 0) bandIndex[activeIdx] else null
+        // The band of the selected station, for the key (in both views)
+        val keyBand: Int? = if (activeIdx >= 0) latBands[activeIdx] else null
         // A ripple runs along the line when the active layer changes (or the layers come on), not on the first look:
         // the visit's own ripple covers that
         var rippleArmed by remember { mutableStateOf(false) }
@@ -417,7 +424,7 @@ internal fun ElevationProfileCanvas(
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
                 listOf(widthDp.value - 44f, layersButtonTop.value, widthDp.value, layersButtonTop.value + 36f),  // layers button
-                if (layersOn) listOf(widthDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_WIDTH_DP, heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value) else listOf(0f, 0f, 0f, 0f),  // the bands key
+                listOf(widthDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_WIDTH_DP, heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value),  // the bands key
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
@@ -440,7 +447,7 @@ internal fun ElevationProfileCanvas(
                 // The text's width at one line (the size setting included), and the label's real width: long ones wrap to two lines
                 // (the size setting and the phone's font size both change how big the text is)
                 val textSize = textScale * MapText.scale * density.fontScale
-                fun lineWidthFor(text: String) = text.length * 5.4f * textSize + 10f
+                fun lineWidthFor(text: String) = text.length * 5.4f * textSize + 15f
                 fun widthFor(text: String) = minOf(lineWidthFor(text), LABEL_MAX_WIDTH_DP)
                 fun heightFor(text: String) =
                     (if (lineWidthFor(text) > LABEL_MAX_WIDTH_DP) 2 else 1) * 9f * 1.3f * textSize + 8f
@@ -1035,6 +1042,7 @@ internal fun ElevationProfileCanvas(
             val depth = depthOf(station.id)
             // A far station's text is fainter, but its tag stays solid
             val depthFade = depth?.let { DepthCue.alpha(it) } ?: 1f
+            val stripe = LayerColors[latBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)]]
 
             Surface(
                 shape = RoundedCornerShape(6.dp),
@@ -1060,7 +1068,10 @@ internal fun ElevationProfileCanvas(
                     fontSize = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f)),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = depthFade),
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    // A stripe down the tag's left edge in its band's colour (see the key at the bottom right)
+                    modifier = Modifier
+                        .drawBehind { drawRect(stripe, size = Size(4.dp.toPx(), size.height)) }
+                        .padding(start = 9.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
                 )
             }
         }
@@ -1070,7 +1081,7 @@ internal fun ElevationProfileCanvas(
         fun pickInBand(band: Int) {
             val middle = Offset(canvasW / 2f, canvasH / 2f)
             sorted.indices
-                .filter { bandIndex[it] == band }
+                .filter { latBands[it] == band }
                 .minByOrNull { i ->
                     val spot = Offset(
                         viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
@@ -1080,15 +1091,13 @@ internal fun ElevationProfileCanvas(
                 }
                 ?.let { onSelectStation(sorted[it]) }
         }
-        if (layerMix > 0.01f) {
-            LayerLegend(
-                activeBand = activeBand,
-                hasStations = List(DepthBands.COUNT) { band -> bandIndex.any { it == band } },
-                alpha = layerMix,
-                onPick = ::pickInBand,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
-            )
-        }
+        LayerLegend(
+            activeBand = keyBand,
+            hasStations = List(DepthBands.COUNT) { band -> latBands.any { it == band } },
+            alpha = 1f,
+            onPick = ::pickInBand,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
+        )
         LayersToggleButton(
             on = layersOn,
             onToggle = onToggleLayers,
