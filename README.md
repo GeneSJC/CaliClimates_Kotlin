@@ -2,6 +2,16 @@
 
 <img src="docs/images/banner.png" alt="Cali Climates: explore California's climates, region by region" width="100%">
 
+<p>
+<a href="#chip-nws"><img src="docs/images/chip-live-nws.png" alt="Live NWS Readings" height="34"></a>
+<a href="#chip-terrain"><img src="docs/images/chip-terrain-relief.png" alt="Terrain Relief" height="34"></a>
+<a href="#chip-distance"><img src="docs/images/chip-distance-aware-labels.png" alt="Distance-Aware Labels" height="34"></a>
+<br>
+<a href="#chip-bands"><img src="docs/images/chip-elevation-bands.png" alt="Elevation Bands" height="34"></a>
+<a href="#chip-transitions"><img src="docs/images/chip-smooth-transitions.png" alt="Smooth Transitions" height="34"></a>
+<a href="#chip-state"><img src="docs/images/chip-one-state-two-views.png" alt="One State, Two Views" height="34"></a>
+</p>
+
 <br>
 
 **An Android app that shows how California's weather changes from the coast to the mountains to the desert.**<br>
@@ -16,7 +26,7 @@ Live National Weather Service readings from about 360 stations in six regions, o
 ![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)
 [![License](https://img.shields.io/badge/License-Apache_2.0-0B1736?style=flat-square)](LICENSE)
 
-[**What it does**](#-what-it-does) &nbsp;·&nbsp; [**Screens**](#-screens) &nbsp;·&nbsp; [**Run it**](#-run-it) &nbsp;·&nbsp; [**Architecture**](#-architecture) &nbsp;·&nbsp; [**Tech stack**](#-tech-stack) &nbsp;·&nbsp; [**Docs**](#-docs) &nbsp;·&nbsp; [**Status**](#-status)
+[**What it does**](#-what-it-does) &nbsp;·&nbsp; [**Design choices**](#-design-choices) &nbsp;·&nbsp; [**Screens**](#-screens) &nbsp;·&nbsp; [**Run it**](#-run-it) &nbsp;·&nbsp; [**Architecture**](#-architecture) &nbsp;·&nbsp; [**Tech stack**](#-tech-stack) &nbsp;·&nbsp; [**Docs**](#-docs) &nbsp;·&nbsp; [**Status**](#-status)
 
 <img src="docs/images/divider.png" alt="" width="100%">
 
@@ -62,6 +72,38 @@ each, and how the numbers change as the ground climbs.
 > [!NOTE]
 > Readings come from the National Weather Service's public API (`api.weather.gov`), which needs no key. A station that cannot
 > report shows plainly that it has no reading, instead of a made-up number.
+
+## 🧭 Design choices
+
+The six things on the banner are decisions about how the app should feel, made first and then built inside the usual Android
+constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is and where it lives.
+
+<table>
+  <tr>
+    <td width="25%" valign="top"><a id="chip-nws"></a><img src="docs/images/chip-live-nws.png" alt="Live NWS Readings" height="26"></td>
+    <td valign="top">Every temperature, humidity, wind and pressure value comes from the National Weather Service's public API: no key, no made-up numbers. A reading is reused for 15 minutes, a station that failed is tried again after 5, and only four requests run at once, so the app stays quick and polite. A station with no reading says so.<br><sub>Code: [`NwsApi.kt`](app/src/main/java/io/github/genesjc/climatefinder/data/remote/NwsApi.kt), [`NwsObservationClient.kt`](app/src/main/java/io/github/genesjc/climatefinder/data/remote/NwsObservationClient.kt), [`LiveReadings.kt`](app/src/main/java/io/github/genesjc/climatefinder/data/remote/LiveReadings.kt)</sub></td>
+  </tr>
+  <tr>
+    <td width="25%" valign="top"><a id="chip-terrain"></a><img src="docs/images/chip-terrain-relief.png" alt="Terrain Relief" height="26"></td>
+    <td valign="top">Each region has a shaded-relief picture built from public elevation data (USGS 3DEP and NASA SRTM, through AWS Terrain Tiles). It is the ground under the Topography map, the texture behind the Elevation ridges and the relief behind every page. The pictures are made with scripts outside the app, so the app only loads them, off the main thread.<br><sub>Code: [`TerrainRepository.kt`](app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainRepository.kt), [`TerrainMaps.kt`](app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainMaps.kt), [`AppBackground.kt`](app/src/main/java/io/github/genesjc/climatefinder/ui/theme/AppBackground.kt)</sub></td>
+  </tr>
+  <tr>
+    <td width="25%" valign="top"><a id="chip-distance"></a><img src="docs/images/chip-distance-aware-labels.png" alt="Distance-Aware Labels" height="26"></td>
+    <td valign="top">In the Elevation view the labels around the selected station say how far each one is ("Name · 57 mi"). Near stations get larger, more solid labels and dots; far ones shrink and fade, but never below a readable size. The distances are great-circle miles, and the size, fade and dot factors are plain functions.<br><sub>Code: [`StationDistance.kt`](app/src/main/java/io/github/genesjc/climatefinder/domain/StationDistance.kt), [`DepthCue.kt`](app/src/main/java/io/github/genesjc/climatefinder/domain/DepthCue.kt), [`ElevationLabels.kt`](app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationLabels.kt)</sub></td>
+  </tr>
+  <tr>
+    <td width="25%" valign="top"><a id="chip-bands"></a><img src="docs/images/chip-elevation-bands.png" alt="Elevation Bands" height="26"></td>
+    <td valign="top">Switch it on and the Elevation chart splits the stations by latitude into South, Central and North bands, each drawn as its own ridge as if you were looking north across the region: the farther the band, the lower, hazier and differently coloured. The band holding the selected station stays sharp, with a ripple when it changes, and a key at the bottom jumps between bands.<br><sub>Code: [`DepthBands.kt`](app/src/main/java/io/github/genesjc/climatefinder/domain/DepthBands.kt), [`ElevationViewModel.kt`](app/src/main/java/io/github/genesjc/climatefinder/ui/map/ElevationViewModel.kt), [`ElevationProfileCanvas.kt`](app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationProfileCanvas.kt)</sub></td>
+  </tr>
+  <tr>
+    <td width="25%" valign="top"><a id="chip-transitions"></a><img src="docs/images/chip-smooth-transitions.png" alt="Smooth Transitions" height="26"></td>
+    <td valign="top">Things move to where you are going instead of jumping. Labels fade in and out as you zoom, the map or chart eases over to a station you pick, and a region change eases the page colour and relief texture over 1.5 seconds with a soft haptic tick. The region picker grows out of its button and folds back into it.<br><sub>Code: [`MapZoom.kt`](app/src/main/java/io/github/genesjc/climatefinder/ui/components/MapZoom.kt), [`AppBackground.kt`](app/src/main/java/io/github/genesjc/climatefinder/ui/theme/AppBackground.kt), [`RegionHaptics.kt`](app/src/main/java/io/github/genesjc/climatefinder/ui/components/RegionHaptics.kt), [`RegionPicker.kt`](app/src/main/java/io/github/genesjc/climatefinder/ui/components/RegionPicker.kt)</sub></td>
+  </tr>
+  <tr>
+    <td width="25%" valign="top"><a id="chip-state"></a><img src="docs/images/chip-one-state-two-views.png" alt="One State, Two Views" height="26"></td>
+    <td valign="top">Topography and Elevation are two views of one set of choices. The selected station, the zoom, the dot size, the text size and whether the zoom slider shows are held once, in the Home view model, and handed to both views, so switching views never loses your place.<br><sub>Code: [`HomeViewModel.kt`](app/src/main/java/io/github/genesjc/climatefinder/ui/home/HomeViewModel.kt)</sub></td>
+  </tr>
+</table>
 
 ## 📱 Screens
 

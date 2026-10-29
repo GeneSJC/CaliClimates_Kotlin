@@ -20,14 +20,17 @@ FONT_TEXT = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
 NAME = "Cali Climates"
 TAGLINE = "Explore California's climates,"
 TAGLINE2 = "region by region."
-# What the app does that is worth a second look: design choices, not libraries (the README's badge row lists those)
-# (listed in the order they sit: three to a row)
+# What the app does that is worth a second look: design choices, not libraries (the README's badge row lists those).
+# Each chip is its own image under the banner, linked to its row in the README's "Design choices" table.
+# (name, colour, file name); the order is the order they sit in, and the order of the table's rows
 CHIPS = [
-    ("Live NWS Readings", (14, 116, 144)), ("Terrain Relief", (146, 94, 40)), ("Distance-Aware Labels", (20, 120, 100)),
-    ("Elevation Bands", (91, 74, 140)), ("Smooth Transitions", (170, 92, 60)), ("One State, Two Views", (60, 90, 160)),
+    ("Live NWS Readings", (14, 116, 144), "chip-live-nws.png"),
+    ("Terrain Relief", (146, 94, 40), "chip-terrain-relief.png"),
+    ("Distance-Aware Labels", (20, 120, 100), "chip-distance-aware-labels.png"),
+    ("Elevation Bands", (91, 74, 140), "chip-elevation-bands.png"),
+    ("Smooth Transitions", (170, 92, 60), "chip-smooth-transitions.png"),
+    ("One State, Two Views", (60, 90, 160), "chip-one-state-two-views.png"),
 ]
-CHIP_GAP = 14
-CHIPS_RIGHT = 1275  # chips wrap to the next row before they reach the map of California
 SLATE, SLATE2, SKY = (20, 56, 100), (36, 112, 168), (125, 211, 252)  # a mid blue: the icon's dark lower half must stand out
 BOUNDS = (-124.5, -114.1, 31.9, 43.0)  # the statewide picture: lon min, lon max, lat min, lat max
 
@@ -114,20 +117,18 @@ def banner(path):
     shadowed(img, icon, (88, 135), opacity=70)
     ImageDraw.Draw(img).rounded_rectangle((88 - 2, 135 - 2, 88 + 251, 135 + 251), radius=58, outline=(220, 240, 255, 235), width=4)
     x = 380
-    d.text((x, 78), NAME, font=font(FONT_BOLD, 92), fill=(255, 255, 255))
-    d.rectangle((x, 198, x + 150, 206), fill=(251, 191, 36))
-    d.text((x, 226), TAGLINE, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
-    d.text((x, 270), TAGLINE2, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
-    cx, cy = x, 346
-    for text, fill in CHIPS:
-        c = chip(text, fill, size=24, pad=(14, 9))
-        if cx > x and cx + c.width > CHIPS_RIGHT:  # wrap to the next row
-            cx, cy = x, cy + c.height + CHIP_GAP
-        img.alpha_composite(c, (cx, cy))
-        cx += c.width + CHIP_GAP
+    d.text((x, 138), NAME, font=font(FONT_BOLD, 92), fill=(255, 255, 255))
+    d.rectangle((x, 258, x + 150, 266), fill=(251, 191, 36))
+    d.text((x, 286), TAGLINE, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
+    d.text((x, 330), TAGLINE2, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
     ca = california(470)
     shadowed(img, ca, (W - ca.width - 120, 25), blur=22, opacity=130)
     img.convert("RGB").save(path, optimize=True)
+
+def chip_images():
+    """One PNG per chip, drawn at twice the size it shows (the README sets its height), so it stays sharp on a phone."""
+    for text, fill, name in CHIPS:
+        chip(text, fill, size=48, pad=(28, 18)).save(os.path.join(HERE, name), optimize=True)
 
 def divider(path):
     W, H = 1600, 10
@@ -169,6 +170,7 @@ def placeholder(path, size, title, subtitle, phone=True):
 
 if __name__ == "__main__":
     banner(os.path.join(HERE, "banner.png"))
+    chip_images()
     divider(os.path.join(HERE, "divider.png"))
     footer_icon(os.path.join(HERE, "icon.png"))
     placeholder(os.path.join(HERE, "placeholder-home.png"), (540, 1100), "Home", "region, station tile, map")
