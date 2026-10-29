@@ -8,6 +8,7 @@
     <string name="map_view_show">Show the %1$s view</string>
     <string name="zoom_slider_hide">Hide the zoom slider</string>
     <string name="zoom_slider_show">Show the zoom slider</string>
+    <string name="elevation_band_pick">Pick a station in the %1$s band</string>
     <string name="elevation_layers_show">Show the Elevation Bands view</string>
     <string name="elevation_layers_hide">Show the single line view</string>
     <string name="region_picker_change">Change region</string>

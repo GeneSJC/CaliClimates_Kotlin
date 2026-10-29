@@ -10,6 +10,9 @@ import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 // Labels are about this tall (dp) when checking for overlaps
 internal const val LABEL_HEIGHT_DP = 18f
 
+// The bands key sits this far (dp) from the chart's right and bottom edges
+internal const val LEGEND_MARGIN_DP = 10f
+
 // A label wider than this (dp) wraps to a second line
 internal const val LABEL_MAX_WIDTH_DP = 124f
 
