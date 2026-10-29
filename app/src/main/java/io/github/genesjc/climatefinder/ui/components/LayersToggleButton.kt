@@ -26,14 +26,17 @@ import io.github.genesjc.climatefinder.R
 /** The line colour of each layer, nearest (front) first: the purple of the single line, then teal, then blue. */
 val LayerColors = listOf(Color(0xFF7C3AED), Color(0xFF0D9488), Color(0xFF2563EB))
 
+/** The dark green of the Elevation Bands controls and its notice. */
+val BandsGreen = Color(0xFF14532D)
+
 /**
  * The Elevation chart's button for switching views. It shows the view a tap switches to: while the chart is the single
- * line ([on] false) it shows the Elevation Bands icon (three white ridges on dark); while the bands are on it shows the
+ * line ([on] false) it shows the Elevation Bands icon (three white ridges on dark green); while the bands are on it shows the
  * single ridge (purple on white).
  */
 @Composable
 fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
-    val background by animateColorAsState(if (on) Color.White.copy(alpha = 0.92f) else Color(0xFF1E293B), label = "layersButtonColor")
+    val background by animateColorAsState(if (on) Color.White.copy(alpha = 0.92f) else BandsGreen, label = "layersButtonColor")
     Surface(
         shape = RoundedCornerShape(6.dp),
         color = background,
@@ -46,7 +49,7 @@ fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = M
                 onClick = onToggle
             )
     ) {
-        // The icon of the view a tap goes to: three ridges (white on the dark button) while on the single line
+        // The icon of the view a tap goes to: three ridges (white on the dark green button) while on the single line
         Crossfade(targetState = on, label = "layersIcon") { bandsOn ->
             Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 6.dp)) {
                 val stroke = 2.2.dp.toPx()

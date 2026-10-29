@@ -40,7 +40,7 @@ fun TopNotice(message: String?, modifier: Modifier = Modifier) {
                 if (text != null) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = Color(0xE61E293B),
+                        color = BandsGreen.copy(alpha = 0.94f),
                         modifier = Modifier.padding(horizontal = 24.dp)
                     ) {
                         Text(
