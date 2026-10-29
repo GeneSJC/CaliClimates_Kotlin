@@ -21,15 +21,17 @@ NAME = "Cali Climates"
 TAGLINE = "Explore California's climates,"
 TAGLINE2 = "region by region."
 # What the app does that is worth a second look: design choices, not libraries (the README's badge row lists those).
-# Each chip is its own image under the banner, linked to its row in the README's "Design choices" table.
-# (name, colour, file name); the order is the order they sit in, and the order of the table's rows
+# Each chip is its own image, linked to its row in the README's "Design choices" table: a small one in a row under the
+# banner (chip-top-*.png) and a larger one in the table (chip-*.png). They are drawn at the size they show, because some
+# viewers ignore the img height attribute.
+# (name, colour, file name stem); the order is the order they sit in, and the order of the table's rows
 CHIPS = [
-    ("Live NWS Readings", (14, 116, 144), "chip-live-nws.png"),
-    ("Terrain Relief", (146, 94, 40), "chip-terrain-relief.png"),
-    ("Distance-Aware Labels", (20, 120, 100), "chip-distance-aware-labels.png"),
-    ("Elevation Bands", (91, 74, 140), "chip-elevation-bands.png"),
-    ("Smooth Transitions", (170, 92, 60), "chip-smooth-transitions.png"),
-    ("One State, Two Views", (60, 90, 160), "chip-one-state-two-views.png"),
+    ("Live NWS Readings", (14, 116, 144), "live-nws"),
+    ("Terrain Relief", (146, 94, 40), "terrain-relief"),
+    ("Distance-Aware Labels", (20, 120, 100), "distance-aware-labels"),
+    ("Elevation Bands", (91, 74, 140), "elevation-bands"),
+    ("Smooth Transitions", (170, 92, 60), "smooth-transitions"),
+    ("One State, Two Views", (60, 90, 160), "one-state-two-views"),
 ]
 SLATE, SLATE2, SKY = (20, 56, 100), (36, 112, 168), (125, 211, 252)  # a mid blue: the icon's dark lower half must stand out
 BOUNDS = (-124.5, -114.1, 31.9, 43.0)  # the statewide picture: lon min, lon max, lat min, lat max
@@ -126,9 +128,10 @@ def banner(path):
     img.convert("RGB").save(path, optimize=True)
 
 def chip_images():
-    """One PNG per chip, drawn at twice the size it shows (the README sets its height), so it stays sharp on a phone."""
-    for text, fill, name in CHIPS:
-        chip(text, fill, size=48, pad=(28, 18)).save(os.path.join(HERE, name), optimize=True)
+    """Two PNGs per chip: chip-top-<stem>.png for the row under the banner, chip-<stem>.png for the table."""
+    for text, fill, stem in CHIPS:
+        chip(text, fill, size=17, pad=(12, 6)).save(os.path.join(HERE, f"chip-top-{stem}.png"), optimize=True)
+        chip(text, fill, size=20, pad=(13, 7)).save(os.path.join(HERE, f"chip-{stem}.png"), optimize=True)
 
 def divider(path):
     W, H = 1600, 10
