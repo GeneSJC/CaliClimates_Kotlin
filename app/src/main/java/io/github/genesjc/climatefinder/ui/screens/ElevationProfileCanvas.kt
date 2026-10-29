@@ -431,16 +431,19 @@ internal fun ElevationProfileCanvas(
                 val miles = milesFromSelected[station.id]
                 val fullText = when {
                     miles == null -> labelTexts[idx]
-                    station.id in feetIds -> labelTexts[idx] + " · " + milesText(miles)
-                    else -> labelNames[idx] + " · " + milesText(miles)
+                    station.id in feetIds -> labelTexts[idx] + " " + milesText(miles)
+                    else -> labelNames[idx] + " " + milesText(miles)
                 }
                 // High pins stay on the lowest height so the label stays inside the chart
                 val maxLevel = if (elevRatio > 0.8f) 0 else 2
                 val textScale = depthOf(station.id)?.let { DepthCue.textScale(it) } ?: 1f
                 // The text's width at one line (the size setting included), and the label's real width: long ones wrap to two lines
-                fun lineWidthFor(text: String) = text.length * 5.4f * textScale * MapText.scale + 10f
+                // (the size setting and the phone's font size both change how big the text is)
+                val textSize = textScale * MapText.scale * density.fontScale
+                fun lineWidthFor(text: String) = text.length * 5.4f * textSize + 10f
                 fun widthFor(text: String) = minOf(lineWidthFor(text), LABEL_MAX_WIDTH_DP)
-                fun heightFor(text: String) = if (lineWidthFor(text) > LABEL_MAX_WIDTH_DP) LABEL_HEIGHT_DP * 1.7f else LABEL_HEIGHT_DP
+                fun heightFor(text: String) =
+                    (if (lineWidthFor(text) > LABEL_MAX_WIDTH_DP) 2 else 1) * 9f * 1.3f * textSize + 8f
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
                 fun leftFor(text: String) =
                     (if (pinX - 24f + widthFor(text) > widthDp.value * 0.97f) pinX - widthFor(text) else pinX - 24f).coerceAtLeast(2f)
@@ -1013,8 +1016,18 @@ internal fun ElevationProfileCanvas(
             }
         }
 
-        // Overlay Interactive City Landmark Labels along the curve
-        placedLabels.forEach { label ->
+        // Overlay Interactive City Landmark Labels along the curve. They are drawn back to front: the selected station's
+        // label on top, then the labels of the active band, then the other bands from the front backwards, so the
+        // nearer layer's tags sit over the farther one's, and the active band's over all of them.
+        val labelsBackToFront = placedLabels.sortedByDescending { label ->
+            val band = bandIndex[sorted.indexOfFirst { it.id == label.station.id }.coerceAtLeast(0)]
+            when {
+                label.station.id == selectedStationId -> 0
+                band == activeBand -> 1
+                else -> 2 + band
+            }
+        }
+        labelsBackToFront.forEach { label ->
             val station = label.station
             val isSelected = station.id == selectedStationId
             val fade = labelFades[station.id] ?: 0f

@@ -3,9 +3,9 @@
     <!-- Generated wording and status text: formats with arguments, plurals and messages. -->
 
     <!-- Elevation text -->
-    <string name="elevation_feet">%1$,d ft</string>
+    <string name="elevation_feet">%1$,d\u00A0ft</string>
     <string name="elevation_described">%1$s · %2$s</string>
-    <string name="distance_miles">%1$,d mi</string>
+    <string name="distance_miles">\u00B7\u00A0%1$,d\u00A0mi</string>
     <string name="elevation_band_north">North</string>
     <string name="elevation_band_central">Central</string>
     <string name="elevation_band_south">South</string>
