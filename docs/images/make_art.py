@@ -25,12 +25,13 @@ TAGLINE2 = "region by region."
 # banner (chip-top-*.png) and a larger one in the table (chip-*.png). They are drawn at the size they show, because some
 # viewers ignore the img height attribute.
 # (name, colour, file name stem); the order is the order they sit in, and the order of the table's rows
+# Colours: any two chips that touch, in the banner row (three to a row) or in the table, differ clearly, diagonals too
 CHIPS = [
     ("Live NWS Readings", (14, 116, 144), "live-nws"),
     ("Terrain Relief", (146, 94, 40), "terrain-relief"),
     ("Distance-Aware Labels", (20, 120, 100), "distance-aware-labels"),
     ("Elevation Bands", (91, 74, 140), "elevation-bands"),
-    ("Smooth Transitions", (170, 92, 60), "smooth-transitions"),
+    ("Smooth Transitions", (166, 62, 102), "smooth-transitions"),
     ("One State, Two Views", (60, 90, 160), "one-state-two-views"),
 ]
 SLATE, SLATE2, SKY = (20, 56, 100), (36, 112, 168), (125, 211, 252)  # a mid blue: the icon's dark lower half must stand out
