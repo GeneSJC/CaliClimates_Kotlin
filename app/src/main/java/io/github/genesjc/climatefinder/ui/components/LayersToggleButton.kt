@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -26,8 +25,8 @@ import io.github.genesjc.climatefinder.R
 val LayerColors = listOf(Color(0xFF7C3AED), Color(0xFF0D9488), Color(0xFF2563EB))
 
 /**
- * The Elevation chart's button for its layers view. It shows the view the chart is in: one vertical bar for the
- * single line, three stacked ridges in the layers' colours for the Elevation Bands (the farthest at the top).
+ * The Elevation chart's button for its layers view. It shows the view the chart is in: one ridge for the
+ * single line, three well-spaced ridges in the layers' colours for the Elevation Bands (the farthest at the top).
  */
 @Composable
 fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
@@ -44,25 +43,26 @@ fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = M
             )
     ) {
         Crossfade(targetState = on, label = "layersIcon") { layers ->
-            Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 8.dp)) {
-                val stroke = 2.4.dp.toPx()
+            Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 6.dp)) {
+                val stroke = 2.2.dp.toPx()
                 val w = size.width
                 val h = size.height
-                if (layers) {
-                    // Three parallel ridges, each a jagged slope from bottom left to top right, like the chart: the
-                    // farthest (top) behind, the nearest (bottom) in front
-                    val ridge = listOf(0f to 1f, 0.28f to 0.7f, 0.46f to 0.8f, 0.76f to 0.34f, 1f to 0.18f)
-                    for (band in 2 downTo 0) {
-                        val top = h * 0.2f * (2 - band)
-                        val span = h * 0.6f
-                        val path = Path()
-                        ridge.forEachIndexed { i, (x, t) ->
-                            if (i == 0) path.moveTo(x * w, top + t * span) else path.lineTo(x * w, top + t * span)
-                        }
-                        drawPath(path, LayerColors[band], style = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                // A jagged slope from bottom left to top right, like a ridge on the chart
+                val ridge = listOf(0f to 1f, 0.28f to 0.66f, 0.46f to 0.8f, 0.76f to 0.3f, 1f to 0.1f)
+                fun drawRidge(top: Float, span: Float, color: Color) {
+                    val path = Path()
+                    ridge.forEachIndexed { i, (x, t) ->
+                        if (i == 0) path.moveTo(x * w, top + t * span) else path.lineTo(x * w, top + t * span)
                     }
+                    drawPath(path, color, style = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                }
+                val span = h * 0.44f
+                if (layers) {
+                    // Three of them, well apart: the farthest (top) behind, the nearest (bottom) in front
+                    for (band in 2 downTo 0) drawRidge(top = h * 0.28f * (2 - band), span = span, color = LayerColors[band])
                 } else {
-                    drawLine(LayerColors[0], Offset(w / 2f, 0f), Offset(w / 2f, h), strokeWidth = stroke, cap = StrokeCap.Round)
+                    // The single line: the same ridge, alone in the middle
+                    drawRidge(top = (h - span) / 2f, span = span, color = LayerColors[0])
                 }
             }
         }
