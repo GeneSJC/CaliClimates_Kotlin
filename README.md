@@ -48,13 +48,13 @@ Live National Weather Service readings from about 360 stations in six regions, o
 ![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)
 [![License](https://img.shields.io/badge/License-Apache_2.0-0B1736?style=flat-square)](LICENSE)
 
-[**Screens**](#screens) &nbsp;·&nbsp; [**What it does**](#-what-it-does) &nbsp;·&nbsp; [**Design choices**](#-design-choices) &nbsp;·&nbsp; [**Run it**](#-run-it) &nbsp;·&nbsp; [**Architecture**](#-architecture) &nbsp;·&nbsp; [**Tech stack**](#-tech-stack) &nbsp;·&nbsp; [**Docs**](#-docs) &nbsp;·&nbsp; [**Status**](#-status)
+[**Screens**](#screens) &nbsp;·&nbsp; [**What it does**](#-what-cali-climates-does) &nbsp;·&nbsp; [**Design choices**](#-design-choices) &nbsp;·&nbsp; [**Run it**](#-run-it) &nbsp;·&nbsp; [**Architecture**](#-architecture) &nbsp;·&nbsp; [**Tech stack**](#-tech-stack) &nbsp;·&nbsp; [**Docs**](#-docs) &nbsp;·&nbsp; [**Status**](#-status)
 
 <img src="docs/images/divider.png" alt="" width="100%">
 
 </div>
 
-## ✨ What it does
+## ✨ What Cali Climates does
 
 California is many climates at once: fog on the coast, snow in the Sierra, desert heat an hour's drive inland. Cali Climates
 shows that as it is right now. Pick one of six regions and see its weather stations on a relief map, with a real reading from
