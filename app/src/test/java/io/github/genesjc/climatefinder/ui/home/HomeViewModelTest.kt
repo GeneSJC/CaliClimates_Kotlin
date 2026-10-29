@@ -1,6 +1,7 @@
 package io.github.genesjc.climatefinder.ui.home
 
 import io.github.genesjc.climatefinder.data.local.RegionDatasets
+import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
 import io.github.genesjc.climatefinder.testLiveReadings
 import io.github.genesjc.climatefinder.domain.model.StateUsaCA
@@ -67,6 +68,13 @@ class HomeViewModelTest {
             if (regionId == "slow") gate.await()
             return FakeDatasets().stationsFor(regionId)
         }
+    }
+
+    /** Datasets where no region has any data. */
+    private class NoDataDatasets : RegionDatasets by FakeDatasets() {
+        override suspend fun datasetFor(regionId: String): StationDatasetInfo? = null
+        override fun cachedDatasetFor(regionId: String): StationDatasetInfo? = null
+        override suspend fun stationsFor(regionId: String): List<MicroclimateStation> = emptyList()
     }
 
     @Test
@@ -200,17 +208,50 @@ class HomeViewModelTest {
     fun providesTheStationsOfARegionForHomesLists() = runBlocking {
         val vm = viewModel()
         assertEquals(emptyList<String>(), vm.stations("b").map { it.id })   // never reads: nothing is parsed on the caller
-        repository.load(FakeDatasets().datasetFor("b"))
+        repository.load(FakeDatasets().cachedDatasetFor("b"))
         assertEquals(listOf("b"), vm.stations("b").map { it.id })
     }
 
     @Test
-    fun answersForTheDatasetsOfRegions() {
+    fun answersForTheDatasetsOfRegions() = runBlocking {
         val vm = viewModel()
-        assertEquals("b", vm.datasetFor("b")?.regionId)
         assertEquals("default", vm.defaultDataset().regionId)
+        assertEquals("empty", vm.emptyDefaultDataset().regionId)
         assertEquals(5, vm.fullDataRegionCount())
         assertEquals(6, vm.totalRegionCount())
+    }
+
+    @Test
+    fun theSavedRegionsDatasetIsInTheStateOnceItsStationsAreRead() {
+        val vm = viewModel()
+        assertEquals(false, vm.uiState.value.loading)
+        assertEquals("a", vm.uiState.value.regionDataset?.regionId)
+    }
+
+    @Test
+    fun homeIsLoadingUntilTheSavedRegionsStationsAreRead() {
+        val gate = CompletableDeferred<Unit>()
+        settings.saveSelectedRegionId("slow")
+        val vm = viewModel(GatedDatasets(gate))
+        assertEquals(true, vm.uiState.value.loading)
+        assertNull(vm.uiState.value.regionDataset)
+        gate.complete(Unit)
+        assertEquals(false, vm.uiState.value.loading)
+        assertEquals("slow", vm.uiState.value.regionDataset?.regionId)
+    }
+
+    @Test
+    fun choosingARegionPutsItsDatasetInTheState() {
+        val vm = viewModel()
+        vm.selectRegion("b")
+        assertEquals("b", vm.uiState.value.regionDataset?.regionId)
+    }
+
+    @Test
+    fun aRegionWithNoDataLeavesTheDatasetEmptyOnceLoaded() {
+        val vm = viewModel(NoDataDatasets())
+        assertEquals(false, vm.uiState.value.loading)
+        assertNull(vm.uiState.value.regionDataset)
     }
 
     @Test

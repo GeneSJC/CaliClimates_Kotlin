@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -25,6 +26,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import io.github.genesjc.climatefinder.ui.theme.LocalStateUsa
 import io.github.genesjc.climatefinder.ui.navigation.AppScreen
 import io.github.genesjc.climatefinder.ui.screens.StateUsaRegionsMapScreen
+import io.github.genesjc.climatefinder.ui.components.LoadingPane
 import io.github.genesjc.climatefinder.ui.home.HomeEvent
 import io.github.genesjc.climatefinder.ui.home.HomeViewModel
 import io.github.genesjc.climatefinder.ui.root.AppRootViewModel
@@ -97,12 +99,16 @@ fun AppNavigation(
         }
     }
 
-    // Station data per region: a CSV override in assets, else the region's bundled pack (HomeViewModel reads it)
+    // Station data per region: a CSV override in assets, else the region's bundled pack. HomeViewModel reads the
+    // region's pack off the main thread (homeState.loading is true until it is in) and keeps its dataset in the state
     val fullDataRegions = remember { homeViewModel.fullDataRegionCount() }
-    val regionDataset = remember(selectedRegionId) { homeViewModel.datasetFor(selectedRegionId) }
+    val regionDataset = homeState.regionDataset
     // The Bay Area fallback dataset is only needed by the Station List when a region has none, and by the demos, so it
-    // is read the first time it is wanted and not while the app is starting
-    val defaultDatasetLazy = remember { lazy { homeViewModel.defaultDataset() } }
+    // is read (off the main thread) only once a region turns out to have no data; an empty stand-in until then
+    val needsDefaultDataset = !homeState.loading && regionDataset == null
+    val defaultDataset by produceState(homeViewModel.emptyDefaultDataset(), needsDefaultDataset) {
+        if (needsDefaultDataset) value = homeViewModel.defaultDataset()
+    }
     // Changes the app-wide region and remembers it (Home, Topo Map and Station Feed pickers use this)
     fun pickRegion(regionId: String) = homeViewModel.selectRegion(regionId)
     // Rows for the quick region list on Home: names only (reading every region's stations just for a count slowed the
@@ -125,7 +131,10 @@ fun AppNavigation(
     }
 
     when (currentScreen) {
-        AppScreen.LANDING -> {
+        AppScreen.LANDING -> if (homeState.loading) {
+            // The first region's stations are being read off the main thread
+            LoadingPane()
+        } else {
             LandingScreen(
                 selectedRegionId = selectedRegionId,
                 dataset = regionDataset,
@@ -158,7 +167,7 @@ fun AppNavigation(
         }
         AppScreen.STATION_LIST -> {
             StationListScreen(
-                dataset = regionDataset ?: defaultDatasetLazy.value,
+                dataset = regionDataset ?: defaultDataset,
                 selectedRegionId = selectedRegionId,
                 onSelectRegion = { pickRegion(it) },
                 onNavigateBack = {
@@ -199,7 +208,7 @@ fun AppNavigation(
                 navigate = { currentScreen = it },
                 setRegionsReturn = { regionsReturnScreen = it },
                 regionDataset = regionDataset,
-                defaultDataset = defaultDatasetLazy.value,
+                defaultDataset = defaultDataset,
                 selectedRegionId = selectedRegionId,
                 pickRegion = { pickRegion(it) }
             )

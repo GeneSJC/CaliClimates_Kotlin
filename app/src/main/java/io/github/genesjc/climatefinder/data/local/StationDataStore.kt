@@ -6,6 +6,7 @@ import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 
 /** Where a dataset's stations come from. The screens turn this into words; the data layer only reports it. */
 enum class DatasetKind { BUNDLED_PACK, CSV_OVERRIDE, NONE }
@@ -24,10 +25,17 @@ data class StationDatasetInfo(
 
 /** What the app asks of its station data: a dataset per region, the fallback one, and how many regions have data. */
 interface RegionDatasets {
-    fun datasetFor(regionId: String): StationDatasetInfo?
+    /** The region's dataset, or null when it has none. Reads the station pack the first time, off the main thread. */
+    suspend fun datasetFor(regionId: String): StationDatasetInfo?
 
-    /** The default region's data, or an empty placeholder if it cannot be loaded. */
-    fun defaultDataset(): StationDatasetInfo
+    /** The region's dataset if it has already been read; never reads anything, so it is safe to call from the screen. */
+    fun cachedDatasetFor(regionId: String): StationDatasetInfo?
+
+    /** The default region's data, or [emptyDefaultDataset] if it cannot be loaded. Reads off the main thread. */
+    suspend fun defaultDataset(): StationDatasetInfo
+
+    /** An empty stand-in for the default region's data, for while [defaultDataset] has not been read (no reading). */
+    fun emptyDefaultDataset(): StationDatasetInfo
 
     /** Number of regions with full station data (a CSV override or a pack), not just the sample. */
     fun fullDataRegionCount(): Int
@@ -54,6 +62,9 @@ class StationDataStore(
 
     private val assetNames: Set<String> by lazy { listAssets() }
 
+    /** The datasets read so far, by region id; a region with no data is not kept and is looked for again. */
+    private val datasetCache = ConcurrentHashMap<String, StationDatasetInfo>()
+
     private fun fileNameFor(regionId: String) = "stations_$regionId.csv"
 
     private fun hasCsvOverride(regionId: String) = fileNameFor(regionId) in assetNames
@@ -65,12 +76,26 @@ class StationDataStore(
         stateUsa.regions.count { hasCsvOverride(it.id) || packFileFor(it.id) != null }
 
     override suspend fun stationsFor(regionId: String): List<MicroclimateStation> = withContext(ioDispatcher) {
-        datasetFor(regionId)?.let { repository.stations(it) } ?: emptyList()
+        readDataset(regionId)?.let { repository.stations(it) } ?: emptyList()
     }
 
     override fun totalRegionCount(): Int = stateUsa.regions.size
 
-    override fun datasetFor(regionId: String): StationDatasetInfo? {
+    override suspend fun datasetFor(regionId: String): StationDatasetInfo? = withContext(ioDispatcher) { readDataset(regionId) }
+
+    override fun cachedDatasetFor(regionId: String): StationDatasetInfo? = datasetCache[regionId]
+
+    override suspend fun defaultDataset(): StationDatasetInfo = withContext(ioDispatcher) {
+        readDataset(stateUsa.defaultRegion().id) ?: emptyDefaultDataset()
+    }
+
+    /** Blocks while the pack is read and parsed the first time: call it only from the IO dispatcher. */
+    private fun readDataset(regionId: String): StationDatasetInfo? {
+        datasetCache[regionId]?.let { return it }
+        return findDataset(regionId)?.also { datasetCache[regionId] = it }
+    }
+
+    private fun findDataset(regionId: String): StationDatasetInfo? {
         val region = stateUsa.region(regionId) ?: return null
         if (hasCsvOverride(regionId)) {
             build(region.id, fileNameFor(regionId), kind = DatasetKind.CSV_OVERRIDE)
@@ -83,18 +108,17 @@ class StationDataStore(
         return null
     }
 
-    override fun defaultDataset(): StationDatasetInfo {
+    override fun emptyDefaultDataset(): StationDatasetInfo {
         val default = stateUsa.defaultRegion()
-        return datasetFor(default.id)
-            ?: StationDatasetInfo(
-                regionId = default.id,
-                fileName = stateUsa.stationPacks.getValue(default.id),
-                kind = DatasetKind.NONE,
-                stationCount = 0,
-                minElevationMeters = 0,
-                maxElevationMeters = 0,
-                packFileName = stateUsa.stationPacks.getValue(default.id)
-            )
+        return StationDatasetInfo(
+            regionId = default.id,
+            fileName = stateUsa.stationPacks.getValue(default.id),
+            kind = DatasetKind.NONE,
+            stationCount = 0,
+            minElevationMeters = 0,
+            maxElevationMeters = 0,
+            packFileName = stateUsa.stationPacks.getValue(default.id)
+        )
     }
 
     private fun build(

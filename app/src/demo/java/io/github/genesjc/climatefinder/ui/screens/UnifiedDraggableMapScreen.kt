@@ -748,7 +748,7 @@ fun UnifiedDraggableMapScreen(
 
                                 // Smooth progressive zoom target LOD:
                                 // Tier 1: Always target 1.0f (Sacramento, Monterey, Stockton, Salinas, Palo Alto, etc.)
-                                // Tier 2: Smooth ramp between zoom 1.15x and 1.30x (Auburn, Santa Cruz, Travis AFB, etc.)
+                                // Tier 2: Smooth ramp between zoom 1.15x and 1.30x (Auburn, Santa Cruz, etc.)
                                 // Tier 3: Smooth ramp between zoom 1.70x and 1.90x (Local foothill stations, ranches)
                                 val zoomTarget = if (isSelected) {
                                     1.0f
@@ -1097,7 +1097,6 @@ private fun getStationLODTier(id: String): Int {
         "KSAC",  // Sacramento Executive
         "KAUN",  // Auburn Municipal
         "SCZC1", // Santa Cruz
-        "KSUU",  // Travis AFB / Fairfield
         "KHAF",  // Half Moon Bay
         "PINC1", // Pinnacles
         "BIGC1", // Big Sur Coast
@@ -1124,7 +1123,6 @@ private fun getCleanStationName(id: String, rawName: String): String {
         "KAUN" -> "Auburn"
         "KMYV" -> "Marysville"
         "KVCB" -> "Vacaville"
-        "KSUU" -> "Travis AFB"
         "KSCK" -> "Stockton"
         "KPAO" -> "Palo Alto"
         "KHAF" -> "Half Moon Bay"

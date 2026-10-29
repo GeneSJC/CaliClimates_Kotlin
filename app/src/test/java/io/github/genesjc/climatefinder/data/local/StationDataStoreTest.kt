@@ -61,7 +61,7 @@ class StationDataStoreTest {
     }
 
     @Test
-    fun summarisesADatasetFromItsStations() {
+    fun summarisesADatasetFromItsStations() = runBlocking {
         val dataset = store(setOf("a.txt")).datasetFor(north)
         assertNotNull(dataset)
         assertEquals(2, dataset!!.stationCount)
@@ -71,13 +71,37 @@ class StationDataStoreTest {
     }
 
     @Test
+    fun readsADatasetOnTheStoresOwnIoDispatcher() = runBlocking {
+        val io = CountingDispatcher()
+        store(setOf("a.txt"), io).datasetFor(north)
+        assertEquals(1, io.dispatched)
+    }
+
+    @Test
+    fun aDatasetIsOnlyCachedOnceItHasBeenRead() = runBlocking {
+        val store = store(setOf("a.txt"))
+        assertNull(store.cachedDatasetFor(north))
+        val read = store.datasetFor(north)
+        assertEquals(read, store.cachedDatasetFor(north))
+    }
+
+    @Test
+    fun theDefaultDatasetFallsBackToAnEmptyOneWhenItsRegionHasNoData() = runBlocking {
+        val store = store(emptySet())
+        val dataset = store.defaultDataset()
+        assertEquals(DatasetKind.NONE, dataset.kind)
+        assertEquals(0, dataset.stationCount)
+        assertEquals(store.emptyDefaultDataset(), dataset)
+    }
+
+    @Test
     fun countsTheRegionsThatHaveData() {
         assertEquals(2, store(setOf("a.txt", "b.txt")).fullDataRegionCount())
         assertEquals(StateUsaCA.regions.size, store(emptySet()).totalRegionCount())
     }
 
     @Test
-    fun aCsvOverrideWinsOverThePack() {
+    fun aCsvOverrideWinsOverThePack() = runBlocking {
         val dataset = store(setOf("a.txt", "stations_$north.csv")).datasetFor(north)
         assertEquals("stations_$north.csv", dataset!!.fileName)
         assertNull(dataset.packFileName)
