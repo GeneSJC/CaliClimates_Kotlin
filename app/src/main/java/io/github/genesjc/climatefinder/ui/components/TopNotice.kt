@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.sp
 const val TOP_NOTICE_MARGIN = 0.15f
 
 /** How long a note stays before it fades out. */
-const val TOP_NOTICE_MS = 2200L
+const val TOP_NOTICE_MS = 3200L
 
 /**
  * A short note that fades in near the top of the screen and fades out when [message] goes back to null (the caller
