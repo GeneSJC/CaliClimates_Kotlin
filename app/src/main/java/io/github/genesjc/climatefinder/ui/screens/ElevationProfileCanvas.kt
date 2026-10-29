@@ -77,6 +77,7 @@ import io.github.genesjc.climatefinder.ui.components.MapText
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
 import io.github.genesjc.climatefinder.ui.components.LayerColors
+import io.github.genesjc.climatefinder.ui.components.LayerHazeColors
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_WIDTH_DP
 import io.github.genesjc.climatefinder.ui.components.LayerLegend
