@@ -1,7 +1,6 @@
 package io.github.genesjc.climatefinder.ui.components
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,7 +24,9 @@ import io.github.genesjc.climatefinder.R
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /** The line colour of each layer, nearest (front) first: the purple of the single line, then teal, then blue. */
 val LayerColors = listOf(Color(0xFF7C3AED), Color(0xFF0D9488), Color(0xFF2563EB))
@@ -35,16 +35,15 @@ val LayerColors = listOf(Color(0xFF7C3AED), Color(0xFF0D9488), Color(0xFF2563EB)
 val BandsGreen = Color(0xFF14532D)
 
 /**
- * The Elevation chart's button for switching views. It shows the view a tap switches to: while the chart is the single
- * line ([on] false) it shows one line splitting into three arrows, turned up and to the right (the Elevation Bands, white on dark green);
- * while the bands are on it shows a single arrow the same way (the single line, green on white).
+ * The Elevation chart's button for switching views, white on dark green. It shows the view a tap switches to: while the
+ * chart is the single line ([on] false) it shows three parallel arrows, up and to the right (the Elevation Bands);
+ * while the bands are on it shows one bold arrow the same way (the single line).
  */
 @Composable
 fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
-    val background by animateColorAsState(if (on) Color.White.copy(alpha = 0.92f) else BandsGreen, label = "layersButtonColor")
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = background,
+        color = BandsGreen,
         border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier
             .size(36.dp)
@@ -56,48 +55,44 @@ fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = M
     ) {
         Crossfade(targetState = on, label = "layersIcon") { bandsOn ->
             Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 6.dp)) {
-                val stroke = 6.dp.toPx()
                 val w = size.width
                 val h = size.height
-                val head = minOf(w, h) * 0.2f
-                val style = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                val turn = (PI / 4).toFloat()
+                val middle = Offset(w / 2f, h / 2f)
+                // Up and to the right: along (1, -1), and across it (1, 1)
+                val along = Offset(sqrt(0.5f), -sqrt(0.5f))
+                val across = Offset(sqrt(0.5f), sqrt(0.5f))
 
-                // A point given as shares of the icon drawn upright, turned 45 degrees clockwise about the middle (so
-                // "up" points up and to the right) and shrunk by [k] so the turned drawing stays inside the button
-                fun at(x: Float, y: Float, k: Float): Offset {
-                    val dx = (x * w - w / 2f) * k
-                    val dy = (y * h - h / 2f) * k
-                    return Offset(w / 2f + dx * cos(turn) - dy * sin(turn), h / 2f + dx * sin(turn) + dy * cos(turn))
-                }
-
-                // A line from [from] to [to], with an arrowhead at [to] when [arrow]
-                fun line(path: Path, from: Offset, to: Offset, arrow: Boolean) {
+                // An arrow from [from] to [to] in white: [strokeDp] thick, its head [headShare] of the icon's size
+                fun arrow(from: Offset, to: Offset, strokeDp: Float, headShare: Float) {
+                    val head = minOf(w, h) * headShare
+                    val path = Path()
                     path.moveTo(from.x, from.y)
                     path.lineTo(to.x, to.y)
-                    if (!arrow) return
                     val angle = atan2(to.y - from.y, to.x - from.x)
                     for (side in listOf(-1f, 1f)) {
                         val back = angle + PI.toFloat() + side * ARROW_SPREAD
                         path.moveTo(to.x, to.y)
                         path.lineTo(to.x + head * cos(back), to.y + head * sin(back))
                     }
+                    drawPath(
+                        path, Color.White,
+                        style = Stroke(width = strokeDp.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    )
                 }
 
-                val path = Path()
                 if (bandsOn) {
-                    // One arrow, up and to the right: the single line (green on white)
-                    line(path, at(0.5f, 1f, 1.04f), at(0.5f, 0f, 1.04f), arrow = true)
-                    drawPath(path, BandsGreen, style = style)
+                    // The single line: one bold arrow
+                    val half = h * 0.468f
+                    arrow(middle - along * half, middle + along * half, strokeDp = 12f, headShare = 0.3f)
                 } else {
-                    // One stem splitting into three arrows, up and to the right: the Elevation Bands (white on green)
-                    val k = 1.05f
-                    val fork = at(0.5f, 0.7f, k)
-                    line(path, at(0.5f, 1f, k), fork, arrow = false)
-                    line(path, fork, at(0f, 0.38f, k), arrow = true)
-                    line(path, fork, at(0.5f, 0f, k), arrow = true)
-                    line(path, fork, at(1f, 0.38f, k), arrow = true)
-                    drawPath(path, Color.White, style = style)
+                    // The Elevation Bands: three parallel arrows side by side (the middle one a little longer)
+                    val side = hypot(w * 0.5f, h * 0.32f) * 1.05f
+                    val centre = h * 0.735f
+                    val gap = w * 0.31f
+                    listOf(side, centre, side).forEachIndexed { i, length ->
+                        val c = middle + across * ((i - 1) * gap)
+                        arrow(c - along * (length / 2f), c + along * (length / 2f), strokeDp = 6f, headShare = 0.2f)
+                    }
                 }
             }
         }
