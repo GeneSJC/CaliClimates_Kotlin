@@ -10,8 +10,8 @@ The images used by the front-page `README.md`.
 | `placeholder-home.png`, `placeholder-elevation.png`, `placeholder-regions.png` | The three phone screenshots in the "Screens" gallery | Real screenshots, about 540 x 1100 (or any phone-shaped size). Save as `screen-home.png`, `screen-elevation.png`, `screen-regions.png` and change the three `src` paths in the README |
 | `placeholder-demo.png` | The demo slot under the gallery | An animated `demo.gif` (keep it under about 8 MB; GitHub shows it inline). Change the one `src` path in the README |
 
-`make_icon.py` draws the launcher icon (California as a window onto a sun, peaks and ridges, on a map of the Pacific and the
-land around it) and writes every file that comes from it: the adaptive icon's vector layers in `app/src/main/res/drawable/`, the
+`make_icon.py` draws the launcher icon (a sun, a small cloud and snow-capped mountains over a green hill, in a cartoon style
+with thick navy outlines, on a blue sky) and writes every file that comes from it: the adaptive icon's vector layers in `app/src/main/res/drawable/`, the
 themed (monochrome) layer, the Android 7 fallback images in `mipmap-*` and the 512 px Play Store icon. The vector files are
 generated, so change the script, not them. Run it before `make_art.py`, which reads the Play Store icon.
 
