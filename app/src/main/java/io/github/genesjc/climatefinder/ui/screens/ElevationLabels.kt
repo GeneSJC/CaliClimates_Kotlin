@@ -36,3 +36,25 @@ internal fun rankLandmarkIndexes(sorted: List<MicroclimateStation>): List<Int> {
     }
     return chosen
 }
+
+/**
+ * Which of the visible labels also show their height, as reference points for the ones without. [visible] are the
+ * labels that fit (the selected station left out). On each side of the selected height: the second from the far end
+ * (or the only one, when there is just one), and the middle one when the side has [MIDDLE_REFERENCE_MIN] or more.
+ */
+internal fun referenceStationIds(visible: List<MicroclimateStation>, selectedMeters: Int): Set<String> {
+    fun side(stations: List<MicroclimateStation>): List<String> {
+        // Nearest the selected height first, the far end last
+        val far = stations.size
+        if (far == 0) return emptyList()
+        val ids = mutableListOf(stations[(far - 2).coerceAtLeast(0)].id)
+        if (far >= MIDDLE_REFERENCE_MIN) ids.add(stations[far / 2].id)
+        return ids
+    }
+    val below = visible.filter { it.elevationMeters < selectedMeters }.sortedByDescending { it.elevationMeters }
+    val above = visible.filter { it.elevationMeters > selectedMeters }.sortedBy { it.elevationMeters }
+    return (side(below) + side(above)).toSet()
+}
+
+/** A side of the selected height with this many labels or more gets a middle reference as well. */
+internal const val MIDDLE_REFERENCE_MIN = 6

@@ -330,8 +330,8 @@ internal fun ElevationProfileCanvas(
 
         // Which labels have room at this zoom: more as the profile spreads out. Only the target (room
         // or no room) is decided here; each label's opacity eases toward it on its own. With a station selected, the
-        // others show their distance and no height, except [feetIds]: the lowest and highest of them that fit, as
-        // reference points for the heights in between.
+        // others show their distance and no height, except [feetIds]: a few reference points for the heights in between
+        // (see [referenceStationIds]).
         fun layOut(feetIds: Set<String>): List<PlacedLabel> {
             val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
             val taken = mutableListOf(
@@ -352,21 +352,25 @@ internal fun ElevationProfileCanvas(
                 val pinY = with(density) { viewY(paddingPx + profileFrac(elevRatio) * heightPx).toDp().value }
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
                 val miles = milesFromSelected[station.id]
-                val text = when {
+                val fullText = when {
                     miles == null -> labelTexts[idx]
                     station.id in feetIds -> labelTexts[idx] + " · " + milesText(miles)
                     else -> labelNames[idx] + " · " + milesText(miles)
                 }
-                // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
-                val labelW = text.length * 5.4f * (depthOf(station.id)?.let { DepthCue.textScale(it) } ?: 1f) + 10f
-                val left = (if (pinX - 24f + labelW > widthDp.value * 0.97f) pinX - labelW else pinX - 24f).coerceAtLeast(2f)
                 // High pins stay on the lowest height so the label stays inside the chart
                 val maxLevel = if (elevRatio > 0.8f) 0 else 2
-                if (allow) {
+                val textScale = depthOf(station.id)?.let { DepthCue.textScale(it) } ?: 1f
+                fun widthFor(text: String) = text.length * 5.4f * textScale + 10f
+                // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
+                fun leftFor(text: String) =
+                    (if (pinX - 24f + widthFor(text) > widthDp.value * 0.97f) pinX - widthFor(text) else pinX - 24f).coerceAtLeast(2f)
+                // A spot for this text, or null when there is no room
+                fun tryPlace(text: String): PlacedLabel? {
+                    val left = leftFor(text)
                     for (level in 0..maxLevel) {
                         val top = pinY - 26f - 16f * level
                         if (top < 0f) continue
-                        val right = left + labelW
+                        val right = left + widthFor(text)
                         val bottom = top + LABEL_HEIGHT_DP
                         val free = taken.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
                         if (free || force) {
@@ -374,7 +378,15 @@ internal fun ElevationProfileCanvas(
                             return PlacedLabel(station, text, left, top, hasRoom = true)
                         }
                     }
+                    return null
                 }
+                if (allow) {
+                    tryPlace(fullText)?.let { return it }
+                    // No room for the longer text: the name alone (the position, size and fade still say the rest)
+                    if (miles != null) tryPlace(labelNames[idx])?.let { return it }
+                }
+                val text = fullText
+                val left = leftFor(text)
                 return PlacedLabel(station, text, left, pinY - 26f, hasRoom = false)
             }
             val plans = mutableListOf<PlacedLabel>()
@@ -398,8 +410,9 @@ internal fun ElevationProfileCanvas(
         }
         val firstPass = layOut(emptySet())
         val feetIds = if (milesFromSelected.isEmpty()) emptySet() else {
+            val selected = sorted.find { it.id == selectedStationId }
             val others = firstPass.filter { it.hasRoom && it.station.id != selectedStationId }.map { it.station }
-            setOfNotNull(others.minByOrNull { it.elevationMeters }?.id, others.maxByOrNull { it.elevationMeters }?.id)
+            if (selected == null) emptySet() else referenceStationIds(others, selected.elevationMeters)
         }
         val placedLabels = if (feetIds.isEmpty()) firstPass else layOut(feetIds)
         val placedIds = placedLabels.filter { it.hasRoom }.map { it.station.id }.toSet()
