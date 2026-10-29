@@ -16,11 +16,25 @@ RELIEF = os.path.join(SRC, "assets", "terrain", "california.webp")
 STATE = os.path.join(SRC, "java", "io", "github", "genesjc", "climatefinder", "domain", "model", "StateUsaCA.kt")
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 FONT_TEXT = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+FONT_CHIP = "/usr/share/fonts/opentype/inter/Inter-SemiBold.otf"  # the chips: a clean UI font that stays sharp when small
 
 NAME = "Cali Climates"
 TAGLINE = "Explore California's climates,"
 TAGLINE2 = "region by region."
-CHIPS = [("live NWS readings", (14, 116, 144)), ("terrain relief", (146, 94, 40)), ("six regions", (91, 74, 140))]
+# What the app does that is worth a second look: design choices, not libraries (the README's badge row lists those).
+# Each chip is its own image, linked to its row in the README's "Design choices" table: a small one in a row under the
+# banner (chip-top-*.png) and a larger one in the table (chip-*.png). They are saved at twice the size they show (OUT),
+# and the README sets the display size, so they are sharp on high-resolution screens.
+# (name, colour, file name stem); the order is the order they sit in, and the order of the table's rows
+# Colours: any two chips that touch, in the banner row (three to a row) or in the table, differ clearly, diagonals too
+CHIPS = [
+    ("Live NWS Readings", (14, 116, 144), "live-nws"),
+    ("Terrain Relief", (146, 94, 40), "terrain-relief"),
+    ("Distance-Aware Labels", (20, 120, 100), "distance-aware-labels"),
+    ("Elevation Bands", (91, 74, 140), "elevation-bands"),
+    ("Smooth Transitions", (166, 62, 102), "smooth-transitions"),
+    ("One State, Two Views", (60, 90, 160), "one-state-two-views"),
+]
 SLATE, SLATE2, SKY = (20, 56, 100), (36, 112, 168), (125, 211, 252)  # a mid blue: the icon's dark lower half must stand out
 BOUNDS = (-124.5, -114.1, 31.9, 43.0)  # the statewide picture: lon min, lon max, lat min, lat max
 
@@ -71,15 +85,20 @@ def california(height):
     out = Image.alpha_composite(relief, tint)
     return out.resize((int(w * height / h), height), Image.LANCZOS)
 
+SS = 4   # chips are drawn this many times larger and shrunk, so their curves and text have smooth edges
+OUT = 2  # and saved at this many times the size they show (the README sets the display size), so they stay sharp on high-resolution screens
+
 def chip(text, fill, size=24, pad=(18, 9)):
-    f = font(FONT_BOLD, size)
+    f = font(FONT_CHIP, size * SS)
     bbox = f.getbbox(text)
-    w, h = bbox[2] - bbox[0] + pad[0] * 2, bbox[3] - bbox[1] + pad[1] * 2 + 4
+    line = f.getbbox("Agy,")  # the same height for every chip, whatever its letters
+    w = bbox[2] - bbox[0] + pad[0] * 2 * SS
+    h = line[3] - line[1] + (pad[1] * 2 + 4) * SS
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle((0, 0, w - 1, h - 1), radius=h // 2, fill=fill)
-    d.text((pad[0] - bbox[0], pad[1] - bbox[1] + 1), text, font=f, fill=(255, 255, 255))
-    return img
+    d.text((pad[0] * SS - bbox[0], pad[1] * SS - line[1] + SS), text, font=f, fill=(255, 255, 255))
+    return img.resize((round(w * OUT / SS), round(h * OUT / SS)), Image.LANCZOS)
 
 def shadowed(base, layer, xy, blur=18, offset=(0, 14), opacity=110):
     sh = Image.new("RGBA", base.size, (0, 0, 0, 0))
@@ -106,18 +125,44 @@ def banner(path):
     shadowed(img, icon, (88, 135), opacity=70)
     ImageDraw.Draw(img).rounded_rectangle((88 - 2, 135 - 2, 88 + 251, 135 + 251), radius=58, outline=(220, 240, 255, 235), width=4)
     x = 380
-    d.text((x, 118), NAME, font=font(FONT_BOLD, 92), fill=(255, 255, 255))
-    d.rectangle((x, 238, x + 150, 246), fill=(251, 191, 36))
-    d.text((x, 268), TAGLINE, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
-    d.text((x, 312), TAGLINE2, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
-    cx = x
-    for text, fill in CHIPS:
-        c = chip(text, fill)
-        img.alpha_composite(c, (cx, 392))
-        cx += c.width + 14
+    d.text((x, 138), NAME, font=font(FONT_BOLD, 92), fill=(255, 255, 255))
+    d.rectangle((x, 258, x + 150, 266), fill=(251, 191, 36))
+    d.text((x, 286), TAGLINE, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
+    d.text((x, 330), TAGLINE2, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
     ca = california(470)
     shadowed(img, ca, (W - ca.width - 120, 25), blur=22, opacity=130)
     img.convert("RGB").save(path, optimize=True)
+
+def chip_box(text, fill, size=20, width=200, pad=(14, 9), lines=2):
+    """A chip of fixed size for the README table: the text wraps inside it, so every chip shows the same type size.
+    All the boxes are as tall as `lines` lines of text; a one-line label is centred in it. Drawn at SS times the size."""
+    f = font(FONT_CHIP, size * SS)
+    line_h = f.getbbox("Agy,")[3] - f.getbbox("Agy,")[1] + 4 * SS
+    words, rows, row = text.split(" "), [], ""
+    for w in words:
+        trial = (row + " " + w).strip()
+        if row and f.getlength(trial) > (width - pad[0] * 2) * SS:
+            rows.append(row); row = w
+        else:
+            row = trial
+    rows.append(row)
+    assert len(rows) <= lines, f"{text!r} needs {len(rows)} lines"
+    W, H = width * SS, lines * line_h + pad[1] * 2 * SS
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle((0, 0, W - 1, H - 1), radius=H // 2 if lines == 1 else 24 * SS, fill=fill)
+    top = (H - len(rows) * line_h) / 2
+    for k, r in enumerate(rows):
+        x = (W - f.getlength(r)) / 2
+        d.text((x, top + k * line_h - f.getbbox("A")[1] + SS), r, font=f, fill=(255, 255, 255))
+    return img.resize((width * OUT, round(H * OUT / SS)), Image.LANCZOS)
+
+def chip_images():
+    """Two PNGs per chip: chip-top-<stem>.png for the row under the banner (one line), chip-<stem>.png for the table
+    (the same size for all, text wrapped)."""
+    for text, fill, stem in CHIPS:
+        chip(text, fill, size=16, pad=(12, 5)).save(os.path.join(HERE, f"chip-top-{stem}.png"), optimize=True)
+        chip_box(text, fill, size=21).save(os.path.join(HERE, f"chip-{stem}.png"), optimize=True)
 
 def divider(path):
     W, H = 1600, 10
@@ -159,6 +204,7 @@ def placeholder(path, size, title, subtitle, phone=True):
 
 if __name__ == "__main__":
     banner(os.path.join(HERE, "banner.png"))
+    chip_images()
     divider(os.path.join(HERE, "divider.png"))
     footer_icon(os.path.join(HERE, "icon.png"))
     placeholder(os.path.join(HERE, "placeholder-home.png"), (540, 1100), "Home", "region, station tile, map")
