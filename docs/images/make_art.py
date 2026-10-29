@@ -20,7 +20,13 @@ FONT_TEXT = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
 NAME = "Cali Climates"
 TAGLINE = "Explore California's climates,"
 TAGLINE2 = "region by region."
-CHIPS = [("live NWS readings", (14, 116, 144)), ("terrain relief", (146, 94, 40)), ("six regions", (91, 74, 140))]
+# What the app does that is worth a second look: design choices, not libraries (the README's badge row lists those)
+CHIPS = [
+    ("live NWS readings", (14, 116, 144)), ("terrain relief", (146, 94, 40)), ("elevation bands", (91, 74, 140)),
+    ("distance-aware labels", (20, 120, 100)), ("smooth transitions", (170, 92, 60)), ("one state, two views", (60, 90, 160)),
+]
+CHIP_GAP = 14
+CHIPS_RIGHT = 1250  # chips wrap to the next row before they reach the map of California
 SLATE, SLATE2, SKY = (20, 56, 100), (36, 112, 168), (125, 211, 252)  # a mid blue: the icon's dark lower half must stand out
 BOUNDS = (-124.5, -114.1, 31.9, 43.0)  # the statewide picture: lon min, lon max, lat min, lat max
 
@@ -74,11 +80,12 @@ def california(height):
 def chip(text, fill, size=24, pad=(18, 9)):
     f = font(FONT_BOLD, size)
     bbox = f.getbbox(text)
-    w, h = bbox[2] - bbox[0] + pad[0] * 2, bbox[3] - bbox[1] + pad[1] * 2 + 4
+    line = f.getbbox("Agy,")  # the same height for every chip, whatever its letters
+    w, h = bbox[2] - bbox[0] + pad[0] * 2, line[3] - line[1] + pad[1] * 2 + 4
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle((0, 0, w - 1, h - 1), radius=h // 2, fill=fill)
-    d.text((pad[0] - bbox[0], pad[1] - bbox[1] + 1), text, font=f, fill=(255, 255, 255))
+    d.text((pad[0] - bbox[0], pad[1] - line[1] + 1), text, font=f, fill=(255, 255, 255))
     return img
 
 def shadowed(base, layer, xy, blur=18, offset=(0, 14), opacity=110):
@@ -106,15 +113,17 @@ def banner(path):
     shadowed(img, icon, (88, 135), opacity=70)
     ImageDraw.Draw(img).rounded_rectangle((88 - 2, 135 - 2, 88 + 251, 135 + 251), radius=58, outline=(220, 240, 255, 235), width=4)
     x = 380
-    d.text((x, 118), NAME, font=font(FONT_BOLD, 92), fill=(255, 255, 255))
-    d.rectangle((x, 238, x + 150, 246), fill=(251, 191, 36))
-    d.text((x, 268), TAGLINE, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
-    d.text((x, 312), TAGLINE2, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
-    cx = x
+    d.text((x, 78), NAME, font=font(FONT_BOLD, 92), fill=(255, 255, 255))
+    d.rectangle((x, 198, x + 150, 206), fill=(251, 191, 36))
+    d.text((x, 226), TAGLINE, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
+    d.text((x, 270), TAGLINE2, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
+    cx, cy = x, 346
     for text, fill in CHIPS:
-        c = chip(text, fill)
-        img.alpha_composite(c, (cx, 392))
-        cx += c.width + 14
+        c = chip(text, fill, size=21, pad=(16, 9))
+        if cx > x and cx + c.width > CHIPS_RIGHT:  # wrap to the next row
+            cx, cy = x, cy + c.height + CHIP_GAP
+        img.alpha_composite(c, (cx, cy))
+        cx += c.width + CHIP_GAP
     ca = california(470)
     shadowed(img, ca, (W - ca.width - 120, 25), blur=22, opacity=130)
     img.convert("RGB").save(path, optimize=True)
