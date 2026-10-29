@@ -1,6 +1,7 @@
 package io.github.genesjc.climatefinder.ui.components
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -25,15 +27,17 @@ import io.github.genesjc.climatefinder.R
 val LayerColors = listOf(Color(0xFF7C3AED), Color(0xFF0D9488), Color(0xFF2563EB))
 
 /**
- * The Elevation chart's button for its layers view. It shows the view the chart is in: one ridge for the
- * single line, three well-spaced ridges in the layers' colours for the Elevation Bands (the farthest at the top).
+ * The Elevation chart's button for switching views. It shows the view a tap switches to: while the chart is the single
+ * line ([on] false) it shows the Elevation Bands icon (three white ridges on dark); while the bands are on it shows the
+ * single ridge (purple on white).
  */
 @Composable
 fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+    val background by animateColorAsState(if (on) Color.White.copy(alpha = 0.92f) else Color(0xFF1E293B), label = "layersButtonColor")
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = Color.White.copy(alpha = 0.92f),
-        border = BorderStroke(if (on) 2.dp else 1.dp, if (on) LayerColors[1] else Color(0xFFCBD5E1)),
+        color = background,
+        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier
             .size(36.dp)
             .clickable(
@@ -42,7 +46,8 @@ fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = M
                 onClick = onToggle
             )
     ) {
-        Crossfade(targetState = on, label = "layersIcon") { layers ->
+        // The icon of the view a tap goes to: three ridges (white on the dark button) while on the single line
+        Crossfade(targetState = on, label = "layersIcon") { bandsOn ->
             Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 6.dp)) {
                 val stroke = 2.2.dp.toPx()
                 val w = size.width
@@ -57,12 +62,12 @@ fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = M
                     drawPath(path, color, style = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round))
                 }
                 val span = h * 0.44f
-                if (layers) {
-                    // Three of them, well apart: the farthest (top) behind, the nearest (bottom) in front
-                    for (band in 2 downTo 0) drawRidge(top = h * 0.28f * (2 - band), span = span, color = LayerColors[band])
-                } else {
-                    // The single line: the same ridge, alone in the middle
+                if (bandsOn) {
+                    // The single ridge, alone in the middle
                     drawRidge(top = (h - span) / 2f, span = span, color = LayerColors[0])
+                } else {
+                    // Three of them, well apart
+                    for (band in 2 downTo 0) drawRidge(top = h * 0.28f * (2 - band), span = span, color = Color.White)
                 }
             }
         }

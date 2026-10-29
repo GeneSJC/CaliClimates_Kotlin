@@ -348,9 +348,34 @@ internal fun ElevationProfileCanvas(
         }
         val layerTopY = paddingPx + PROFILE_HEAD * heightPx
         val layerSeaY = paddingPx + (1f - SEA_FRACTION) * heightPx
-        fun pinBaseY(idx: Int): Float {
+        // The pin's place with the layers [mix] of the way on (0 the single line, 1 the Elevation Bands)
+        fun pinYAt(idx: Int, mix: Float): Float {
             val plain = paddingPx + profileFrac(sorted[idx].elevationMeters / maxElevation) * heightPx
-            return plain + (DepthBands.layeredY(plain, bandIndex[idx], layerTopY, layerSeaY) - plain) * layerMix
+            return plain + (DepthBands.layeredY(plain, bandIndex[idx], layerTopY, layerSeaY) - plain) * mix
+        }
+        fun pinBaseY(idx: Int): Float = pinYAt(idx, layerMix)
+
+        // Switching between the single line and the Elevation Bands moves every pin, so the chart eases over to put the
+        // selected station back in the middle (not on the first look)
+        var recenterArmed by remember { mutableStateOf(false) }
+        androidx.compose.runtime.LaunchedEffect(layersOn) {
+            if (!recenterArmed) {
+                recenterArmed = true
+                return@LaunchedEffect
+            }
+            val idx = sorted.indexOfFirst { it.id == currentStation?.id }
+            if (idx < 0) return@LaunchedEffect
+            val bx = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
+            val by = pinYAt(idx, if (layersOn) 1f else 0f)
+            zoomJob?.cancel()
+            val from = pan
+            val target = clampPan(
+                Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
+                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX
+            )
+            androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(LAYERS_FADE_MS, easing = FastOutSlowInEasing)) { v, _ ->
+                pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
+            }
         }
 
         // When the selected station changes (from the Stations list, the tile or the other view) and it is not in
