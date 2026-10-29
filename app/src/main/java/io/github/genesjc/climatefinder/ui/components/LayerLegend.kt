@@ -33,9 +33,9 @@ val LayerHazeColors = listOf(Color.Transparent, Color(0xFF5FA8A0), Color(0xFF7B8
 
 private val FOOTHILL_GROUND = Color(0xFFD9D1B2)
 
-/** What each layer's ground looks like on the chart (the foothill tint under the layer's haze), so its key matches it. */
-val LayerGroundColors = List(DepthBands.COUNT) { band ->
-    lerp(FOOTHILL_GROUND, LayerHazeColors[band], DepthBands.haze(band))
+/** The same tone as each layer's ground on the chart (the foothill tint under the layer's haze), taken darker so white text reads on it. */
+val LayerKeyColors = List(DepthBands.COUNT) { band ->
+    lerp(lerp(FOOTHILL_GROUND, LayerHazeColors[band], DepthBands.haze(band)), Color.Black, 0.5f)
 }
 
 /** The key's size (dp), which the chart also keeps its labels clear of: three segments in a bar. */
@@ -45,7 +45,7 @@ const val LAYER_LEGEND_HEIGHT_DP = 40f
 /**
  * The key to the Elevation Bands view, and a way to move between the bands: a bar of three segments, North, Central
  * and South from left to right (the back ridge first), each in its band's colour. The active band's segment, the one
- * holding the selected station, is filled with that band's ground colour on the chart and outlined in its line colour. Tapping another band's segment calls [onPick] with that band; a band with
+ * holding the selected station, is filled with a darker tone of that band's ground colour on the chart, with white text, and outlined in its line colour. Tapping another band's segment calls [onPick] with that band; a band with
  * no stations ([hasStations] false) is greyed out. It floats in one place whatever the pan and zoom, and [alpha]
  * fades it in and out with the view.
  */
@@ -78,7 +78,7 @@ fun LayerLegend(
                         .height(34.dp)
                         .clip(RoundedCornerShape(9.dp))
                         .border(if (active) 1.5.dp else 0.dp, if (active) color else Color.Transparent, RoundedCornerShape(9.dp))
-                        .background(if (active) LayerGroundColors[band] else Color.Transparent)
+                        .background(if (active) LayerKeyColors[band] else Color.Transparent)
                         .clickable(
                             enabled = enabled && !active,
                             onClickLabel = stringResource(R.string.elevation_band_pick, name),
@@ -90,7 +90,7 @@ fun LayerLegend(
                         text = name,
                         fontSize = 12.sp,
                         fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                        color = if (active) Color(0xFF1E293B) else color.copy(alpha = if (enabled) 0.95f else 0.35f)
+                        color = if (active) Color.White else color.copy(alpha = if (enabled) 0.95f else 0.35f)
                     )
                 }
             }
