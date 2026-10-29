@@ -78,32 +78,66 @@ each, and how the numbers change as the ground climbs.
 The six things on the banner are decisions about how the app should feel, made first and then built inside the usual Android
 constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is and where it lives.
 
-<table>
+<a id="chip-nws"></a>
+<br><br><br>
+
+<table width="100%">
   <tr>
-    <td width="30%" valign="top"><a id="chip-nws"></a><img src="docs/images/chip-live-nws.png" alt="Live NWS Readings" width="200"></td>
+    <td width="30%" valign="top"><img src="docs/images/chip-live-nws.png" alt="Live NWS Readings" width="200"></td>
     <td valign="top">Every temperature, humidity, wind and pressure value comes from the National Weather Service's public API: no key, no made-up numbers. A reading is reused for 15 minutes, a station that failed is tried again after 5, and only four requests run at once, so the app stays quick and polite. A station with no reading says so.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/data/remote/NwsApi.kt"><code>NwsApi.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/remote/NwsObservationClient.kt"><code>NwsObservationClient.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/remote/LiveReadings.kt"><code>LiveReadings.kt</code></a></sub></td>
   </tr>
+</table>
+
+<a id="chip-terrain"></a>
+<br><br><br>
+
+<table width="100%">
   <tr>
-    <td width="30%" valign="top"><a id="chip-terrain"></a><img src="docs/images/chip-terrain-relief.png" alt="Terrain Relief" width="200"></td>
+    <td width="30%" valign="top"><img src="docs/images/chip-terrain-relief.png" alt="Terrain Relief" width="200"></td>
     <td valign="top">Each region has a shaded-relief picture built from public elevation data (USGS 3DEP and NASA SRTM, through AWS Terrain Tiles). It is the ground under the Topography map, the texture behind the Elevation ridges and the relief behind every page. The pictures are made with scripts outside the app, so the app only loads them, off the main thread.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainRepository.kt"><code>TerrainRepository.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainMaps.kt"><code>TerrainMaps.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/theme/AppBackground.kt"><code>AppBackground.kt</code></a></sub></td>
   </tr>
+</table>
+
+<a id="chip-distance"></a>
+<br><br><br>
+
+<table width="100%">
   <tr>
-    <td width="30%" valign="top"><a id="chip-distance"></a><img src="docs/images/chip-distance-aware-labels.png" alt="Distance-Aware Labels" width="200"></td>
+    <td width="30%" valign="top"><img src="docs/images/chip-distance-aware-labels.png" alt="Distance-Aware Labels" width="200"></td>
     <td valign="top">In the Elevation view the labels around the selected station say how far each one is ("Name · 57 mi"). Near stations get larger, more solid labels and dots; far ones shrink and fade, but never below a readable size. The distances are great-circle miles, and the size, fade and dot factors are plain functions.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/StationDistance.kt"><code>StationDistance.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/DepthCue.kt"><code>DepthCue.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationLabels.kt"><code>ElevationLabels.kt</code></a></sub></td>
   </tr>
+</table>
+
+<a id="chip-bands"></a>
+<br><br><br>
+
+<table width="100%">
   <tr>
-    <td width="30%" valign="top"><a id="chip-bands"></a><img src="docs/images/chip-elevation-bands.png" alt="Elevation Bands" width="200"></td>
+    <td width="30%" valign="top"><img src="docs/images/chip-elevation-bands.png" alt="Elevation Bands" width="200"></td>
     <td valign="top">Switch it on and the Elevation chart splits the stations by latitude into South, Central and North bands, each drawn as its own ridge as if you were looking north across the region: the farther the band, the lower, hazier and differently coloured. The band holding the selected station stays sharp, with a ripple when it changes, and a key at the bottom jumps between bands.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/DepthBands.kt"><code>DepthBands.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/map/ElevationViewModel.kt"><code>ElevationViewModel.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationProfileCanvas.kt"><code>ElevationProfileCanvas.kt</code></a></sub></td>
   </tr>
+</table>
+
+<a id="chip-transitions"></a>
+<br><br><br>
+
+<table width="100%">
   <tr>
-    <td width="30%" valign="top"><a id="chip-transitions"></a><img src="docs/images/chip-smooth-transitions.png" alt="Smooth Transitions" width="200"></td>
+    <td width="30%" valign="top"><img src="docs/images/chip-smooth-transitions.png" alt="Smooth Transitions" width="200"></td>
     <td valign="top">Things move to where you are going instead of jumping. Labels fade in and out as you zoom, the map or chart eases over to a station you pick, and a region change eases the page colour and relief texture over 1.5 seconds with a soft haptic tick. The region picker grows out of its button and folds back into it.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/MapZoom.kt"><code>MapZoom.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/theme/AppBackground.kt"><code>AppBackground.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/RegionHaptics.kt"><code>RegionHaptics.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/RegionPicker.kt"><code>RegionPicker.kt</code></a></sub></td>
   </tr>
+</table>
+
+<a id="chip-state"></a>
+<br><br><br>
+
+<table width="100%">
   <tr>
-    <td width="30%" valign="top"><a id="chip-state"></a><img src="docs/images/chip-one-state-two-views.png" alt="One State, Two Views" width="200"></td>
+    <td width="30%" valign="top"><img src="docs/images/chip-one-state-two-views.png" alt="One State, Two Views" width="200"></td>
     <td valign="top">Topography and Elevation are two views of one set of choices. The selected station, the zoom, the dot size, the text size and whether the zoom slider shows are held once, in the Home view model, and handed to both views, so switching views never loses your place.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/home/HomeViewModel.kt"><code>HomeViewModel.kt</code></a></sub></td>
   </tr>
 </table>
+
 
 ## 📱 Screens
 
