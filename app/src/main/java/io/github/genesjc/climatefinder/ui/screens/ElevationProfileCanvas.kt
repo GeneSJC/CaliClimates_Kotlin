@@ -191,6 +191,9 @@ internal fun ElevationProfileCanvas(
         }
     }
     var pan by remember(sorted) { mutableStateOf(Offset.Zero) }
+    // When the person last pinched or dragged: an automatic move of the chart (bringing a station into view, recentring)
+    // stops applying as soon as they touch it, instead of fighting the finger
+    val touchedAt = remember { LongArray(1) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
     val zoomScope = rememberCoroutineScope()
     var zoomJob by remember { mutableStateOf<Job?>(null) }
@@ -285,6 +288,7 @@ internal fun ElevationProfileCanvas(
             .pointerInput(sorted) {
                 // Pinch to zoom in on the profile, drag to pan
                 detectTransformGestures { centroid, panChange, zoomChange, _ ->
+                    touchedAt[0] = System.nanoTime()
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
@@ -380,8 +384,9 @@ internal fun ElevationProfileCanvas(
                 Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
                 zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX
             )
+            val startedAt = System.nanoTime()
             androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(LAYERS_FADE_MS, easing = FastOutSlowInEasing)) { v, _ ->
-                pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
+                if (touchedAt[0] < startedAt) pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
             }
         }
 
@@ -405,8 +410,9 @@ internal fun ElevationProfileCanvas(
                 Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
                 zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX
             )
+            val startedAt = System.nanoTime()
             androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(BRING_INTO_VIEW_MS, easing = FastOutSlowInEasing)) { v, _ ->
-                pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
+                if (touchedAt[0] < startedAt) pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
             }
         }
 
@@ -447,10 +453,10 @@ internal fun ElevationProfileCanvas(
                 // The text's width at one line (the size setting included), and the label's real width: long ones wrap to two lines
                 // (the size setting and the phone's font size both change how big the text is)
                 val textSize = textScale * MapText.scale * density.fontScale
-                fun lineWidthFor(text: String) = text.length * 5.4f * textSize + 15f
+                fun lineWidthFor(text: String) = text.length * 5.4f * textSize + 17f
                 fun widthFor(text: String) = minOf(lineWidthFor(text), LABEL_MAX_WIDTH_DP)
                 fun heightFor(text: String) =
-                    (if (lineWidthFor(text) > LABEL_MAX_WIDTH_DP) 2 else 1) * 9f * 1.3f * textSize + 8f
+                    (if (lineWidthFor(text) > LABEL_MAX_WIDTH_DP) 2 else 1) * 9f * 1.15f * textSize + 8f
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
                 fun leftFor(text: String) =
                     (if (pinX - 24f + widthFor(text) > widthDp.value * 0.97f) pinX - widthFor(text) else pinX - 24f).coerceAtLeast(2f)
@@ -738,7 +744,8 @@ internal fun ElevationProfileCanvas(
 
                 // A faint relief texture from the region's own terrain picture (decoration, not data). It
                 // drifts slower than the profile when you pan and zoom, which gives the ground some depth.
-                if (terrain != null) {
+                // (with the bands on, only the front layer and the active one: it is the costliest part of a frame)
+                if (terrain != null && (!layered || band == 0 || band == activeBand)) {
                     val b = terrain.bounds
                     val lonSpan = b.maxLon - b.minLon
                     val latSpan = b.maxLat - b.minLat
@@ -1066,12 +1073,14 @@ internal fun ElevationProfileCanvas(
                     text = label.text,
                     maxLines = 2,
                     fontSize = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f)),
+                    // A tight line height (the theme's default is far taller than this small text), so a wrapped tag stays compact
+                    lineHeight = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f) * 1.15f),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = depthFade),
                     // A stripe down the tag's left edge in its band's colour (see the key at the bottom right)
                     modifier = Modifier
-                        .drawBehind { drawRect(stripe, size = Size(4.dp.toPx(), size.height)) }
-                        .padding(start = 9.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
+                        .drawBehind { drawRect(stripe, size = Size(6.dp.toPx(), size.height)) }
+                        .padding(start = 11.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
                 )
             }
         }

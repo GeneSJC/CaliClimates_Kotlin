@@ -19,8 +19,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.genesjc.climatefinder.R
 
-/** The line colour of each layer, nearest (front) first: the purple of the single line, then teal, then blue. */
-val LayerColors = listOf(Color(0xFF7C3AED), Color(0xFF0D9488), Color(0xFF2563EB))
+/** The line colour of each layer, nearest (front) first: the purple of the single line, then teal, then amber. */
+val LayerColors = listOf(Color(0xFF7C3AED), Color(0xFF0D9488), Color(0xFFD97706))
 
 /** The dark green of the Elevation Bands controls and its notice. */
 val BandsGreen = Color(0xFF14532D)
