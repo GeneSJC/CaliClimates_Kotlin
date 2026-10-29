@@ -41,13 +41,14 @@ def circle_d(cx,cy,r): return f"M{cx-r:.1f},{cy:.1f} a{r:.1f},{r:.1f} 0 1,0 {2*r
 # ---------- geography ----------
 COAST=[(-124.21,42.00),(-124.41,40.44),(-123.65,38.80),(-123.00,38.00),(-122.51,37.77),(-122.20,37.00),(-121.85,36.80),(-121.90,36.30),(-120.85,35.30),(-120.47,34.45),(-119.70,34.40),(-119.10,34.10),(-118.85,34.02),(-118.40,33.74),(-117.60,33.38),(-117.25,32.72),(-117.12,32.53)]
 BORDER=[(-117.12,32.53),(-114.72,32.72),(-114.63,35.00),(-120.00,39.00),(-120.00,42.00),(-124.21,42.00)]
-K=math.cos(math.radians(37.5)); HEIGHT=58.0
-OUTLINE=(255,255,255); OUTLINE_ALPHA=240; OUTLINE_W=1.2   # the state's outline
+K=math.cos(math.radians(37.5)); HEIGHT=60.0
+# The state's outline: white along the coast (against the blue ocean), dark brown along the land borders (against the tan land)
+OUTLINE_COAST=(255,255,255); OUTLINE_LAND=(0x2E,0x1D,0x12); OUTLINE_ALPHA=255; OUTLINE_W=1.8
 _all=COAST+BORDER[1:]
 _xs=[p[0]*K for p in _all]; _ys=[p[1] for p in _all]
 _sc=HEIGHT/(max(_ys)-min(_ys)); _mx=(max(_xs)+min(_xs))/2; _my=(max(_ys)+min(_ys))/2
 def proj(p): return (54+(p[0]*K-_mx)*_sc, 54-(p[1]-_my)*_sc)
-COAST_XY=[proj(p) for p in COAST]; STATE_XY=[proj(p) for p in _all]
+COAST_XY=[proj(p) for p in COAST]; STATE_XY=[proj(p) for p in _all]; LAND_XY=[proj(p) for p in BORDER]
 
 # ---------- palette ----------
 LAND=((0xCF,0xC3,0xA0),(0xA8,0x98,0x70)); CONTOUR=(120,96,60)
@@ -70,7 +71,7 @@ def mound(x0,x1,base,h):
     return catmull([(x0,base+6),(x0+0.12*w,base),(x0+0.3*w,base-0.7*h),(x0+0.5*w,base-h),(x0+0.7*w,base-0.7*h),(x0+0.88*w,base),(x1,base+6)])
 
 # The bear from the state flag, walking left on a strip of grass, in the north of the state (placed in canvas units)
-SHOW_BEAR=False
+SHOW_BEAR=True
 BEAR=[(0.00,0.50),(0.04,0.40),(0.11,0.33),(0.15,0.22),(0.18,0.12),(0.23,0.22),(0.30,0.26),(0.40,0.12),(0.52,0.14),(0.66,0.20),(0.80,0.24),(0.92,0.32),(0.97,0.38),(0.92,0.46),(0.90,0.62),(0.93,0.80),(0.95,1.00),(0.80,1.00),(0.78,0.78),(0.70,0.72),(0.58,0.74),(0.50,0.76),(0.52,1.00),(0.36,1.00),(0.34,0.76),(0.26,0.72),(0.17,0.66),(0.10,0.62),(0.03,0.58)]
 BEAR_BOX=(32.6,28.0,19.0,11.0)     # x, y, width, height of the bear
 BEAR_COLOR=(0x4A,0x2C,0x17); BEAR_RIM=(0xF1,0xE3,0xC8)
@@ -166,7 +167,12 @@ def render(S=1080,mask=None,layers="both"):
             sc=Image.alpha_composite(sc,bl)
         wm=Image.new("L",(S,S),0); ImageDraw.Draw(wm).polygon(P(STATE_XY),fill=255)
         img=Image.alpha_composite(img,Image.composite(sc,Image.new("RGBA",(S,S),(0,0,0,0)),wm))
-        ImageDraw.Draw(img).line(P(STATE_XY+[STATE_XY[0]]),fill=OUTLINE+(OUTLINE_ALPHA,),width=int(OUTLINE_W*k),joint="curve")
+        od=ImageDraw.Draw(img)
+        od.line(P(LAND_XY),fill=OUTLINE_LAND+(OUTLINE_ALPHA,),width=int(OUTLINE_W*k),joint="curve")
+        od.line(P(COAST_XY),fill=OUTLINE_COAST+(OUTLINE_ALPHA,),width=int(OUTLINE_W*k),joint="curve")
+        for q in (COAST_XY[0],COAST_XY[-1]):   # round the ends where the two colours meet
+            for col in (OUTLINE_LAND,OUTLINE_COAST):
+                r=OUTLINE_W*k/2; od.ellipse([q[0]*k-r,q[1]*k-r,q[0]*k+r,q[1]*k+r],fill=col+(OUTLINE_ALPHA,))
     if mask=="circle72":
         a=int(18*k); b=int(90*k); img=img.crop((a,a,b,b))
         m=Image.new("L",img.size,0); ImageDraw.Draw(m).ellipse([0,0,img.size[0]-1,img.size[1]-1],fill=255); img.putalpha(m)
@@ -252,7 +258,8 @@ def foreground(standalone=True):
         x+=ind(fill(poly_d(grass_xy()),GRASS,comment="Grass under the bear"))
         x+=ind(fill(poly_d(bear_xy()),BEAR_COLOR,comment="The California bear, walking left"))
     x+="    </group>\n"
-    x+=stroke(poly_d(STATE_XY),OUTLINE,OUTLINE_ALPHA/255,OUTLINE_W,"Outline")
+    x+=stroke(poly_d(LAND_XY,close=False),OUTLINE_LAND,OUTLINE_ALPHA/255,OUTLINE_W,"Outline along the land borders")
+    x+=stroke(poly_d(COAST_XY,close=False),OUTLINE_COAST,OUTLINE_ALPHA/255,OUTLINE_W,"Outline along the coast")
     return x+("</vector>\n" if standalone else "")
 
 def composite():

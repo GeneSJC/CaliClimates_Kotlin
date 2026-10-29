@@ -10,9 +10,9 @@
     <!-- Soft shadow under the state -->
     <path
         android:fillColor="#6E000000"
-        android:pathData="M32.0,26.6 L31.0,36.2 L34.7,46.2 L37.9,51.1 L40.3,52.5 L41.8,57.2 L43.5,58.4 L43.2,61.5 L48.3,67.6 L50.2,72.8 L53.9,73.1 L56.8,75.0 L58.1,75.5 L60.2,77.2 L64.1,79.4 L65.8,83.4 L66.5,84.6 L78.1,83.4 L78.6,69.5 L52.5,45.0 L52.5,26.6 L32.0,26.6 Z" />
+        android:pathData="M31.2,25.6 L30.2,35.5 L34.0,45.9 L37.3,50.9 L39.8,52.4 L41.3,57.3 L43.1,58.5 L42.8,61.7 L48.1,68.0 L50.0,73.4 L53.9,73.8 L56.9,75.7 L58.2,76.2 L60.4,77.9 L64.5,80.2 L66.2,84.4 L66.9,85.6 L78.9,84.4 L79.4,70.0 L52.4,44.6 L52.4,25.6 L31.2,25.6 Z" />
     <group>
-        <clip-path android:pathData="M31.2,25.0 L30.2,34.6 L33.9,44.6 L37.1,49.5 L39.5,50.9 L41.0,55.6 L42.7,56.8 L42.4,59.9 L47.5,66.0 L49.4,71.2 L53.1,71.5 L56.0,73.4 L57.3,73.9 L59.4,75.6 L63.3,77.8 L65.0,81.8 L65.7,83.0 L77.3,81.8 L77.8,67.9 L51.7,43.4 L51.7,25.0 L31.2,25.0 Z" />
+        <clip-path android:pathData="M30.4,24.0 L29.4,33.9 L33.2,44.3 L36.5,49.3 L39.0,50.8 L40.5,55.7 L42.3,56.9 L42.0,60.1 L47.3,66.4 L49.2,71.8 L53.1,72.2 L56.1,74.1 L57.4,74.6 L59.6,76.3 L63.7,78.6 L65.4,82.8 L66.1,84.0 L78.1,82.8 L78.6,68.4 L51.6,43.0 L51.6,24.0 L30.4,24.0 Z" />
         <!-- Sky -->
         <path android:pathData="M-10,21.5 H130 V88.5 H-10 Z">
             <aapt:attr name="android:fillColor">
@@ -70,12 +70,27 @@
         <path
             android:fillColor="#F5FFFFFF"
             android:pathData="M54.8,41.7 H67.8 a1.9,1.9 0 0,1 1.9,1.9 V43.5 a1.9,1.9 0 0,1 -1.9,1.9 H54.8 a1.9,1.9 0 0,1 -1.9,-1.9 V43.5 a1.9,1.9 0 0,1 1.9,-1.9 Z" />
+        <!-- Grass under the bear -->
+        <path
+            android:fillColor="#FF5F8652"
+            android:pathData="M29.6,38.2 L54.6,38.2 L54.6,42.2 L29.6,42.2 Z" />
+        <!-- The California bear, walking left -->
+        <path
+            android:fillColor="#FF4A2C17"
+            android:pathData="M32.6,33.5 L33.4,32.4 L34.7,31.6 L35.5,30.4 L36.0,29.3 L37.0,30.4 L38.3,30.9 L40.2,29.3 L42.5,29.5 L45.1,30.2 L47.8,30.6 L50.1,31.5 L51.0,32.2 L50.1,33.1 L49.7,34.8 L50.3,36.8 L50.7,39.0 L47.8,39.0 L47.4,36.6 L45.9,35.9 L43.6,36.1 L42.1,36.4 L42.5,39.0 L39.4,39.0 L39.1,36.4 L37.5,35.9 L35.8,35.3 L34.5,34.8 L33.2,34.4 Z" />
     </group>
-    <!-- Outline -->
+    <!-- Outline along the land borders -->
     <path
-        android:pathData="M31.2,25.0 L30.2,34.6 L33.9,44.6 L37.1,49.5 L39.5,50.9 L41.0,55.6 L42.7,56.8 L42.4,59.9 L47.5,66.0 L49.4,71.2 L53.1,71.5 L56.0,73.4 L57.3,73.9 L59.4,75.6 L63.3,77.8 L65.0,81.8 L65.7,83.0 L77.3,81.8 L77.8,67.9 L51.7,43.4 L51.7,25.0 L31.2,25.0 Z"
-        android:strokeColor="#F0FFFFFF"
-        android:strokeWidth="1.2"
+        android:pathData="M66.1,84.0 L78.1,82.8 L78.6,68.4 L51.6,43.0 L51.6,24.0 L30.4,24.0"
+        android:strokeColor="#FF2E1D12"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- Outline along the coast -->
+    <path
+        android:pathData="M30.4,24.0 L29.4,33.9 L33.2,44.3 L36.5,49.3 L39.0,50.8 L40.5,55.7 L42.3,56.9 L42.0,60.1 L47.3,66.4 L49.2,71.8 L53.1,72.2 L56.1,74.1 L57.4,74.6 L59.6,76.3 L63.7,78.6 L65.4,82.8 L66.1,84.0"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
 </vector>
