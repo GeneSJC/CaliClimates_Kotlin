@@ -1,15 +1,14 @@
 package io.github.genesjc.climatefinder.domain
 
 /**
- * The Elevation view's layers: stations grouped into distance bands from the selected one (band 0 is nearest, drawn
- * in front), each band drawn as its own ridge, smaller, higher and hazier the farther it is. Built on
- * [StationDistance.depth]. Factors and positions only; the screens draw them.
+ * The Elevation view's layers: stations grouped by latitude into bands, like looking north across the region (band 0
+ * is the southern third, drawn in front; the last band is the northern third, behind), each band drawn as its own
+ * ridge, smaller, higher and hazier the farther back it is. The bands depend only on the stations, so selecting
+ * another station does not move them. Factors and positions only; the screens draw them.
  */
 object DepthBands {
     const val COUNT = 3
 
-    private const val NEAR_LIMIT = 0.2f
-    private const val MID_LIMIT = 0.4f
     private val SQUASH = floatArrayOf(1f, 0.85f, 0.7f)
     private val HAZE = floatArrayOf(0f, 0.22f, 0.4f)
     private val LINE = floatArrayOf(1f, 0.75f, 0.5f)
@@ -17,11 +16,15 @@ object DepthBands {
     /** How much of the lift (see [layeredY]) a band gets, as a share of the room it leaves above itself. */
     private const val LIFT_SHARE = 0.8f
 
-    /** The band for a depth: near (under 20% of the region's size), middle (under 40%) or far. */
-    fun bandOf(depth: Float): Int = when {
-        depth < NEAR_LIMIT -> 0
-        depth < MID_LIMIT -> 1
-        else -> 2
+    /**
+     * The band of each station, given their latitudes in the stations' own order: the southernmost third is band 0
+     * (front), the northernmost the last band (back). Split by rank, so each band gets about the same number of stations.
+     */
+    fun byLatitude(latitudes: List<Double>): IntArray {
+        val order = latitudes.indices.sortedBy { latitudes[it] }
+        val bands = IntArray(latitudes.size)
+        order.forEachIndexed { rank, index -> bands[index] = rank * COUNT / latitudes.size }
+        return bands
     }
 
     /** Multiplies the band's heights: the far ridges are lower on the page. */

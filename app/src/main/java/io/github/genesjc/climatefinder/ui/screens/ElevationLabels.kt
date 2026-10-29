@@ -10,6 +10,9 @@ import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 // Labels are about this tall (dp) when checking for overlaps
 internal const val LABEL_HEIGHT_DP = 18f
 
+// A label wider than this (dp) wraps to a second line
+internal const val LABEL_MAX_WIDTH_DP = 124f
+
 /** A label's spot (top-left corner in dp) and whether it has room at the current zoom. */
 internal data class PlacedLabel(
     val station: MicroclimateStation,

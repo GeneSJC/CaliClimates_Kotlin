@@ -6,13 +6,27 @@ import org.junit.Test
 
 class DepthBandsTest {
     @Test
-    fun depthFallsIntoNearMiddleOrFar() {
-        assertEquals(0, DepthBands.bandOf(0f))
-        assertEquals(0, DepthBands.bandOf(0.19f))
-        assertEquals(1, DepthBands.bandOf(0.2f))
-        assertEquals(1, DepthBands.bandOf(0.39f))
-        assertEquals(2, DepthBands.bandOf(0.4f))
-        assertEquals(2, DepthBands.bandOf(1f))
+    fun southIsInFrontAndNorthAtTheBack() {
+        // Auburn 38.96, Gilroy-ish 37.0, Sacramento 38.7, Palo Alto 37.46, Vacaville 38.38, Santa Cruz 36.99
+        val bands = DepthBands.byLatitude(listOf(38.96, 37.0, 38.7, 37.46, 38.38, 36.99))
+        assertEquals(listOf(2, 0, 2, 1, 1, 0), bands.toList())
+    }
+
+    @Test
+    fun theBandsAreAboutTheSameSize() {
+        val bands = DepthBands.byLatitude(List(30) { 36.0 + it * 0.1 })
+        assertEquals(listOf(10, 10, 10), (0 until DepthBands.COUNT).map { band -> bands.count { it == band } })
+    }
+
+    @Test
+    fun theOrderOfTheInputDoesNotMatter() {
+        val north = DepthBands.byLatitude(listOf(39.0, 37.0, 38.0))
+        assertEquals(listOf(2, 0, 1), north.toList())
+    }
+
+    @Test
+    fun noStationsMeansNoBands() {
+        assertEquals(0, DepthBands.byLatitude(emptyList()).size)
     }
 
     @Test

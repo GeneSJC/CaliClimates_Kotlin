@@ -17,6 +17,16 @@ class ElevationViewModel : MapViewModel() {
 
     private val settings: AppSettings by inject()
 
+    private val layersOn = MutableStateFlow(settings.elevationLayers())
+
+    /** Whether the chart shows its layers (bands by latitude) instead of the single line. */
+    val layers: StateFlow<Boolean> = layersOn
+
+    fun toggleLayers() {
+        layersOn.value = !layersOn.value
+        settings.saveElevationLayers(layersOn.value)
+    }
+
     private val skylines = HashMap<String, MutableStateFlow<List<FloatArray>?>>()
 
     /** The region's real skylines for the distant ranges: null until loaded, or when it has none. */

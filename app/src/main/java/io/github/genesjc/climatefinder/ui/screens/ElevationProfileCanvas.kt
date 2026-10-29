@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -74,6 +75,7 @@ import io.github.genesjc.climatefinder.ui.components.ZoomSlider
 import io.github.genesjc.climatefinder.ui.components.MapText
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
+import io.github.genesjc.climatefinder.ui.components.LayersToggleButton
 import io.github.genesjc.climatefinder.ui.components.SliderToggleButton
 import io.github.genesjc.climatefinder.ui.components.ms
 import io.github.genesjc.climatefinder.ui.components.animateZoom
@@ -101,6 +103,9 @@ internal fun ElevationProfileCanvas(
     onLineTapped: () -> Unit,
     embedded: Boolean,
     expandT: Float = 0f,
+    /** The layers view (stations in bands by latitude), and the button's toggle. */
+    layersOn: Boolean = false,
+    onToggleLayers: () -> Unit = {},
     selectedStationId: String?,
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
@@ -142,6 +147,8 @@ internal fun ElevationProfileCanvas(
     val sliderCollapsible = embedded
     // The slider starts lower on Home, to leave room for that button
     val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + 32.dp else 0.dp)
+    // The layers button sits at the right, under Home's view buttons (or level with the expand toggle)
+    val layersButtonTop = if (embedded) HOME_TILE_BAND + 62.dp else 56.dp
 
     // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
     var zoom by remember(sorted) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
@@ -304,10 +311,10 @@ internal fun ElevationProfileCanvas(
         fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
         val dotGrowth = zoomDotGrowth(zoom)
 
-        // Layers: each station's distance band from the selected one (all band 0 when nothing is selected, which is
-        // the plain profile), and its pin's place on the page with the band's squash and lift
-        val bandIndex = remember(sorted, milesFromSelected) {
-            IntArray(sorted.size) { i -> depthOf(sorted[i].id)?.let(DepthBands::bandOf) ?: 0 }
+        // Layers: each station's band by latitude (all band 0 with the layers off, which is the plain profile), and
+        // its pin's place on the page with the band's squash and lift
+        val bandIndex = remember(sorted, layersOn) {
+            if (layersOn) DepthBands.byLatitude(sorted.map { it.latitude }) else IntArray(sorted.size)
         }
         val layered = bandIndex.any { it > 0 }
         val layerTopY = paddingPx + PROFILE_HEAD * heightPx
@@ -354,6 +361,7 @@ internal fun ElevationProfileCanvas(
                 if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) ELEVATION_SLIDER_FRACTION else 1f)), // zoom slider (at the left)
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
+                listOf(widthDp.value - 44f, layersButtonTop.value, widthDp.value, layersButtonTop.value + 36f),  // layers button
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
@@ -373,7 +381,10 @@ internal fun ElevationProfileCanvas(
                 // High pins stay on the lowest height so the label stays inside the chart
                 val maxLevel = if (elevRatio > 0.8f) 0 else 2
                 val textScale = depthOf(station.id)?.let { DepthCue.textScale(it) } ?: 1f
-                fun widthFor(text: String) = text.length * 5.4f * textScale + 10f
+                // The text's width at one line (the size setting included), and the label's real width: long ones wrap to two lines
+                fun lineWidthFor(text: String) = text.length * 5.4f * textScale * MapText.scale + 10f
+                fun widthFor(text: String) = minOf(lineWidthFor(text), LABEL_MAX_WIDTH_DP)
+                fun heightFor(text: String) = if (lineWidthFor(text) > LABEL_MAX_WIDTH_DP) LABEL_HEIGHT_DP * 1.7f else LABEL_HEIGHT_DP
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
                 fun leftFor(text: String) =
                     (if (pinX - 24f + widthFor(text) > widthDp.value * 0.97f) pinX - widthFor(text) else pinX - 24f).coerceAtLeast(2f)
@@ -381,10 +392,11 @@ internal fun ElevationProfileCanvas(
                 fun tryPlace(text: String): PlacedLabel? {
                     val left = leftFor(text)
                     for (level in 0..maxLevel) {
-                        val top = pinY - 26f - 16f * level
+                        // A two-line label grows upward, so its bottom edge stays where a one-line label's would be
+                        val top = pinY - 26f - 16f * level - (heightFor(text) - LABEL_HEIGHT_DP)
                         if (top < 0f) continue
                         val right = left + widthFor(text)
-                        val bottom = top + LABEL_HEIGHT_DP
+                        val bottom = top + heightFor(text)
                         val free = taken.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
                         if (free || force) {
                             taken.add(listOf(left, top, right, bottom))
@@ -958,11 +970,13 @@ internal fun ElevationProfileCanvas(
                 ),
                 modifier = Modifier
                     .offset(x = label.xDp.dp, y = label.yDp.dp)
+                    .widthIn(max = LABEL_MAX_WIDTH_DP.dp)
                     .alpha(fade * (depth?.let { DepthCue.alpha(it) } ?: 1f))
                     .clickable { onSelectStation(station) }
             ) {
                 Text(
                     text = label.text,
+                    maxLines = 2,
                     fontSize = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f)),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
@@ -970,6 +984,12 @@ internal fun ElevationProfileCanvas(
                 )
             }
         }
+
+        LayersToggleButton(
+            on = layersOn,
+            onToggle = onToggleLayers,
+            modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = layersButtonTop)
+        )
 
         // Floating zoom slider on the right edge, where the Topography map has it
         fun nearestLinePoint(): Offset {

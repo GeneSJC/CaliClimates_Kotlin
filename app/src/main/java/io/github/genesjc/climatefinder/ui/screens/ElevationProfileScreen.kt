@@ -94,6 +94,8 @@ fun ElevationProfileScreen(
     // The region's real skylines, for the distant ranges
     val skyline by remember(dataset.regionId) { viewModel.skyline(dataset.regionId) }.collectAsStateWithLifecycle()
 
+    val layersOn by viewModel.layers.collectAsStateWithLifecycle()
+
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     var localSelectedId by remember(stations) { mutableStateOf(stations.firstOrNull()?.id) }
     val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
@@ -203,6 +205,8 @@ fun ElevationProfileScreen(
                     onLineTapped = viewModel::lineTapped,
                     embedded = embedded,
                     expandT = expandT,
+                    layersOn = layersOn,
+                    onToggleLayers = viewModel::toggleLayers,
                     selectedStationId = selectedStationId,
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,

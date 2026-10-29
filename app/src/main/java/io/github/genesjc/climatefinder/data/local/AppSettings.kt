@@ -38,6 +38,11 @@ interface AppSettings {
     fun shouldShowElevationHint(): Boolean
 
     fun markElevationLineTapped()
+
+    /** Whether the Elevation view shows its layers (bands by latitude). It starts off: the single line. */
+    fun elevationLayers(): Boolean
+
+    fun saveElevationLayers(on: Boolean)
 }
 
 /** [AppSettings] kept in one SharedPreferences file, with one key per value. */
@@ -94,6 +99,12 @@ class AppSettingsPreferences(
         if (!prefs.getBoolean(KEY_HINT_TAPPED, false)) prefs.edit().putBoolean(KEY_HINT_TAPPED, true).apply()
     }
 
+    override fun elevationLayers(): Boolean = prefs.getBoolean(KEY_ELEVATION_LAYERS, false)
+
+    override fun saveElevationLayers(on: Boolean) {
+        prefs.edit().putBoolean(KEY_ELEVATION_LAYERS, on).apply()
+    }
+
     companion object {
         const val FILE_NAME = "app_settings"
         const val MAX_HINT_LAUNCHES = 3
@@ -106,5 +117,6 @@ class AppSettingsPreferences(
         private const val KEY_DARK_MODE = "dark_mode"
         private const val KEY_HINT_LAUNCHES = "hint_launches"
         private const val KEY_HINT_TAPPED = "hint_line_tapped"
+        private const val KEY_ELEVATION_LAYERS = "elevation_layers"
     }
 }
