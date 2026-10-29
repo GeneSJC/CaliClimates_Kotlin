@@ -84,16 +84,19 @@ def california(height):
     out = Image.alpha_composite(relief, tint)
     return out.resize((int(w * height / h), height), Image.LANCZOS)
 
+SS = 4  # chips are drawn this many times larger and shrunk, so their curves and text have smooth edges
+
 def chip(text, fill, size=24, pad=(18, 9)):
-    f = font(FONT_BOLD, size)
+    f = font(FONT_BOLD, size * SS)
     bbox = f.getbbox(text)
     line = f.getbbox("Agy,")  # the same height for every chip, whatever its letters
-    w, h = bbox[2] - bbox[0] + pad[0] * 2, line[3] - line[1] + pad[1] * 2 + 4
+    w = bbox[2] - bbox[0] + pad[0] * 2 * SS
+    h = line[3] - line[1] + (pad[1] * 2 + 4) * SS
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle((0, 0, w - 1, h - 1), radius=h // 2, fill=fill)
-    d.text((pad[0] - bbox[0], pad[1] - line[1] + 1), text, font=f, fill=(255, 255, 255))
-    return img
+    d.text((pad[0] * SS - bbox[0], pad[1] * SS - line[1] + SS), text, font=f, fill=(255, 255, 255))
+    return img.resize((round(w / SS), round(h / SS)), Image.LANCZOS)
 
 def shadowed(base, layer, xy, blur=18, offset=(0, 14), opacity=110):
     sh = Image.new("RGBA", base.size, (0, 0, 0, 0))
@@ -130,33 +133,33 @@ def banner(path):
 
 def chip_box(text, fill, size=20, width=200, pad=(14, 9), lines=2):
     """A chip of fixed size for the README table: the text wraps inside it, so every chip shows the same type size.
-    All the boxes are as tall as `lines` lines of text; a one-line label is centred in it."""
-    f = font(FONT_BOLD, size)
-    line_h = f.getbbox("Agy,")[3] - f.getbbox("Agy,")[1] + 4
+    All the boxes are as tall as `lines` lines of text; a one-line label is centred in it. Drawn at SS times the size."""
+    f = font(FONT_BOLD, size * SS)
+    line_h = f.getbbox("Agy,")[3] - f.getbbox("Agy,")[1] + 4 * SS
     words, rows, row = text.split(" "), [], ""
     for w in words:
         trial = (row + " " + w).strip()
-        if row and f.getlength(trial) > width - pad[0] * 2:
+        if row and f.getlength(trial) > (width - pad[0] * 2) * SS:
             rows.append(row); row = w
         else:
             row = trial
     rows.append(row)
     assert len(rows) <= lines, f"{text!r} needs {len(rows)} lines"
-    h = lines * line_h + pad[1] * 2
-    img = Image.new("RGBA", (width, h), (0, 0, 0, 0))
+    W, H = width * SS, lines * line_h + pad[1] * 2 * SS
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle((0, 0, width - 1, h - 1), radius=h // 2 if lines == 1 else 24, fill=fill)
-    top = (h - len(rows) * line_h) / 2
-    for i, r in enumerate(rows):
-        x = (width - f.getlength(r)) / 2
-        d.text((x, top + i * line_h - f.getbbox("A")[1] + 1), r, font=f, fill=(255, 255, 255))
-    return img
+    d.rounded_rectangle((0, 0, W - 1, H - 1), radius=H // 2 if lines == 1 else 24 * SS, fill=fill)
+    top = (H - len(rows) * line_h) / 2
+    for k, r in enumerate(rows):
+        x = (W - f.getlength(r)) / 2
+        d.text((x, top + k * line_h - f.getbbox("A")[1] + SS), r, font=f, fill=(255, 255, 255))
+    return img.resize((width, round(H / SS)), Image.LANCZOS)
 
 def chip_images():
     """Two PNGs per chip: chip-top-<stem>.png for the row under the banner (one line), chip-<stem>.png for the table
     (the same size for all, text wrapped)."""
     for text, fill, stem in CHIPS:
-        chip(text, fill, size=17, pad=(12, 6)).save(os.path.join(HERE, f"chip-top-{stem}.png"), optimize=True)
+        chip(text, fill, size=15, pad=(11, 5)).save(os.path.join(HERE, f"chip-top-{stem}.png"), optimize=True)
         chip_box(text, fill).save(os.path.join(HERE, f"chip-{stem}.png"), optimize=True)
 
 def divider(path):

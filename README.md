@@ -3,13 +3,13 @@
 <img src="docs/images/banner.png" alt="Cali Climates: explore California's climates, region by region" width="100%">
 
 <p>
-<a href="#chip-nws"><img src="docs/images/chip-top-live-nws.png" alt="Live NWS Readings" height="32"></a>
-<a href="#chip-terrain"><img src="docs/images/chip-top-terrain-relief.png" alt="Terrain Relief" height="32"></a>
-<a href="#chip-distance"><img src="docs/images/chip-top-distance-aware-labels.png" alt="Distance-Aware Labels" height="32"></a>
+<a href="#chip-nws"><img src="docs/images/chip-top-live-nws.png" alt="Live NWS Readings" height="28"></a>
+<a href="#chip-terrain"><img src="docs/images/chip-top-terrain-relief.png" alt="Terrain Relief" height="28"></a>
+<a href="#chip-distance"><img src="docs/images/chip-top-distance-aware-labels.png" alt="Distance-Aware Labels" height="28"></a>
 <br>
-<a href="#chip-bands"><img src="docs/images/chip-top-elevation-bands.png" alt="Elevation Bands" height="32"></a>
-<a href="#chip-transitions"><img src="docs/images/chip-top-smooth-transitions.png" alt="Smooth Transitions" height="32"></a>
-<a href="#chip-state"><img src="docs/images/chip-top-one-state-two-views.png" alt="One State, Two Views" height="32"></a>
+<a href="#chip-bands"><img src="docs/images/chip-top-elevation-bands.png" alt="Elevation Bands" height="28"></a>
+<a href="#chip-transitions"><img src="docs/images/chip-top-smooth-transitions.png" alt="Smooth Transitions" height="28"></a>
+<a href="#chip-state"><img src="docs/images/chip-top-one-state-two-views.png" alt="One State, Two Views" height="28"></a>
 </p>
 
 <br>
