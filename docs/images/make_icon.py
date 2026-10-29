@@ -20,19 +20,18 @@ from PIL import Image, ImageDraw, ImageFilter
 OUT = (0x0F, 0x2A, 0x52)                         # the outline colour: a deep navy
 OW = 1.7                                         # outline width outside a filled shape
 SKY = [(0.0, (0x4F, 0xB4, 0xF0)), (0.55, (0x1D, 0x6F, 0xC2)), (1.0, (0x0B, 0x3A, 0x78))]
-GLOW = (60, 36, 42, (0xBF, 0xE8, 0xFF), 0.45)    # centre x, y, radius, colour, strongest opacity
-SUN = (60, 41, 12)
+GLOW = (58, 42, 44, (0xBF, 0xE8, 0xFF), 0.45)    # centre x, y, radius, colour, strongest opacity
+SUN = (58, 45, 15)
 SUN_GRAD = ((0xFF, 0xE0, 0x5A), (0xFF, 0xA3, 0x1A)); RAY = (0xFF, 0xC8, 0x3D)
 RAY_FROM, RAY_TO, RAY_OUTLINE, RAY_CORE = 3.4, 9.0, 6.0, 2.8
-MOUNTAINS = [  # outline points, light face, shaded face, apex x
-    ([(12, 92), (29, 71), (48, 92)], (0x3F, 0xC0, 0x84), (0x2A, 0x9A, 0x68), 29),
-    ([(44, 92), (70, 65), (96, 92)], (0x35, 0xB5, 0x7A), (0x1F, 0x86, 0x5C), 70),
+MOUNTAINS = [  # one big mountain, back left: outline points, light face, shaded face, apex x
+    ([(-8, 92), (30, 34), (68, 92)], (0x35, 0xB5, 0x7A), (0x1F, 0x86, 0x5C), 30),
 ]
-SNOW_CAPS = [(29, 71, 9.5, 7.5), (70, 65, 12, 9)]    # apex x, apex y, width, height
+SNOW_CAPS = [(30, 34, 15, 12)]                   # apex x, apex y, width, height
 SNOW = (0xFF, 0xFF, 0xFF)
-HILL = [(-10, 91), (20, 86), (54, 90), (86, 86), (118, 91)]; HILL_COLOR = (0x1F, 0x8F, 0x62)
-CLOUD_CIRCLES = [(39, 60, 5.4), (45.5, 55.5, 7.4), (54, 56.5, 6.6), (60.5, 61, 4.8)]
-CLOUD_BASE = (34, 61, 65, 67, 3)                 # x0, y0, x1, y1, corner radius
+HILL = [(-10, 92), (20, 88), (54, 91), (86, 88), (118, 92)]; HILL_COLOR = (0x1F, 0x8F, 0x62)
+CLOUD_CIRCLES = [(52, 73, 6.2), (60.5, 66.5, 8.8), (71, 68, 7.8), (79.5, 73, 5.8)]
+CLOUD_BASE = (45, 73, 85.5, 80, 3.5)                 # x0, y0, x1, y1, corner radius
 CLOUD_TOP, CLOUD_BOTTOM = (0xFF, 0xFF, 0xFF), (0xBF, 0xDC, 0xF5)
 LINE = 2.6                                       # width of a centred outline on a polygon
 
@@ -68,8 +67,10 @@ def circle_d(cx, cy, r): return f"M{cx - r:.1f},{cy:.1f} a{r:.1f},{r:.1f} 0 1,0 
 
 
 def rrect_d(x0, y0, x1, y1, r):
-    return (f"M{x0 + r:.1f},{y0:.1f} H{x1 - r:.1f} a{r:.1f},{r:.1f} 0 0,1 {r:.1f},{r:.1f} V{y1 - r:.1f} a{r:.1f},{r:.1f} 0 0,1 {-r:.1f},{r:.1f} "
-            f"H{x0 + r:.1f} a{r:.1f},{r:.1f} 0 0,1 {-r:.1f},{-r:.1f} V{y0 + r:.1f} a{r:.1f},{r:.1f} 0 0,1 {r:.1f},{-r:.1f} Z")
+    """A rounded rectangle drawn counter-clockwise on screen, like circle_d: shapes that overlap in one path must wind the
+    same way, or Android's non-zero fill leaves a hole where they cross."""
+    return (f"M{x0 + r:.1f},{y0:.1f} a{r:.1f},{r:.1f} 0 0,0 {-r:.1f},{r:.1f} V{y1 - r:.1f} a{r:.1f},{r:.1f} 0 0,0 {r:.1f},{r:.1f} "
+            f"H{x1 - r:.1f} a{r:.1f},{r:.1f} 0 0,0 {r:.1f},{-r:.1f} V{y0 + r:.1f} a{r:.1f},{r:.1f} 0 0,0 {-r:.1f},{-r:.1f} Z")
 
 
 def rays():
@@ -86,7 +87,7 @@ def snow_cap(ax, ay, w, h):
     return [(ax, ay), (ax + w / 2, ay + h), (ax + w * 0.2, ay + h * 0.7), (ax, ay + h * 1.05), (ax - w * 0.2, ay + h * 0.7), (ax - w / 2, ay + h)]
 
 
-def shade(pts, apex_x): return [(apex_x, pts[1][1]), pts[2], (apex_x + 3, pts[2][1])]
+def shade(pts, apex_x): return [(apex_x, pts[1][1]), pts[2], (apex_x + 8, pts[2][1])]
 def hill_pts(): return catmull(HILL)
 
 
@@ -117,6 +118,14 @@ def render(S=1080, layers="both"):
         put(glow)
     if layers in ("both", "fg"):
         d = ImageDraw.Draw(img)
+        for pts, light, dark, apex in MOUNTAINS:
+            d.polygon(P(pts), fill=light + (255,))
+            sh = clear(); ImageDraw.Draw(sh).polygon(P(shade(pts, apex)), fill=dark + (255,))
+            put(sh); d = ImageDraw.Draw(img)
+            p = P(pts); d.line(p + [p[0]], fill=OUT + (255,), width=int(LINE * k), joint="curve")
+        for ax, ay, w, h in SNOW_CAPS:
+            p = P(snow_cap(ax, ay, w, h)); d.polygon(p, fill=SNOW + (255,)); d.line(p + [p[0]], fill=OUT + (255,), width=int(1.2 * k), joint="curve")
+        d = ImageDraw.Draw(img)
         for (x0, y0), (x1, y1) in rays():
             for width, col in ((RAY_OUTLINE, OUT), (RAY_CORE, RAY)):
                 d.line([(x0 * k, y0 * k), (x1 * k, y1 * k)], fill=col + (255,), width=int(width * k))
@@ -129,13 +138,7 @@ def render(S=1080, layers="both"):
         gl = clear(); ImageDraw.Draw(gl).ellipse([(cx - 8) * k, (cy - 9) * k, (cx - 2) * k, (cy - 4) * k], fill=(255, 255, 255, 120))
         put(gl.filter(ImageFilter.GaussianBlur(0.6 * k)))
         d = ImageDraw.Draw(img)
-        for pts, light, dark, apex in MOUNTAINS:
-            d.polygon(P(pts), fill=light + (255,))
-            sh = clear(); ImageDraw.Draw(sh).polygon(P(shade(pts, apex)), fill=dark + (255,))
-            put(sh); d = ImageDraw.Draw(img)
-            p = P(pts); d.line(p + [p[0]], fill=OUT + (255,), width=int(LINE * k), joint="curve")
-        for ax, ay, w, h in SNOW_CAPS:
-            p = P(snow_cap(ax, ay, w, h)); d.polygon(p, fill=SNOW + (255,)); d.line(p + [p[0]], fill=OUT + (255,), width=int(1.2 * k), joint="curve")
+        d = ImageDraw.Draw(img)
         hp = P(hill_pts() + [(118, 120), (-10, 120)]); d.polygon(hp, fill=HILL_COLOR + (255,)); d.line(hp + [hp[0]], fill=OUT + (255,), width=int(LINE * k), joint="curve")
         x0, y0, x1, y1, rad = CLOUD_BASE
         for cx2, cy2, r in CLOUD_CIRCLES: d.ellipse([(cx2 - r - OW) * k, (cy2 - r - OW) * k, (cx2 + r + OW) * k, (cy2 + r + OW) * k], fill=OUT + (255,))
@@ -143,7 +146,7 @@ def render(S=1080, layers="both"):
         cm = Image.new("L", (S, S), 0); cd = ImageDraw.Draw(cm)
         for cx2, cy2, r in CLOUD_CIRCLES: cd.ellipse([(cx2 - r) * k, (cy2 - r) * k, (cx2 + r) * k, (cy2 + r) * k], fill=255)
         cd.rounded_rectangle([x0 * k, y0 * k, x1 * k, y1 * k], radius=rad * k, fill=255)
-        put(masked(vband(CLOUD_TOP, CLOUD_BOTTOM, 52, 66), cm))
+        put(masked(vband(CLOUD_TOP, CLOUD_BOTTOM, 62, 80), cm))
     return img
 
 
@@ -202,6 +205,12 @@ def background():
 def foreground(standalone=True):
     x = HEAD if standalone else ""
     x += "    <!-- Foreground layer: the sun, the mountains and a small cloud, outlined in deep navy. -->\n"
+    for pts, light, dark, apex in MOUNTAINS:
+        x += fill(poly_d(pts), light, "Mountain")
+        x += fill(poly_d(shade(pts, apex)), dark)
+        x += outlined(poly_d(pts), OUT, LINE)
+    for ax, ay, w, h in SNOW_CAPS:
+        x += outlined(poly_d(snow_cap(ax, ay, w, h)), OUT, 1.2, "Snow cap", fillcolor=SNOW)
     cx, cy, R = SUN
     for (x0, y0), (x1, y1) in rays():
         x += (f'    <path\n        android:pathData="M{x0:.1f},{y0:.1f} L{x1:.1f},{y1:.1f}"\n        android:strokeColor="{hexc(OUT)}"\n        android:strokeWidth="{RAY_OUTLINE}"\n        android:strokeLineCap="round" />\n')
@@ -210,17 +219,11 @@ def foreground(standalone=True):
     x += fill(circle_d(cx, cy, R + OW), OUT, "Sun")
     x += gfill(circle_d(cx, cy, R), vgrad_attr(cy - R, cy + R, [(0.0, SUN_GRAD[0]), (1.0, SUN_GRAD[1])]))
     x += fill(f"M{cx - 8:.1f},{cy - 6.5:.1f} a3,2.5 0 1,0 6,0 a3,2.5 0 1,0 -6,0 Z", (255, 255, 255), "Gloss", alpha=0.47)
-    for pts, light, dark, apex in MOUNTAINS:
-        x += fill(poly_d(pts), light, "Mountain")
-        x += fill(poly_d(shade(pts, apex)), dark)
-        x += outlined(poly_d(pts), OUT, LINE)
-    for ax, ay, w, h in SNOW_CAPS:
-        x += outlined(poly_d(snow_cap(ax, ay, w, h)), OUT, 1.2, "Snow cap", fillcolor=SNOW)
     hp = [(round(a, 1), round(b, 1)) for a, b in HILL]
     x += outlined(bez(hp) + " L118,120 L-10,120 Z", OUT, LINE, "Hill", fillcolor=HILL_COLOR)
     x += fill(cloud_outline_d(), OUT, "Cloud")
     x += f'    <group>\n        <clip-path android:pathData="{cloud_d()}" />\n'
-    g = gfill("M0,40 H108 V80 H0 Z", vgrad_attr(52, 66, [(0.0, CLOUD_TOP), (1.0, CLOUD_BOTTOM)]))
+    g = gfill("M0,50 H108 V90 H0 Z", vgrad_attr(62, 80, [(0.0, CLOUD_TOP), (1.0, CLOUD_BOTTOM)]))
     x += "".join(("    " + l if l.strip() else l) for l in g.splitlines(True))
     x += "    </group>\n"
     return x + ("</vector>\n" if standalone else "")
@@ -231,9 +234,9 @@ def composite(): return background().rsplit("</vector>", 1)[0] + foreground(stan
 
 def monochrome():
     cx, cy, R = SUN
-    d = circle_d(cx, cy, R) + " " + " ".join(poly_d(p) for p, *_ in MOUNTAINS) + " " + cloud_d()
-    x = HEAD + '    <!-- Themed (monochrome) icon, Android 13: the sun, cloud and mountains as one shape. -->\n'
-    x += f'    <path\n        android:fillColor="#FF000000"\n        android:pathData="{d}" />\n'
+    x = HEAD + '    <!-- Themed (monochrome) icon, Android 13: the sun, mountain and cloud, each its own shape. -->\n'
+    for d in [circle_d(cx, cy, R)] + [poly_d(p) for p, *_ in MOUNTAINS] + [circle_d(*c) for c in CLOUD_CIRCLES] + [rrect_d(*CLOUD_BASE)]:
+        x += f'    <path\n        android:fillColor="#FF000000"\n        android:pathData="{d}" />\n'
     for (x0, y0), (x1, y1) in rays():
         x += f'    <path\n        android:pathData="M{x0:.1f},{y0:.1f} L{x1:.1f},{y1:.1f}"\n        android:strokeColor="#FF000000"\n        android:strokeWidth="{RAY_CORE + 0.8}"\n        android:strokeLineCap="round" />\n'
     return x + "</vector>\n"

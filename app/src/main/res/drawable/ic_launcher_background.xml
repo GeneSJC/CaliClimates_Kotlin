@@ -22,13 +22,13 @@
         </aapt:attr>
     </path>
     <!-- Glow behind the sun -->
-    <path android:pathData="M18.0,36.0 a42.0,42.0 0 1,0 84.0,0 a42.0,42.0 0 1,0 -84.0,0 Z">
+    <path android:pathData="M14.0,42.0 a44.0,44.0 0 1,0 88.0,0 a44.0,44.0 0 1,0 -88.0,0 Z">
         <aapt:attr name="android:fillColor">
             <gradient
                 android:type="radial"
-                android:centerX="60"
-                android:centerY="36"
-                android:gradientRadius="42">
+                android:centerX="58"
+                android:centerY="42"
+                android:gradientRadius="44">
                 <item android:offset="0.0" android:color="#72BFE8FF" />
                 <item android:offset="1.0" android:color="#00BFE8FF" />
             </gradient>
