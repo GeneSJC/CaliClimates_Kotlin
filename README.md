@@ -19,6 +19,28 @@ Live National Weather Service readings from about 360 stations in six regions, o
 
 <br>
 
+<a id="screens"></a>
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/placeholder-home.png" alt="Home screen" width="230"><br><sub><b>Home</b><br>region, station tile, map</sub></td>
+    <td align="center"><img src="docs/images/placeholder-elevation.png" alt="Elevation view" width="230"><br><sub><b>Elevation</b><br>ridges and the profile</sub></td>
+    <td align="center"><img src="docs/images/placeholder-regions.png" alt="Region picker" width="230"><br><sub><b>Regions</b><br>tap a region on the map</sub></td>
+  </tr>
+</table>
+
+<br>
+
+<img src="docs/images/placeholder-demo.png" alt="Demo of the app" width="640">
+
+</div>
+
+<sub>Screenshots and a demo GIF are on the way. The images above are placeholders (see [`docs/images`](docs/images/README.md)).</sub>
+
+<br>
+
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?style=flat-square&logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-MVVM-1D4ED8?style=flat-square)
@@ -26,7 +48,7 @@ Live National Weather Service readings from about 360 stations in six regions, o
 ![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)
 [![License](https://img.shields.io/badge/License-Apache_2.0-0B1736?style=flat-square)](LICENSE)
 
-[**What it does**](#-what-it-does) &nbsp;·&nbsp; [**Design choices**](#-design-choices) &nbsp;·&nbsp; [**Screens**](#-screens) &nbsp;·&nbsp; [**Run it**](#-run-it) &nbsp;·&nbsp; [**Architecture**](#-architecture) &nbsp;·&nbsp; [**Tech stack**](#-tech-stack) &nbsp;·&nbsp; [**Docs**](#-docs) &nbsp;·&nbsp; [**Status**](#-status)
+[**Screens**](#screens) &nbsp;·&nbsp; [**What it does**](#-what-it-does) &nbsp;·&nbsp; [**Design choices**](#-design-choices) &nbsp;·&nbsp; [**Run it**](#-run-it) &nbsp;·&nbsp; [**Architecture**](#-architecture) &nbsp;·&nbsp; [**Tech stack**](#-tech-stack) &nbsp;·&nbsp; [**Docs**](#-docs) &nbsp;·&nbsp; [**Status**](#-status)
 
 <img src="docs/images/divider.png" alt="" width="100%">
 
@@ -174,26 +196,6 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
   </tr>
 </table>
 
-
-## 📱 Screens
-
-<div align="center">
-
-<table>
-  <tr>
-    <td align="center"><img src="docs/images/placeholder-home.png" alt="Home screen" width="230"><br><sub><b>Home</b><br>region, station tile, map</sub></td>
-    <td align="center"><img src="docs/images/placeholder-elevation.png" alt="Elevation view" width="230"><br><sub><b>Elevation</b><br>ridges and the profile</sub></td>
-    <td align="center"><img src="docs/images/placeholder-regions.png" alt="Region picker" width="230"><br><sub><b>Regions</b><br>tap a region on the map</sub></td>
-  </tr>
-</table>
-
-<br>
-
-<img src="docs/images/placeholder-demo.png" alt="Demo of the app" width="640">
-
-</div>
-
-<sub>Screenshots and a demo GIF are on the way. The images above are placeholders (see [`docs/images`](docs/images/README.md)).</sub>
 
 ## 🚀 Run it
 
