@@ -36,8 +36,8 @@ val BandsGreen = Color(0xFF14532D)
 
 /**
  * The Elevation chart's button for switching views. It shows the view a tap switches to: while the chart is the single
- * line ([on] false) it shows one line splitting into three arrows (the Elevation Bands, white on dark green); while the
- * bands are on it shows three lines merging into one arrow (the single line, purple on white).
+ * line ([on] false) it shows one line splitting into three arrows, turned up and to the right (the Elevation Bands, white on dark green);
+ * while the bands are on it shows a single arrow the same way (the single line, green on white).
  */
 @Composable
 fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
@@ -55,12 +55,21 @@ fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = M
             )
     ) {
         Crossfade(targetState = on, label = "layersIcon") { bandsOn ->
-            Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 7.dp, vertical = 7.dp)) {
-                val stroke = 2.2.dp.toPx()
+            Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 6.dp)) {
+                val stroke = 3.dp.toPx()
                 val w = size.width
                 val h = size.height
                 val head = minOf(w, h) * 0.2f
                 val style = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                val turn = (PI / 4).toFloat()
+
+                // A point given as shares of the icon drawn upright, turned 45 degrees clockwise about the middle (so
+                // "up" points up and to the right) and shrunk by [k] so the turned drawing stays inside the button
+                fun at(x: Float, y: Float, k: Float): Offset {
+                    val dx = (x * w - w / 2f) * k
+                    val dy = (y * h - h / 2f) * k
+                    return Offset(w / 2f + dx * cos(turn) - dy * sin(turn), h / 2f + dx * sin(turn) + dy * cos(turn))
+                }
 
                 // A line from [from] to [to], with an arrowhead at [to] when [arrow]
                 fun line(path: Path, from: Offset, to: Offset, arrow: Boolean) {
@@ -77,20 +86,17 @@ fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = M
 
                 val path = Path()
                 if (bandsOn) {
-                    // Three tails merge into one arrow pointing up: the single line
-                    val join = Offset(w * 0.5f, h * 0.5f)
-                    line(path, Offset(w * 0.1f, h * 0.95f), join, arrow = false)
-                    line(path, Offset(w * 0.5f, h), join, arrow = false)
-                    line(path, Offset(w * 0.9f, h * 0.95f), join, arrow = false)
-                    line(path, join, Offset(w * 0.5f, h * 0.02f), arrow = true)
-                    drawPath(path, LayerColors[0], style = style)
+                    // One arrow, up and to the right: the single line (green on white)
+                    line(path, at(0.5f, 1f, 1.3f), at(0.5f, 0f, 1.3f), arrow = true)
+                    drawPath(path, BandsGreen, style = style)
                 } else {
-                    // One stem splits into three arrows: the Elevation Bands
-                    val fork = Offset(w * 0.5f, h * 0.62f)
-                    line(path, Offset(w * 0.5f, h), fork, arrow = false)
-                    line(path, fork, Offset(w * 0.04f, h * 0.3f), arrow = true)
-                    line(path, fork, Offset(w * 0.5f, h * 0.02f), arrow = true)
-                    line(path, fork, Offset(w * 0.96f, h * 0.3f), arrow = true)
+                    // One stem splitting into three arrows, up and to the right: the Elevation Bands (white on green)
+                    val k = 1.05f
+                    val fork = at(0.5f, 0.7f, k)
+                    line(path, at(0.5f, 1f, k), fork, arrow = false)
+                    line(path, fork, at(0f, 0.38f, k), arrow = true)
+                    line(path, fork, at(0.5f, 0f, k), arrow = true)
+                    line(path, fork, at(1f, 0.38f, k), arrow = true)
                     drawPath(path, Color.White, style = style)
                 }
             }
