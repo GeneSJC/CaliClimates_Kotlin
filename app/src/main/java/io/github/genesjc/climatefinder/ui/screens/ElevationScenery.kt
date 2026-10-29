@@ -228,5 +228,8 @@ internal data class SkyAtmosphereTheme(
 // The haze laid over each layer's ground in the layers view, nearest first (the nearest has none); the strength is DepthBands.haze
 internal val LayerHazeColors = listOf(Color.Transparent, Color(0xFF5FA8A0), Color(0xFF7B8CD6))
 
+// The wash laid over the layers that do not hold the selected station (strength: DepthBands.INACTIVE_WASH)
+internal val LayerWashColor = Color(0xFFE8EEF4)
+
 /** How long the chart takes to fade between the single line and the layers. */
 internal const val LAYERS_FADE_MS = 450

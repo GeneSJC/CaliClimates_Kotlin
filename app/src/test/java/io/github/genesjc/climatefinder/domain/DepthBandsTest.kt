@@ -46,6 +46,12 @@ class DepthBandsTest {
     }
 
     @Test
+    fun subduedLayersStayVisible() {
+        assertTrue(DepthBands.INACTIVE_FADE in 0.3f..0.9f)
+        assertTrue(DepthBands.INACTIVE_WASH in 0.1f..0.5f)
+    }
+
+    @Test
     fun noBandRisesAboveTheTopOfTheChart() {
         val top = 20f
         for (band in 0 until DepthBands.COUNT) {

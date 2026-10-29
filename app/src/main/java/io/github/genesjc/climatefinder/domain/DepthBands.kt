@@ -30,6 +30,12 @@ object DepthBands {
     /** Multiplies the band's heights: the far ridges are lower on the page. */
     fun squash(band: Int): Float = SQUASH[band.coerceIn(0, COUNT - 1)]
 
+    /** The layers that do not hold the selected station are subdued: their lines and dots at this opacity, ... */
+    const val INACTIVE_FADE = 0.55f
+
+    /** ... and their ground under a wash of this opacity (white-ish), so the active layer stands out. */
+    const val INACTIVE_WASH = 0.3f
+
     /** Opacity of the haze laid over the band's ground (0 for the nearest). */
     fun haze(band: Int): Float = HAZE[band.coerceIn(0, COUNT - 1)]
 

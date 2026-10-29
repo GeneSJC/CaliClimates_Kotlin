@@ -326,6 +326,22 @@ internal fun ElevationProfileCanvas(
             if (bandsActive) DepthBands.byLatitude(sorted.map { it.latitude }) else IntArray(sorted.size)
         }
         val layered = bandIndex.any { it > 0 }
+        // The layer that holds the selected station is the active one; the others step back (null: no layers)
+        val activeIdx = sorted.indexOfFirst { it.id == currentStation?.id }
+        val activeBand: Int? = if (activeIdx >= 0) bandIndex[activeIdx] else null
+        // A ripple runs along the line when the active layer changes (or the layers come on), not on the first look:
+        // the visit's own ripple covers that
+        var rippleArmed by remember { mutableStateOf(false) }
+        LaunchedEffect(layersOn, activeBand) {
+            if (!rippleArmed) {
+                rippleArmed = true
+                return@LaunchedEffect
+            }
+            if (!layersOn) return@LaunchedEffect
+            kotlinx.coroutines.delay(LAYERS_FADE_MS / 2L)
+            pulse.snapTo(0f)
+            pulse.animateTo(1f, tween(1400, easing = androidx.compose.animation.core.LinearEasing))
+        }
         val layerTopY = paddingPx + PROFILE_HEAD * heightPx
         val layerSeaY = paddingPx + (1f - SEA_FRACTION) * heightPx
         fun pinBaseY(idx: Int): Float {
@@ -720,7 +736,11 @@ internal fun ElevationProfileCanvas(
 
                 // The farther layers are hazed toward the sky, and their ridge lines fainter and thinner
                 if (band > 0) drawPath(terrainPath, LayerHazeColors[band].copy(alpha = DepthBands.haze(band) * layerMix))
-                val lineFade = 1f + (DepthBands.lineFade(band) - 1f) * layerMix
+                // The layers that do not hold the selected station step back: a wash over the ground, fainter lines
+                val inactive = activeBand != null && band != activeBand
+                if (inactive) drawPath(terrainPath, LayerWashColor.copy(alpha = DepthBands.INACTIVE_WASH * layerMix))
+                val lineFade = (1f + (DepthBands.lineFade(band) - 1f) * layerMix) *
+                    (if (inactive) 1f - (1f - DepthBands.INACTIVE_FADE) * layerMix else 1f)
                 val lineColor = lerp(LayerColors[0], LayerColors[band], layerMix)
                 // A lit edge along the profile, like the sun catching the ridge
                 drawPath(
@@ -732,7 +752,8 @@ internal fun ElevationProfileCanvas(
                 drawPath(
                     path = linePath,
                     color = lineColor.copy(alpha = lineFade),
-                    style = Stroke(width = 3f * (1f - 0.15f * band), cap = StrokeCap.Round)
+                    // The active layer's line is a little heavier
+                    style = Stroke(width = 3f * (1f - 0.15f * band) * (if (inactive) 1f else 1f + 0.25f * layerMix), cap = StrokeCap.Round)
                 )
             }
             // Back to front: the far layer first, the nearest last
@@ -808,7 +829,8 @@ internal fun ElevationProfileCanvas(
 
                 val depth = depthOf(station.id)
                 val dotCue = depth?.let { DepthCue.dotScale(it) } ?: 1f
-                val fadeCue = depth?.let { DepthCue.alpha(it) } ?: 1f
+                val bandMute = if (activeBand != null && bandIndex[index] != activeBand) 1f - (1f - DepthBands.INACTIVE_FADE) * layerMix else 1f
+                val fadeCue = (depth?.let { DepthCue.alpha(it) } ?: 1f) * bandMute
                 drawCircle(
                     color = Color.White.copy(alpha = fadeCue),
                     radius = (if (isSelected) 8f else (if (isLandmark) 6.5f else 4.5f)) * dotGrowth * dotCue,
@@ -824,7 +846,8 @@ internal fun ElevationProfileCanvas(
                 val pulseValue = pulse.value
                 if (pulseValue > 0f && pulseValue < 1f) {
                     val ring = (pulseValue * (sorted.size + 8f) - index) / 8f
-                    if (ring in 0f..1f) {
+                    // With layers on, the ripple runs along the active layer only
+                    if (ring in 0f..1f && (activeBand == null || bandIndex[index] == activeBand)) {
                         drawCircle(
                             color = Color.White.copy(alpha = (1f - ring) * 0.85f),
                             radius = (9f + 26f * ring) * dotGrowth,
@@ -967,22 +990,25 @@ internal fun ElevationProfileCanvas(
             val fade = labelFades[station.id] ?: 0f
             if (fade <= 0.01f) return@forEach
             val depth = depthOf(station.id)
+            // A far station's text is fainter, but its tag stays solid
+            val depthFade = depth?.let { DepthCue.alpha(it) } ?: 1f
 
             Surface(
                 shape = RoundedCornerShape(6.dp),
                 color = if (isSelected) {
                     MaterialTheme.colorScheme.primary
                 } else {
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+                    // Nearly solid, so the ridges and ground behind never show through the tag
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
                 },
                 border = BorderStroke(
                     width = 1.dp,
-                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f * depthFade)
                 ),
                 modifier = Modifier
                     .offset(x = label.xDp.dp, y = label.yDp.dp)
                     .widthIn(max = LABEL_MAX_WIDTH_DP.dp)
-                    .alpha(fade * (depth?.let { DepthCue.alpha(it) } ?: 1f))
+                    .alpha(fade)
                     .clickable { onSelectStation(station) }
             ) {
                 Text(
@@ -990,7 +1016,7 @@ internal fun ElevationProfileCanvas(
                     maxLines = 2,
                     fontSize = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f)),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = depthFade),
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
