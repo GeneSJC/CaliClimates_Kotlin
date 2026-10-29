@@ -2,10 +2,11 @@ package io.github.genesjc.climatefinder.data.local
 
 import io.github.genesjc.climatefinder.domain.placeAndStationName
 
-// Words that describe the facility, not the place
+// Words that describe the facility, not the place. "County" goes too ("Yuba County Airport"), except in the
+// place name "County Line".
 private val FACILITY_WORDS = Regex(
     "\\b(International|Intl|Airport|Airfield|Airpark|Air Park|Air Terminal|Air Force Base|" +
-        "Municipal|Regional|Metropolitan|Public|County|Executive|Field|Weather Station|" +
+        "Municipal|Regional|Metropolitan|Public|County(?!\\s+Line\\b)|Executive|Field|Weather Station|" +
         "Meteorological Site)\\b",
     RegexOption.IGNORE_CASE
 )

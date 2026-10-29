@@ -46,7 +46,7 @@ each, and how the numbers change as the ground climbs.
   <tr>
     <td valign="top">
       <h4>📈 Elevation view</h4>
-      The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes.
+      The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes. Switch on <b>Elevation Bands</b> and the stations separate into three layers by latitude, north at the back, with distance from the selected station on every label.
     </td>
     <td valign="top">
       <h4>🪪 Station cards and lists</h4>
@@ -259,6 +259,7 @@ Apache License 2.0; see [`LICENSE`](LICENSE).
 Weather readings come from the U.S. National Weather Service (`api.weather.gov`). The terrain pictures are built from public
 elevation data (USGS 3DEP and NASA SRTM, through AWS Terrain Tiles). Cali Climates is an independent project and is not
 affiliated with or endorsed by the National Weather Service, USGS or NASA.
+The expand and collapse icons on the Elevation Bands button are from Google's Material Icons (Apache License 2.0).
 
 <div align="center">
 

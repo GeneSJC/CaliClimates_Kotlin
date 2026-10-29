@@ -114,6 +114,13 @@ class AppSettingsPreferencesTest {
     }
 
     @Test
+    fun theLayersStartOffAndKeepTheChoice() {
+        assertFalse(launch().elevationLayers())
+        launch().saveElevationLayers(true)
+        assertTrue(launch().elevationLayers())
+    }
+
+    @Test
     fun theHintShowsOnTheFirstThreeLaunchesAndThenStops() {
         repeat(3) {
             val settings = launch()

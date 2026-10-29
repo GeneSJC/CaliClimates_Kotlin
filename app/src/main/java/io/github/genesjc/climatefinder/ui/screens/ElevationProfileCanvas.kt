@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,11 +34,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import io.github.genesjc.climatefinder.ui.text.rememberFeetFormatter
 import io.github.genesjc.climatefinder.ui.text.rememberMilesFormatter
+import io.github.genesjc.climatefinder.domain.DepthBands
 import io.github.genesjc.climatefinder.domain.DepthCue
 import io.github.genesjc.climatefinder.domain.StationDistance
 import kotlin.math.roundToInt
@@ -60,6 +64,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -73,6 +78,12 @@ import io.github.genesjc.climatefinder.ui.components.ZoomSlider
 import io.github.genesjc.climatefinder.ui.components.MapText
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
+import io.github.genesjc.climatefinder.ui.components.LayerColors
+import io.github.genesjc.climatefinder.ui.components.LayerHazeColors
+import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
+import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_WIDTH_DP
+import io.github.genesjc.climatefinder.ui.components.LayerLegend
+import io.github.genesjc.climatefinder.ui.components.LayersToggleButton
 import io.github.genesjc.climatefinder.ui.components.SliderToggleButton
 import io.github.genesjc.climatefinder.ui.components.ms
 import io.github.genesjc.climatefinder.ui.components.animateZoom
@@ -100,6 +111,9 @@ internal fun ElevationProfileCanvas(
     onLineTapped: () -> Unit,
     embedded: Boolean,
     expandT: Float = 0f,
+    /** The layers view (stations in bands by latitude), and the button's toggle. */
+    layersOn: Boolean = false,
+    onToggleLayers: () -> Unit = {},
     selectedStationId: String?,
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
@@ -141,6 +155,8 @@ internal fun ElevationProfileCanvas(
     val sliderCollapsible = embedded
     // The slider starts lower on Home, to leave room for that button
     val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + 32.dp else 0.dp)
+    // The layers button sits at the right, under Home's view buttons (or level with the expand toggle)
+    val layersButtonTop = if (embedded) HOME_TILE_BAND + 62.dp else 56.dp
 
     // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
     var zoom by remember(sorted) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
@@ -175,6 +191,9 @@ internal fun ElevationProfileCanvas(
         }
     }
     var pan by remember(sorted) { mutableStateOf(Offset.Zero) }
+    // When the person last pinched or dragged: an automatic move of the chart (bringing a station into view, recentring)
+    // stops applying as soon as they touch it, instead of fighting the finger
+    val touchedAt = remember { LongArray(1) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
     val zoomScope = rememberCoroutineScope()
     var zoomJob by remember { mutableStateOf<Job?>(null) }
@@ -269,6 +288,7 @@ internal fun ElevationProfileCanvas(
             .pointerInput(sorted) {
                 // Pinch to zoom in on the profile, drag to pan
                 detectTransformGestures { centroid, panChange, zoomChange, _ ->
+                    touchedAt[0] = System.nanoTime()
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
@@ -303,13 +323,80 @@ internal fun ElevationProfileCanvas(
         fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
         val dotGrowth = zoomDotGrowth(zoom)
 
+        // Layers: each station's band by latitude (all band 0 with the layers off, which is the plain profile), and
+        // its pin's place on the page with the band's squash and lift
+        // The switch fades in and out: the squash, lift, haze and colours follow layerMix, 0 (single line) to 1 (layers)
+        val layerMix by animateFloatAsState(
+            targetValue = if (layersOn) 1f else 0f,
+            animationSpec = tween(LAYERS_FADE_MS, easing = FastOutSlowInEasing),
+            label = "layerMix"
+        )
+        val bandsActive = layersOn || layerMix > 0.001f
+        // Every station's latitude band, always: the tags and the key use it in both views; the layout only when the
+        // Elevation Bands are on (otherwise everything is in band 0, the plain profile)
+        val latBands = remember(sorted) { DepthBands.byLatitude(sorted.map { it.latitude }) }
+        val bandIndex = remember(sorted, bandsActive, latBands) {
+            if (bandsActive) latBands else IntArray(sorted.size)
+        }
+        val layered = bandIndex.any { it > 0 }
+        // The layer that holds the selected station is the active one; the others step back (null: no layers)
+        val activeIdx = sorted.indexOfFirst { it.id == currentStation?.id }
+        val activeBand: Int? = if (activeIdx >= 0) bandIndex[activeIdx] else null
+        // The band of the selected station, for the key (in both views)
+        val keyBand: Int? = if (activeIdx >= 0) latBands[activeIdx] else null
+        // A ripple runs along the line when the active layer changes (or the layers come on), not on the first look:
+        // the visit's own ripple covers that
+        var rippleArmed by remember { mutableStateOf(false) }
+        LaunchedEffect(layersOn, activeBand) {
+            if (!rippleArmed) {
+                rippleArmed = true
+                return@LaunchedEffect
+            }
+            if (!layersOn) return@LaunchedEffect
+            kotlinx.coroutines.delay(LAYERS_FADE_MS / 2L)
+            pulse.snapTo(0f)
+            pulse.animateTo(1f, tween(1400, easing = androidx.compose.animation.core.LinearEasing))
+        }
+        val layerTopY = paddingPx + PROFILE_HEAD * heightPx
+        val layerSeaY = paddingPx + (1f - SEA_FRACTION) * heightPx
+        // The pin's place with the layers [mix] of the way on (0 the single line, 1 the Elevation Bands)
+        fun pinYAt(idx: Int, mix: Float): Float {
+            val plain = paddingPx + profileFrac(sorted[idx].elevationMeters / maxElevation) * heightPx
+            return plain + (DepthBands.layeredY(plain, bandIndex[idx], layerTopY, layerSeaY) - plain) * mix
+        }
+        fun pinBaseY(idx: Int): Float = pinYAt(idx, layerMix)
+
+        // Switching between the single line and the Elevation Bands moves every pin, so the chart eases over to put the
+        // selected station back in the middle (not on the first look)
+        var recenterArmed by remember { mutableStateOf(false) }
+        androidx.compose.runtime.LaunchedEffect(layersOn) {
+            if (!recenterArmed) {
+                recenterArmed = true
+                return@LaunchedEffect
+            }
+            val idx = sorted.indexOfFirst { it.id == currentStation?.id }
+            if (idx < 0) return@LaunchedEffect
+            val bx = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
+            val by = pinYAt(idx, if (layersOn) 1f else 0f)
+            zoomJob?.cancel()
+            val from = pan
+            val target = clampPan(
+                Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
+                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX
+            )
+            val startedAt = System.nanoTime()
+            androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(LAYERS_FADE_MS, easing = FastOutSlowInEasing)) { v, _ ->
+                if (touchedAt[0] < startedAt) pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
+            }
+        }
+
         // When the selected station changes (from the Stations list, the tile or the other view) and it is not in
         // view at this zoom and pan, ease the chart over so it is
         androidx.compose.runtime.LaunchedEffect(selectedStationId, sorted) {
             val idx = sorted.indexOfFirst { it.id == selectedStationId }
             if (idx < 0) return@LaunchedEffect
             val bx = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
-            val by = paddingPx + profileFrac(sorted[idx].elevationMeters / maxElevation) * heightPx
+            val by = pinBaseY(idx)
             val vx = viewX(bx)
             val vy = viewY(by)
             val sideMargin = with(density) { 48.dp.toPx() }
@@ -323,8 +410,9 @@ internal fun ElevationProfileCanvas(
                 Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
                 zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX
             )
+            val startedAt = System.nanoTime()
             androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(BRING_INTO_VIEW_MS, easing = FastOutSlowInEasing)) { v, _ ->
-                pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
+                if (touchedAt[0] < startedAt) pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
             }
         }
 
@@ -341,6 +429,8 @@ internal fun ElevationProfileCanvas(
                 if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) ELEVATION_SLIDER_FRACTION else 1f)), // zoom slider (at the left)
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
+                listOf(widthDp.value - 44f, layersButtonTop.value, widthDp.value, layersButtonTop.value + 36f),  // layers button
+                listOf(widthDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_WIDTH_DP, heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value),  // the bands key
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
@@ -349,18 +439,24 @@ internal fun ElevationProfileCanvas(
                 val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
                 val elevRatio = station.elevationMeters / maxElevation
                 val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
-                val pinY = with(density) { viewY(paddingPx + profileFrac(elevRatio) * heightPx).toDp().value }
+                val pinY = with(density) { viewY(pinBaseY(idx)).toDp().value }
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
                 val miles = milesFromSelected[station.id]
                 val fullText = when {
                     miles == null -> labelTexts[idx]
-                    station.id in feetIds -> labelTexts[idx] + " · " + milesText(miles)
-                    else -> labelNames[idx] + " · " + milesText(miles)
+                    station.id in feetIds -> labelTexts[idx] + " " + milesText(miles)
+                    else -> labelNames[idx] + " " + milesText(miles)
                 }
                 // High pins stay on the lowest height so the label stays inside the chart
                 val maxLevel = if (elevRatio > 0.8f) 0 else 2
                 val textScale = depthOf(station.id)?.let { DepthCue.textScale(it) } ?: 1f
-                fun widthFor(text: String) = text.length * 5.4f * textScale + 10f
+                // The text's width at one line (the size setting included), and the label's real width: long ones wrap to two lines
+                // (the size setting and the phone's font size both change how big the text is)
+                val textSize = textScale * MapText.scale * density.fontScale
+                fun lineWidthFor(text: String) = text.length * 5.4f * textSize + 17f
+                fun widthFor(text: String) = minOf(lineWidthFor(text), LABEL_MAX_WIDTH_DP)
+                fun heightFor(text: String) =
+                    (if (lineWidthFor(text) > LABEL_MAX_WIDTH_DP) 2 else 1) * 9f * 1.15f * textSize + 8f
                 // Estimated label width at 9sp; labels that would pass the right edge end at the pin instead
                 fun leftFor(text: String) =
                     (if (pinX - 24f + widthFor(text) > widthDp.value * 0.97f) pinX - widthFor(text) else pinX - 24f).coerceAtLeast(2f)
@@ -368,10 +464,11 @@ internal fun ElevationProfileCanvas(
                 fun tryPlace(text: String): PlacedLabel? {
                     val left = leftFor(text)
                     for (level in 0..maxLevel) {
-                        val top = pinY - 26f - 16f * level
+                        // A two-line label grows upward, so its bottom edge stays where a one-line label's would be
+                        val top = pinY - 26f - 16f * level - (heightFor(text) - LABEL_HEIGHT_DP)
                         if (top < 0f) continue
                         val right = left + widthFor(text)
-                        val bottom = top + LABEL_HEIGHT_DP
+                        val bottom = top + heightFor(text)
                         val free = taken.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
                         if (free || force) {
                             taken.add(listOf(left, top, right, bottom))
@@ -433,8 +530,7 @@ internal fun ElevationProfileCanvas(
 
                         sorted.forEachIndexed { index, station ->
                             val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
-                            val elevRatio = station.elevationMeters / maxElevation
-                            val y = viewY(padding + profileFrac(elevRatio) * h)
+                            val y = viewY(pinBaseY(index))
 
                             val dx = tapOffset.x - x
                             val dy = tapOffset.y - y
@@ -458,16 +554,19 @@ internal fun ElevationProfileCanvas(
 
             // 1. DYNAMIC SKY GRADIENT FILL: fills the open space above & to the left of the slope
             val skyPath = Path().apply {
-                moveTo(viewX(padding), viewY(padding))
-                lineTo(viewX(size.width - padding), viewY(padding))
-                val lastElevRatio = (sorted.lastOrNull()?.elevationMeters ?: 0) / maxElevation
-                lineTo(viewX(size.width - padding), viewY(padding + profileFrac(lastElevRatio) * h))
-                for (i in (sorted.size - 1) downTo 0) {
-                    val st = sorted[i]
-                    val x = viewX(padding + (i.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
-                    val elevRatio = st.elevationMeters / maxElevation
-                    val y = viewY(padding + profileFrac(elevRatio) * h)
-                    lineTo(x, y)
+                if (layered) {
+                    // Layered: the ridges are drawn behind each band's ground, so the sky is the whole chart
+                    moveTo(viewX(padding), viewY(padding))
+                    lineTo(viewX(size.width - padding), viewY(padding))
+                    lineTo(viewX(size.width - padding), viewY(size.height - padding))
+                    lineTo(viewX(padding), viewY(size.height - padding))
+                } else {
+                    moveTo(viewX(padding), viewY(padding))
+                    lineTo(viewX(size.width - padding), viewY(padding))
+                    lineTo(viewX(size.width - padding), viewY(pinBaseY(sorted.lastIndex.coerceAtLeast(0))))
+                    for (i in (sorted.size - 1) downTo 0) {
+                        lineTo(viewX(padding + (i.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w), viewY(pinBaseY(i)))
+                    }
                 }
                 close()
             }
@@ -597,80 +696,117 @@ internal fun ElevationProfileCanvas(
             }
 
             // 3. Draw elevation terrain fill
-            val terrainPath = Path()
-            val linePath = Path()
+            fun drawLayer(members: List<Int>, band: Int) {
+                val terrainPath = Path()
+                val linePath = Path()
+                val floor = viewY(size.height - padding)
+                val leftEdge = viewX(padding)
+                val rightEdge = viewX(size.width - padding)
 
-            sorted.forEachIndexed { index, station ->
-                val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
-                val elevRatio = station.elevationMeters / maxElevation
-                val y = viewY(padding + profileFrac(elevRatio) * h)
-
-                if (index == 0) {
-                    terrainPath.moveTo(x, viewY(size.height - padding))
-                    terrainPath.lineTo(x, y)
-                    linePath.moveTo(x, y)
-                } else {
-                    terrainPath.lineTo(x, y)
-                    linePath.lineTo(x, y)
+                members.forEachIndexed { k, index ->
+                    val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
+                    val y = viewY(pinBaseY(index))
+                    if (k == 0) {
+                        // A layer runs level out to the chart's edge beyond its first and last stations
+                        terrainPath.moveTo(leftEdge, floor)
+                        terrainPath.lineTo(leftEdge, y)
+                        terrainPath.lineTo(x, y)
+                        linePath.moveTo(leftEdge, y)
+                        linePath.lineTo(x, y)
+                    } else {
+                        terrainPath.lineTo(x, y)
+                        linePath.lineTo(x, y)
+                    }
                 }
-            }
-            terrainPath.lineTo(viewX(size.width - padding), viewY(size.height - padding))
-            terrainPath.close()
+                val lastY = viewY(pinBaseY(members.last()))
+                terrainPath.lineTo(rightEdge, lastY)
+                linePath.lineTo(rightEdge, lastY)
+                terrainPath.lineTo(rightEdge, floor)
+                terrainPath.close()
 
-            // The ground: tinted by height with the same ramp as the Topography map (data), so a given
-            // height has the same colour in both views
-            val groundTop = viewY(padding)
-            val groundBottom = viewY(padding + h)
-            drawPath(
-                path = terrainPath,
-                brush = Brush.verticalGradient(
-                    colorStops = (0..10).map { step ->
-                        val fraction = step / 10f
-                        // The height drawn at this share of the chart (clamped: above the top and below sea level)
-                        val ratio = (1f - (fraction - PROFILE_HEAD) / (1f - PROFILE_HEAD - SEA_FRACTION)).coerceIn(0f, 1f)
-                        fraction to heightTint(ratio * maxElevation)
-                    }.toTypedArray(),
-                    startY = groundTop,
-                    endY = groundBottom
-                )
-            )
-
-            // A faint relief texture from the region's own terrain picture (decoration, not data). It
-            // drifts slower than the profile when you pan and zoom, which gives the ground some depth.
-            if (terrain != null) {
-                val b = terrain.bounds
-                val lonSpan = b.maxLon - b.minLon
-                val latSpan = b.maxLat - b.minLat
-                // The part of the picture that holds the stations
-                val sLeft = ((stations.minOf { it.longitude } - b.minLon) / lonSpan).coerceIn(0.0, 1.0)
-                val sRight = ((stations.maxOf { it.longitude } - b.minLon) / lonSpan).coerceIn(0.0, 1.0)
-                val sTop = ((b.maxLat - stations.maxOf { it.latitude }) / latSpan).coerceIn(0.0, 1.0)
-                val sBottom = ((b.maxLat - stations.minOf { it.latitude }) / latSpan).coerceIn(0.0, 1.0)
-                val img = terrain.image
-                val srcX = (sLeft * img.width).toInt()
-                val srcY = (sTop * img.height).toInt()
-                val srcW = ((sRight - sLeft) * img.width).toInt().coerceAtLeast(1)
-                val srcH = ((sBottom - sTop) * img.height).toInt().coerceAtLeast(1)
-                val follow = 0.6f
-                val scale = 1f + (zoom - 1f) * follow
-                // Big enough to cover the whole chart, whatever its shape
-                val cover = maxOf(size.width * 1.6f / srcW, size.height * 1.4f / srcH)
-                val dstW = srcW * cover * scale
-                val dstH = srcH * cover * scale
-                val dstX = size.width / 2f - dstW / 2f + pan.x * follow
-                val dstY = size.height / 2f - dstH / 2f + pan.y * follow
-                clipPath(terrainPath) {
-                    drawImage(
-                        image = img,
-                        srcOffset = IntOffset(srcX, srcY),
-                        srcSize = IntSize(srcW, srcH),
-                        dstOffset = IntOffset(dstX.roundToInt(), dstY.roundToInt()),
-                        dstSize = IntSize(dstW.roundToInt(), dstH.roundToInt()),
-                        alpha = 0.5f,
-                        colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
-                        blendMode = BlendMode.Multiply
+                // The ground: tinted by height with the same ramp as the Topography map (data), so a given
+                // height has the same colour in both views
+                val groundTop = viewY(padding)
+                val groundBottom = viewY(padding + h)
+                drawPath(
+                    path = terrainPath,
+                    brush = Brush.verticalGradient(
+                        colorStops = (0..10).map { step ->
+                            val fraction = step / 10f
+                            // The height drawn at this share of the chart (clamped: above the top and below sea level)
+                            val ratio = (1f - (fraction - PROFILE_HEAD) / (1f - PROFILE_HEAD - SEA_FRACTION)).coerceIn(0f, 1f)
+                            fraction to heightTint(ratio * maxElevation)
+                        }.toTypedArray(),
+                        startY = groundTop,
+                        endY = groundBottom
                     )
+                )
+
+                // A faint relief texture from the region's own terrain picture (decoration, not data). It
+                // drifts slower than the profile when you pan and zoom, which gives the ground some depth.
+                // (with the bands on, only the front layer and the active one: it is the costliest part of a frame)
+                if (terrain != null && (!layered || band == 0 || band == activeBand)) {
+                    val b = terrain.bounds
+                    val lonSpan = b.maxLon - b.minLon
+                    val latSpan = b.maxLat - b.minLat
+                    // The part of the picture that holds the stations
+                    val sLeft = ((stations.minOf { it.longitude } - b.minLon) / lonSpan).coerceIn(0.0, 1.0)
+                    val sRight = ((stations.maxOf { it.longitude } - b.minLon) / lonSpan).coerceIn(0.0, 1.0)
+                    val sTop = ((b.maxLat - stations.maxOf { it.latitude }) / latSpan).coerceIn(0.0, 1.0)
+                    val sBottom = ((b.maxLat - stations.minOf { it.latitude }) / latSpan).coerceIn(0.0, 1.0)
+                    val img = terrain.image
+                    val srcX = (sLeft * img.width).toInt()
+                    val srcY = (sTop * img.height).toInt()
+                    val srcW = ((sRight - sLeft) * img.width).toInt().coerceAtLeast(1)
+                    val srcH = ((sBottom - sTop) * img.height).toInt().coerceAtLeast(1)
+                    val follow = 0.6f
+                    val scale = 1f + (zoom - 1f) * follow
+                    // Big enough to cover the whole chart, whatever its shape
+                    val cover = maxOf(size.width * 1.6f / srcW, size.height * 1.4f / srcH)
+                    val dstW = srcW * cover * scale
+                    val dstH = srcH * cover * scale
+                    val dstX = size.width / 2f - dstW / 2f + pan.x * follow
+                    val dstY = size.height / 2f - dstH / 2f + pan.y * follow
+                    clipPath(terrainPath) {
+                        drawImage(
+                            image = img,
+                            srcOffset = IntOffset(srcX, srcY),
+                            srcSize = IntSize(srcW, srcH),
+                            dstOffset = IntOffset(dstX.roundToInt(), dstY.roundToInt()),
+                            dstSize = IntSize(dstW.roundToInt(), dstH.roundToInt()),
+                            alpha = 0.5f,
+                            colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
+                            blendMode = BlendMode.Multiply
+                        )
+                    }
                 }
+
+                // The farther layers are hazed toward the sky, and their ridge lines fainter and thinner
+                if (band > 0) drawPath(terrainPath, LayerHazeColors[band].copy(alpha = DepthBands.haze(band) * layerMix))
+                // The layers that do not hold the selected station step back: a wash over the ground, fainter lines
+                val inactive = activeBand != null && band != activeBand
+                if (inactive) drawPath(terrainPath, LayerWashColor.copy(alpha = DepthBands.INACTIVE_WASH * layerMix))
+                val lineFade = (1f + (DepthBands.lineFade(band) - 1f) * layerMix) *
+                    (if (inactive) 1f - (1f - DepthBands.INACTIVE_FADE) * layerMix else 1f)
+                val lineColor = lerp(LayerColors[0], LayerColors[band], layerMix)
+                // A lit edge along the profile, like the sun catching the ridge
+                drawPath(
+                    path = linePath,
+                    color = Color.White.copy(alpha = 0.30f * lineFade),
+                    style = Stroke(width = 10f, cap = StrokeCap.Round)
+                )
+                // Top ridge line
+                drawPath(
+                    path = linePath,
+                    color = lineColor.copy(alpha = lineFade),
+                    // The active layer's line is a little heavier
+                    style = Stroke(width = 3f * (1f - 0.15f * band) * (if (inactive) 1f else 1f + 0.25f * layerMix), cap = StrokeCap.Round)
+                )
+            }
+            // Back to front: the far layer first, the nearest last
+            for (band in DepthBands.COUNT - 1 downTo 0) {
+                val members = sorted.indices.filter { bandIndex[it] == band }
+                if (members.isNotEmpty()) drawLayer(members, band)
             }
 
             // The ocean: the bottom of the chart, below sea level (decoration; the heights above it are data)
@@ -699,25 +835,10 @@ internal fun ElevationProfileCanvas(
                 }
             }
 
-            // A lit edge along the profile, like the sun catching the ridge
-            drawPath(
-                path = linePath,
-                color = Color.White.copy(alpha = 0.30f),
-                style = Stroke(width = 10f, cap = StrokeCap.Round)
-            )
-
-            // Top ridge line
-            drawPath(
-                path = linePath,
-                color = Color(0xFF7C3AED),
-                style = Stroke(width = 3f, cap = StrokeCap.Round)
-            )
-
             // Station points along the slope & leader lines for landmarks
             sorted.forEachIndexed { index, station ->
                 val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
-                val elevRatio = station.elevationMeters / maxElevation
-                val y = viewY(padding + profileFrac(elevRatio) * h)
+                val y = viewY(pinBaseY(index))
                 val isSelected = station.id == selectedStationId
 
                 val isLandmark = station.id in placedIds
@@ -755,7 +876,8 @@ internal fun ElevationProfileCanvas(
 
                 val depth = depthOf(station.id)
                 val dotCue = depth?.let { DepthCue.dotScale(it) } ?: 1f
-                val fadeCue = depth?.let { DepthCue.alpha(it) } ?: 1f
+                val bandMute = if (activeBand != null && bandIndex[index] != activeBand) 1f - (1f - DepthBands.INACTIVE_FADE) * layerMix else 1f
+                val fadeCue = (depth?.let { DepthCue.alpha(it) } ?: 1f) * bandMute
                 drawCircle(
                     color = Color.White.copy(alpha = fadeCue),
                     radius = (if (isSelected) 8f else (if (isLandmark) 6.5f else 4.5f)) * dotGrowth * dotCue,
@@ -771,7 +893,8 @@ internal fun ElevationProfileCanvas(
                 val pulseValue = pulse.value
                 if (pulseValue > 0f && pulseValue < 1f) {
                     val ring = (pulseValue * (sorted.size + 8f) - index) / 8f
-                    if (ring in 0f..1f) {
+                    // With layers on, the ripple runs along the active layer only
+                    if (ring in 0f..1f && (activeBand == null || bandIndex[index] == activeBand)) {
                         drawCircle(
                             color = Color.White.copy(alpha = (1f - ring) * 0.85f),
                             radius = (9f + 26f * ring) * dotGrowth,
@@ -907,49 +1030,97 @@ internal fun ElevationProfileCanvas(
             }
         }
 
-        // Overlay Interactive City Landmark Labels along the curve
-        placedLabels.forEach { label ->
+        // Overlay Interactive City Landmark Labels along the curve. They are drawn back to front: the selected station's
+        // label on top, then the labels of the active band, then the other bands from the front backwards, so the
+        // nearer layer's tags sit over the farther one's, and the active band's over all of them.
+        val labelsBackToFront = placedLabels.sortedByDescending { label ->
+            val band = bandIndex[sorted.indexOfFirst { it.id == label.station.id }.coerceAtLeast(0)]
+            when {
+                label.station.id == selectedStationId -> 0
+                band == activeBand -> 1
+                else -> 2 + band
+            }
+        }
+        labelsBackToFront.forEach { label ->
             val station = label.station
             val isSelected = station.id == selectedStationId
             val fade = labelFades[station.id] ?: 0f
             if (fade <= 0.01f) return@forEach
             val depth = depthOf(station.id)
+            // A far station's text is fainter, but its tag stays solid
+            val depthFade = depth?.let { DepthCue.alpha(it) } ?: 1f
+            val stripe = LayerColors[latBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)]]
 
             Surface(
                 shape = RoundedCornerShape(6.dp),
                 color = if (isSelected) {
                     MaterialTheme.colorScheme.primary
                 } else {
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+                    // Nearly solid, so the ridges and ground behind never show through the tag
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
                 },
                 border = BorderStroke(
                     width = 1.dp,
-                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f * depthFade)
                 ),
                 modifier = Modifier
                     .offset(x = label.xDp.dp, y = label.yDp.dp)
-                    .alpha(fade * (depth?.let { DepthCue.alpha(it) } ?: 1f))
+                    .widthIn(max = LABEL_MAX_WIDTH_DP.dp)
+                    .alpha(fade)
                     .clickable { onSelectStation(station) }
             ) {
                 Text(
                     text = label.text,
+                    maxLines = 2,
                     fontSize = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f)),
+                    // A tight line height (the theme's default is far taller than this small text), so a wrapped tag stays compact
+                    lineHeight = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f) * 1.15f),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = depthFade),
+                    // A stripe down the tag's left edge in its band's colour (see the key at the bottom right)
+                    modifier = Modifier
+                        .drawBehind { drawRect(stripe, size = Size(6.dp.toPx(), size.height)) }
+                        .padding(start = 11.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
                 )
             }
         }
+
+        // The key to the bands, and a way to jump between them: in the bottom right corner, whatever the pan and zoom.
+        // A tap picks the band's station nearest the middle of the chart; the chart eases over to it as for any selection.
+        fun pickInBand(band: Int) {
+            val middle = Offset(canvasW / 2f, canvasH / 2f)
+            sorted.indices
+                .filter { latBands[it] == band }
+                .minByOrNull { i ->
+                    val spot = Offset(
+                        viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
+                        viewY(pinBaseY(i))
+                    )
+                    (spot - middle).getDistance()
+                }
+                ?.let { onSelectStation(sorted[it]) }
+        }
+        LayerLegend(
+            activeBand = keyBand,
+            hasStations = List(DepthBands.COUNT) { band -> latBands.any { it == band } },
+            alpha = 1f,
+            onPick = ::pickInBand,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
+        )
+        LayersToggleButton(
+            on = layersOn,
+            onToggle = onToggleLayers,
+            modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = layersButtonTop)
+        )
 
         // Floating zoom slider on the right edge, where the Topography map has it
         fun nearestLinePoint(): Offset {
             val middle = Offset(canvasW / 2f, canvasH / 2f)
             return sorted.indices
                 .map { i ->
-                    val elevRatio = sorted[i].elevationMeters / maxElevation
                     Offset(
                         viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
-                        viewY(paddingPx + profileFrac(elevRatio) * heightPx)
+                        viewY(pinBaseY(i))
                     )
                 }
                 .minByOrNull { (it - middle).getDistance() } ?: middle

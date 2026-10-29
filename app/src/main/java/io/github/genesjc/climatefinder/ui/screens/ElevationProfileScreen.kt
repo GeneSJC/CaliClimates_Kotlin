@@ -84,6 +84,8 @@ fun ElevationProfileScreen(
     onSliderShownChange: ((Boolean) -> Unit)? = null,
     /** Home: 0 normally, 1 when the chart has grown out into the page margins (this view); eased between. */
     expandT: Float = 0f,
+    /** A short note for the person (Home shows it as a snackbar), such as which view the layers button switched to. */
+    onNotice: ((String) -> Unit)? = null,
     viewModel: ElevationViewModel = viewModel(),
 ) {
     val stations by remember(dataset) { viewModel.stations(dataset) }.collectAsStateWithLifecycle()
@@ -93,6 +95,10 @@ fun ElevationProfileScreen(
 
     // The region's real skylines, for the distant ranges
     val skyline by remember(dataset.regionId) { viewModel.skyline(dataset.regionId) }.collectAsStateWithLifecycle()
+
+    val layersOn by viewModel.layers.collectAsStateWithLifecycle()
+    val layersOnNotice = stringResource(R.string.elevation_layers_on_notice)
+    val layersOffNotice = stringResource(R.string.elevation_layers_off_notice)
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     var localSelectedId by remember(stations) { mutableStateOf(stations.firstOrNull()?.id) }
@@ -203,6 +209,11 @@ fun ElevationProfileScreen(
                     onLineTapped = viewModel::lineTapped,
                     embedded = embedded,
                     expandT = expandT,
+                    layersOn = layersOn,
+                    onToggleLayers = {
+                        viewModel.toggleLayers()
+                        onNotice?.invoke(if (layersOn) layersOffNotice else layersOnNotice)
+                    },
                     selectedStationId = selectedStationId,
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,

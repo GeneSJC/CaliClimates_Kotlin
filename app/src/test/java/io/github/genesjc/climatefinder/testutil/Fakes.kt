@@ -25,7 +25,8 @@ class FakeAppSettings(
     var zoom: Float = 1f,
     var dark: Boolean = false,
     var launches: Int = 0,
-    var tapped: Boolean = false
+    var tapped: Boolean = false,
+    var layers: Boolean = false
 ) : AppSettings {
     override fun selectedRegionId() = region
     override fun saveSelectedRegionId(regionId: String) {
@@ -56,6 +57,11 @@ class FakeAppSettings(
     override fun shouldShowElevationHint() = !tapped && launches <= 3
     override fun markElevationLineTapped() {
         tapped = true
+    }
+
+    override fun elevationLayers() = layers
+    override fun saveElevationLayers(on: Boolean) {
+        layers = on
     }
 }
 

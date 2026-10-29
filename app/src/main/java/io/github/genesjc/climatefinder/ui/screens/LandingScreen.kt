@@ -51,6 +51,8 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import io.github.genesjc.climatefinder.ui.components.TOP_NOTICE_MS
+import io.github.genesjc.climatefinder.ui.components.TopNotice
 import androidx.compose.material3.Surface
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.Text
@@ -167,6 +169,15 @@ fun LandingScreen(
     var selectedOffscreen by remember { mutableStateOf(false) }
     var recenterTick by remember { mutableStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
+    // A note near the top of the screen (a counter and the words, so the same words twice still restart the timer);
+    // it clears itself after a moment
+    var notice by remember { mutableStateOf<Pair<Int, String>?>(null) }
+    LaunchedEffect(notice) {
+        if (notice != null) {
+            kotlinx.coroutines.delay(TOP_NOTICE_MS)
+            notice = null
+        }
+    }
     var rowWidthPx by remember { mutableStateOf(0) }
     var stationTileTopPx by remember { mutableStateOf(0f) }
     // Where the menu button's top edge is, so the menu panel opens level with it (0 until it has been placed)
@@ -516,7 +527,8 @@ fun LandingScreen(
                             onZoomChange = onMapZoomChange,
                             sliderShownShared = sliderShown,
                             onSliderShownChange = onSliderShownChange,
-                            expandT = expandT
+                            expandT = expandT,
+                            onNotice = { message -> notice = (notice?.first ?: 0) + 1 to message }
                         )
                     }
                     // The tile and the buttons keep their place on the screen while the map grows out underneath them
@@ -649,6 +661,8 @@ fun LandingScreen(
                 legendExtra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) }
             )
         }
+
+        TopNotice(message = notice?.second)
 
         // Short messages at the bottom (for example what the locate button just did)
         SnackbarHost(
