@@ -42,6 +42,7 @@ def circle_d(cx,cy,r): return f"M{cx-r:.1f},{cy:.1f} a{r:.1f},{r:.1f} 0 1,0 {2*r
 COAST=[(-124.21,42.00),(-124.41,40.44),(-123.65,38.80),(-123.00,38.00),(-122.51,37.77),(-122.20,37.00),(-121.85,36.80),(-121.90,36.30),(-120.85,35.30),(-120.47,34.45),(-119.70,34.40),(-119.10,34.10),(-118.85,34.02),(-118.40,33.74),(-117.60,33.38),(-117.25,32.72),(-117.12,32.53)]
 BORDER=[(-117.12,32.53),(-114.72,32.72),(-114.63,35.00),(-120.00,39.00),(-120.00,42.00),(-124.21,42.00)]
 K=math.cos(math.radians(37.5)); HEIGHT=58.0
+OUTLINE=(255,255,255); OUTLINE_ALPHA=240; OUTLINE_W=1.2   # the state's outline
 _all=COAST+BORDER[1:]
 _xs=[p[0]*K for p in _all]; _ys=[p[1] for p in _all]
 _sc=HEIGHT/(max(_ys)-min(_ys)); _mx=(max(_xs)+min(_xs))/2; _my=(max(_ys)+min(_ys))/2
@@ -67,6 +68,17 @@ TREES=[(63,34),(68,32.2),(74,33.6),(78,31.4),(84,31),(89,33.4),(66,50),(71,47.6)
 def mound(x0,x1,base,h):
     w=x1-x0
     return catmull([(x0,base+6),(x0+0.12*w,base),(x0+0.3*w,base-0.7*h),(x0+0.5*w,base-h),(x0+0.7*w,base-0.7*h),(x0+0.88*w,base),(x1,base+6)])
+
+# The bear from the state flag, walking left on a strip of grass, in the north of the state (placed in canvas units)
+SHOW_BEAR=False
+BEAR=[(0.00,0.50),(0.04,0.40),(0.11,0.33),(0.15,0.22),(0.18,0.12),(0.23,0.22),(0.30,0.26),(0.40,0.12),(0.52,0.14),(0.66,0.20),(0.80,0.24),(0.92,0.32),(0.97,0.38),(0.92,0.46),(0.90,0.62),(0.93,0.80),(0.95,1.00),(0.80,1.00),(0.78,0.78),(0.70,0.72),(0.58,0.74),(0.50,0.76),(0.52,1.00),(0.36,1.00),(0.34,0.76),(0.26,0.72),(0.17,0.66),(0.10,0.62),(0.03,0.58)]
+BEAR_BOX=(32.6,28.0,19.0,11.0)     # x, y, width, height of the bear
+BEAR_COLOR=(0x4A,0x2C,0x17); BEAR_RIM=(0xF1,0xE3,0xC8)
+GRASS=(0x5F,0x86,0x52); GRASS_EDGE=(0x3E,0x63,0x3A)
+def bear_xy():
+    x0,y0,w,h=BEAR_BOX; return [(x0+px*w,y0+py*h) for px,py in BEAR]
+def grass_xy():
+    x0,y0,w,h=BEAR_BOX; return [(x0-3,y0+h-0.8),(x0+w+3,y0+h-0.8),(x0+w+3,y0+h+3.2),(x0-3,y0+h+3.2)]
 
 def scene_xf(p,s=0.62,off=(3,1)): return (54+(p[0]-54)*s+off[0], 54+(p[1]-54)*s+off[1])
 
@@ -147,9 +159,14 @@ def render(S=1080,mask=None,layers="both"):
         x0,yy0,x1,yy1,rad=CLOUD_BASE; a0,b0=scene_xf((x0,yy0)); a1,b1=scene_xf((x1,yy1))
         cd.rounded_rectangle([a0*k,b0*k,a1*k,b1*k],radius=rad*0.62*k,fill=(255,255,255,245))
         sc=Image.alpha_composite(sc,cl)
+        if SHOW_BEAR:
+            bl=Image.new("RGBA",(S,S),(0,0,0,0)); bd=ImageDraw.Draw(bl)
+            bd.polygon(P(grass_xy()),fill=GRASS+(255,)); bd.line(P(grass_xy()[:2]),fill=GRASS_EDGE+(255,),width=int(0.8*k))
+            bd.polygon(P(bear_xy()),fill=BEAR_COLOR+(255,),outline=BEAR_RIM+(255,))
+            sc=Image.alpha_composite(sc,bl)
         wm=Image.new("L",(S,S),0); ImageDraw.Draw(wm).polygon(P(STATE_XY),fill=255)
         img=Image.alpha_composite(img,Image.composite(sc,Image.new("RGBA",(S,S),(0,0,0,0)),wm))
-        ImageDraw.Draw(img).line(P(STATE_XY+[STATE_XY[0]]),fill=(255,255,255,240),width=int(1.2*k),joint="curve")
+        ImageDraw.Draw(img).line(P(STATE_XY+[STATE_XY[0]]),fill=OUTLINE+(OUTLINE_ALPHA,),width=int(OUTLINE_W*k),joint="curve")
     if mask=="circle72":
         a=int(18*k); b=int(90*k); img=img.crop((a,a,b,b))
         m=Image.new("L",img.size,0); ImageDraw.Draw(m).ellipse([0,0,img.size[0]-1,img.size[1]-1],fill=255); img.putalpha(m)
@@ -231,8 +248,11 @@ def foreground(standalone=True):
         a,b=scene_xf((cxx,cyy)); x+=ind(fill(circle_d(a,b,rr*0.62),(255,255,255),245/255))
     x0,yy0,x1,yy1,rad=CLOUD_BASE; a0,b0=scene_xf((x0,yy0)); a1,b1=scene_xf((x1,yy1))
     x+=ind(fill(rrect_d(a0,b0,a1,b1,rad*0.62),(255,255,255),245/255,"Cloud"))
+    if SHOW_BEAR:
+        x+=ind(fill(poly_d(grass_xy()),GRASS,comment="Grass under the bear"))
+        x+=ind(fill(poly_d(bear_xy()),BEAR_COLOR,comment="The California bear, walking left"))
     x+="    </group>\n"
-    x+=stroke(poly_d(STATE_XY),(255,255,255),240/255,1.2,"Outline")
+    x+=stroke(poly_d(STATE_XY),OUTLINE,OUTLINE_ALPHA/255,OUTLINE_W,"Outline")
     return x+("</vector>\n" if standalone else "")
 
 def composite():
