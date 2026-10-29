@@ -56,7 +56,7 @@ fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = M
     ) {
         Crossfade(targetState = on, label = "layersIcon") { bandsOn ->
             Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 6.dp)) {
-                val stroke = 3.dp.toPx()
+                val stroke = 6.dp.toPx()
                 val w = size.width
                 val h = size.height
                 val head = minOf(w, h) * 0.2f
@@ -87,7 +87,7 @@ fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = M
                 val path = Path()
                 if (bandsOn) {
                     // One arrow, up and to the right: the single line (green on white)
-                    line(path, at(0.5f, 1f, 1.3f), at(0.5f, 0f, 1.3f), arrow = true)
+                    line(path, at(0.5f, 1f, 1.04f), at(0.5f, 0f, 1.04f), arrow = true)
                     drawPath(path, BandsGreen, style = style)
                 } else {
                     // One stem splitting into three arrows, up and to the right: the Elevation Bands (white on green)
