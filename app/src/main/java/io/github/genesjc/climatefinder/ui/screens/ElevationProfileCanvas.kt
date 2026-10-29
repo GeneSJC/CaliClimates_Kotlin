@@ -77,6 +77,7 @@ import io.github.genesjc.climatefinder.ui.components.MapText
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
 import io.github.genesjc.climatefinder.ui.components.LayerColors
+import io.github.genesjc.climatefinder.ui.components.LayerLegend
 import io.github.genesjc.climatefinder.ui.components.LayersToggleButton
 import io.github.genesjc.climatefinder.ui.components.SliderToggleButton
 import io.github.genesjc.climatefinder.ui.components.ms
@@ -388,6 +389,7 @@ internal fun ElevationProfileCanvas(
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
                 listOf(widthDp.value - 44f, layersButtonTop.value, widthDp.value, layersButtonTop.value + 36f),  // layers button
+                if (layersOn) listOf(widthDp.value - 80f, layersButtonTop.value + 40f, widthDp.value, layersButtonTop.value + 40f + 78f) else listOf(0f, 0f, 0f, 0f),  // the bands key
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
@@ -1022,6 +1024,14 @@ internal fun ElevationProfileCanvas(
             }
         }
 
+        // The key to the bands, under the button; it stays put whatever the pan and zoom
+        if (layerMix > 0.01f) {
+            LayerLegend(
+                activeBand = activeBand,
+                alpha = layerMix,
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = layersButtonTop + 40.dp)
+            )
+        }
         LayersToggleButton(
             on = layersOn,
             onToggle = onToggleLayers,
