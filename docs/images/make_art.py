@@ -21,12 +21,13 @@ NAME = "Cali Climates"
 TAGLINE = "Explore California's climates,"
 TAGLINE2 = "region by region."
 # What the app does that is worth a second look: design choices, not libraries (the README's badge row lists those)
+# (listed in the order they sit: three to a row)
 CHIPS = [
-    ("live NWS readings", (14, 116, 144)), ("terrain relief", (146, 94, 40)), ("elevation bands", (91, 74, 140)),
-    ("distance-aware labels", (20, 120, 100)), ("smooth transitions", (170, 92, 60)), ("one state, two views", (60, 90, 160)),
+    ("Live NWS Readings", (14, 116, 144)), ("Terrain Relief", (146, 94, 40)), ("Distance-Aware Labels", (20, 120, 100)),
+    ("Elevation Bands", (91, 74, 140)), ("Smooth Transitions", (170, 92, 60)), ("One State, Two Views", (60, 90, 160)),
 ]
 CHIP_GAP = 14
-CHIPS_RIGHT = 1250  # chips wrap to the next row before they reach the map of California
+CHIPS_RIGHT = 1275  # chips wrap to the next row before they reach the map of California
 SLATE, SLATE2, SKY = (20, 56, 100), (36, 112, 168), (125, 211, 252)  # a mid blue: the icon's dark lower half must stand out
 BOUNDS = (-124.5, -114.1, 31.9, 43.0)  # the statewide picture: lon min, lon max, lat min, lat max
 
@@ -119,7 +120,7 @@ def banner(path):
     d.text((x, 270), TAGLINE2, font=font(FONT_TEXT, 36), fill=(203, 225, 245))
     cx, cy = x, 346
     for text, fill in CHIPS:
-        c = chip(text, fill, size=21, pad=(16, 9))
+        c = chip(text, fill, size=24, pad=(14, 9))
         if cx > x and cx + c.width > CHIPS_RIGHT:  # wrap to the next row
             cx, cy = x, cy + c.height + CHIP_GAP
         img.alpha_composite(c, (cx, cy))
