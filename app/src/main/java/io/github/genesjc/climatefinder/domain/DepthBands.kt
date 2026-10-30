@@ -49,6 +49,12 @@ object BandAngle {
     /** The end the angle is nearer to, for what only has two looks (the key's colours and the scenery): halfway counts as west. */
     fun nearestAxis(degrees: Int): BandAxis = if (degrees < MIDDLE) BandAxis.NORTH_SOUTH else BandAxis.WEST_EAST
 
+    /** The compass names the angle is told in, in order: north, north-northwest, northwest, west-northwest, west. */
+    const val POINTS = 5
+
+    /** Which of the [POINTS] compass names the angle is nearest to (0 north up to 4 west, each covering 22.5 degrees). */
+    fun point(degrees: Int): Int = ((degrees.coerceIn(NORTH, WEST) + 11.25) / 22.5).toInt().coerceIn(0, POINTS - 1)
+
     /** The far end from the nearer one, where the axis switch goes. */
     fun otherEnd(degrees: Int): Int = if (degrees < MIDDLE) WEST else NORTH
 }

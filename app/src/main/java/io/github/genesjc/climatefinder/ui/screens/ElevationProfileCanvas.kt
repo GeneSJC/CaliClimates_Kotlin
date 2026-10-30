@@ -88,6 +88,7 @@ import io.github.genesjc.climatefinder.ui.components.layerColor
 import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.BandAngleSlider
+import io.github.genesjc.climatefinder.ui.components.BandAngleToast
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.layerLegendWidthDp
 import io.github.genesjc.climatefinder.ui.components.LayerLegend
@@ -482,10 +483,13 @@ internal fun ElevationProfileCanvas(
 
         // When the band axis switches, the labels that were showing stay showing, now at their stations' new places,
         // until the chart is zoomed or touched; then the labels are chosen afresh and fade in and out as usual
-        val labelHold = remember(sorted) { LabelHold(bandAxis) }
-        if (labelHold.axis != bandAxis) {
-            labelHold.axis = bandAxis
-            labelHold.ids = labelHold.lastPlaced
+        val labelHold = remember(sorted) { LabelHold(bandAngle) }
+        if (labelHold.angle != bandAngle) {
+            // A jump (the axis switch) keeps the labels as they were through the pivot; a small move (the angle slider)
+            // lays them out afresh at every angle, so they do not pile up as the stations regroup
+            val jump = abs(bandAngle - labelHold.angle) >= AXIS_PIVOT_JUMP_DEGREES
+            labelHold.angle = bandAngle
+            labelHold.ids = if (jump) labelHold.lastPlaced else null
             labelHold.zoom = zoom
             labelHold.touch = touchedAt[0]
         }
@@ -1302,6 +1306,7 @@ internal fun ElevationProfileCanvas(
             onPick = ::pickInBand,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
         )
+        BandAngleToast(angle = bandAngle, layersOn = layersOn, modifier = Modifier.align(Alignment.Center))
         if (layersOn) {
             BandAngleSlider(
                 angle = bandAngle,
@@ -1376,7 +1381,7 @@ internal fun ElevationProfileCanvas(
 }
 
 /** Which stations' labels to keep showing after the band axis switches, until the chart is zoomed or touched. */
-private class LabelHold(var axis: BandAxis) {
+private class LabelHold(var angle: Int) {
     var ids: Set<String>? = null
     var zoom = 1f
     var touch = 0L
