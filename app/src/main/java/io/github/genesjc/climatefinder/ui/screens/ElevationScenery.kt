@@ -230,3 +230,6 @@ internal val LayerWashColor = Color(0xFFE8EEF4)
 
 /** How long the chart takes to fade between the single line and the layers. */
 internal const val LAYERS_FADE_MS = 450
+
+/** A little extra on the fold of an axis pivot, so the bands have settled flat before the stations are regrouped. */
+internal const val AXIS_PIVOT_MARGIN_MS = 40

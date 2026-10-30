@@ -62,7 +62,9 @@ fun LayerLegend(
     hasStations: List<Boolean>,
     alpha: Float,
     onPick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** The axis the chart is being switched to, when it differs from [axis] (during a pivot); the switch cell follows it. */
+    requestedAxis: BandAxis = axis
 ) {
     // Front first: band 0 is the nearest ridge
     val names = when (axis) {
@@ -78,7 +80,7 @@ fun LayerLegend(
         modifier = modifier.alpha(alpha)
     ) {
         Row(modifier = Modifier.padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            AxisCell(axis, onToggleAxis)
+            AxisCell(requestedAxis, onToggleAxis)
             for (band in names.indices.reversed()) {
                 val color = LayerColors[band]
                 val active = band == activeBand

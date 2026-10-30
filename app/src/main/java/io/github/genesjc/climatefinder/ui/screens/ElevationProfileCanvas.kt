@@ -327,18 +327,40 @@ internal fun ElevationProfileCanvas(
         fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
         val dotGrowth = zoomDotGrowth(zoom)
 
-        // Layers: each station's band by latitude (all band 0 with the layers off, which is the plain profile), and
+        // Switching the band axis while the bands are on pivots: the chart folds down to the single line, regroups the
+        // stations at the bottom of the fold, and unfolds again, so no frame shows the old grouping under the new names.
+        // With the single line showing there is nothing to fold and the axis changes at once. [axisShown] is the axis the
+        // chart is drawn with; [bandAxis] is the one asked for.
+        var shownAxis by remember { mutableStateOf(bandAxis) }
+        var folding by remember { mutableStateOf(false) }
+        LaunchedEffect(bandAxis) {
+            if (bandAxis == shownAxis) {
+                folding = false // asked to go back before the fold reached the bottom: unfold, nothing regrouped
+                return@LaunchedEffect
+            }
+            if (layersOn) {
+                folding = true
+                kotlinx.coroutines.delay((LAYERS_FADE_MS + AXIS_PIVOT_MARGIN_MS).toLong())
+            }
+            shownAxis = bandAxis
+            folding = false
+        }
+        val axisShown = if (!layersOn && !folding) bandAxis else shownAxis
+        // The bands as the chart draws them: on while the layers are on, except at the bottom of a fold
+        val layersShown = layersOn && !folding
+
+        // Layers: each station's band (all band 0 with the layers off, which is the plain profile), and
         // its pin's place on the page with the band's squash and lift
         // The switch fades in and out: the squash, lift, haze and colours follow layerMix, 0 (single line) to 1 (layers)
         val layerMix by animateFloatAsState(
-            targetValue = if (layersOn) 1f else 0f,
+            targetValue = if (layersShown) 1f else 0f,
             animationSpec = tween(LAYERS_FADE_MS, easing = FastOutSlowInEasing),
             label = "layerMix"
         )
-        val bandsActive = layersOn || layerMix > 0.001f
+        val bandsActive = layersShown || layerMix > 0.001f
         // Every station's band, always: the tags and the key use it in both views; the layout only when the
         // Elevation Bands are on (otherwise everything is in band 0, the plain profile)
-        val stationBands = remember(sorted, bandAxis) { DepthBands.byRank(sorted.map { bandAxis.depthKey(it.latitude, it.longitude) }) }
+        val stationBands = remember(sorted, axisShown) { DepthBands.byRank(sorted.map { axisShown.depthKey(it.latitude, it.longitude) }) }
         val bandIndex = remember(sorted, bandsActive, stationBands) {
             if (bandsActive) stationBands else IntArray(sorted.size)
         }
@@ -351,12 +373,12 @@ internal fun ElevationProfileCanvas(
         // A ripple runs along the line when the active layer changes (or the layers come on), not on the first look:
         // the visit's own ripple covers that
         var rippleArmed by remember { mutableStateOf(false) }
-        LaunchedEffect(layersOn, activeBand) {
+        LaunchedEffect(layersShown, activeBand) {
             if (!rippleArmed) {
                 rippleArmed = true
                 return@LaunchedEffect
             }
-            if (!layersOn) return@LaunchedEffect
+            if (!layersShown) return@LaunchedEffect
             kotlinx.coroutines.delay(LAYERS_FADE_MS / 2L)
             pulse.snapTo(0f)
             pulse.animateTo(1f, tween(1400, easing = androidx.compose.animation.core.LinearEasing))
@@ -373,7 +395,7 @@ internal fun ElevationProfileCanvas(
         // Switching between the single line and the Elevation Bands moves every pin, so the chart eases over to put the
         // selected station back in the middle (not on the first look)
         var recenterArmed by remember { mutableStateOf(false) }
-        androidx.compose.runtime.LaunchedEffect(layersOn) {
+        androidx.compose.runtime.LaunchedEffect(layersShown) {
             if (!recenterArmed) {
                 recenterArmed = true
                 return@LaunchedEffect
@@ -381,7 +403,7 @@ internal fun ElevationProfileCanvas(
             val idx = sorted.indexOfFirst { it.id == currentStation?.id }
             if (idx < 0) return@LaunchedEffect
             val bx = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
-            val by = pinYAt(idx, if (layersOn) 1f else 0f)
+            val by = pinYAt(idx, if (layersShown) 1f else 0f)
             zoomJob?.cancel()
             val from = pan
             val target = clampPan(
@@ -421,15 +443,16 @@ internal fun ElevationProfileCanvas(
         }
 
         // When the band axis switches, the labels that were showing stay showing, now at their stations' new places,
-        // until the chart is zoomed or panned; then the labels are chosen afresh and fade in and out as usual
+        // until the chart is zoomed or touched; then the labels are chosen afresh and fade in and out as usual
         val labelHold = remember(sorted) { LabelHold(bandAxis) }
         if (labelHold.axis != bandAxis) {
             labelHold.axis = bandAxis
             labelHold.ids = labelHold.lastPlaced
             labelHold.zoom = zoom
-            labelHold.pan = pan
+            labelHold.touch = touchedAt[0]
         }
-        if (labelHold.ids != null && (zoom != labelHold.zoom || pan != labelHold.pan)) labelHold.ids = null
+        // Ended by a pinch, a drag or any change of zoom, but not by the chart easing itself over (the pivot re-centres it)
+        if (labelHold.ids != null && (zoom != labelHold.zoom || touchedAt[0] != labelHold.touch)) labelHold.ids = null
         val held = labelHold.ids
 
         // Which labels have room at this zoom: more as the profile spreads out. Only the target (room
@@ -1136,7 +1159,8 @@ internal fun ElevationProfileCanvas(
                 ?.let { onSelectStation(sorted[it]) }
         }
         LayerLegend(
-            axis = bandAxis,
+            axis = axisShown,
+            requestedAxis = bandAxis,
             onToggleAxis = onToggleAxis,
             activeBand = keyBand,
             hasStations = List(DepthBands.COUNT) { band -> stationBands.any { it == band } },
@@ -1207,10 +1231,10 @@ internal fun ElevationProfileCanvas(
     }
 }
 
-/** Which stations' labels to keep showing after the band axis switches, until the chart is zoomed or panned. */
+/** Which stations' labels to keep showing after the band axis switches, until the chart is zoomed or touched. */
 private class LabelHold(var axis: BandAxis) {
     var ids: Set<String>? = null
     var zoom = 1f
-    var pan = Offset.Zero
+    var touch = 0L
     var lastPlaced: Set<String> = emptySet()
 }
