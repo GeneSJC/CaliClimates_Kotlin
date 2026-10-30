@@ -791,15 +791,16 @@ internal fun ElevationProfileCanvas(
                     if (backMembers.isNotEmpty()) {
                         val ridgeXs = backMembers.map { viewX(padding + it.toFloat() / (sorted.size - 1).coerceAtLeast(1) * w) }
                         val ridgeYs = backMembers.map { viewY(pinBaseY(it)) }
-                        val shareAcross = 0.30f + 0.45f * (((seed * 31) and 0xFF) / 255f)
-                        val boatX = (((shareAcross * size.width + pan.x * follow) % size.width) + size.width) % size.width
-                        val edgeFade = (minOf(boatX, size.width - boatX) / 48.dp.toPx()).coerceIn(0f, 1f)
+                        // The boat is part of the mural: it keeps its distance from the coast, so it slides across with the sea as the
+                        // view turns, coming in from the left, and drifts a little with the pan
+                        val gap = (0.25f + 0.40f * (((seed * 31) and 0xFF) / 255f)) * size.width
+                        val boatX0 = coastTopX - gap + pan.x * follow
                         val coastY = when {
-                            boatX <= ridgeXs.first() -> ridgeYs.first()
-                            boatX >= ridgeXs.last() -> ridgeYs.last()
+                            boatX0 <= ridgeXs.first() -> ridgeYs.first()
+                            boatX0 >= ridgeXs.last() -> ridgeYs.last()
                             else -> {
-                                val k = ridgeXs.indexOfLast { it <= boatX }
-                                val t = (boatX - ridgeXs[k]) / (ridgeXs[k + 1] - ridgeXs[k])
+                                val k = ridgeXs.indexOfLast { it <= boatX0 }
+                                val t = (boatX0 - ridgeXs[k]) / (ridgeXs[k + 1] - ridgeXs[k])
                                 ridgeYs[k] + (ridgeYs[k + 1] - ridgeYs[k]) * t
                             }
                         }
@@ -808,10 +809,11 @@ internal fun ElevationProfileCanvas(
                         val waterTop = maxOf(horizonY + 14.dp.toPx(), topSafe)
                         val waterBottom = minOf(coastY - 110.dp.toPx(), size.height - 170.dp.toPx())
                         val room = waterBottom - waterTop
-                        // Only on the sea side of the coast, and fading as the coast comes near it
                         val boatY = waterTop + room * 0.6f
-                        val inSea = ((coastX(boatY) - 40.dp.toPx() - boatX) / 60.dp.toPx()).coerceIn(0f, 1f)
-                        val boatAlpha = edgeFade * inSea * (room / 60.dp.toPx()).coerceIn(0f, 1f)
+                        val boatX = coastX(boatY) - gap + pan.x * follow
+                        // Fading in and out at the edges of the screen as the sea slides past
+                        val edgeFade = (minOf(boatX, size.width - boatX) / 48.dp.toPx()).coerceIn(0f, 1f)
+                        val boatAlpha = edgeFade * (room / 60.dp.toPx()).coerceIn(0f, 1f)
                         if (boatAlpha > 0.01f) {
                             drawSailboat(
                                 x = boatX,
@@ -835,7 +837,10 @@ internal fun ElevationProfileCanvas(
                         val bx = startX + (endX - startX) * i / steps
                         val height = layerHeights[i]
                         val by = padding + ridgeH * spec.base - ridgeH * spec.amplitude * height + spec.anchor * extra
-                        val lx = size.width / 2f + (bx - size.width / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.x * spec.follow
+                        // The three far ranges slide across with the coast as the view turns west, the farther the slower, so the
+                        // scene pans as one picture with some depth
+                        val slide = if (layer <= 2) seaMix * (size.width + coastSlant) * LAND_SLIDE[layer] else 0f
+                        val lx = size.width / 2f + (bx - size.width / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.x * spec.follow + slide
                         val ly = size.height / 2f + (by - size.height / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.y * spec.follow
                         points.add(Offset(lx, ly))
                     }
