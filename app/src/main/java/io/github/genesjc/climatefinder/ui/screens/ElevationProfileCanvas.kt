@@ -86,8 +86,10 @@ import io.github.genesjc.climatefinder.ui.components.hazeColor
 import io.github.genesjc.climatefinder.ui.components.layerColor
 import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_HEIGHT_DP
-import io.github.genesjc.climatefinder.ui.components.BAND_DIAL_SIZE_DP
-import io.github.genesjc.climatefinder.ui.components.BandAngleDial
+import io.github.genesjc.climatefinder.ui.components.BAND_ARC_SIZE_DP
+import io.github.genesjc.climatefinder.ui.components.BandAngleArc
+import io.github.genesjc.climatefinder.ui.components.BAND_COMPASS_SIZE_DP
+import io.github.genesjc.climatefinder.ui.components.BandCompass
 import io.github.genesjc.climatefinder.ui.components.BandAngleSlider
 import io.github.genesjc.climatefinder.ui.components.BandAngleToast
 import io.github.genesjc.climatefinder.ui.components.BAND_HEADING_GAP_DP
@@ -521,16 +523,17 @@ internal fun ElevationProfileCanvas(
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
                 listOf(widthDp.value - 44f, layersButtonTop.value, widthDp.value, layersButtonTop.value + 36f),  // layers button
+                if (layersOn && ANGLE_ARC) listOf(widthDp.value - 6f - BAND_COMPASS_SIZE_DP, layersButtonTop.value + 44f, widthDp.value, layersButtonTop.value + 44f + BAND_COMPASS_SIZE_DP) else listOf(0f, 0f, 0f, 0f),  // the compass
                 listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(layersOn), heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value),  // the bands key
-                if (layersOn && ANGLE_DIAL) {
-                    val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_DIAL_SIZE_DP
-                    listOf(widthDp.value - LEGEND_MARGIN_DP - BAND_DIAL_SIZE_DP, top, widthDp.value, top + BAND_DIAL_SIZE_DP)  // the angle dial
+                if (layersOn && ANGLE_ARC) {
+                    val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ARC_SIZE_DP
+                    listOf(widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_SIZE_DP, top, widthDp.value, top + BAND_ARC_SIZE_DP)  // the quarter dial
                 } else listOf(0f, 0f, 0f, 0f),
-                if (layersOn && !ANGLE_DIAL) {
+                if (layersOn && !ANGLE_ARC) {
                     val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ANGLE_SLIDER_HEIGHT_DP
                     listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(true), top, widthDp.value, top + BAND_ANGLE_SLIDER_HEIGHT_DP)  // the angle slider
                 } else listOf(0f, 0f, 0f, 0f),
-                if (layersOn && !ANGLE_DIAL) {
+                if (layersOn && !ANGLE_ARC) {
                     val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ANGLE_SLIDER_HEIGHT_DP - BAND_HEADING_GAP_DP - BAND_HEADING_HEIGHT_DP
                     listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(true), top, widthDp.value, top + BAND_HEADING_HEIGHT_DP)  // the heading strip
                 } else listOf(0f, 0f, 0f, 0f),
@@ -1365,8 +1368,12 @@ internal fun ElevationProfileCanvas(
             onPick = ::pickInBand,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
         )
-        if (layersOn && ANGLE_DIAL) {
-            BandAngleDial(
+        if (layersOn && ANGLE_ARC) {
+            BandCompass(
+                angle = bandAngle,
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 6.dp, top = layersButtonTop + 44.dp)
+            )
+            BandAngleArc(
                 angle = bandAngle,
                 onAngleChange = onAngleChange,
                 modifier = Modifier
@@ -1374,7 +1381,7 @@ internal fun ElevationProfileCanvas(
                     .padding(end = LEGEND_MARGIN_DP.dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP).dp)
             )
         }
-        if (layersOn && !ANGLE_DIAL) {
+        if (layersOn && !ANGLE_ARC) {
             BandHeadingStrip(
                 angle = bandAngle,
                 modifier = Modifier
@@ -1387,7 +1394,7 @@ internal fun ElevationProfileCanvas(
             )
         }
         BandAngleToast(angle = bandAngle, layersOn = layersOn, modifier = Modifier.align(Alignment.Center))
-        if (layersOn && !ANGLE_DIAL) {
+        if (layersOn && !ANGLE_ARC) {
             BandAngleSlider(
                 angle = bandAngle,
                 onAngleChange = onAngleChange,

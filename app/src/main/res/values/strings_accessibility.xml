@@ -14,7 +14,7 @@
     <string name="elevation_axis_to_west_east">Group the stations west to east</string>
     <string name="elevation_axis_to_north_south">Group the stations north to south</string>
     <string name="elevation_angle_slider">Viewing direction</string>
-    <string name="elevation_angle_dial">Viewing direction dial</string>
+    <string name="elevation_angle_arc">Viewing direction, a quarter dial from north to west</string>
     <string name="elevation_angle_state">%1$d degrees from north toward west</string>
     <string name="region_picker_change">Change region</string>
     <string name="stations_choose">Choose a station</string>

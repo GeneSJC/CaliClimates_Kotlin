@@ -20,9 +20,7 @@
     <string name="elevation_heading_ne">NE</string>
     <string name="elevation_heading_sw">SW</string>
     <string name="elevation_heading_e">E</string>
-    <string name="elevation_heading_se">SE</string>
     <string name="elevation_heading_s">S</string>
-    <string name="elevation_dial_reading">%1$d°</string>
 
     <!-- About dialog -->
     <string name="about_live_title">Live readings</string>
