@@ -15,13 +15,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** The dark green of the note, so it stands apart from the dark controls beside it. */
+private val NoticeGreen = Color(0xFF14532D)
+
 /** How long a note stays before it fades out. */
 const val TOP_NOTICE_MS = 3200L
 
 /**
  * A short note that fades in and out as [message] comes and goes (the caller decides how long it stays), such as which view the
  * bands button just switched to. It sits where the caller puts it (the chart keeps it beside the controls it describes, above
- * the key and left of the dial), in the dark slate of the view buttons, and takes no touches.
+ * the key and left of the dial), in dark green so it stands apart from the dark controls beside it, and takes no touches.
  */
 @Composable
 fun BandsNotice(message: String?, modifier: Modifier = Modifier) {
@@ -30,7 +33,7 @@ fun BandsNotice(message: String?, modifier: Modifier = Modifier) {
             if (text != null) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = BandsButtonDark.copy(alpha = 0.94f)
+                    color = NoticeGreen.copy(alpha = 0.95f)
                 ) {
                     Text(
                         text = text,
