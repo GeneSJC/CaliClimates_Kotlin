@@ -80,11 +80,19 @@ class LayerColorsTest {
     @Test
     fun theKeyAndHazeFollowTheEndsToo() {
         for (band in 0 until DepthBands.COUNT) {
-            assertEquals(LayerKeyColors[bandLook(band, BandAxis.NORTH_SOUTH)], keyColor(band, 0))
             assertEquals(LayerKeyColors[bandLook(band, BandAxis.WEST_EAST)], keyColor(band, 90))
             assertEquals(DepthBands.haze(bandLook(band, BandAxis.NORTH_SOUTH)), hazeColor(band, 0).alpha, 0.001f)
             assertEquals(DepthBands.haze(bandLook(band, BandAxis.WEST_EAST)), hazeColor(band, 90).alpha, 0.001f)
         }
+    }
+
+    @Test
+    fun lookingNorthTheHazeIsWarmNotCool() {
+        // The back band's ground is dry gold looking north, the cool indigo looking west; the front band has no haze looking north
+        assertEquals(LayerHazeColorsNorth[2].copy(alpha = DepthBands.haze(2)), hazeColor(2, 0))
+        assertNotEquals(hazeColor(2, 0).copy(alpha = 1f), hazeColor(0, 90).copy(alpha = 1f))
+        assertEquals(LayerKeyColors[0], keyColor(0, 0))
+        assertNotEquals(LayerKeyColors[2], keyColor(2, 0))
     }
 
     @Test

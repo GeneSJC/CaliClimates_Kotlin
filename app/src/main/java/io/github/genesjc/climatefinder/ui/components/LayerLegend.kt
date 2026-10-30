@@ -35,17 +35,27 @@ val LayerHazeColors = listOf(Color.Transparent, Color(0xFF5FA8A0), Color(0xFF7B8
 
 private val FOOTHILL_GROUND = Color(0xFFD9D1B2)
 
+/**
+ * The same haze looking north: sage green over the middle band's ground and a dry gold over the back band's, so the land reads
+ * as California hills and grassland, where looking west it is the cool teal and indigo above. The strength is [DepthBands.haze].
+ */
+val LayerHazeColorsNorth = listOf(Color.Transparent, Color(0xFF86A872), Color(0xFFC9A55A))
+
 /** The same tone as each layer's ground on the chart (the foothill tint under the layer's haze), taken darker so white text reads on it. */
-val LayerKeyColors = List(DepthBands.COUNT) { band ->
-    lerp(lerp(FOOTHILL_GROUND, LayerHazeColors[band], DepthBands.haze(band)), Color.Black, 0.5f)
-}
+val LayerKeyColors = List(DepthBands.COUNT) { band -> keyTone(LayerHazeColors[band], band) }
+
+private fun keyTone(haze: Color, look: Int): Color =
+    lerp(lerp(FOOTHILL_GROUND, haze, DepthBands.haze(look)), Color.Black, 0.5f)
+
+/** The key's tone for a band's look looking north, in the north's own haze colours. */
+private val LayerKeyColorsNorth = List(DepthBands.COUNT) { look -> keyTone(LayerHazeColorsNorth[look], look) }
 
 private fun turn(degrees: Int): Float = degrees.coerceIn(BandAngle.NORTH, BandAngle.WEST) / BandAngle.WEST.toFloat()
 
 /** The ground tint of the key's active segment at the viewing angle [degrees]: the blend of the two ends' tones. */
 fun keyColor(band: Int, degrees: Int): Color {
     val t = turn(degrees)
-    val from = LayerKeyColors[bandLook(band, BandAxis.NORTH_SOUTH)]
+    val from = LayerKeyColorsNorth[bandLook(band, BandAxis.NORTH_SOUTH)]
     val to = LayerKeyColors[bandLook(band, BandAxis.WEST_EAST)]
     return if (t <= 0f || from == to) from else if (t >= 1f) to else lerp(from, to, t)
 }
@@ -60,11 +70,12 @@ fun hazeColor(band: Int, degrees: Int): Color {
     val lookTo = bandLook(band, BandAxis.WEST_EAST)
     val alphaFrom = DepthBands.haze(lookFrom)
     val alphaTo = DepthBands.haze(lookTo)
+    val colorFrom = LayerHazeColorsNorth[lookFrom]
+    val colorTo = LayerHazeColors[lookTo]
     val base = when {
-        alphaFrom <= 0f -> LayerHazeColors[lookTo]
-        alphaTo <= 0f -> LayerHazeColors[lookFrom]
-        lookFrom == lookTo -> LayerHazeColors[lookFrom]
-        else -> lerp(LayerHazeColors[lookFrom], LayerHazeColors[lookTo], t)
+        alphaFrom <= 0f -> colorTo
+        alphaTo <= 0f -> colorFrom
+        else -> lerp(colorFrom, colorTo, t)
     }
     return base.copy(alpha = alphaFrom + (alphaTo - alphaFrom) * t)
 }

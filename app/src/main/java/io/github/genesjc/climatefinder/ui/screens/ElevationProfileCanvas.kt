@@ -385,6 +385,7 @@ internal fun ElevationProfileCanvas(
         val seaMix = layerMix * westShare
         // Looking north, the far ranges are wooded, so the land seems to run to the horizon
         val landMix = layerMix * (1f - westShare)
+        val landShare = 1f - westShare
         // Every station's band, always: the tags and the key use it in both views; the layout only when the
         // Elevation Bands are on (otherwise everything is in band 0, the plain profile)
         val stationBands = remember(sorted, angleShown) {
@@ -730,24 +731,41 @@ internal fun ElevationProfileCanvas(
             val ridgeHeights = ridgeCache.get(size.width, seed, skyline)
             val ridgeH = CHART_REGULAR_HEIGHT.toPx() - padding * 2
             val extra = (h - ridgeH).coerceAtLeast(0f)
+            // The ocean at the horizon, behind the nearer hills; it drifts a little with the pan and zoom, like the far ranges
+            val follow = 0.30f
+            val horizonBase = padding + ridgeH * 0.55f
+            val horizonY = size.height / 2f + (horizonBase - size.height / 2f) * (1f + (zoom - 1f) * follow) + pan.y * follow
+            val depthPx = ridgeH * 0.5f * (1f + (zoom - 1f) * follow)
+            // Looking between north and west the sea is on one side and the land on the other, with a slanted coast between
+            // them: the coast sweeps in from the left as the angle turns west (seaMix 0: no sea, 1: the sea all across)
+            val coastSlant = size.width * COAST_SLANT
+            val coastTopX = seaMix * (size.width + coastSlant)
+            fun coastX(y: Float) = coastTopX - coastSlant * (y - horizonY) / size.height
+            val seaPath = Path().apply {
+                moveTo(-size.width, horizonY)
+                lineTo(coastTopX, horizonY)
+                lineTo(coastX(horizonY + size.height * 3f), horizonY + size.height * 3f)
+                lineTo(-size.width, horizonY + size.height * 3f)
+                close()
+            }
+            // The far ranges are drawn on the land side only; the sea side is open water
+            fun withLand(clipped: Boolean, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) {
+                if (clipped) clipPath(seaPath, clipOp = androidx.compose.ui.graphics.ClipOp.Difference, block = block) else block()
+            }
             clipPath(skyPath) {
                 if (seaMix > 0.01f) {
-                    // The ocean at the horizon, behind the nearer hills; it drifts a little with the pan and zoom, like the far ranges
-                    val follow = 0.30f
-                    val horizonBase = padding + ridgeH * 0.55f
-                    val horizonY = size.height / 2f + (horizonBase - size.height / 2f) * (1f + (zoom - 1f) * follow) + pan.y * follow
-                    val depthPx = ridgeH * 0.5f * (1f + (zoom - 1f) * follow)
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            listOf(Color(0xFFA9D8EE), Color(0xFF5FA8D4), Color(0xFF2F7DB5)),
-                            startY = horizonY,
-                            endY = horizonY + depthPx
-                        ),
-                        topLeft = Offset(0f, horizonY),
-                        size = androidx.compose.ui.geometry.Size(size.width, size.height * 3f),
-                        alpha = seaMix
-                    )
-                    drawLine(Color.White.copy(alpha = 0.6f * seaMix), Offset(0f, horizonY), Offset(size.width, horizonY), strokeWidth = 2.5f)
+                    clipPath(seaPath) {
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                listOf(Color(0xFFA9D8EE), Color(0xFF5FA8D4), Color(0xFF2F7DB5)),
+                                startY = horizonY,
+                                endY = horizonY + depthPx
+                            ),
+                            topLeft = Offset(-size.width, horizonY),
+                            size = androidx.compose.ui.geometry.Size(size.width * 4f, size.height * 3f)
+                        )
+                        drawLine(Color.White.copy(alpha = 0.6f), Offset(-size.width, horizonY), Offset(size.width * 3f, horizonY), strokeWidth = 2.5f)
+                    }
                     // One sailboat on the water, so looking west is recognisable at a glance. Nobody tracks where it is, so it is
                     // placed on the screen, not in the chart: always in the water that is showing, between the top of the sea and
                     // the coast (the back band's ridge, the westernmost stations), above the labels. Across the screen it
@@ -774,11 +792,14 @@ internal fun ElevationProfileCanvas(
                         val waterTop = maxOf(horizonY + 14.dp.toPx(), topSafe)
                         val waterBottom = minOf(coastY - 110.dp.toPx(), size.height - 170.dp.toPx())
                         val room = waterBottom - waterTop
-                        val boatAlpha = seaMix * edgeFade * (room / 60.dp.toPx()).coerceIn(0f, 1f)
+                        // Only on the sea side of the coast, and fading as the coast comes near it
+                        val boatY = waterTop + room * 0.6f
+                        val inSea = ((coastX(boatY) - 40.dp.toPx() - boatX) / 60.dp.toPx()).coerceIn(0f, 1f)
+                        val boatAlpha = edgeFade * inSea * (room / 60.dp.toPx()).coerceIn(0f, 1f)
                         if (boatAlpha > 0.01f) {
                             drawSailboat(
                                 x = boatX,
-                                y = waterTop + room * 0.6f,
+                                y = boatY,
                                 unit = 3.2.dp.toPx() * (1f + (zoom - 1f) * 0.3f),
                                 alpha = boatAlpha
                             )
@@ -786,9 +807,9 @@ internal fun ElevationProfileCanvas(
                     }
                 }
                 RIDGE_LAYERS.forEachIndexed { layer, spec ->
-                    // The three far ranges give way to the sea at the horizon
-                    val farFade = if (layer <= 2) 1f - seaMix else 1f
-                    if (farFade <= 0.01f) return@forEachIndexed
+                    // The three far ranges give way to the sea at the horizon: they are drawn on the land side of the coast
+                    withLand(layer <= 2 && seaMix > 0.01f) {
+                    val farFade = 1f
                     val steps = RIDGE_STEPS
                     val startX = -size.width
                     val endX = size.width * 2f
@@ -847,6 +868,7 @@ internal fun ElevationProfileCanvas(
                             xMin = -40f,
                             xMax = size.width + 40f
                         )
+                    }
                     }
                 }
             }
@@ -999,7 +1021,7 @@ internal fun ElevationProfileCanvas(
                 if (haze.alpha > 0f) drawPath(terrainPath, haze.copy(alpha = haze.alpha * layerMix))
                 // The layers that do not hold the selected station step back: a wash over the ground, fainter lines
                 val inactive = activeBand != null && band != activeBand
-                if (inactive) drawPath(terrainPath, LayerWashColor.copy(alpha = DepthBands.INACTIVE_WASH * layerMix))
+                if (inactive) drawPath(terrainPath, lerp(LayerWashColor, LayerWashColorNorth, landShare).copy(alpha = DepthBands.INACTIVE_WASH * layerMix))
                 val lineFade = (1f + (DepthBands.lineFade(band) - 1f) * layerMix) *
                     (if (inactive) 1f - (1f - DepthBands.INACTIVE_FADE) * layerMix else 1f)
                 // The single line is always the first colour; the bands take the axis's colours as they unfold
