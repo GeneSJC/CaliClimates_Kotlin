@@ -44,7 +44,7 @@ const val BAND_ANGLE_SLIDER_GAP_DP = 4f
  * The control that turns the viewing direction between north and west: a thin horizontal slider in the key's dark style,
  * north at the right end and west at the left (the back band's name in the key reads left to right the same way). It
  * reports whole degrees ([onAngleChange], only when the whole degree changes) and snaps onto 0, 45 and 90 (the thumb sits on the detent)
- * with a small haptic tick. It takes the angle and reports changes and nothing else, so another widget can take its place.
+ * with a small haptic tick, with lighter ticks at every 15 degrees. It takes the angle and reports changes and nothing else, so another widget can take its place.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +72,11 @@ fun BandAngleSlider(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier
                 onValueChange = { position ->
                     val next = BandAngle.snap(BandAngle.WEST - position)
                     if (next != angle) {
-                        if (BandAngle.isDetent(next)) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        when (BandAngle.tickBetween(angle, next)) {
+                            BandAngle.Tick.DETENT -> haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            BandAngle.Tick.LIGHT -> haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            BandAngle.Tick.NONE -> Unit
+                        }
                         onAngleChange(next)
                     }
                 },

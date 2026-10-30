@@ -69,4 +69,29 @@ class BandAngleTest {
     fun theKeyIsNamedByTheNearestOfThreeLooks() {
         assertEquals(listOf(0, 0, 1, 1, 1, 2, 2), listOf(0, 22, 23, 45, 67, 68, 90).map { BandAngle.nameIndex(it) })
     }
+
+    @Test
+    fun movingOntoOrPastAMarkTicksIt() {
+        assertEquals(BandAngle.Tick.LIGHT, BandAngle.tickBetween(29, 30))
+        assertEquals(BandAngle.Tick.LIGHT, BandAngle.tickBetween(31, 29))
+        assertEquals(BandAngle.Tick.LIGHT, BandAngle.tickBetween(14, 16))
+        assertEquals(BandAngle.Tick.DETENT, BandAngle.tickBetween(44, 45))
+        assertEquals(BandAngle.Tick.DETENT, BandAngle.tickBetween(1, 0))
+        assertEquals(BandAngle.Tick.DETENT, BandAngle.tickBetween(89, 90))
+    }
+
+    @Test
+    fun leavingAMarkDoesNotTickAndNeitherDoesMovingBetweenMarks() {
+        assertEquals(BandAngle.Tick.NONE, BandAngle.tickBetween(30, 29))
+        assertEquals(BandAngle.Tick.NONE, BandAngle.tickBetween(30, 31))
+        assertEquals(BandAngle.Tick.NONE, BandAngle.tickBetween(20, 25))
+        assertEquals(BandAngle.Tick.NONE, BandAngle.tickBetween(45, 45))
+    }
+
+    @Test
+    fun aQuickDragOverSeveralMarksGivesTheStrongestTick() {
+        assertEquals(BandAngle.Tick.DETENT, BandAngle.tickBetween(40, 62))
+        assertEquals(BandAngle.Tick.LIGHT, BandAngle.tickBetween(16, 44))
+        assertEquals(BandAngle.Tick.DETENT, BandAngle.tickBetween(80, 20))
+    }
 }

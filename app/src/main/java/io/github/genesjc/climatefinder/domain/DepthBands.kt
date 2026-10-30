@@ -46,6 +46,33 @@ object BandAngle {
 
     fun isDetent(degrees: Int): Boolean = degrees in DETENTS
 
+    /** The spacing of the light ticks along the slider (degrees); the detents are every third of them. */
+    const val TICK_EVERY = 15
+
+    /** The feel of moving the slider from one angle to another. */
+    enum class Tick { NONE, LIGHT, DETENT }
+
+    /**
+     * What the slider should feel like moving from [from] to [to]: a [Tick.DETENT] when it reaches or passes 0, 45 or 90, a
+     * [Tick.LIGHT] when it reaches or passes any other multiple of [TICK_EVERY], nothing otherwise. A mark counts when it is
+     * entered or passed, not when it is left, and a quick drag that jumps over several still gives one tick, the strongest.
+     */
+    fun tickBetween(from: Int, to: Int): Tick {
+        if (from == to) return Tick.NONE
+        val lo = minOf(from, to)
+        val hi = maxOf(from, to)
+        var tick = Tick.NONE
+        var mark = (lo + TICK_EVERY - 1) / TICK_EVERY * TICK_EVERY
+        while (mark <= hi) {
+            if (mark != from) {
+                if (isDetent(mark)) return Tick.DETENT
+                tick = Tick.LIGHT
+            }
+            mark += TICK_EVERY
+        }
+        return tick
+    }
+
     /** The end the angle is nearer to, for what only has two looks (the key's colours and the scenery): halfway counts as west. */
     fun nearestAxis(degrees: Int): BandAxis = if (degrees < MIDDLE) BandAxis.NORTH_SOUTH else BandAxis.WEST_EAST
 
