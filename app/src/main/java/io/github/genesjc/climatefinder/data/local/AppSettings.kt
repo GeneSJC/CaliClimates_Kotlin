@@ -2,6 +2,7 @@ package io.github.genesjc.climatefinder.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import io.github.genesjc.climatefinder.domain.BandAngle
 import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
 
@@ -45,10 +46,13 @@ interface AppSettings {
 
     fun saveElevationLayers(on: Boolean)
 
-    /** The direction the Elevation Bands look across the region. It starts north to south, as the bands always did. */
-    fun elevationBandAxis(): BandAxis
+    /**
+     * The direction the Elevation Bands look across the region, in whole degrees from north (0, the start, as the bands
+     * always ran) toward west (90); see [BandAngle].
+     */
+    fun elevationBandAngle(): Int
 
-    fun saveElevationBandAxis(axis: BandAxis)
+    fun saveElevationBandAngle(degrees: Int)
 }
 
 /** [AppSettings] kept in one SharedPreferences file, with one key per value. */
@@ -111,12 +115,19 @@ class AppSettingsPreferences(
         prefs.edit().putBoolean(KEY_ELEVATION_LAYERS, on).apply()
     }
 
-    // Stored by name; a missing or unknown value (an older app, a renamed axis) reads as north to south
-    override fun elevationBandAxis(): BandAxis =
-        BandAxis.entries.firstOrNull { it.name == prefs.getString(KEY_ELEVATION_BAND_AXIS, null) } ?: BandAxis.NORTH_SOUTH
+    // Stored in degrees. Before the angle there was an axis stored by name (builds 113.x): west to east reads as 90, anything
+    // else, or nothing, as north to south
+    override fun elevationBandAngle(): Int =
+        if (prefs.getInt(KEY_ELEVATION_BAND_ANGLE, NO_ANGLE) != NO_ANGLE) {
+            BandAngle.clamp(prefs.getInt(KEY_ELEVATION_BAND_ANGLE, BandAngle.NORTH).toFloat())
+        } else if (prefs.getString(KEY_ELEVATION_BAND_AXIS, null) == BandAxis.WEST_EAST.name) {
+            BandAngle.WEST
+        } else {
+            BandAngle.NORTH
+        }
 
-    override fun saveElevationBandAxis(axis: BandAxis) {
-        prefs.edit().putString(KEY_ELEVATION_BAND_AXIS, axis.name).apply()
+    override fun saveElevationBandAngle(degrees: Int) {
+        prefs.edit().putInt(KEY_ELEVATION_BAND_ANGLE, BandAngle.clamp(degrees.toFloat())).apply()
     }
 
     companion object {
@@ -133,5 +144,7 @@ class AppSettingsPreferences(
         private const val KEY_HINT_TAPPED = "hint_line_tapped"
         private const val KEY_ELEVATION_LAYERS = "elevation_layers"
         private const val KEY_ELEVATION_BAND_AXIS = "elevation_band_axis"
+        private const val KEY_ELEVATION_BAND_ANGLE = "elevation_band_angle"
+        private const val NO_ANGLE = -1
     }
 }

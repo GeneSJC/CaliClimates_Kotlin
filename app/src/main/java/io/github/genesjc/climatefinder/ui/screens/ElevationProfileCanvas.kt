@@ -41,10 +41,12 @@ import androidx.compose.ui.graphics.Brush
 import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import io.github.genesjc.climatefinder.ui.text.rememberFeetFormatter
 import io.github.genesjc.climatefinder.ui.text.rememberMilesFormatter
+import io.github.genesjc.climatefinder.domain.BandAngle
 import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.DepthBands
 import io.github.genesjc.climatefinder.domain.DepthCue
 import io.github.genesjc.climatefinder.domain.StationDistance
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import androidx.compose.ui.unit.IntSize
@@ -80,9 +82,15 @@ import io.github.genesjc.climatefinder.ui.components.MapText
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
 import io.github.genesjc.climatefinder.ui.components.LayerColors
-import io.github.genesjc.climatefinder.ui.components.LayerHazeColors
-import io.github.genesjc.climatefinder.ui.components.bandLook
+import io.github.genesjc.climatefinder.ui.components.hazeColor
 import io.github.genesjc.climatefinder.ui.components.layerColor
+import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_GAP_DP
+import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_HEIGHT_DP
+import io.github.genesjc.climatefinder.ui.components.BandAngleSlider
+import io.github.genesjc.climatefinder.ui.components.BandAngleToast
+import io.github.genesjc.climatefinder.ui.components.BAND_HEADING_GAP_DP
+import io.github.genesjc.climatefinder.ui.components.BAND_HEADING_HEIGHT_DP
+import io.github.genesjc.climatefinder.ui.components.BandHeadingStrip
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.layerLegendWidthDp
 import io.github.genesjc.climatefinder.ui.components.LayerLegend
@@ -119,6 +127,8 @@ internal fun ElevationProfileCanvas(
     onToggleLayers: () -> Unit = {},
     /** The direction the bands look across the region, and the key's switch between the two. */
     bandAxis: BandAxis = BandAxis.NORTH_SOUTH,
+    bandAngle: Int = bandAxis.degrees.toInt(),
+    onAngleChange: (Int) -> Unit = {},
     onToggleAxis: () -> Unit = {},
     selectedStationId: String?,
     initialZoom: Float = 1f,
@@ -332,34 +342,34 @@ internal fun ElevationProfileCanvas(
         // The chart can only be dragged up so far: past this the sea would take more than MAX_WATER_SHARE of the height
         val waterLimit = { z: Float -> elevationLowestPanY(z, canvasH) }
 
-        // Switching the band axis while the bands are on pivots: the chart folds down to the single line, regroups the
-        // stations at the bottom of the fold, and unfolds again, so no frame shows the old grouping under the new names.
-        // With the single line showing there is nothing to fold and the axis changes at once. [axisShown] is the axis the
-        // chart is drawn with; [bandAxis] is the one asked for.
-        var shownAxis by remember { mutableStateOf(bandAxis) }
+        // A jump of the viewing angle while the bands are on (the axis switch) pivots: the chart folds down to the single line,
+        // regroups the stations at the bottom of the fold, and unfolds again, so no frame shows the old grouping under the
+        // new names. A small move (the angle slider) regroups at once, and with the single line showing there is nothing to
+        // fold. [angleShown] is the angle the chart is drawn with; [bandAngle] is the one asked for.
+        var shownAngle by remember { mutableStateOf(bandAngle) }
         var folding by remember { mutableStateOf(false) }
         // True from the bottom of a fold until the unfold has finished: the chart only re-centres on the station then if it
         // would otherwise be out of view, so a pivot does not slide the whole chart about
         var unfolding by remember { mutableStateOf(false) }
-        LaunchedEffect(bandAxis) {
-            if (bandAxis == shownAxis) {
+        LaunchedEffect(bandAngle) {
+            if (bandAngle == shownAngle) {
                 folding = false // asked to go back before the fold reached the bottom: unfold, nothing regrouped
                 unfolding = false
                 return@LaunchedEffect
             }
-            if (layersOn) {
+            if (layersOn && abs(bandAngle - shownAngle) >= AXIS_PIVOT_JUMP_DEGREES) {
                 folding = true
                 kotlinx.coroutines.delay((LAYERS_FADE_MS + AXIS_PIVOT_MARGIN_MS).toLong())
                 unfolding = true
             }
-            shownAxis = bandAxis
+            shownAngle = bandAngle
             folding = false
             if (unfolding) {
                 kotlinx.coroutines.delay(LAYERS_FADE_MS.toLong())
                 unfolding = false
             }
         }
-        val axisShown = if (!layersOn && !folding) bandAxis else shownAxis
+        val angleShown = if (!layersOn && !folding) bandAngle else shownAngle
         // The bands as the chart draws them: on while the layers are on, except at the bottom of a fold
         val layersShown = layersOn && !folding
 
@@ -374,12 +384,16 @@ internal fun ElevationProfileCanvas(
         val bandsActive = layersShown || layerMix > 0.001f
         // Looking west (the west-east axis) the ocean is straight ahead, not in the foreground, so as the bands unfold it moves
         // from the bottom of the chart to the horizon. With the single line showing, or looking north, it stays at the bottom.
-        val seaMix = if (axisShown == BandAxis.WEST_EAST) layerMix else 0f
+        val westShare = angleShown / BandAngle.WEST.toFloat()
+        val seaMix = layerMix * westShare
         // Looking north, the far ranges are wooded, so the land seems to run to the horizon
-        val landMix = if (axisShown == BandAxis.NORTH_SOUTH) layerMix else 0f
+        val landMix = layerMix * (1f - westShare)
+        val landShare = 1f - westShare
         // Every station's band, always: the tags and the key use it in both views; the layout only when the
         // Elevation Bands are on (otherwise everything is in band 0, the plain profile)
-        val stationBands = remember(sorted, axisShown) { DepthBands.byRank(sorted.map { axisShown.depthKey(it.latitude, it.longitude) }) }
+        val stationBands = remember(sorted, angleShown) {
+            DepthBands.byRank(sorted.map { DepthBands.depthKey(it.latitude, it.longitude, angleShown.toDouble()) })
+        }
         val bandIndex = remember(sorted, bandsActive, stationBands) {
             if (bandsActive) stationBands else IntArray(sorted.size)
         }
@@ -392,7 +406,13 @@ internal fun ElevationProfileCanvas(
         // A ripple runs along the line when the active layer changes (or the layers come on), not on the first look:
         // the visit's own ripple covers that
         var rippleArmed by remember { mutableStateOf(false) }
+        var rippleAngle by remember { mutableStateOf(bandAngle) }
         LaunchedEffect(layersShown, activeBand) {
+            // Sliding the angle regroups the stations and so changes the active band, over and over; only a jump (the axis
+            // switch) or a new selection ripples
+            val slid = bandAngle != rippleAngle && abs(bandAngle - rippleAngle) < AXIS_PIVOT_JUMP_DEGREES
+            rippleAngle = bandAngle
+            if (slid) return@LaunchedEffect
             if (!rippleArmed) {
                 rippleArmed = true
                 return@LaunchedEffect
@@ -471,10 +491,13 @@ internal fun ElevationProfileCanvas(
 
         // When the band axis switches, the labels that were showing stay showing, now at their stations' new places,
         // until the chart is zoomed or touched; then the labels are chosen afresh and fade in and out as usual
-        val labelHold = remember(sorted) { LabelHold(bandAxis) }
-        if (labelHold.axis != bandAxis) {
-            labelHold.axis = bandAxis
-            labelHold.ids = labelHold.lastPlaced
+        val labelHold = remember(sorted) { LabelHold(bandAngle) }
+        if (labelHold.angle != bandAngle) {
+            // A jump (the axis switch) keeps the labels as they were through the pivot; a small move (the angle slider)
+            // lays them out afresh at every angle, so they do not pile up as the stations regroup
+            val jump = abs(bandAngle - labelHold.angle) >= AXIS_PIVOT_JUMP_DEGREES
+            labelHold.angle = bandAngle
+            labelHold.ids = if (jump) labelHold.lastPlaced else null
             labelHold.zoom = zoom
             labelHold.touch = touchedAt[0]
         }
@@ -497,6 +520,14 @@ internal fun ElevationProfileCanvas(
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
                 listOf(widthDp.value - 44f, layersButtonTop.value, widthDp.value, layersButtonTop.value + 36f),  // layers button
                 listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(layersOn), heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value),  // the bands key
+                if (layersOn) {
+                    val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ANGLE_SLIDER_HEIGHT_DP
+                    listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(true), top, widthDp.value, top + BAND_ANGLE_SLIDER_HEIGHT_DP)  // the angle slider
+                } else listOf(0f, 0f, 0f, 0f),
+                if (layersOn) {
+                    val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ANGLE_SLIDER_HEIGHT_DP - BAND_HEADING_GAP_DP - BAND_HEADING_HEIGHT_DP
+                    listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(true), top, widthDp.value, top + BAND_HEADING_HEIGHT_DP)  // the heading strip
+                } else listOf(0f, 0f, 0f, 0f),
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
             // The controls, badge and key: a label never goes over these unless it is the selected station's and has nowhere else
@@ -605,7 +636,23 @@ internal fun ElevationProfileCanvas(
         val placedLabels = if (feetIds.isEmpty()) firstPass else layOut(feetIds)
         val placedIds = placedLabels.filter { it.hasRoom }.map { it.station.id }.toSet()
         labelHold.lastPlaced = placedIds
-        val labelFades = rememberLabelFades(placedLabels.associate { it.station.id to if (it.hasRoom) 1f else 0f })
+        // While the angle is moving the labels change as the stations regroup, so they fade slowly, and keep fading for a moment
+        // after the slider stops, instead of popping in and out
+        var turning by remember { mutableStateOf(false) }
+        var turningArmed by remember { mutableStateOf(false) }
+        LaunchedEffect(bandAngle) {
+            if (!turningArmed) {
+                turningArmed = true
+                return@LaunchedEffect
+            }
+            turning = true
+            kotlinx.coroutines.delay(TURNING_LINGER_MS)
+            turning = false
+        }
+        val labelFades = rememberLabelFades(
+            placedLabels.associate { it.station.id to if (it.hasRoom) 1f else 0f },
+            fadeSeconds = if (turning) TURNING_LABEL_FADE_SECONDS else 0.18f
+        )
 
         // Canvas drawing the dynamic sky, slope, shaded terrain, leader lines, and nodes
         Canvas(
@@ -691,24 +738,41 @@ internal fun ElevationProfileCanvas(
             val ridgeHeights = ridgeCache.get(size.width, seed, skyline)
             val ridgeH = CHART_REGULAR_HEIGHT.toPx() - padding * 2
             val extra = (h - ridgeH).coerceAtLeast(0f)
+            // The ocean at the horizon, behind the nearer hills; it drifts a little with the pan and zoom, like the far ranges
+            val follow = 0.30f
+            val horizonBase = padding + ridgeH * 0.55f
+            val horizonY = size.height / 2f + (horizonBase - size.height / 2f) * (1f + (zoom - 1f) * follow) + pan.y * follow
+            val depthPx = ridgeH * 0.5f * (1f + (zoom - 1f) * follow)
+            // Looking between north and west the sea is on one side and the land on the other, with a slanted coast between
+            // them: the coast sweeps in from the left as the angle turns west (seaMix 0: no sea, 1: the sea all across)
+            val coastSlant = size.width * COAST_SLANT
+            val coastTopX = seaMix * (size.width + coastSlant)
+            fun coastX(y: Float) = coastTopX - coastSlant * (y - horizonY) / size.height
+            val seaPath = Path().apply {
+                moveTo(-size.width, horizonY)
+                lineTo(coastTopX, horizonY)
+                lineTo(coastX(horizonY + size.height * 3f), horizonY + size.height * 3f)
+                lineTo(-size.width, horizonY + size.height * 3f)
+                close()
+            }
+            // The far ranges are drawn on the land side only; the sea side is open water
+            fun withLand(clipped: Boolean, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) {
+                if (clipped) clipPath(seaPath, clipOp = androidx.compose.ui.graphics.ClipOp.Difference, block = block) else block()
+            }
             clipPath(skyPath) {
                 if (seaMix > 0.01f) {
-                    // The ocean at the horizon, behind the nearer hills; it drifts a little with the pan and zoom, like the far ranges
-                    val follow = 0.30f
-                    val horizonBase = padding + ridgeH * 0.55f
-                    val horizonY = size.height / 2f + (horizonBase - size.height / 2f) * (1f + (zoom - 1f) * follow) + pan.y * follow
-                    val depthPx = ridgeH * 0.5f * (1f + (zoom - 1f) * follow)
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            listOf(Color(0xFFA9D8EE), Color(0xFF5FA8D4), Color(0xFF2F7DB5)),
-                            startY = horizonY,
-                            endY = horizonY + depthPx
-                        ),
-                        topLeft = Offset(0f, horizonY),
-                        size = androidx.compose.ui.geometry.Size(size.width, size.height * 3f),
-                        alpha = seaMix
-                    )
-                    drawLine(Color.White.copy(alpha = 0.6f * seaMix), Offset(0f, horizonY), Offset(size.width, horizonY), strokeWidth = 2.5f)
+                    clipPath(seaPath) {
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                listOf(Color(0xFFA9D8EE), Color(0xFF5FA8D4), Color(0xFF2F7DB5)),
+                                startY = horizonY,
+                                endY = horizonY + depthPx
+                            ),
+                            topLeft = Offset(-size.width, horizonY),
+                            size = androidx.compose.ui.geometry.Size(size.width * 4f, size.height * 3f)
+                        )
+                        drawLine(Color.White.copy(alpha = 0.6f), Offset(-size.width, horizonY), Offset(size.width * 3f, horizonY), strokeWidth = 2.5f)
+                    }
                     // One sailboat on the water, so looking west is recognisable at a glance. Nobody tracks where it is, so it is
                     // placed on the screen, not in the chart: always in the water that is showing, between the top of the sea and
                     // the coast (the back band's ridge, the westernmost stations), above the labels. Across the screen it
@@ -735,11 +799,14 @@ internal fun ElevationProfileCanvas(
                         val waterTop = maxOf(horizonY + 14.dp.toPx(), topSafe)
                         val waterBottom = minOf(coastY - 110.dp.toPx(), size.height - 170.dp.toPx())
                         val room = waterBottom - waterTop
-                        val boatAlpha = seaMix * edgeFade * (room / 60.dp.toPx()).coerceIn(0f, 1f)
+                        // Only on the sea side of the coast, and fading as the coast comes near it
+                        val boatY = waterTop + room * 0.6f
+                        val inSea = ((coastX(boatY) - 40.dp.toPx() - boatX) / 60.dp.toPx()).coerceIn(0f, 1f)
+                        val boatAlpha = edgeFade * inSea * (room / 60.dp.toPx()).coerceIn(0f, 1f)
                         if (boatAlpha > 0.01f) {
                             drawSailboat(
                                 x = boatX,
-                                y = waterTop + room * 0.6f,
+                                y = boatY,
                                 unit = 3.2.dp.toPx() * (1f + (zoom - 1f) * 0.3f),
                                 alpha = boatAlpha
                             )
@@ -747,9 +814,9 @@ internal fun ElevationProfileCanvas(
                     }
                 }
                 RIDGE_LAYERS.forEachIndexed { layer, spec ->
-                    // The three far ranges give way to the sea at the horizon
-                    val farFade = if (layer <= 2) 1f - seaMix else 1f
-                    if (farFade <= 0.01f) return@forEachIndexed
+                    // The three far ranges give way to the sea at the horizon: they are drawn on the land side of the coast
+                    withLand(layer <= 2 && seaMix > 0.01f) {
+                    val farFade = 1f
                     val steps = RIDGE_STEPS
                     val startX = -size.width
                     val endX = size.width * 2f
@@ -771,12 +838,16 @@ internal fun ElevationProfileCanvas(
                         close()
                     }
                     // Darker at the ridge, hazing lighter below it, so the gap to the next layer reads as mist
-                    val top = lerp(horizon, Color(0xFF334155), spec.depthShade)
+                    // Looking north the land takes its own colours, green and golden, in place of the sky's haze
+                    val skyTop = lerp(horizon, Color(0xFF334155), spec.depthShade)
+                    val (landTop, landLow) = LAND_RIDGE_COLORS[layer.coerceAtMost(LAND_RIDGE_COLORS.lastIndex)]
+                    val top = lerp(skyTop, landTop, landMix)
+                    val low = lerp(lerp(skyTop, horizon, 0.5f), landLow, landMix)
                     val topY = points.minOf { it.y }
                     drawPath(
                         ridge,
                         brush = Brush.verticalGradient(
-                            colors = listOf(top.copy(alpha = spec.alpha * farFade), lerp(top, horizon, 0.5f).copy(alpha = spec.alpha * 0.7f * farFade)),
+                            colors = listOf(top.copy(alpha = spec.alpha * farFade), low.copy(alpha = spec.alpha * 0.7f * farFade)),
                             startY = topY,
                             endY = topY + ridgeH * 0.45f * (1f + (zoom - 1f) * spec.follow)
                         )
@@ -804,6 +875,7 @@ internal fun ElevationProfileCanvas(
                             xMin = -40f,
                             xMax = size.width + 40f
                         )
+                    }
                     }
                 }
             }
@@ -952,15 +1024,15 @@ internal fun ElevationProfileCanvas(
                 // The farther layers are hazed toward the sky, and their ridge lines fainter and thinner
                 // The ground's tint is the band's look on this axis: on west-east the front band wears the grey-blue haze
                 // and the back band the plain ground
-                val look = bandLook(band, axisShown)
-                if (look > 0) drawPath(terrainPath, LayerHazeColors[look].copy(alpha = DepthBands.haze(look) * layerMix))
+                val haze = hazeColor(band, angleShown)
+                if (haze.alpha > 0f) drawPath(terrainPath, haze.copy(alpha = haze.alpha * layerMix))
                 // The layers that do not hold the selected station step back: a wash over the ground, fainter lines
                 val inactive = activeBand != null && band != activeBand
-                if (inactive) drawPath(terrainPath, LayerWashColor.copy(alpha = DepthBands.INACTIVE_WASH * layerMix))
+                if (inactive) drawPath(terrainPath, lerp(LayerWashColor, LayerWashColorNorth, landShare).copy(alpha = DepthBands.INACTIVE_WASH * layerMix))
                 val lineFade = (1f + (DepthBands.lineFade(band) - 1f) * layerMix) *
                     (if (inactive) 1f - (1f - DepthBands.INACTIVE_FADE) * layerMix else 1f)
                 // The single line is always the first colour; the bands take the axis's colours as they unfold
-                val lineColor = lerp(LayerColors[0], layerColor(band, axisShown), layerMix)
+                val lineColor = lerp(LayerColors[0], layerColor(band, angleShown), layerMix)
                 // A lit edge along the profile, like the sun catching the ridge
                 drawPath(
                     path = linePath,
@@ -1225,7 +1297,7 @@ internal fun ElevationProfileCanvas(
             val depth = depthOf(station.id)
             // A far station's text is fainter, but its tag stays solid
             val depthFade = depth?.let { DepthCue.alpha(it) } ?: 1f
-            val stripe = layerColor(stationBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)], axisShown)
+            val stripe = layerColor(stationBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)], angleShown)
 
             Surface(
                 shape = RoundedCornerShape(6.dp),
@@ -1277,7 +1349,7 @@ internal fun ElevationProfileCanvas(
                 ?.let { onSelectStation(sorted[it]) }
         }
         LayerLegend(
-            axis = axisShown,
+            angle = angleShown,
             requestedAxis = bandAxis,
             onToggleAxis = onToggleAxis,
             showAxisSwitch = layersOn,
@@ -1287,6 +1359,29 @@ internal fun ElevationProfileCanvas(
             onPick = ::pickInBand,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
         )
+        if (layersOn) {
+            BandHeadingStrip(
+                angle = bandAngle,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(
+                        end = LEGEND_MARGIN_DP.dp,
+                        bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP + BAND_ANGLE_SLIDER_HEIGHT_DP + BAND_HEADING_GAP_DP).dp
+                    )
+                    .width(layerLegendWidthDp(true).dp)
+            )
+        }
+        BandAngleToast(angle = bandAngle, layersOn = layersOn, modifier = Modifier.align(Alignment.Center))
+        if (layersOn) {
+            BandAngleSlider(
+                angle = bandAngle,
+                onAngleChange = onAngleChange,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = LEGEND_MARGIN_DP.dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP).dp)
+                    .width(layerLegendWidthDp(true).dp)
+            )
+        }
         LayersToggleButton(
             on = layersOn,
             onToggle = onToggleLayers,
@@ -1351,7 +1446,7 @@ internal fun ElevationProfileCanvas(
 }
 
 /** Which stations' labels to keep showing after the band axis switches, until the chart is zoomed or touched. */
-private class LabelHold(var axis: BandAxis) {
+private class LabelHold(var angle: Int) {
     var ids: Set<String>? = null
     var zoom = 1f
     var touch = 0L

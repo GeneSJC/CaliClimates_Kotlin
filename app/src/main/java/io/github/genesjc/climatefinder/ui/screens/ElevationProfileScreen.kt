@@ -102,14 +102,13 @@ fun ElevationProfileScreen(
 
     val layersOn by viewModel.layers.collectAsStateWithLifecycle()
     val bandAxis by viewModel.bandAxis.collectAsStateWithLifecycle()
+    val bandAngle by viewModel.bandAngle.collectAsStateWithLifecycle()
     // The notice for the layers button names the direction the bands now look; the axis switch has its own notice
     val layersOnNotice = stringResource(
         R.string.elevation_layers_on_notice,
         stringResource(if (bandAxis == BandAxis.NORTH_SOUTH) R.string.elevation_axis_hint_north_south else R.string.elevation_axis_hint_west_east)
     )
     val layersOffNotice = stringResource(R.string.elevation_layers_off_notice)
-    val axisNorthSouthNotice = stringResource(R.string.elevation_axis_notice_north_south)
-    val axisWestEastNotice = stringResource(R.string.elevation_axis_notice_west_east)
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     var localSelectedId by remember(stations) { mutableStateOf(stations.firstOrNull()?.id) }
@@ -226,9 +225,10 @@ fun ElevationProfileScreen(
                         onNotice?.invoke(if (layersOn) layersOffNotice else layersOnNotice)
                     },
                     bandAxis = bandAxis,
+                    bandAngle = bandAngle,
+                    onAngleChange = viewModel::setBandAngle,
                     onToggleAxis = {
                         viewModel.toggleBandAxis()
-                        onNotice?.invoke(if (bandAxis == BandAxis.NORTH_SOUTH) axisWestEastNotice else axisNorthSouthNotice)
                     },
                     selectedStationId = selectedStationId,
                     initialZoom = initialZoom,

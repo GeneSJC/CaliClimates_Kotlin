@@ -18,6 +18,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.genesjc.climatefinder.R
+import androidx.compose.ui.graphics.lerp
+import io.github.genesjc.climatefinder.domain.BandAngle
 import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.DepthBands
 
@@ -35,6 +37,20 @@ fun bandLook(band: Int, axis: BandAxis): Int =
 
 /** The colour that names band [band] when looking along [axis] (see [bandLook]). */
 fun layerColor(band: Int, axis: BandAxis): Color = LayerColors[bandLook(band, axis)]
+
+/** How far from the north-south end toward the west-east end the angle is, 0 to 1. */
+private fun turn(degrees: Int): Float = degrees.coerceIn(BandAngle.NORTH, BandAngle.WEST) / BandAngle.WEST.toFloat()
+
+/**
+ * The colour of band [band] at the viewing angle [degrees]: the north-south colour at 0, the west-east colour at 90, and a blend of
+ * the two between (the middle band is teal throughout; the front and back bands cross over, purple to amber and back).
+ */
+fun layerColor(band: Int, degrees: Int): Color {
+    val t = turn(degrees)
+    val from = layerColor(band, BandAxis.NORTH_SOUTH)
+    val to = layerColor(band, BandAxis.WEST_EAST)
+    return if (t <= 0f || from == to) from else if (t >= 1f) to else lerp(from, to, t)
+}
 
 /** The dark green of the Elevation Bands controls and its notice. */
 val BandsGreen = Color(0xFF14532D)

@@ -65,21 +65,49 @@ class MapViewModelsTest {
     }
 
     @Test
-    fun theElevationBandsStartFromTheSavedAxis() {
+    fun theElevationBandsStartFromTheSavedAngle() {
+        assertEquals(0, elevation().bandAngle.value)
         assertEquals(BandAxis.NORTH_SOUTH, elevation().bandAxis.value)
-        hints.axis = BandAxis.WEST_EAST
+        hints.angle = 90
+        assertEquals(90, elevation().bandAngle.value)
         assertEquals(BandAxis.WEST_EAST, elevation().bandAxis.value)
     }
 
     @Test
-    fun togglingTheBandAxisFlipsItAndSavesIt() {
+    fun settingTheBandAngleSavesItAndMovesTheNearestAxis() {
+        val vm = elevation()
+        vm.setBandAngle(30)
+        assertEquals(30, vm.bandAngle.value)
+        assertEquals(30, hints.angle)
+        assertEquals(BandAxis.NORTH_SOUTH, vm.bandAxis.value)
+        vm.setBandAngle(45)
+        assertEquals(BandAxis.WEST_EAST, vm.bandAxis.value)
+        vm.setBandAngle(500)
+        assertEquals(90, vm.bandAngle.value)
+    }
+
+    @Test
+    fun togglingTheBandAxisGoesToTheFarEndAndSavesIt() {
         val vm = elevation()
         vm.toggleBandAxis()
+        assertEquals(90, vm.bandAngle.value)
         assertEquals(BandAxis.WEST_EAST, vm.bandAxis.value)
-        assertEquals(BandAxis.WEST_EAST, hints.axis)
+        assertEquals(90, hints.angle)
         vm.toggleBandAxis()
+        assertEquals(0, vm.bandAngle.value)
         assertEquals(BandAxis.NORTH_SOUTH, vm.bandAxis.value)
-        assertEquals(BandAxis.NORTH_SOUTH, hints.axis)
+        assertEquals(0, hints.angle)
+    }
+
+    @Test
+    fun togglingFromAHalfwayAngleGoesToTheNearerEndsFarSide() {
+        val vm = elevation()
+        vm.setBandAngle(20)
+        vm.toggleBandAxis()
+        assertEquals(90, vm.bandAngle.value)
+        vm.setBandAngle(70)
+        vm.toggleBandAxis()
+        assertEquals(0, vm.bandAngle.value)
     }
 
     @Test

@@ -2,7 +2,6 @@ package io.github.genesjc.climatefinder.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
-import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.model.StateUsaCA
 import io.mockk.Runs
 import io.mockk.every
@@ -122,19 +121,39 @@ class AppSettingsPreferencesTest {
     }
 
     @Test
-    fun theBandAxisStartsNorthToSouthAndKeepsTheChoice() {
-        assertEquals(BandAxis.NORTH_SOUTH, launch().elevationBandAxis())
-        launch().saveElevationBandAxis(BandAxis.WEST_EAST)
-        assertEquals(BandAxis.WEST_EAST, launch().elevationBandAxis())
-        launch().saveElevationBandAxis(BandAxis.NORTH_SOUTH)
-        assertEquals(BandAxis.NORTH_SOUTH, launch().elevationBandAxis())
+    fun theBandAngleStartsAtNorthAndKeepsTheChoice() {
+        assertEquals(0, launch().elevationBandAngle())
+        launch().saveElevationBandAngle(90)
+        assertEquals(90, launch().elevationBandAngle())
+        launch().saveElevationBandAngle(37)
+        assertEquals(37, launch().elevationBandAngle())
     }
 
     @Test
-    fun anUnknownStoredBandAxisReadsAsNorthToSouth() {
-        launch().saveElevationBandAxis(BandAxis.WEST_EAST)
+    fun aStoredBandAngleOutOfRangeIsHeldInsideIt() {
+        values["elevation_band_angle"] = 200
+        assertEquals(90, launch().elevationBandAngle())
+    }
+
+    @Test
+    fun anAxisSavedByTheEarlierBuildReadsAsItsAngle() {
+        values["elevation_band_axis"] = "WEST_EAST"
+        assertEquals(90, launch().elevationBandAngle())
+        values["elevation_band_axis"] = "NORTH_SOUTH"
+        assertEquals(0, launch().elevationBandAngle())
+    }
+
+    @Test
+    fun anUnknownStoredBandAxisReadsAsNorth() {
         values["elevation_band_axis"] = "DIAGONAL"
-        assertEquals(BandAxis.NORTH_SOUTH, launch().elevationBandAxis())
+        assertEquals(0, launch().elevationBandAngle())
+    }
+
+    @Test
+    fun aSavedAngleWinsOverTheEarlierAxis() {
+        values["elevation_band_axis"] = "WEST_EAST"
+        launch().saveElevationBandAngle(0)
+        assertEquals(0, launch().elevationBandAngle())
     }
 
     @Test
