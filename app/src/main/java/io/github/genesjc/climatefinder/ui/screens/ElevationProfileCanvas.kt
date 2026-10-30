@@ -81,6 +81,7 @@ import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
 import io.github.genesjc.climatefinder.ui.components.LayerColors
 import io.github.genesjc.climatefinder.ui.components.LayerHazeColors
+import io.github.genesjc.climatefinder.ui.components.layerColor
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.layerLegendWidthDp
 import io.github.genesjc.climatefinder.ui.components.LayerLegend
@@ -883,7 +884,8 @@ internal fun ElevationProfileCanvas(
                 if (inactive) drawPath(terrainPath, LayerWashColor.copy(alpha = DepthBands.INACTIVE_WASH * layerMix))
                 val lineFade = (1f + (DepthBands.lineFade(band) - 1f) * layerMix) *
                     (if (inactive) 1f - (1f - DepthBands.INACTIVE_FADE) * layerMix else 1f)
-                val lineColor = lerp(LayerColors[0], LayerColors[band], layerMix)
+                // The single line is always the first colour; the bands take the axis's colours as they unfold
+                val lineColor = lerp(LayerColors[0], layerColor(band, axisShown), layerMix)
                 // A lit edge along the profile, like the sun catching the ridge
                 drawPath(
                     path = linePath,
@@ -1144,7 +1146,7 @@ internal fun ElevationProfileCanvas(
             val depth = depthOf(station.id)
             // A far station's text is fainter, but its tag stays solid
             val depthFade = depth?.let { DepthCue.alpha(it) } ?: 1f
-            val stripe = LayerColors[stationBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)]]
+            val stripe = layerColor(stationBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)], axisShown)
 
             Surface(
                 shape = RoundedCornerShape(6.dp),

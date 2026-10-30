@@ -18,9 +18,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.genesjc.climatefinder.R
+import io.github.genesjc.climatefinder.domain.BandAxis
+import io.github.genesjc.climatefinder.domain.DepthBands
 
 /** The line colour of each layer, nearest (front) first: the purple of the single line, then teal, then amber. */
 val LayerColors = listOf(Color(0xFF7C3AED), Color(0xFF0D9488), Color(0xFFD97706))
+
+/**
+ * The colour that names band [band] (0 is the front) when looking along [axis]: the same three colours, in the opposite
+ * order on the west-east axis, so the swap between the two axes shows in the key, the tag stripes and the ridge lines.
+ */
+fun layerColor(band: Int, axis: BandAxis): Color =
+    LayerColors[if (axis == BandAxis.WEST_EAST) DepthBands.COUNT - 1 - band else band]
 
 /** The dark green of the Elevation Bands controls and its notice. */
 val BandsGreen = Color(0xFF14532D)

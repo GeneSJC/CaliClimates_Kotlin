@@ -87,7 +87,7 @@ fun LayerLegend(
         Row(modifier = Modifier.padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             if (showAxisSwitch) AxisCell(requestedAxis, onToggleAxis)
             for (band in names.indices.reversed()) {
-                val color = LayerColors[band]
+                val color = layerColor(band, axis)
                 val active = band == activeBand
                 val enabled = hasStations.getOrElse(band) { false }
                 val name = stringResource(names[band])
