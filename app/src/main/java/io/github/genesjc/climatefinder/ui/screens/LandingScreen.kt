@@ -52,7 +52,6 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import io.github.genesjc.climatefinder.ui.components.TOP_NOTICE_MS
-import io.github.genesjc.climatefinder.ui.components.TopNotice
 import androidx.compose.material3.Surface
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.Text
@@ -539,7 +538,8 @@ fun LandingScreen(
                             sliderShownShared = sliderShown,
                             onSliderShownChange = onSliderShownChange,
                             expandT = expandT,
-                            onNotice = { message -> notice = (notice?.first ?: 0) + 1 to message }
+                            onNotice = { message -> notice = (notice?.first ?: 0) + 1 to message },
+                            notice = notice?.second
                         )
                     }
                     // The tile and the buttons keep their place on the screen while the map grows out underneath them
@@ -672,8 +672,6 @@ fun LandingScreen(
                 legendExtra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) }
             )
         }
-
-        TopNotice(message = notice?.second)
 
         // Short messages at the bottom (for example what the locate button just did)
         SnackbarHost(

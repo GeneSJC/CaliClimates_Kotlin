@@ -26,7 +26,7 @@ class FakeAppSettings(
     var dark: Boolean = false,
     var launches: Int = 0,
     var tapped: Boolean = false,
-    var layers: Boolean = false,
+    var layers: Boolean = true,
     var angle: Int = 0
 ) : AppSettings {
     override fun selectedRegionId() = region
