@@ -472,8 +472,11 @@ internal fun ElevationProfileCanvas(
                 listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(layersOn), heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value),  // the bands key
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
-            // Null when the station is out of view; otherwise its label spot, marked with or without room
-            fun plan(idx: Int, allow: Boolean, force: Boolean): PlacedLabel? {
+            // The controls, badge and key: a label never goes over these unless it is the selected station's and has nowhere else
+            val controls = taken.toList()
+            // Null when the station is out of view; otherwise its label spot, marked with or without room. [force] lets the label
+            // overlap other labels (never the controls); [overControls] also lets it overlap those, as a last resort.
+            fun plan(idx: Int, allow: Boolean, force: Boolean, overControls: Boolean = false): PlacedLabel? {
                 val station = sorted[idx]
                 val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
                 val elevRatio = station.elevationMeters / maxElevation
@@ -502,19 +505,29 @@ internal fun ElevationProfileCanvas(
                 // A spot for this text, or null when there is no room
                 fun tryPlace(text: String): PlacedLabel? {
                     val left = leftFor(text)
+                    // The first spots that overlap another label but not the controls, and that overlap anything (for [force])
+                    var overLabels: List<Float>? = null
+                    var anywhere: List<Float>? = null
                     for (level in 0..maxLevel) {
                         // A two-line label grows upward, so its bottom edge stays where a one-line label's would be
                         val top = pinY - 26f - 16f * level - (heightFor(text) - LABEL_HEIGHT_DP)
                         if (top < 0f) continue
                         val right = left + widthFor(text)
                         val bottom = top + heightFor(text)
-                        val free = taken.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }
-                        if (free || force) {
-                            taken.add(listOf(left, top, right, bottom))
+                        val spot = listOf(left, top, right, bottom)
+                        if (taken.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }) {
+                            taken.add(spot)
                             return PlacedLabel(station, text, left, top, hasRoom = true)
                         }
+                        if (force) {
+                            if (overLabels == null && controls.none { r -> left < r[2] && right > r[0] && top < r[3] && bottom > r[1] }) overLabels = spot
+                            if (anywhere == null) anywhere = spot
+                        }
                     }
-                    return null
+                    val forced = overLabels ?: if (overControls) anywhere else null
+                    if (forced == null) return null
+                    taken.add(forced)
+                    return PlacedLabel(station, text, forced[0], forced[1], hasRoom = true)
                 }
                 if (allow) {
                     tryPlace(fullText)?.let { return it }
@@ -549,7 +562,7 @@ internal fun ElevationProfileCanvas(
             if (selectedIdx >= 0) {
                 val existing = plans.indexOfFirst { it.station.id == selectedStationId }
                 if (existing < 0 || !plans[existing].hasRoom) {
-                    plan(selectedIdx, allow = true, force = true)?.let {
+                    plan(selectedIdx, allow = true, force = true, overControls = true)?.let {
                         if (existing >= 0) plans[existing] = it else plans.add(it)
                     }
                 }
