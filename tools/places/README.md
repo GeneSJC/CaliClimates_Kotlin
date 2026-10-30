@@ -3,7 +3,7 @@
 `build_places.py` makes `app/src/main/assets/places.csv`, the list of California places the map names and the place card looks up,
 from three public US Census files (public domain, no attribution needed). **There is no hand-picking**: the rule is every place
 with at least 1,000 people (`MIN_POPULATION` in the script), towns and unincorporated communities alike, so it works the same way
-for every region of the state. A short list of names is left out on purpose (`left-out.txt`, one per line). Today that is 1,067 places.
+for every region of the state. Today that is 1,066 places.
 
 | Census file (from www2.census.gov) | Used for |
 |---|---|
@@ -22,12 +22,12 @@ Census files or the cut-off change.
 
 ## How far the places are from the stations (last run, with the 344 bundled stations)
 
-| The nearest station is farther than | Places (of 1,067) |
+| The nearest station is farther than | Places (of 1,066) |
 |---|---|
-| 3 miles | 868 |
-| 5 miles | 665 |
-| 10 miles | 300 |
-| 20 miles | 71 |
+| 3 miles | 867 |
+| 5 miles | 664 |
+| 10 miles | 299 |
+| 20 miles | 70 |
 | 30 miles | 34 |
 
 Most places have no station of their own, which is why the app finds the nearest one for every place and says how far away it is.

@@ -210,15 +210,15 @@ state water-agency stations (CDEC). The shaded-relief terrain comes from USGS 3D
 a map that only names stations misses places they expect to find: Sausalito, Tiburon and Mill Valley have none, and the nearest station is
 about 17 miles away.
 
-**How we measured it.** We took every California place of 1,000 people or more from the US Census (1,067, towns and unincorporated
-communities alike, less a short list of names left out on purpose) and measured the distance to the nearest bundled station. The result, with today's 344 stations:
+**How we measured it.** We took every California place of 1,000 people or more from the US Census (1,066, towns and unincorporated
+communities alike) and measured the distance to the nearest bundled station. The result, with today's 344 stations:
 
-| The nearest station is farther than | Places (of 1,067) |
+| The nearest station is farther than | Places (of 1,066) |
 |---|---|
-| 3 miles | 868 |
-| 5 miles | 665 |
-| 10 miles | 300 |
-| 20 miles | 71 |
+| 3 miles | 867 |
+| 5 miles | 664 |
+| 10 miles | 299 |
+| 20 miles | 70 |
 
 So most places have no station of their own, and more than a quarter of them are more than 10 miles from one. Some gaps are small (Boulder Creek is 2.5
 miles from the Ben Lomond station) and some are large (Indio is 34 miles from the nearest).
