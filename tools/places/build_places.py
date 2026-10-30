@@ -8,14 +8,16 @@ Inputs, all from https://www2.census.gov and all public domain, put in one folde
   cb_2023_06_place_500k.zip     Cartographic boundaries: used to put each place's point at the middle of its largest piece of
                                 land instead
 
-The rule: every California place with at least MIN_POPULATION people, towns and unincorporated communities alike. Run it again
-whenever the Census files or the cut-off change; nothing is edited by hand.
+The rule: every California place with at least MIN_POPULATION people, towns and unincorporated communities alike, except the names
+in left-out.txt (one per line, matched as whole words, any case). Run it again whenever the Census files or the cut-off change;
+nothing is edited by hand.
 
 Usage:  python3 -I tools/places/build_places.py <folder with the three zip files> <output csv>
 Standard library only.
 """
 import csv
 import io
+import re
 import struct
 import sys
 import zipfile
@@ -26,6 +28,13 @@ MIN_POPULATION = 1000
 GAZETTEER = "2023_Gaz_place_national.zip"
 REDISTRICTING = "ca2020.pl.zip"
 BOUNDARIES = "cb_2023_06_place_500k.zip"
+
+
+def read_left_out():
+    """The pattern for names that are always left out, from left-out.txt next to this script."""
+    lines = [l.strip() for l in (Path(__file__).parent / "left-out.txt").read_text(encoding="utf-8").splitlines()]
+    words = [re.escape(l) for l in lines if l and not l.startswith("#")]
+    return re.compile(r"\b(" + "|".join(words) + r")\b", re.IGNORECASE) if words else None
 
 
 def read_populations(folder: Path) -> dict:
@@ -137,6 +146,7 @@ def main():
     pop = read_populations(folder)
     gaz = read_gazetteer(folder)
     bounds = read_boundaries(folder)
+    left_out = read_left_out()
     rows = []
     for geoid, (kind, lat, lon) in gaz.items():
         people = pop.get(geoid, 0)
@@ -145,6 +155,8 @@ def main():
         name, bx, by = bounds.get(geoid, (None, None, None))
         if name is None:
             continue  # no boundary, so no clean name; none of the places above the cut-off lack one
+        if left_out and left_out.search(name):
+            continue
         rows.append((geoid, name, kind, round(by, 5), round(bx, 5), people))
     rows.sort(key=lambda r: -r[5])
     with open(out_path, "w", newline="", encoding="utf-8") as f:

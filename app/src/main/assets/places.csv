@@ -444,7 +444,6 @@ id,name,kind,latitude,longitude,population
 0646828,Mendota,city,36.75527,-120.3776,12595
 0625296,Fortuna,city,40.58618,-124.14198,12516
 0668224,San Marino,city,34.12239,-118.11314,12513
-0610561,Camp Pendleton South,community,33.23285,-117.39295,12468
 0639444,Lake Arrowhead,community,34.25309,-117.19435,12401
 0638562,Kingsburg,city,36.52444,-119.56018,12380
 0614974,Commerce,city,33.99629,-118.15189,12378
@@ -500,7 +499,6 @@ id,name,kind,latitude,longitude,population
 0620515,East Bakersfield,community,35.38322,-118.97432,9749
 0612734,Charter Oak,community,34.10245,-117.85643,9739
 0681316,University of California-Santa Barbara,community,34.41507,-119.85686,9710
-0610554,Camp Pendleton Mainside,community,33.31162,-117.3247,9683
 0662490,Rodeo,community,38.03674,-122.25255,9653
 0654008,Orange Cove,city,36.6224,-119.31735,9649
 0606928,Blackhawk,community,37.81593,-121.90704,9637
@@ -538,7 +536,6 @@ id,name,kind,latitude,longitude,population
 0646660,Mecca,community,33.57657,-116.06467,8219
 0657829,Plumas Lake,community,38.9845,-121.5634,8126
 0624134,Firebaugh,city,36.85336,-120.45356,8096
-0625114,Fort Irwin,community,35.24763,-116.6834,8096
 0657414,Pismo Beach,city,35.14872,-120.64931,8072
 0631414,Guadalupe,city,34.96087,-120.57353,8057
 0654388,Oroville East,community,39.4947,-121.48662,8038
@@ -561,7 +558,6 @@ id,name,kind,latitude,longitude,population
 0631260,Gridley,city,39.36225,-121.69714,7421
 0686300,Woodlake,city,36.41306,-119.10045,7419
 0636613,Interlaken,community,36.9505,-121.73628,7368
-0682086,Vandenberg Village,community,34.71108,-120.4622,7308
 0670364,Sausalito,city,37.85811,-122.49329,7269
 0657302,Piñon Hills,community,34.44379,-117.62142,7258
 0601360,Alta Sierra,community,39.1237,-121.05233,7204
@@ -589,7 +585,6 @@ id,name,kind,latitude,longitude,population
 0602378,Aptos,community,36.99115,-121.89344,6664
 0639108,Ladera Heights,community,33.99719,-118.37402,6654
 0648046,Mira Monte,community,34.43124,-119.28781,6618
-0641166,Lemoore Station,community,36.26327,-119.90481,6568
 0609878,Calipatria,city,33.1693,-115.49204,6515
 0673167,South Monrovia Island,community,34.12343,-117.99582,6515
 0612916,Cherry Valley,community,33.97965,-116.96938,6509
@@ -740,7 +735,6 @@ id,name,kind,latitude,longitude,population
 0673794,Squaw Valley,community,36.69975,-119.19947,3564
 0638548,Kings Beach,community,39.24501,-120.02035,3563
 0660370,Rexland Acres,community,35.30509,-118.99697,3563
-0682072,Vandenberg AFB,community,34.7477,-120.51897,3559
 0651990,North Lakeport,community,39.08833,-122.90526,3547
 0649348,Morongo Valley,community,34.0724,-116.5627,3514
 0634928,Humboldt Hill,community,40.7219,-124.19867,3498
@@ -884,7 +878,6 @@ id,name,kind,latitude,longitude,population
 0683863,Weedpatch,community,35.23685,-118.91235,2206
 0612930,Chester,community,40.30171,-121.23386,2187
 0647206,Meyers,community,38.83442,-120.0189,2163
-0621600,Edwards AFB,community,34.90447,-117.92942,2135
 0606210,Bethel Island,community,38.02886,-121.64036,2131
 0605164,Belvedere,city,37.87381,-122.46642,2126
 0668308,San Pasqual,community,34.13924,-118.10254,2101
@@ -931,7 +924,6 @@ id,name,kind,latitude,longitude,population
 0639484,Lake Don Pedro,community,37.65901,-120.33297,1765
 0607578,Boronda,community,36.69467,-121.67452,1760
 0639735,Lake Sherwood,community,34.13388,-118.88037,1759
-0613157,China Lake Acres,community,35.63873,-117.76678,1757
 0672954,South Dos Palos,community,36.9707,-120.64674,1747
 0662602,Rolling Hills,city,33.76006,-118.34712,1739
 0670798,Seeley,community,32.78929,-115.68424,1729
@@ -1000,7 +992,6 @@ id,name,kind,latitude,longitude,population
 0651622,Norris Canyon,community,37.74574,-121.98807,1313
 0621894,Eldridge,community,38.33383,-122.50653,1312
 0624918,Forest Ranch,community,39.89524,-121.67044,1304
-0604576,Beale AFB,community,39.10955,-121.35427,1303
 0614302,Cobb,community,38.83559,-122.72294,1295
 0618324,Deer Park,community,38.53605,-122.46789,1294
 0669182,Santa Margarita,community,35.38953,-120.60811,1291
@@ -1060,7 +1051,6 @@ id,name,kind,latitude,longitude,population
 0653987,Orange Blossom,community,37.80967,-120.71148,1068
 0646338,Maxwell,community,39.27707,-122.19463,1067
 0657330,Pioneer,community,38.43372,-120.58604,1066
-0651812,North Edwards,community,35.04738,-117.80929,1054
 0661106,Riverdale Park,community,37.60285,-121.04249,1053
 0684680,West Park,community,36.70553,-119.85155,1053
 0636452,Indio Hills,community,33.84107,-116.24843,1048
