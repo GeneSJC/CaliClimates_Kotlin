@@ -227,9 +227,6 @@ fun ElevationProfileScreen(
                     bandAxis = bandAxis,
                     bandAngle = bandAngle,
                     onAngleChange = viewModel::setBandAngle,
-                    onToggleAxis = {
-                        viewModel.toggleBandAxis()
-                    },
                     selectedStationId = selectedStationId,
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,

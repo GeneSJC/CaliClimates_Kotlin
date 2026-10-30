@@ -87,33 +87,9 @@ class MapViewModelsTest {
     }
 
     @Test
-    fun togglingTheBandAxisGoesToTheFarEndAndSavesIt() {
+    fun settingTheBandAngleDoesNotTouchTheLayersSetting() {
         val vm = elevation()
-        vm.toggleBandAxis()
-        assertEquals(90, vm.bandAngle.value)
-        assertEquals(BandAxis.WEST_EAST, vm.bandAxis.value)
-        assertEquals(90, hints.angle)
-        vm.toggleBandAxis()
-        assertEquals(0, vm.bandAngle.value)
-        assertEquals(BandAxis.NORTH_SOUTH, vm.bandAxis.value)
-        assertEquals(0, hints.angle)
-    }
-
-    @Test
-    fun togglingFromAHalfwayAngleGoesToTheNearerEndsFarSide() {
-        val vm = elevation()
-        vm.setBandAngle(20)
-        vm.toggleBandAxis()
-        assertEquals(90, vm.bandAngle.value)
-        vm.setBandAngle(70)
-        vm.toggleBandAxis()
-        assertEquals(0, vm.bandAngle.value)
-    }
-
-    @Test
-    fun togglingTheBandAxisDoesNotTouchTheLayersSetting() {
-        val vm = elevation()
-        vm.toggleBandAxis()
+        vm.setBandAngle(90)
         assertFalse(vm.layers.value)
         assertFalse(hints.layers)
     }

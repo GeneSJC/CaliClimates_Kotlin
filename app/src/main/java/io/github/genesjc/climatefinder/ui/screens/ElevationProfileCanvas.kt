@@ -126,11 +126,10 @@ internal fun ElevationProfileCanvas(
     /** The layers view (stations in bands), and the button's toggle. */
     layersOn: Boolean = false,
     onToggleLayers: () -> Unit = {},
-    /** The direction the bands look across the region, and the key's switch between the two. */
+    /** The direction the bands look across the region. */
     bandAxis: BandAxis = BandAxis.NORTH_SOUTH,
     bandAngle: Int = bandAxis.degrees.toInt(),
     onAngleChange: (Int) -> Unit = {},
-    onToggleAxis: () -> Unit = {},
     selectedStationId: String?,
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
@@ -1427,9 +1426,7 @@ internal fun ElevationProfileCanvas(
         }
         LayerLegend(
             angle = angleShown,
-            requestedAxis = bandAxis,
-            onToggleAxis = onToggleAxis,
-            showAxisSwitch = layersOn,
+            showReading = layersOn,
             activeBand = keyBand,
             hasStations = List(DepthBands.COUNT) { band -> stationBands.any { it == band } },
             alpha = 1f,

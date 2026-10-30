@@ -46,8 +46,6 @@ class ElevationViewModel : MapViewModel() {
         settings.saveElevationBandAngle(whole)
     }
 
-    /** Sends the angle to the far end from the nearer one (the axis switch). */
-    fun toggleBandAxis() = setBandAngle(BandAngle.otherEnd(angle.value))
 
     private val skylines = HashMap<String, MutableStateFlow<List<FloatArray>?>>()
 

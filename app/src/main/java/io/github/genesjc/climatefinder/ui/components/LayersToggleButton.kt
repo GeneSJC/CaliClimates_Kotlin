@@ -52,11 +52,8 @@ fun layerColor(band: Int, degrees: Int): Color {
     return if (t <= 0f || from == to) from else if (t >= 1f) to else lerp(from, to, t)
 }
 
-/** The dark green of the short notices at the top of the chart. */
-val BandsGreen = Color(0xFF14532D)
-
-/** The dark slate of a selected view button, which the Elevation Bands button wears while the bands are on. */
-private val BandsButtonDark = Color(0xFF334155)
+/** The dark slate of a selected view button, which the Elevation Bands button wears while the bands are on and the short notices wear too. */
+val BandsButtonDark = Color(0xFF334155)
 
 /** The button's width and height (dp). */
 const val LAYERS_BUTTON_SIZE_DP = 36f

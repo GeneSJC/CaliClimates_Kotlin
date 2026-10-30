@@ -92,8 +92,6 @@ object BandAngle {
         else -> 1
     }
 
-    /** The far end from the nearer one, where the axis switch goes. */
-    fun otherEnd(degrees: Int): Int = if (degrees < MIDDLE) WEST else NORTH
 }
 
 /**
