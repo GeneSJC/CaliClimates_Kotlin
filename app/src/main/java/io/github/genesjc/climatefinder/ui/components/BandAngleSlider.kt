@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -45,6 +46,7 @@ const val BAND_ANGLE_SLIDER_GAP_DP = 4f
  * reports whole degrees ([onAngleChange], only when the whole degree changes) and snaps onto 0, 45 and 90 (the thumb sits on the detent)
  * with a small haptic tick. It takes the angle and reports changes and nothing else, so another widget can take its place.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BandAngleSlider(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier = Modifier) {
     val haptic = LocalHapticFeedback.current
