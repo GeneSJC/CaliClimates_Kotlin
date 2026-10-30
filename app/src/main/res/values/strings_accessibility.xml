@@ -11,6 +11,8 @@
     <string name="elevation_band_pick">Pick a station in the %1$s band</string>
     <string name="elevation_layers_show">Show the Elevation Bands view</string>
     <string name="elevation_layers_hide">Show the single line view</string>
+    <string name="elevation_axis_to_west_east">Group the stations west to east</string>
+    <string name="elevation_axis_to_north_south">Group the stations north to south</string>
     <string name="region_picker_change">Change region</string>
     <string name="stations_choose">Choose a station</string>
     <string name="stations_search_clear">Clear the search</string>

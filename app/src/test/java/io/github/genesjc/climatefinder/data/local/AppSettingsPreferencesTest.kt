@@ -2,6 +2,7 @@ package io.github.genesjc.climatefinder.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.model.StateUsaCA
 import io.mockk.Runs
 import io.mockk.every
@@ -118,6 +119,22 @@ class AppSettingsPreferencesTest {
         assertFalse(launch().elevationLayers())
         launch().saveElevationLayers(true)
         assertTrue(launch().elevationLayers())
+    }
+
+    @Test
+    fun theBandAxisStartsNorthToSouthAndKeepsTheChoice() {
+        assertEquals(BandAxis.NORTH_SOUTH, launch().elevationBandAxis())
+        launch().saveElevationBandAxis(BandAxis.WEST_EAST)
+        assertEquals(BandAxis.WEST_EAST, launch().elevationBandAxis())
+        launch().saveElevationBandAxis(BandAxis.NORTH_SOUTH)
+        assertEquals(BandAxis.NORTH_SOUTH, launch().elevationBandAxis())
+    }
+
+    @Test
+    fun anUnknownStoredBandAxisReadsAsNorthToSouth() {
+        launch().saveElevationBandAxis(BandAxis.WEST_EAST)
+        values["elevation_band_axis"] = "DIAGONAL"
+        assertEquals(BandAxis.NORTH_SOUTH, launch().elevationBandAxis())
     }
 
     @Test

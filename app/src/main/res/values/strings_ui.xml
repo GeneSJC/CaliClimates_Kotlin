@@ -8,6 +8,8 @@
     <string name="metric_updated">Updated</string>
     <string name="metric_solar">Solar</string>
     <string name="metric_pressure">Pressure</string>
+    <string name="elevation_axis_cell_west_east">W-E</string>
+    <string name="elevation_axis_cell_north_south">N-S</string>
 
     <!-- About dialog -->
     <string name="about_live_title">Live readings</string>

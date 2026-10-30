@@ -1,10 +1,30 @@
 package io.github.genesjc.climatefinder.domain
 
+import kotlin.math.cos
+import kotlin.math.sin
+
 /**
- * The Elevation view's layers: stations grouped by latitude into bands, like looking north across the region (band 0
- * is the southern third, drawn in front; the last band is the northern third, behind), each band drawn as its own
- * ridge, smaller, higher and hazier the farther back it is. The bands depend only on the stations, so selecting
- * another station does not move them. Factors and positions only; the screens draw them.
+ * The direction the Elevation view looks across the region, as an angle from north toward west: 0 degrees looks north
+ * (the north is at the back, the south in front), 90 degrees looks west (the west is at the back, the east in front).
+ * The two values are the two ends of a continuous range, so a later control can offer the angles between them.
+ */
+enum class BandAxis(val degrees: Double) {
+    NORTH_SOUTH(0.0),
+    WEST_EAST(90.0);
+
+    /** The other axis, for a switch between the two. */
+    fun other(): BandAxis = if (this == NORTH_SOUTH) WEST_EAST else NORTH_SOUTH
+
+    /** How far back a station is when looking along this axis: bigger is farther back (see [DepthBands.depthKey]). */
+    fun depthKey(latitude: Double, longitude: Double): Double = DepthBands.depthKey(latitude, longitude, degrees)
+}
+
+/**
+ * The Elevation view's layers: stations grouped into bands along a [BandAxis], like looking across the region (band 0
+ * is the front third, the last band is the back third; looking north, the south is in front and the north behind),
+ * each band drawn as its own ridge, smaller, higher and hazier the farther back it is. The bands depend only on the
+ * stations and the axis, so selecting another station does not move them. Factors and positions only; the screens
+ * draw them.
  */
 object DepthBands {
     const val COUNT = 3
@@ -17,13 +37,28 @@ object DepthBands {
     private const val LIFT_SHARE = 0.8f
 
     /**
-     * The band of each station, given their latitudes in the stations' own order: the southernmost third is band 0
-     * (front), the northernmost the last band (back). Split by rank, so each band gets about the same number of stations.
+     * How far back a station is when looking in the direction [degrees] (0 = north at the back, 90 = west at the back):
+     * latitude times cos plus minus longitude times sin, so a bigger value is farther back. West longitudes are
+     * negative in the Americas, which is why the longitude is negated. At exactly 0 and 90 degrees the key is the plain
+     * latitude and the plain minus longitude.
      */
-    fun byLatitude(latitudes: List<Double>): IntArray {
-        val order = latitudes.indices.sortedBy { latitudes[it] }
-        val bands = IntArray(latitudes.size)
-        order.forEachIndexed { rank, index -> bands[index] = rank * COUNT / latitudes.size }
+    fun depthKey(latitude: Double, longitude: Double, degrees: Double): Double {
+        val (c, s) = when (degrees) {
+            0.0 -> 1.0 to 0.0
+            90.0 -> 0.0 to 1.0
+            else -> Math.toRadians(degrees).let { cos(it) to sin(it) }
+        }
+        return latitude * c + (-longitude) * s
+    }
+
+    /**
+     * The band of each station, given their depth keys in the stations' own order: the smallest third is band 0
+     * (front), the largest the last band (back). Split by rank, so each band gets about the same number of stations.
+     */
+    fun byRank(keys: List<Double>): IntArray {
+        val order = keys.indices.sortedBy { keys[it] }
+        val bands = IntArray(keys.size)
+        order.forEachIndexed { rank, index -> bands[index] = rank * COUNT / keys.size }
         return bands
     }
 
