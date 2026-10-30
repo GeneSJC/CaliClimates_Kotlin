@@ -82,8 +82,7 @@ import io.github.genesjc.climatefinder.ui.components.MapText
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
 import io.github.genesjc.climatefinder.ui.components.LayerColors
-import io.github.genesjc.climatefinder.ui.components.LayerHazeColors
-import io.github.genesjc.climatefinder.ui.components.bandLook
+import io.github.genesjc.climatefinder.ui.components.hazeColor
 import io.github.genesjc.climatefinder.ui.components.layerColor
 import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_HEIGHT_DP
@@ -368,7 +367,6 @@ internal fun ElevationProfileCanvas(
             }
         }
         val angleShown = if (!layersOn && !folding) bandAngle else shownAngle
-        val axisShown = BandAngle.nearestAxis(angleShown)
         // The bands as the chart draws them: on while the layers are on, except at the bottom of a fold
         val layersShown = layersOn && !folding
 
@@ -975,15 +973,15 @@ internal fun ElevationProfileCanvas(
                 // The farther layers are hazed toward the sky, and their ridge lines fainter and thinner
                 // The ground's tint is the band's look on this axis: on west-east the front band wears the grey-blue haze
                 // and the back band the plain ground
-                val look = bandLook(band, axisShown)
-                if (look > 0) drawPath(terrainPath, LayerHazeColors[look].copy(alpha = DepthBands.haze(look) * layerMix))
+                val haze = hazeColor(band, angleShown)
+                if (haze.alpha > 0f) drawPath(terrainPath, haze.copy(alpha = haze.alpha * layerMix))
                 // The layers that do not hold the selected station step back: a wash over the ground, fainter lines
                 val inactive = activeBand != null && band != activeBand
                 if (inactive) drawPath(terrainPath, LayerWashColor.copy(alpha = DepthBands.INACTIVE_WASH * layerMix))
                 val lineFade = (1f + (DepthBands.lineFade(band) - 1f) * layerMix) *
                     (if (inactive) 1f - (1f - DepthBands.INACTIVE_FADE) * layerMix else 1f)
                 // The single line is always the first colour; the bands take the axis's colours as they unfold
-                val lineColor = lerp(LayerColors[0], layerColor(band, axisShown), layerMix)
+                val lineColor = lerp(LayerColors[0], layerColor(band, angleShown), layerMix)
                 // A lit edge along the profile, like the sun catching the ridge
                 drawPath(
                     path = linePath,
@@ -1248,7 +1246,7 @@ internal fun ElevationProfileCanvas(
             val depth = depthOf(station.id)
             // A far station's text is fainter, but its tag stays solid
             val depthFade = depth?.let { DepthCue.alpha(it) } ?: 1f
-            val stripe = layerColor(stationBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)], axisShown)
+            val stripe = layerColor(stationBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)], angleShown)
 
             Surface(
                 shape = RoundedCornerShape(6.dp),
@@ -1300,7 +1298,7 @@ internal fun ElevationProfileCanvas(
                 ?.let { onSelectStation(sorted[it]) }
         }
         LayerLegend(
-            axis = axisShown,
+            angle = angleShown,
             requestedAxis = bandAxis,
             onToggleAxis = onToggleAxis,
             showAxisSwitch = layersOn,

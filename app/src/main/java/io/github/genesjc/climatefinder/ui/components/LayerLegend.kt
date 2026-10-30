@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.lerp
 import io.github.genesjc.climatefinder.R
+import io.github.genesjc.climatefinder.domain.BandAngle
 import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.DepthBands
 
@@ -37,6 +38,35 @@ private val FOOTHILL_GROUND = Color(0xFFD9D1B2)
 /** The same tone as each layer's ground on the chart (the foothill tint under the layer's haze), taken darker so white text reads on it. */
 val LayerKeyColors = List(DepthBands.COUNT) { band ->
     lerp(lerp(FOOTHILL_GROUND, LayerHazeColors[band], DepthBands.haze(band)), Color.Black, 0.5f)
+}
+
+private fun turn(degrees: Int): Float = degrees.coerceIn(BandAngle.NORTH, BandAngle.WEST) / BandAngle.WEST.toFloat()
+
+/** The ground tint of the key's active segment at the viewing angle [degrees]: the blend of the two ends' tones. */
+fun keyColor(band: Int, degrees: Int): Color {
+    val t = turn(degrees)
+    val from = LayerKeyColors[bandLook(band, BandAxis.NORTH_SOUTH)]
+    val to = LayerKeyColors[bandLook(band, BandAxis.WEST_EAST)]
+    return if (t <= 0f || from == to) from else if (t >= 1f) to else lerp(from, to, t)
+}
+
+/**
+ * The haze laid over band [band]'s ground at the viewing angle [degrees], its alpha the haze's strength (before the fade with the
+ * bands): the strength and colour of the two ends blended, so the front band goes from clear to indigo haze as the angle turns.
+ */
+fun hazeColor(band: Int, degrees: Int): Color {
+    val t = turn(degrees)
+    val lookFrom = bandLook(band, BandAxis.NORTH_SOUTH)
+    val lookTo = bandLook(band, BandAxis.WEST_EAST)
+    val alphaFrom = DepthBands.haze(lookFrom)
+    val alphaTo = DepthBands.haze(lookTo)
+    val base = when {
+        alphaFrom <= 0f -> LayerHazeColors[lookTo]
+        alphaTo <= 0f -> LayerHazeColors[lookFrom]
+        lookFrom == lookTo -> LayerHazeColors[lookFrom]
+        else -> lerp(LayerHazeColors[lookFrom], LayerHazeColors[lookTo], t)
+    }
+    return base.copy(alpha = alphaFrom + (alphaTo - alphaFrom) * t)
 }
 
 /** The axis switch at the left of the key (dp). */
@@ -60,7 +90,8 @@ fun layerLegendWidthDp(withAxisSwitch: Boolean): Float =
  */
 @Composable
 fun LayerLegend(
-    axis: BandAxis,
+    /** The viewing angle the key is drawn for: its names and colours follow it. */
+    angle: Int,
     onToggleAxis: () -> Unit,
     showAxisSwitch: Boolean,
     activeBand: Int?,
@@ -68,13 +99,14 @@ fun LayerLegend(
     alpha: Float,
     onPick: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    /** The axis the chart is being switched to, when it differs from [axis] (during a pivot); the switch cell follows it. */
-    requestedAxis: BandAxis = axis
+    /** The axis the chart is being switched to (during a pivot); the switch cell follows it. */
+    requestedAxis: BandAxis = BandAngle.nearestAxis(angle)
 ) {
     // Front first: band 0 is the nearest ridge
-    val names = when (axis) {
-        BandAxis.NORTH_SOUTH -> listOf(R.string.elevation_band_south, R.string.elevation_band_central, R.string.elevation_band_north)
-        BandAxis.WEST_EAST -> listOf(R.string.elevation_band_east, R.string.elevation_band_central, R.string.elevation_band_west)
+    val names = when (BandAngle.nameIndex(angle)) {
+        0 -> listOf(R.string.elevation_band_south, R.string.elevation_band_central, R.string.elevation_band_north)
+        1 -> listOf(R.string.elevation_band_southeast, R.string.elevation_band_central, R.string.elevation_band_northwest)
+        else -> listOf(R.string.elevation_band_east, R.string.elevation_band_central, R.string.elevation_band_west)
     }
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -87,7 +119,7 @@ fun LayerLegend(
         Row(modifier = Modifier.padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             if (showAxisSwitch) AxisCell(requestedAxis, onToggleAxis)
             for (band in names.indices.reversed()) {
-                val color = layerColor(band, axis)
+                val color = layerColor(band, angle)
                 val active = band == activeBand
                 val enabled = hasStations.getOrElse(band) { false }
                 val name = stringResource(names[band])
@@ -98,7 +130,7 @@ fun LayerLegend(
                         .height(34.dp)
                         .clip(RoundedCornerShape(9.dp))
                         .border(if (active) 1.5.dp else 0.dp, if (active) color else Color.Transparent, RoundedCornerShape(9.dp))
-                        .background(if (active) LayerKeyColors[bandLook(band, axis)] else Color.Transparent)
+                        .background(if (active) keyColor(band, angle) else Color.Transparent)
                         .clickable(
                             enabled = enabled && !active,
                             onClickLabel = stringResource(R.string.elevation_band_pick, name),
@@ -108,7 +140,7 @@ fun LayerLegend(
                 ) {
                     Text(
                         text = name,
-                        fontSize = 12.sp,
+                        fontSize = if (name.length > 8) 11.sp else 12.sp,
                         fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
                         color = if (active) Color.White else lerp(color, Color.White, 0.55f).copy(alpha = if (enabled) 1f else 0.4f)
                     )

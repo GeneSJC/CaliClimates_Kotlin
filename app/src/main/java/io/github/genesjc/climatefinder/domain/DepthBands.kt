@@ -55,6 +55,16 @@ object BandAngle {
     /** Which of the [POINTS] compass names the angle is nearest to (0 north up to 4 west, each covering 22.5 degrees). */
     fun point(degrees: Int): Int = ((degrees.coerceIn(NORTH, WEST) + 11.25) / 22.5).toInt().coerceIn(0, POINTS - 1)
 
+    /**
+     * Which of three names tells the angle: 0 for the north-south end (the key reads South, Central, North), 2 for the west-east
+     * end (East, Central, West) and 1 between them (Southeast, Central, Northwest), the middle one covering 23 to 67 degrees.
+     */
+    fun nameIndex(degrees: Int): Int = when {
+        degrees < 23 -> 0
+        degrees > 67 -> 2
+        else -> 1
+    }
+
     /** The far end from the nearer one, where the axis switch goes. */
     fun otherEnd(degrees: Int): Int = if (degrees < MIDDLE) WEST else NORTH
 }

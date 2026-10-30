@@ -64,4 +64,9 @@ class BandAngleTest {
         assertEquals(BandAngle.POINTS - 1, BandAngle.point(BandAngle.WEST))
         assertEquals(2, BandAngle.point(BandAngle.MIDDLE))
     }
+
+    @Test
+    fun theKeyIsNamedByTheNearestOfThreeLooks() {
+        assertEquals(listOf(0, 0, 1, 1, 1, 2, 2), listOf(0, 22, 23, 45, 67, 68, 90).map { BandAngle.nameIndex(it) })
+    }
 }

@@ -11,6 +11,8 @@
     <string name="elevation_band_south">South</string>
     <string name="elevation_band_west">West</string>
     <string name="elevation_band_east">East</string>
+    <string name="elevation_band_northwest">Northwest</string>
+    <string name="elevation_band_southeast">Southeast</string>
     <string name="elevation_axis_hint_north_south">North at the back, south in front</string>
     <string name="elevation_axis_hint_west_east">West at the back, east in front</string>
     <string name="elevation_look_north">Looking north</string>
