@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -83,12 +84,15 @@ fun hazeColor(band: Int, degrees: Int): Color {
 /** The axis switch at the left of the key (dp). */
 private const val AXIS_CELL_WIDTH_DP = 40f
 
+/** The reading of the viewing angle at the left of the key (dp). */
+private const val DEGREE_CELL_WIDTH_DP = 44f
+
 /** The key's height (dp), which the chart also keeps its labels clear of. */
 const val LAYER_LEGEND_HEIGHT_DP = 40f
 
 /** The key's width (dp), which the chart also keeps its labels clear of: three segments in a bar, and the axis switch when it shows. */
 fun layerLegendWidthDp(withAxisSwitch: Boolean): Float =
-    3 * 64f + 2 * 2f + 6f + (if (withAxisSwitch) AXIS_CELL_WIDTH_DP + 2f else 0f)
+    3 * 64f + 2 * 2f + 6f + (if (withAxisSwitch) AXIS_CELL_WIDTH_DP + 2f + DEGREE_CELL_WIDTH_DP + 2f else 0f)
 
 /**
  * The key to the bands (shown in the single-line view too, where the tags carry the band's colour as a stripe), and a way to move between them: a bar of three segments, from left to right the back ridge first
@@ -128,7 +132,10 @@ fun LayerLegend(
         modifier = modifier.alpha(alpha)
     ) {
         Row(modifier = Modifier.padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            if (showAxisSwitch) AxisCell(requestedAxis, onToggleAxis)
+            if (showAxisSwitch) {
+                DegreeCell(angle)
+                AxisCell(requestedAxis, onToggleAxis)
+            }
             for (band in names.indices.reversed()) {
                 val color = layerColor(band, angle)
                 val active = band == activeBand
@@ -158,6 +165,34 @@ fun LayerLegend(
                 }
             }
         }
+    }
+}
+
+/** The viewing angle as a reading to the left of the switch: the compass name above (NW), the degrees below (56°). */
+@Composable
+private fun DegreeCell(angle: Int) {
+    val name = stringResource(
+        when (BandAngle.point(angle)) {
+            0 -> R.string.elevation_heading_n
+            1 -> R.string.elevation_heading_nnw
+            2 -> R.string.elevation_heading_nw
+            3 -> R.string.elevation_heading_wnw
+            else -> R.string.elevation_heading_w
+        }
+    )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.width(DEGREE_CELL_WIDTH_DP.dp).height(34.dp)
+    ) {
+        Text(text = name, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.7f), lineHeight = 11.sp)
+        Text(
+            text = stringResource(R.string.elevation_angle_reading, angle),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White.copy(alpha = 0.95f),
+            lineHeight = 14.sp
+        )
     }
 }
 

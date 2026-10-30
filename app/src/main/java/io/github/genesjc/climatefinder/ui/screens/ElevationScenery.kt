@@ -271,6 +271,23 @@ internal val LayerWashColor = Color(0xFFE8EEF4)
 /** The wash over the layers that do not hold the selected station, looking north: a warm cream instead of the cool white-blue. */
 internal val LayerWashColorNorth = Color(0xFFF1ECD8)
 
+/** How much of the coast's sweep each of the three far ranges follows when the view turns: the farther, the slower. */
+internal val LAND_SLIDE = floatArrayOf(0.55f, 0.75f, 0.9f)
+
+/**
+ * How much the bands tilt looking west, as a slope: the rise across the chart's width, from the right end to the left, per unit of
+ * width (0.20 is about 11 degrees); the far bands tilt [BAND_TILT_CONVERGE] less per band behind the front one.
+ */
+internal const val BAND_TILT = 0.20f
+internal const val BAND_TILT_CONVERGE = 0.15f
+
+/** How much of the tags' opacity is taken away in the top half of the chart while the viewing angle moves: the selected station's tag keeps more. */
+internal const val UPPER_MUTE = 0.9f
+internal const val UPPER_MUTE_SELECTED = 0.4f
+
+/** How many points the shore is drawn with, from the horizon down. */
+internal const val SHORE_STEPS = 40
+
 /** How slanted the coast is where the sea meets the land at an angle between west and north, as a share of the chart's width. */
 internal const val COAST_SLANT = 0.45f
 

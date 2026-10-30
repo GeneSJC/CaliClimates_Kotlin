@@ -151,10 +151,29 @@ class DepthBandsTest {
     }
 
     @Test
-    fun noBandRisesAboveTheTopOfTheChart() {
+    fun theSummitOfEachBandStandsClearAboveTheOneInFront() {
         val top = 20f
-        for (band in 0 until DepthBands.COUNT) {
-            assertTrue(DepthBands.layeredY(top, band, top, seaY = 400f) >= top)
-        }
+        val sea = 400f
+        val range = sea - top
+        val summits = (0 until DepthBands.COUNT).map { DepthBands.layeredY(top, it, top, sea) }
+        // Each band's summit is at least 5 percent of the range above the band in front's
+        assertTrue(summits.zipWithNext().all { (front, back) -> front - back >= 0.05f * range })
+    }
+
+    @Test
+    fun theTallestBandStaysInTheSkyAboveTheChartNotOffIt() {
+        val top = 20f
+        val sea = 400f
+        val range = sea - top
+        val highest = DepthBands.layeredY(top, DepthBands.COUNT - 1, top, sea)
+        assertTrue(highest < top)
+        assertTrue(top - highest <= 0.2f * range)
+    }
+
+    @Test
+    fun aStationAtSeaLevelIsStillAboveSeaLevelInTheFarBands() {
+        val ys = (1 until DepthBands.COUNT).map { DepthBands.layeredY(400f, it, 20f, 400f) }
+        assertTrue(ys.all { it < 400f })
+        assertTrue(ys.zipWithNext().all { (a, b) -> b < a })
     }
 }
