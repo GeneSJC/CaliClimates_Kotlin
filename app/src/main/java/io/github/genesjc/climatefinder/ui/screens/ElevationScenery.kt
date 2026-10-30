@@ -274,6 +274,13 @@ internal val LayerWashColorNorth = Color(0xFFF1ECD8)
 /** How much of the coast's sweep each of the three far ranges follows when the view turns: the farther, the slower. */
 internal val LAND_SLIDE = floatArrayOf(0.55f, 0.75f, 0.9f)
 
+/**
+ * How much the bands tilt looking west, as a slope: the rise across the chart's width, from the right end to the left, per unit of
+ * width (0.12 is about 7 degrees); the far bands tilt [BAND_TILT_CONVERGE] less per band behind the front one.
+ */
+internal const val BAND_TILT = 0.12f
+internal const val BAND_TILT_CONVERGE = 0.15f
+
 /** How many points the shore is drawn with, from the horizon down. */
 internal const val SHORE_STEPS = 40
 

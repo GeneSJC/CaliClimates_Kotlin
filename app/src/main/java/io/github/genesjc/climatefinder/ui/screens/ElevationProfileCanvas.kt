@@ -431,7 +431,11 @@ internal fun ElevationProfileCanvas(
         // The pin's place with the layers [mix] of the way on (0 the single line, 1 the Elevation Bands)
         fun pinYAt(idx: Int, mix: Float): Float {
             val plain = paddingPx + profileFrac(sorted[idx].elevationMeters / maxElevation) * heightPx
-            return plain + (DepthBands.layeredY(plain, bandIndex[idx], layerTopY, layerSeaY) - plain) * mix
+            // Turning the view toward west tilts the bands, their lines rising toward the left (the west) and the far bands tilting a
+            // little less than the near ones, so the lines converge like lines in perspective: the bands seem to turn with the view
+            val across = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) - 0.5f
+            val tilt = BAND_TILT * (angleShown / BandAngle.WEST.toFloat()) * (1f - BAND_TILT_CONVERGE * bandIndex[idx]) * across * widthPx
+            return plain + (DepthBands.layeredY(plain, bandIndex[idx], layerTopY, layerSeaY) - plain) * mix + tilt * mix
         }
         fun pinBaseY(idx: Int): Float = pinYAt(idx, layerMix)
 
