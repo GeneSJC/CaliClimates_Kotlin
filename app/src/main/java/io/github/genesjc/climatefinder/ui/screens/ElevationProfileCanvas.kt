@@ -205,7 +205,7 @@ internal fun ElevationProfileCanvas(
     fun animateZoomTo(newZoom: Float, anchor: Offset, w: Float, h: Float) {
         zoomJob?.cancel()
         zoomJob = zoomScope.launch {
-            animateZoom(zoom, pan, newZoom, anchor, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL) { z, p -> zoom = z; pan = p }
+            animateZoom(zoom, pan, newZoom, anchor, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, { z -> elevationLowestPanY(z, h) }) { z, p -> zoom = z; pan = p }
         }
     }
 
@@ -297,8 +297,9 @@ internal fun ElevationProfileCanvas(
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
-                    val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL)
-                    pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL)
+                    val waterLimit = { z: Float -> elevationLowestPanY(z, h) }
+                    val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit)
+                    pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit)
                     zoom = newZoom
                 }
             }
@@ -327,6 +328,8 @@ internal fun ElevationProfileCanvas(
         fun viewX(baseX: Float) = canvasW / 2f + (baseX - canvasW / 2f) * zoom + pan.x
         fun viewY(baseY: Float) = canvasH / 2f + (baseY - canvasH / 2f) * zoom + pan.y
         val dotGrowth = zoomDotGrowth(zoom)
+        // The chart can only be dragged up so far: past this the sea would take more than MAX_WATER_SHARE of the height
+        val waterLimit = { z: Float -> elevationLowestPanY(z, canvasH) }
 
         // Switching the band axis while the bands are on pivots: the chart folds down to the single line, regroups the
         // stations at the bottom of the fold, and unfolds again, so no frame shows the old grouping under the new names.
@@ -412,16 +415,12 @@ internal fun ElevationProfileCanvas(
             val bottomMargin = with(density) { 40.dp.toPx() }
             return vx in sideMargin..(canvasW - sideMargin) && vy in topMargin..(canvasH - bottomMargin)
         }
-        // The pan that puts a pin in the middle, except that the sea never takes more than MAX_WATER_SHARE of the chart's
-        // height: a low station in the middle would otherwise leave half the screen as water
-        fun centringPan(bx: Float, by: Float): Offset {
-            val wanted = Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom)
-            val lowestPanY = canvasH * (1f - MAX_WATER_SHARE) - canvasH / 2f - (layerSeaY - canvasH / 2f) * zoom
-            return clampPan(
-                Offset(wanted.x, maxOf(wanted.y, lowestPanY)),
-                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL
-            )
-        }
+        // The pan that puts a pin in the middle, within the same limit on the water: a low station in the middle would
+        // otherwise leave half the screen as sea
+        fun centringPan(bx: Float, by: Float): Offset = clampPan(
+            Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
+            zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit
+        )
 
         // Switching between the single line and the Elevation Bands moves every pin, so the chart eases over to put the
         // selected station back in the middle (not on the first look). An axis pivot is gentler: nothing moves on the
@@ -457,10 +456,7 @@ internal fun ElevationProfileCanvas(
             if (inComfortableView(bx, by)) return@LaunchedEffect
             zoomJob?.cancel()
             val from = pan
-            val target = clampPan(
-                Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
-                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL
-            )
+            val target = centringPan(bx, by)
             val startedAt = System.nanoTime()
             androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(BRING_INTO_VIEW_MS, easing = FastOutSlowInEasing)) { v, _ ->
                 if (touchedAt[0] < startedAt) pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
@@ -1256,7 +1252,7 @@ internal fun ElevationProfileCanvas(
             onValueChange = { newZoom ->
                 // Zoom about the point on the line nearest the middle of the view, not the (often empty) middle itself
                 zoomJob?.cancel()
-                pan = panForZoom(pan, zoom, newZoom, nearestLinePoint(), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL)
+                pan = panForZoom(pan, zoom, newZoom, nearestLinePoint(), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit)
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) },
@@ -1277,4 +1273,15 @@ private class LabelHold(var axis: BandAxis) {
     var zoom = 1f
     var touch = 0L
     var lastPlaced: Set<String> = emptySet()
+}
+
+/**
+ * The lowest vertical pan the chart allows at [zoom] on a chart [canvasH] tall: any lower and the sea would take more
+ * than [MAX_WATER_SHARE] of the height. Dragging the chart up stops here, which leaves a clear stopping point with the
+ * water and the fish in view.
+ */
+internal fun elevationLowestPanY(zoom: Float, canvasH: Float): Float {
+    val heightPx = canvasH - 2 * CHART_PADDING_PX
+    val seaY = CHART_PADDING_PX + (1f - SEA_FRACTION) * heightPx
+    return canvasH * (1f - MAX_WATER_SHARE) - canvasH / 2f - (seaY - canvasH / 2f) * zoom
 }
