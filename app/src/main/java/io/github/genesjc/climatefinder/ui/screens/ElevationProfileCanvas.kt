@@ -41,10 +41,12 @@ import androidx.compose.ui.graphics.Brush
 import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import io.github.genesjc.climatefinder.ui.text.rememberFeetFormatter
 import io.github.genesjc.climatefinder.ui.text.rememberMilesFormatter
+import io.github.genesjc.climatefinder.domain.BandAngle
 import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.DepthBands
 import io.github.genesjc.climatefinder.domain.DepthCue
 import io.github.genesjc.climatefinder.domain.StationDistance
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import androidx.compose.ui.unit.IntSize
@@ -83,6 +85,9 @@ import io.github.genesjc.climatefinder.ui.components.LayerColors
 import io.github.genesjc.climatefinder.ui.components.LayerHazeColors
 import io.github.genesjc.climatefinder.ui.components.bandLook
 import io.github.genesjc.climatefinder.ui.components.layerColor
+import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_GAP_DP
+import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_HEIGHT_DP
+import io.github.genesjc.climatefinder.ui.components.BandAngleSlider
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.layerLegendWidthDp
 import io.github.genesjc.climatefinder.ui.components.LayerLegend
@@ -119,6 +124,8 @@ internal fun ElevationProfileCanvas(
     onToggleLayers: () -> Unit = {},
     /** The direction the bands look across the region, and the key's switch between the two. */
     bandAxis: BandAxis = BandAxis.NORTH_SOUTH,
+    bandAngle: Int = bandAxis.degrees.toInt(),
+    onAngleChange: (Int) -> Unit = {},
     onToggleAxis: () -> Unit = {},
     selectedStationId: String?,
     initialZoom: Float = 1f,
@@ -332,34 +339,35 @@ internal fun ElevationProfileCanvas(
         // The chart can only be dragged up so far: past this the sea would take more than MAX_WATER_SHARE of the height
         val waterLimit = { z: Float -> elevationLowestPanY(z, canvasH) }
 
-        // Switching the band axis while the bands are on pivots: the chart folds down to the single line, regroups the
-        // stations at the bottom of the fold, and unfolds again, so no frame shows the old grouping under the new names.
-        // With the single line showing there is nothing to fold and the axis changes at once. [axisShown] is the axis the
-        // chart is drawn with; [bandAxis] is the one asked for.
-        var shownAxis by remember { mutableStateOf(bandAxis) }
+        // A jump of the viewing angle while the bands are on (the axis switch) pivots: the chart folds down to the single line,
+        // regroups the stations at the bottom of the fold, and unfolds again, so no frame shows the old grouping under the
+        // new names. A small move (the angle slider) regroups at once, and with the single line showing there is nothing to
+        // fold. [angleShown] is the angle the chart is drawn with; [bandAngle] is the one asked for.
+        var shownAngle by remember { mutableStateOf(bandAngle) }
         var folding by remember { mutableStateOf(false) }
         // True from the bottom of a fold until the unfold has finished: the chart only re-centres on the station then if it
         // would otherwise be out of view, so a pivot does not slide the whole chart about
         var unfolding by remember { mutableStateOf(false) }
-        LaunchedEffect(bandAxis) {
-            if (bandAxis == shownAxis) {
+        LaunchedEffect(bandAngle) {
+            if (bandAngle == shownAngle) {
                 folding = false // asked to go back before the fold reached the bottom: unfold, nothing regrouped
                 unfolding = false
                 return@LaunchedEffect
             }
-            if (layersOn) {
+            if (layersOn && abs(bandAngle - shownAngle) >= AXIS_PIVOT_JUMP_DEGREES) {
                 folding = true
                 kotlinx.coroutines.delay((LAYERS_FADE_MS + AXIS_PIVOT_MARGIN_MS).toLong())
                 unfolding = true
             }
-            shownAxis = bandAxis
+            shownAngle = bandAngle
             folding = false
             if (unfolding) {
                 kotlinx.coroutines.delay(LAYERS_FADE_MS.toLong())
                 unfolding = false
             }
         }
-        val axisShown = if (!layersOn && !folding) bandAxis else shownAxis
+        val angleShown = if (!layersOn && !folding) bandAngle else shownAngle
+        val axisShown = BandAngle.nearestAxis(angleShown)
         // The bands as the chart draws them: on while the layers are on, except at the bottom of a fold
         val layersShown = layersOn && !folding
 
@@ -374,12 +382,15 @@ internal fun ElevationProfileCanvas(
         val bandsActive = layersShown || layerMix > 0.001f
         // Looking west (the west-east axis) the ocean is straight ahead, not in the foreground, so as the bands unfold it moves
         // from the bottom of the chart to the horizon. With the single line showing, or looking north, it stays at the bottom.
-        val seaMix = if (axisShown == BandAxis.WEST_EAST) layerMix else 0f
+        val westShare = angleShown / BandAngle.WEST.toFloat()
+        val seaMix = layerMix * westShare
         // Looking north, the far ranges are wooded, so the land seems to run to the horizon
-        val landMix = if (axisShown == BandAxis.NORTH_SOUTH) layerMix else 0f
+        val landMix = layerMix * (1f - westShare)
         // Every station's band, always: the tags and the key use it in both views; the layout only when the
         // Elevation Bands are on (otherwise everything is in band 0, the plain profile)
-        val stationBands = remember(sorted, axisShown) { DepthBands.byRank(sorted.map { axisShown.depthKey(it.latitude, it.longitude) }) }
+        val stationBands = remember(sorted, angleShown) {
+            DepthBands.byRank(sorted.map { DepthBands.depthKey(it.latitude, it.longitude, angleShown.toDouble()) })
+        }
         val bandIndex = remember(sorted, bandsActive, stationBands) {
             if (bandsActive) stationBands else IntArray(sorted.size)
         }
@@ -497,6 +508,10 @@ internal fun ElevationProfileCanvas(
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
                 listOf(widthDp.value - 44f, layersButtonTop.value, widthDp.value, layersButtonTop.value + 36f),  // layers button
                 listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(layersOn), heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value),  // the bands key
+                if (layersOn) {
+                    val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ANGLE_SLIDER_HEIGHT_DP
+                    listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(true), top, widthDp.value, top + BAND_ANGLE_SLIDER_HEIGHT_DP)  // the angle slider
+                } else listOf(0f, 0f, 0f, 0f),
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
             // The controls, badge and key: a label never goes over these unless it is the selected station's and has nowhere else
@@ -1287,6 +1302,16 @@ internal fun ElevationProfileCanvas(
             onPick = ::pickInBand,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
         )
+        if (layersOn) {
+            BandAngleSlider(
+                angle = bandAngle,
+                onAngleChange = onAngleChange,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = LEGEND_MARGIN_DP.dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP).dp)
+                    .width(layerLegendWidthDp(true).dp)
+            )
+        }
         LayersToggleButton(
             on = layersOn,
             onToggle = onToggleLayers,

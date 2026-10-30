@@ -260,5 +260,8 @@ internal const val LAYERS_FADE_MS = 450
 /** A little extra on the fold of an axis pivot, so the bands have settled flat before the stations are regrouped. */
 internal const val AXIS_PIVOT_MARGIN_MS = 40
 
+/** The viewing angle has to move this many degrees at once (the axis switch) for the chart to fold; smaller moves (the slider) regroup at once. */
+internal const val AXIS_PIVOT_JUMP_DEGREES = 30
+
 /** The most of the chart's height the sea may take, however the chart is dragged, zoomed or re-centred (a share, 0 to 1). */
 internal const val MAX_WATER_SHARE = 0.25f

@@ -1,6 +1,8 @@
 package io.github.genesjc.climatefinder.domain
 
+import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
@@ -17,6 +19,38 @@ enum class BandAxis(val degrees: Double) {
 
     /** How far back a station is when looking along this axis: bigger is farther back (see [DepthBands.depthKey]). */
     fun depthKey(latitude: Double, longitude: Double): Double = DepthBands.depthKey(latitude, longitude, degrees)
+}
+
+/**
+ * The viewing angle as the control and the saved setting hold it: whole degrees from 0 (north at the back) to 90 (west at
+ * the back). The two ends are the [BandAxis] values; the angles between them are the halfway views.
+ */
+object BandAngle {
+    const val NORTH = 0
+    const val MIDDLE = 45
+    const val WEST = 90
+
+    /** How close (degrees) a dragged angle has to come to 0, 45 or 90 to snap onto it. */
+    const val DETENT_PULL = 3
+
+    private val DETENTS = intArrayOf(NORTH, MIDDLE, WEST)
+
+    /** The nearest whole degree, held inside the range. */
+    fun clamp(degrees: Float): Int = degrees.roundToInt().coerceIn(NORTH, WEST)
+
+    /** The dragged angle as the chart takes it: whole degrees, snapped onto a detent when within [DETENT_PULL] of one. */
+    fun snap(degrees: Float): Int {
+        val whole = clamp(degrees)
+        return DETENTS.firstOrNull { abs(it - whole) <= DETENT_PULL } ?: whole
+    }
+
+    fun isDetent(degrees: Int): Boolean = degrees in DETENTS
+
+    /** The end the angle is nearer to, for what only has two looks (the key's colours and the scenery): halfway counts as west. */
+    fun nearestAxis(degrees: Int): BandAxis = if (degrees < MIDDLE) BandAxis.NORTH_SOUTH else BandAxis.WEST_EAST
+
+    /** The far end from the nearer one, where the axis switch goes. */
+    fun otherEnd(degrees: Int): Int = if (degrees < MIDDLE) WEST else NORTH
 }
 
 /**

@@ -102,6 +102,7 @@ fun ElevationProfileScreen(
 
     val layersOn by viewModel.layers.collectAsStateWithLifecycle()
     val bandAxis by viewModel.bandAxis.collectAsStateWithLifecycle()
+    val bandAngle by viewModel.bandAngle.collectAsStateWithLifecycle()
     // The notice for the layers button names the direction the bands now look; the axis switch has its own notice
     val layersOnNotice = stringResource(
         R.string.elevation_layers_on_notice,
@@ -226,6 +227,8 @@ fun ElevationProfileScreen(
                         onNotice?.invoke(if (layersOn) layersOffNotice else layersOnNotice)
                     },
                     bandAxis = bandAxis,
+                    bandAngle = bandAngle,
+                    onAngleChange = viewModel::setBandAngle,
                     onToggleAxis = {
                         viewModel.toggleBandAxis()
                         onNotice?.invoke(if (bandAxis == BandAxis.NORTH_SOUTH) axisWestEastNotice else axisNorthSouthNotice)

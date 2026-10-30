@@ -97,6 +97,14 @@ class DepthBandsTest {
     }
 
     @Test
+    fun aHalfwayAngleGroupsBetweenTheTwoEnds() {
+        val bands = { degrees: Double -> DepthBands.byRank(stations.map { DepthBands.depthKey(it.second, it.third, degrees) }).toList() }
+        assertEquals(bandsAt(BandAxis.NORTH_SOUTH), bands(0.0))
+        assertEquals(bandsAt(BandAxis.WEST_EAST), bands(90.0))
+        assertEquals(listOf(2, 1, 2, 0, 1, 0), bands(45.0))
+    }
+
+    @Test
     fun southIsInFrontAndNorthAtTheBack() {
         // Auburn 38.96, Gilroy-ish 37.0, Sacramento 38.7, Palo Alto 37.46, Vacaville 38.38, Santa Cruz 36.99
         val bands = DepthBands.byRank(listOf(38.96, 37.0, 38.7, 37.46, 38.38, 36.99))

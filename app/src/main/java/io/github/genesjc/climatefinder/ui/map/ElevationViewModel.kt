@@ -3,6 +3,7 @@ package io.github.genesjc.climatefinder.ui.map
 import androidx.lifecycle.viewModelScope
 import io.github.genesjc.climatefinder.data.local.AppSettings
 import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.BandAngle
 import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,15 +29,25 @@ class ElevationViewModel : MapViewModel() {
         settings.saveElevationLayers(layersOn.value)
     }
 
-    private val axis = MutableStateFlow(settings.elevationBandAxis())
+    private val angle = MutableStateFlow(settings.elevationBandAngle())
+    private val axis = MutableStateFlow(BandAngle.nearestAxis(angle.value))
 
-    /** The direction the bands look across the region: north to south (the default) or west to east. */
+    /** The direction the bands look across the region, in whole degrees from north (0, the default) toward west (90). */
+    val bandAngle: StateFlow<Int> = angle
+
+    /** The end of the range the angle is nearer to: north to south or west to east. */
     val bandAxis: StateFlow<BandAxis> = axis
 
-    fun toggleBandAxis() {
-        axis.value = axis.value.other()
-        settings.saveElevationBandAxis(axis.value)
+    fun setBandAngle(degrees: Int) {
+        val whole = BandAngle.clamp(degrees.toFloat())
+        if (whole == angle.value) return
+        angle.value = whole
+        axis.value = BandAngle.nearestAxis(whole)
+        settings.saveElevationBandAngle(whole)
     }
+
+    /** Sends the angle to the far end from the nearer one (the axis switch). */
+    fun toggleBandAxis() = setBandAngle(BandAngle.otherEnd(angle.value))
 
     private val skylines = HashMap<String, MutableStateFlow<List<FloatArray>?>>()
 
