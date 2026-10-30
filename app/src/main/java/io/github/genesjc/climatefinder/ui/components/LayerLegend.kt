@@ -98,7 +98,7 @@ fun LayerLegend(
                         .height(34.dp)
                         .clip(RoundedCornerShape(9.dp))
                         .border(if (active) 1.5.dp else 0.dp, if (active) color else Color.Transparent, RoundedCornerShape(9.dp))
-                        .background(if (active) LayerKeyColors[band] else Color.Transparent)
+                        .background(if (active) LayerKeyColors[bandLook(band, axis)] else Color.Transparent)
                         .clickable(
                             enabled = enabled && !active,
                             onClickLabel = stringResource(R.string.elevation_band_pick, name),

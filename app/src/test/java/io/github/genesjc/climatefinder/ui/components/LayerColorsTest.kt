@@ -29,6 +29,21 @@ class LayerColorsTest {
     }
 
     @Test
+    fun theLooksRunInOppositeOrderOnTheTwoAxes() {
+        assertEquals(listOf(0, 1, 2), (0 until DepthBands.COUNT).map { bandLook(it, BandAxis.NORTH_SOUTH) })
+        assertEquals(listOf(2, 1, 0), (0 until DepthBands.COUNT).map { bandLook(it, BandAxis.WEST_EAST) })
+    }
+
+    @Test
+    fun theColourFollowsTheLook() {
+        for (axis in BandAxis.entries) {
+            for (band in 0 until DepthBands.COUNT) {
+                assertEquals(LayerColors[bandLook(band, axis)], layerColor(band, axis))
+            }
+        }
+    }
+
+    @Test
     fun theMiddleBandKeepsItsColourOnBothAxes() {
         assertEquals(layerColor(1, BandAxis.NORTH_SOUTH), layerColor(1, BandAxis.WEST_EAST))
     }

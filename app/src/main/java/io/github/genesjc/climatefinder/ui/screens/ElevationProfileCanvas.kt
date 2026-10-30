@@ -81,6 +81,7 @@ import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
 import io.github.genesjc.climatefinder.ui.components.LayerColors
 import io.github.genesjc.climatefinder.ui.components.LayerHazeColors
+import io.github.genesjc.climatefinder.ui.components.bandLook
 import io.github.genesjc.climatefinder.ui.components.layerColor
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.layerLegendWidthDp
@@ -874,7 +875,10 @@ internal fun ElevationProfileCanvas(
                 }
 
                 // The farther layers are hazed toward the sky, and their ridge lines fainter and thinner
-                if (band > 0) drawPath(terrainPath, LayerHazeColors[band].copy(alpha = DepthBands.haze(band) * layerMix))
+                // The ground's tint is the band's look on this axis: on west-east the front band wears the grey-blue haze
+                // and the back band the plain ground
+                val look = bandLook(band, axisShown)
+                if (look > 0) drawPath(terrainPath, LayerHazeColors[look].copy(alpha = DepthBands.haze(look) * layerMix))
                 // The layers that do not hold the selected station step back: a wash over the ground, fainter lines
                 val inactive = activeBand != null && band != activeBand
                 if (inactive) drawPath(terrainPath, LayerWashColor.copy(alpha = DepthBands.INACTIVE_WASH * layerMix))

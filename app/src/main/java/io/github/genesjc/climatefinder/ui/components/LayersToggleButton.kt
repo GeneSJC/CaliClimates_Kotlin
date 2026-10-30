@@ -25,11 +25,16 @@ import io.github.genesjc.climatefinder.domain.DepthBands
 val LayerColors = listOf(Color(0xFF7C3AED), Color(0xFF0D9488), Color(0xFFD97706))
 
 /**
- * The colour that names band [band] (0 is the front) when looking along [axis]: the same three colours, in the opposite
- * order on the west-east axis, so the swap between the two axes shows in the key, the tag stripes and the ridge lines.
+ * Which of the three looks band [band] (0 is the front) wears when looking along [axis]: look 0 is the north-south front
+ * (the plain ground and the purple line), look 2 the north-south back (the grey-blue haze and the amber line). The west-east
+ * axis gives the bands the same three looks in the opposite order, so the swap between the two axes shows in the ground
+ * itself, the key, the tag stripes and the ridge lines. Depth cues (height, squash, fade) stay with the band.
  */
-fun layerColor(band: Int, axis: BandAxis): Color =
-    LayerColors[if (axis == BandAxis.WEST_EAST) DepthBands.COUNT - 1 - band else band]
+fun bandLook(band: Int, axis: BandAxis): Int =
+    if (axis == BandAxis.WEST_EAST) DepthBands.COUNT - 1 - band else band
+
+/** The colour that names band [band] when looking along [axis] (see [bandLook]). */
+fun layerColor(band: Int, axis: BandAxis): Color = LayerColors[bandLook(band, axis)]
 
 /** The dark green of the Elevation Bands controls and its notice. */
 val BandsGreen = Color(0xFF14532D)
