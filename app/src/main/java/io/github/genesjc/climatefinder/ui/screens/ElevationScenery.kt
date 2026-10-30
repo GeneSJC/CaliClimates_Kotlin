@@ -114,6 +114,20 @@ internal val RIDGE_LAYERS = listOf(
 )
 
 /**
+ * The colours of the far ranges looking north across the region, far to near, as (top of the range, its haze below): sage
+ * and green hills, then golden and brown, so the land reads as land (the blue of the sky hazes the ranges everywhere else).
+ * They take over from the sky's haze as the bands come on looking north.
+ */
+internal val LAND_RIDGE_COLORS = listOf(
+    Color(0xFF8A9A7E) to Color(0xFFC9C39A),
+    Color(0xFF6F8F5C) to Color(0xFFC7BE86),
+    Color(0xFF5E8250) to Color(0xFFB9AD72),
+    Color(0xFF7A8A4A) to Color(0xFFC4A95F),
+    Color(0xFF9A8A4E) to Color(0xFFC9B070),
+    Color(0xFF8A7A4A) to Color(0xFFB89A5E)
+)
+
+/**
  * The height (0 to 1) of every point of every ridge layer. These depend only on the chart's width, the region's seed
  * and its real skyline, never on zoom or pan, so they are worked out once and reused on every frame of a pan or zoom.
  */

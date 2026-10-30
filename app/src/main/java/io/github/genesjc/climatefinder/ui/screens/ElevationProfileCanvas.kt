@@ -790,12 +790,16 @@ internal fun ElevationProfileCanvas(
                         close()
                     }
                     // Darker at the ridge, hazing lighter below it, so the gap to the next layer reads as mist
-                    val top = lerp(horizon, Color(0xFF334155), spec.depthShade)
+                    // Looking north the land takes its own colours, green and golden, in place of the sky's haze
+                    val skyTop = lerp(horizon, Color(0xFF334155), spec.depthShade)
+                    val (landTop, landLow) = LAND_RIDGE_COLORS[layer.coerceAtMost(LAND_RIDGE_COLORS.lastIndex)]
+                    val top = lerp(skyTop, landTop, landMix)
+                    val low = lerp(lerp(skyTop, horizon, 0.5f), landLow, landMix)
                     val topY = points.minOf { it.y }
                     drawPath(
                         ridge,
                         brush = Brush.verticalGradient(
-                            colors = listOf(top.copy(alpha = spec.alpha * farFade), lerp(top, horizon, 0.5f).copy(alpha = spec.alpha * 0.7f * farFade)),
+                            colors = listOf(top.copy(alpha = spec.alpha * farFade), low.copy(alpha = spec.alpha * 0.7f * farFade)),
                             startY = topY,
                             endY = topY + ridgeH * 0.45f * (1f + (zoom - 1f) * spec.follow)
                         )
