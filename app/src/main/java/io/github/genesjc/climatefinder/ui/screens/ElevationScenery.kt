@@ -65,6 +65,32 @@ internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawFish(
     )
 }
 
+/**
+ * A small sailboat seen from far off, its waterline at [y] and its middle at [x]; [unit] is a fifth of a hull's length in
+ * pixels and [alpha] fades it in and out. Decoration: it sits on the sea at the horizon when the chart looks west.
+ */
+internal fun DrawScope.drawSailboat(x: Float, y: Float, unit: Float, alpha: Float) {
+    val white = Color.White
+    val hullColor = Color(0xFF334155).copy(alpha = 0.9f * alpha)
+    // A short light reflection under the hull
+    drawLine(white.copy(alpha = 0.35f * alpha), Offset(x - 1.6f * unit, y + 1.25f * unit), Offset(x + 1.6f * unit, y + 1.25f * unit), strokeWidth = 0.2f * unit)
+    // The sails: a taller main sail and a smaller one in front
+    drawPath(
+        Path().apply { moveTo(x + 0.25f * unit, y - 0.3f * unit); lineTo(x + 0.25f * unit, y - 5.6f * unit); lineTo(x + 2.5f * unit, y - 0.5f * unit); close() },
+        white.copy(alpha = 0.95f * alpha)
+    )
+    drawPath(
+        Path().apply { moveTo(x - 0.25f * unit, y - 0.3f * unit); lineTo(x - 0.25f * unit, y - 4.5f * unit); lineTo(x - 2.1f * unit, y - 0.55f * unit); close() },
+        white.copy(alpha = 0.8f * alpha)
+    )
+    // The mast and the hull
+    drawLine(hullColor, Offset(x, y), Offset(x, y - 5.8f * unit), strokeWidth = 0.18f * unit)
+    drawPath(
+        Path().apply { moveTo(x - 2.2f * unit, y); lineTo(x + 2.2f * unit, y); lineTo(x + 1.5f * unit, y + 0.85f * unit); lineTo(x - 1.5f * unit, y + 0.85f * unit); close() },
+        hullColor
+    )
+}
+
 /** One layer behind the profile: where it sits, how tall, how fast it drifts, how hazy, and its trees. */
 internal data class RidgeLayer(
     val base: Float,        // baseline, as a fraction of the regular chart height from the top

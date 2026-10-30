@@ -375,6 +375,8 @@ internal fun ElevationProfileCanvas(
         // Looking west (the west-east axis) the ocean is straight ahead, not in the foreground, so as the bands unfold it moves
         // from the bottom of the chart to the horizon. With the single line showing, or looking north, it stays at the bottom.
         val seaMix = if (axisShown == BandAxis.WEST_EAST) layerMix else 0f
+        // Looking north, the far ranges are wooded, so the land seems to run to the horizon
+        val landMix = if (axisShown == BandAxis.NORTH_SOUTH) layerMix else 0f
         // Every station's band, always: the tags and the key use it in both views; the layout only when the
         // Elevation Bands are on (otherwise everything is in band 0, the plain profile)
         val stationBands = remember(sorted, axisShown) { DepthBands.byRank(sorted.map { axisShown.depthKey(it.latitude, it.longitude) }) }
@@ -707,6 +709,16 @@ internal fun ElevationProfileCanvas(
                         alpha = seaMix
                     )
                     drawLine(Color.White.copy(alpha = 0.6f * seaMix), Offset(0f, horizonY), Offset(size.width, horizonY), strokeWidth = 2.5f)
+                    // A sailboat on the water, so looking west is recognisable at a glance: a fixed spot for the region,
+                    // drifting with the sea when the chart is panned or zoomed
+                    val boatScale = 1f + (zoom - 1f) * follow
+                    val boatBaseX = size.width * (0.30f + 0.45f * (((seed * 31) and 0xFF) / 255f))
+                    drawSailboat(
+                        x = size.width / 2f + (boatBaseX - size.width / 2f) * boatScale + pan.x * follow,
+                        y = horizonY + depthPx * 0.16f,
+                        unit = 3.2.dp.toPx() * boatScale,
+                        alpha = seaMix
+                    )
                 }
                 RIDGE_LAYERS.forEachIndexed { layer, spec ->
                     // The three far ranges give way to the sea at the horizon
@@ -743,6 +755,18 @@ internal fun ElevationProfileCanvas(
                             endY = topY + ridgeH * 0.45f * (1f + (zoom - 1f) * spec.follow)
                         )
                     )
+                    // Looking north the middle and near far ranges carry small trees, fading in with the bands
+                    if ((layer == 1 || layer == 2) && landMix > 0.01f) {
+                        drawTrees(
+                            points = points,
+                            mix = treeMix,
+                            sizePx = (4f + layer * 1.5f).dp.toPx() * (1f + (zoom - 1f) * spec.follow),
+                            color = lerp(top, Color(0xFF0F2F2A), 0.55f).copy(alpha = (spec.alpha + 0.15f).coerceAtMost(0.95f) * landMix),
+                            seed = seed + layer * 101,
+                            xMin = -40f,
+                            xMax = size.width + 40f
+                        )
+                    }
                     if (spec.treeSizeDp > 0f) {
                         val treeScale = 1f + (zoom - 1f) * spec.follow
                         drawTrees(
