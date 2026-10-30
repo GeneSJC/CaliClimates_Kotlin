@@ -197,47 +197,6 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
 </table>
 
 
-## 🗺️ Data, coverage and known gaps
-
-A weather app is only as good as the places it can speak for. This section records where the data comes from, where it falls short,
-how we measured that, and the rule we chose so nobody has to curate it by hand. It is written for product and engineering readers alike.
-
-**Where the data comes from.** Live readings are the National Weather Service's, fetched on demand. The 344 stations in the six bundled
-station packs come from three public networks: NOAA airport weather stations (ASOS), forest-service fire-weather stations (RAWS) and
-state water-agency stations (CDEC). The shaded-relief terrain comes from USGS 3DEP and NASA SRTM. Everything is public, with no key.
-
-**The gap.** Those networks put stations at airports, on ridges and at forest sites, not in every town. People look for towns, not stations, so
-a map that only names stations misses places they expect to find: Sausalito, Tiburon and Mill Valley have none, and the nearest station is
-about 17 miles away.
-
-**How we measured it.** We took every California place of 1,000 people or more from the US Census (1,066, towns and unincorporated
-communities alike) and measured the distance to the nearest bundled station. The result, with today's 344 stations:
-
-| The nearest station is farther than | Places (of 1,066) |
-|---|---|
-| 3 miles | 867 |
-| 5 miles | 664 |
-| 10 miles | 299 |
-| 20 miles | 70 |
-
-So most places have no station of their own, and more than a quarter of them are more than 10 miles from one. Some gaps are small (Boulder Creek is 2.5
-miles from the Ben Lomond station) and some are large (Indio is 34 miles from the nearest).
-
-**The decision: a rule, not a list.** Nobody can pick the missing towns for the whole state by hand, and a hand-picked list would be wrong
-in the regions its author does not know. So the places list is built by a script from public Census files with one rule: every place above a population
-cut-off, with no exceptions and no hand edits. Every place then gets its nearest station and the distance to it, and the wording stays
-honest ("no station in Sausalito, the nearest is Novato / Gnoss Field, 17 miles") because a station 17 miles away is a different microclimate.
-The cut-off and the distance at which a station counts as "in" a town are constants that can be tuned. A modest margin of error is accepted on purpose.
-
-**Where it stands.** The places list and the script that builds it are in. Naming the places on the map and the place card that offers the
-nearest station are next.
-
-**For developers.** The script is [`tools/places/build_places.py`](tools/places/README.md); it reads three Census files (public domain)
-and writes `app/src/main/assets/places.csv`. Run it again when the Census files or the cut-off change. The README in that folder
-lists the files, the command and the last coverage numbers. Honest limits: the 2020 Census population is the newest per-place count, the
-point for each place is the middle of its largest piece of land (the Census's own point puts San Francisco out at sea, which is why we do not use it), and
-crowded areas will need the map to choose which names to show, which is part of the next step.
-
 ## 🚀 Run it
 
 **You need** Android Studio (current stable). The app runs on Android 7.0 (API 24) and newer.
@@ -357,10 +316,9 @@ app/src/main/java/io/github/genesjc/climatefinder/
     ├── text/         the helpers that turn facts into words
     └── theme/        colors, the backdrop, and the USA state handed to the screens
 
-app/src/main/assets/   the station packs, the places list and the terrain pictures
+app/src/main/assets/   the station packs and the terrain pictures
 app/src/main/res/values/   strings by category (strings_region_ca.xml is California's)
 app/src/core/  demo/  foss/  commercial/   per-flavor code      docs/   restore guides and README art
-tools/   scripts and toolbox code kept outside the build: the places builder, the earlier angle controls
 ```
 
 ## 🧰 Tech stack
@@ -382,7 +340,6 @@ tools/   scripts and toolbox code kept outside the build: the places builder, th
 | [`docs/ads-restore.md`](docs/ads-restore.md) | How to bring the parked ads work back, step by step |
 | [`docs/news-restore.md`](docs/news-restore.md) | What the parked local-news feature was and how to bring it back |
 | [`tools/angle-controls/`](tools/angle-controls/README.md) | Two earlier controls for the viewing angle, a slider and a heading strip, kept outside the build for comparing |
-| [`tools/places/`](tools/places/README.md) | How the list of places is built from public Census files, and how far the places are from the stations |
 | [`docs/images/README.md`](docs/images/README.md) | The README artwork: what each image is and how to regenerate it |
 
 ## 📊 Status
