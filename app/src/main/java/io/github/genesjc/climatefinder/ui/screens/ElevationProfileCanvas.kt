@@ -372,6 +372,9 @@ internal fun ElevationProfileCanvas(
             label = "layerMix"
         )
         val bandsActive = layersShown || layerMix > 0.001f
+        // Looking west (the west-east axis) the ocean is straight ahead, not in the foreground, so as the bands unfold it moves
+        // from the bottom of the chart to the horizon. With the single line showing, or looking north, it stays at the bottom.
+        val seaMix = if (axisShown == BandAxis.WEST_EAST) layerMix else 0f
         // Every station's band, always: the tags and the key use it in both views; the layout only when the
         // Elevation Bands are on (otherwise everything is in band 0, the plain profile)
         val stationBands = remember(sorted, axisShown) { DepthBands.byRank(sorted.map { axisShown.depthKey(it.latitude, it.longitude) }) }
@@ -687,7 +690,28 @@ internal fun ElevationProfileCanvas(
             val ridgeH = CHART_REGULAR_HEIGHT.toPx() - padding * 2
             val extra = (h - ridgeH).coerceAtLeast(0f)
             clipPath(skyPath) {
+                if (seaMix > 0.01f) {
+                    // The ocean at the horizon, behind the nearer hills; it drifts a little with the pan and zoom, like the far ranges
+                    val follow = 0.30f
+                    val horizonBase = padding + ridgeH * 0.55f
+                    val horizonY = size.height / 2f + (horizonBase - size.height / 2f) * (1f + (zoom - 1f) * follow) + pan.y * follow
+                    val depthPx = ridgeH * 0.5f * (1f + (zoom - 1f) * follow)
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            listOf(Color(0xFFA9D8EE), Color(0xFF5FA8D4), Color(0xFF2F7DB5)),
+                            startY = horizonY,
+                            endY = horizonY + depthPx
+                        ),
+                        topLeft = Offset(0f, horizonY),
+                        size = androidx.compose.ui.geometry.Size(size.width, size.height * 3f),
+                        alpha = seaMix
+                    )
+                    drawLine(Color.White.copy(alpha = 0.6f * seaMix), Offset(0f, horizonY), Offset(size.width, horizonY), strokeWidth = 2.5f)
+                }
                 RIDGE_LAYERS.forEachIndexed { layer, spec ->
+                    // The three far ranges give way to the sea at the horizon
+                    val farFade = if (layer <= 2) 1f - seaMix else 1f
+                    if (farFade <= 0.01f) return@forEachIndexed
                     val steps = RIDGE_STEPS
                     val startX = -size.width
                     val endX = size.width * 2f
@@ -714,7 +738,7 @@ internal fun ElevationProfileCanvas(
                     drawPath(
                         ridge,
                         brush = Brush.verticalGradient(
-                            colors = listOf(top.copy(alpha = spec.alpha), lerp(top, horizon, 0.5f).copy(alpha = spec.alpha * 0.7f)),
+                            colors = listOf(top.copy(alpha = spec.alpha * farFade), lerp(top, horizon, 0.5f).copy(alpha = spec.alpha * 0.7f * farFade)),
                             startY = topY,
                             endY = topY + ridgeH * 0.45f * (1f + (zoom - 1f) * spec.follow)
                         )
@@ -792,7 +816,8 @@ internal fun ElevationProfileCanvas(
             fun drawLayer(members: List<Int>, band: Int) {
                 val terrainPath = Path()
                 val linePath = Path()
-                val floor = viewY(size.height - padding)
+                // The ground runs on below the chart's bottom edge: the ocean covers it there, except looking west
+                val floor = viewY(size.height - padding) + size.height
                 val leftEdge = bleedLeft
                 val rightEdge = bleedRight
 
@@ -909,7 +934,8 @@ internal fun ElevationProfileCanvas(
             // The ocean: the bottom of the chart, below sea level (decoration; the heights above it are data)
             val seaY = viewY(padding + (1f - SEA_FRACTION) * h)
             val oceanBottom = maxOf(size.height, viewY(size.height - padding) + padding)
-            if (seaY < oceanBottom) {
+            val foregroundSea = 1f - seaMix  // fades out as the sea moves to the horizon
+            if (seaY < oceanBottom && foregroundSea > 0.01f) {
                 drawRect(
                     brush = Brush.verticalGradient(
                         listOf(Color(0xFF7CC3E6), Color(0xFF3B8EC4), Color(0xFF1F5F99)),
@@ -917,11 +943,12 @@ internal fun ElevationProfileCanvas(
                         endY = oceanBottom
                     ),
                     topLeft = Offset(0f, seaY),
-                    size = androidx.compose.ui.geometry.Size(size.width, oceanBottom - seaY)
+                    size = androidx.compose.ui.geometry.Size(size.width, oceanBottom - seaY),
+                    alpha = foregroundSea
                 )
                 // A light line at the waterline and a few soft wave crests
-                drawLine(Color.White.copy(alpha = 0.55f), Offset(0f, seaY), Offset(size.width, seaY), strokeWidth = 2.5f)
-                val crest = Color.White.copy(alpha = 0.22f)
+                drawLine(Color.White.copy(alpha = 0.55f * foregroundSea), Offset(0f, seaY), Offset(size.width, seaY), strokeWidth = 2.5f)
+                val crest = Color.White.copy(alpha = 0.22f * foregroundSea)
                 for (row in 1..3) {
                     val wy = seaY + (oceanBottom - seaY) * row / 4.5f
                     var wx = -(row * 37f) % 90f
@@ -1037,7 +1064,9 @@ internal fun ElevationProfileCanvas(
                 }
             }
         }
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        // The fish live in the foreground water, so they fade out with it when the sea moves to the horizon (drawn in
+        // their own layer above the chart, they would swim over the land in front of a sea at the horizon)
+        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 1f - seaMix }) {
             val seaTop = viewY(paddingPx + (1f - SEA_FRACTION) * heightPx)
             val seaBottom = maxOf(size.height, viewY(size.height - paddingPx) + paddingPx)
             val band = seaBottom - seaTop
