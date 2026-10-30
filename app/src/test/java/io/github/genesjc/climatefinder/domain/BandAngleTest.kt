@@ -51,14 +51,6 @@ class BandAngleTest {
     }
 
     @Test
-    fun theSwitchGoesToTheFarEndFromTheNearerOne() {
-        assertEquals(90, BandAngle.otherEnd(0))
-        assertEquals(90, BandAngle.otherEnd(44))
-        assertEquals(0, BandAngle.otherEnd(45))
-        assertEquals(0, BandAngle.otherEnd(90))
-    }
-
-    @Test
     fun theAngleIsToldInFiveCompassNames() {
         assertEquals(listOf(0, 0, 1, 1, 2, 2, 3, 3, 4, 4), listOf(0, 11, 12, 33, 34, 56, 57, 78, 79, 90).map { BandAngle.point(it) })
         assertEquals(BandAngle.POINTS - 1, BandAngle.point(BandAngle.WEST))

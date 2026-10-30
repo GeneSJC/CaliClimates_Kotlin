@@ -52,22 +52,26 @@ fun layerColor(band: Int, degrees: Int): Color {
     return if (t <= 0f || from == to) from else if (t >= 1f) to else lerp(from, to, t)
 }
 
-/** The dark green of the Elevation Bands controls and its notice. */
-val BandsGreen = Color(0xFF14532D)
+/** The dark slate of a selected view button, which the Elevation Bands button wears while the bands are on and the short notices wear too. */
+val BandsButtonDark = Color(0xFF334155)
+
+/** The button's width and height (dp). */
+const val LAYERS_BUTTON_SIZE_DP = 36f
 
 /**
- * The Elevation chart's button for switching views, white on dark green. It shows the action a tap does, with the
- * standard Material icons: while the chart is the single line ([on] false) it shows "unfold more" (expand into the
- * Elevation Bands); while the bands are on it shows "unfold less" (collapse back to the single line).
+ * The Elevation chart's button for switching views, in the style of the Elevation and Topography buttons: dark slate with a white
+ * icon while the bands are on, white with a slate icon while they are off. It shows the action a tap does, with the standard
+ * Material icons: while the chart is the single line ([on] false) it shows "unfold more" (expand into the Elevation Bands); while
+ * the bands are on it shows "unfold less" (collapse back to the single line).
  */
 @Composable
 fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = BandsGreen,
+        color = if (on) BandsButtonDark else Color.White.copy(alpha = 0.90f),
         border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier
-            .size(36.dp)
+            .size(LAYERS_BUTTON_SIZE_DP.dp)
             .clickable(
                 onClickLabel = stringResource(if (on) R.string.elevation_layers_hide else R.string.elevation_layers_show),
                 role = Role.Button,
@@ -79,7 +83,7 @@ fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = M
                 Icon(
                     painter = painterResource(if (bandsOn) R.drawable.ic_unfold_less else R.drawable.ic_unfold_more),
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = if (on) Color.White else BandsButtonDark,
                     modifier = Modifier.size(26.dp)
                 )
             }

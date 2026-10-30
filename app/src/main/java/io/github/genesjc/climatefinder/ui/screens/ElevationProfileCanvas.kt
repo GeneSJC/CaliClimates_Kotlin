@@ -84,10 +84,13 @@ import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
 import io.github.genesjc.climatefinder.ui.components.LayerColors
 import io.github.genesjc.climatefinder.ui.components.hazeColor
 import io.github.genesjc.climatefinder.ui.components.layerColor
+import io.github.genesjc.climatefinder.ui.components.BAND_ARC_CENTRE_INSET_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_GAP_DP
+import io.github.genesjc.climatefinder.ui.components.LAYERS_BUTTON_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.BandAngleArc
+import io.github.genesjc.climatefinder.ui.components.BandsNotice
 import io.github.genesjc.climatefinder.ui.components.BAND_COMPASS_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BandCompass
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
@@ -109,6 +112,8 @@ import io.github.genesjc.climatefinder.ui.components.zoomDotGrowth
 
 @Composable
 internal fun ElevationProfileCanvas(
+    /** A short note to show beside the bands controls, such as which view the bands button switched to. */
+    notice: String? = null,
     stations: List<MicroclimateStation>,
     regionId: String,
     terrain: TerrainImage?,
@@ -124,11 +129,10 @@ internal fun ElevationProfileCanvas(
     /** The layers view (stations in bands), and the button's toggle. */
     layersOn: Boolean = false,
     onToggleLayers: () -> Unit = {},
-    /** The direction the bands look across the region, and the key's switch between the two. */
+    /** The direction the bands look across the region. */
     bandAxis: BandAxis = BandAxis.NORTH_SOUTH,
     bandAngle: Int = bandAxis.degrees.toInt(),
     onAngleChange: (Int) -> Unit = {},
-    onToggleAxis: () -> Unit = {},
     selectedStationId: String?,
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
@@ -521,13 +525,17 @@ internal fun ElevationProfileCanvas(
                 if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) ELEVATION_SLIDER_FRACTION else 1f)), // zoom slider (at the left)
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
-                listOf(widthDp.value - 44f, layersButtonTop.value, widthDp.value, layersButtonTop.value + 36f),  // layers button
-                if (layersOn) listOf(widthDp.value - 6f - BAND_COMPASS_SIZE_DP, layersButtonTop.value + 44f, widthDp.value, layersButtonTop.value + 44f + BAND_COMPASS_SIZE_DP) else listOf(0f, 0f, 0f, 0f),  // the compass
+                if (layersOn) listOf(widthDp.value - 6f - BAND_COMPASS_SIZE_DP, layersButtonTop.value, widthDp.value, layersButtonTop.value + BAND_COMPASS_SIZE_DP) else listOf(0f, 0f, 0f, 0f),  // the compass
                 listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(layersOn), heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value),  // the bands key
                 if (layersOn) {
                     val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ARC_GAP_DP - BAND_ARC_SIZE_DP
                     listOf(widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_SIZE_DP, top, widthDp.value, top + BAND_ARC_SIZE_DP)  // the quarter dial
-                } else listOf(0f, 0f, 0f, 0f),
+                } else {
+                    // The bands button on its own where the dial's hole is
+                    val centreX = widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_CENTRE_INSET_DP
+                    val centreY = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ARC_GAP_DP - BAND_ARC_CENTRE_INSET_DP
+                    listOf(centreX - LAYERS_BUTTON_SIZE_DP / 2f, centreY - LAYERS_BUTTON_SIZE_DP / 2f, centreX + LAYERS_BUTTON_SIZE_DP / 2f, centreY + LAYERS_BUTTON_SIZE_DP / 2f)
+                },
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
             // The controls, badge and key: a label never goes over these unless it is the selected station's and has nowhere else
@@ -1421,9 +1429,7 @@ internal fun ElevationProfileCanvas(
         }
         LayerLegend(
             angle = angleShown,
-            requestedAxis = bandAxis,
-            onToggleAxis = onToggleAxis,
-            showAxisSwitch = layersOn,
+            showReading = layersOn,
             activeBand = keyBand,
             hasStations = List(DepthBands.COUNT) { band -> stationBands.any { it == band } },
             alpha = 1f,
@@ -1433,7 +1439,7 @@ internal fun ElevationProfileCanvas(
         if (layersOn) {
             BandCompass(
                 angle = bandAngle,
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 6.dp, top = layersButtonTop + 44.dp)
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 6.dp, top = layersButtonTop)
             )
             BandAngleArc(
                 angle = bandAngle,
@@ -1443,10 +1449,27 @@ internal fun ElevationProfileCanvas(
                     .padding(end = LEGEND_MARGIN_DP.dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp)
             )
         }
+        // The note about the bands button sits above the key, to the left of the dial and the button, beside what it describes
+        BandsNotice(
+            message = notice,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(
+                    end = (LEGEND_MARGIN_DP + BAND_ARC_SIZE_DP + 8f).dp,
+                    bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp
+                )
+                .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_SIZE_DP - 8f - 10f).dp)
+        )
+        // The bands button sits in the hole of the dial, above the key; with the bands off it stays there on its own
         LayersToggleButton(
             on = layersOn,
             onToggle = onToggleLayers,
-            modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = layersButtonTop)
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(
+                    end = (LEGEND_MARGIN_DP + BAND_ARC_CENTRE_INSET_DP - LAYERS_BUTTON_SIZE_DP / 2f).dp,
+                    bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP + BAND_ARC_CENTRE_INSET_DP - LAYERS_BUTTON_SIZE_DP / 2f).dp
+                )
         )
 
         // Floating zoom slider on the right edge, where the Topography map has it

@@ -90,6 +90,8 @@ fun ElevationProfileScreen(
     expandT: Float = 0f,
     /** A short note for the person (Home shows it as a snackbar), such as which view the layers button switched to. */
     onNotice: ((String) -> Unit)? = null,
+    /** The note to show now, if any (the caller times it); the chart shows it beside the bands controls. */
+    notice: String? = null,
     viewModel: ElevationViewModel = viewModel(),
 ) {
     val stations by remember(dataset) { viewModel.stations(dataset) }.collectAsStateWithLifecycle()
@@ -208,6 +210,7 @@ fun ElevationProfileScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 ElevationProfileCanvas(
+                    notice = notice,
                     stations = stations,
                     regionId = dataset.regionId,
                     terrain = terrain,
@@ -227,9 +230,6 @@ fun ElevationProfileScreen(
                     bandAxis = bandAxis,
                     bandAngle = bandAngle,
                     onAngleChange = viewModel::setBandAngle,
-                    onToggleAxis = {
-                        viewModel.toggleBandAxis()
-                    },
                     selectedStationId = selectedStationId,
                     initialZoom = initialZoom,
                     onZoomChange = onZoomChange,

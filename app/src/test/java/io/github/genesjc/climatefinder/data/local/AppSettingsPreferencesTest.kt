@@ -114,7 +114,9 @@ class AppSettingsPreferencesTest {
     }
 
     @Test
-    fun theLayersStartOffAndKeepTheChoice() {
+    fun theLayersStartOnAndKeepTheChoice() {
+        assertTrue(launch().elevationLayers())
+        launch().saveElevationLayers(false)
         assertFalse(launch().elevationLayers())
         launch().saveElevationLayers(true)
         assertTrue(launch().elevationLayers())
