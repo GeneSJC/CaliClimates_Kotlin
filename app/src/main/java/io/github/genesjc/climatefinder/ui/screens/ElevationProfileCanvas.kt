@@ -755,15 +755,34 @@ internal fun ElevationProfileCanvas(
             // Looking between north and west the sea is on one side and the land on the other, with a slanted coast between
             // them: the coast sweeps in from the left as the angle turns west (seaMix 0: no sea, 1: the sea all across)
             val coastSlant = size.width * COAST_SLANT
-            val coastTopX = seaMix * (size.width + coastSlant)
+            // How far the coast travels across the screen as the view turns (a little more than the width, so the shore's wander never
+            // leaves land at the right edge when looking due west)
+            val coastSweep = size.width * (1f + COAST_SLANT + 0.1f)
+            val coastTopX = seaMix * coastSweep
             fun coastX(y: Float) = coastTopX - coastSlant * (y - horizonY) / size.height
+            // The shore is not a straight line: it wanders in and out, headlands and bays, the same for a region every time
+            val shorePhase = ((seed * 37) and 0xFF) / 40f
+            fun shoreX(y: Float): Float {
+                val t = (y - horizonY) / size.height
+                return coastX(y) + size.width * 0.035f * (sin(t * 9f + shorePhase) + 0.6f * sin(t * 21f + shorePhase * 1.7f))
+            }
+            val shorePoints = List(SHORE_STEPS + 1) { i ->
+                val y = horizonY + size.height * 1.6f * i / SHORE_STEPS
+                Offset(shoreX(y), y)
+            }
+            val shorePath = Path().apply {
+                moveTo(shorePoints.first().x, shorePoints.first().y)
+                for (k in 1 until shorePoints.size) lineTo(shorePoints[k].x, shorePoints[k].y)
+            }
             val seaPath = Path().apply {
                 moveTo(-size.width, horizonY)
-                lineTo(coastTopX, horizonY)
-                lineTo(coastX(horizonY + size.height * 3f), horizonY + size.height * 3f)
-                lineTo(-size.width, horizonY + size.height * 3f)
+                for (p in shorePoints) lineTo(p.x, p.y)
+                lineTo(-size.width, shorePoints.last().y)
                 close()
             }
+            // The hills slope down into the water over this much of the width, to the waterline at the shore
+            val shoreSlopeW = size.width * 0.45f
+            val shoreAtHorizon = shoreX(horizonY)
             // The far ranges are drawn on the land side only; the sea side is open water
             fun withLand(clipped: Boolean, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) {
                 if (clipped) clipPath(seaPath, clipOp = androidx.compose.ui.graphics.ClipOp.Difference, block = block) else block()
@@ -810,7 +829,7 @@ internal fun ElevationProfileCanvas(
                         val waterBottom = minOf(coastY - 110.dp.toPx(), size.height - 170.dp.toPx())
                         val room = waterBottom - waterTop
                         val boatY = waterTop + room * 0.6f
-                        val boatX = coastX(boatY) - gap + pan.x * follow
+                        val boatX = shoreX(boatY) - gap + pan.x * follow
                         // Fading in and out at the edges of the screen as the sea slides past
                         val edgeFade = (minOf(boatX, size.width - boatX) / 48.dp.toPx()).coerceIn(0f, 1f)
                         val boatAlpha = edgeFade * (room / 60.dp.toPx()).coerceIn(0f, 1f)
@@ -839,10 +858,15 @@ internal fun ElevationProfileCanvas(
                         val by = padding + ridgeH * spec.base - ridgeH * spec.amplitude * height + spec.anchor * extra
                         // The three far ranges slide across with the coast as the view turns west, the farther the slower, so the
                         // scene pans as one picture with some depth
-                        val slide = if (layer <= 2) seaMix * (size.width + coastSlant) * LAND_SLIDE[layer] else 0f
+                        val slide = if (layer <= 2) seaMix * coastSweep * LAND_SLIDE[layer] else 0f
                         val lx = size.width / 2f + (bx - size.width / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.x * spec.follow + slide
                         val ly = size.height / 2f + (by - size.height / 2f) * (1f + (zoom - 1f) * spec.follow) + pan.y * spec.follow
-                        points.add(Offset(lx, ly))
+                        // Near the shore the far hills come down to the waterline, so they slope into the water
+                        val slopedY = if (layer <= 2 && seaMix > 0.01f) {
+                            val u = ((lx - shoreAtHorizon) / shoreSlopeW).coerceIn(0f, 1f)
+                            horizonY + (ly - horizonY) * (u * u * (3f - 2f * u))
+                        } else ly
+                        points.add(Offset(lx, slopedY))
                     }
                     val ridge = Path().apply {
                         moveTo(points.first().x, points.first().y)
@@ -890,6 +914,29 @@ internal fun ElevationProfileCanvas(
                             xMax = size.width + 40f
                         )
                     }
+                    }
+                    if (layer == 2 && seaMix > 0.01f) {
+                        // The shore: shallow water and foam on the sea side, a strip of sand and a few trees on the land side
+                        clipPath(seaPath) {
+                            drawPath(shorePath, Color(0xFFBFE6EF).copy(alpha = 0.55f), style = Stroke(width = 18.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+                            drawPath(shorePath, Color.White.copy(alpha = 0.8f), style = Stroke(width = 3.dp.toPx(), join = androidx.compose.ui.graphics.StrokeJoin.Round))
+                        }
+                        clipPath(seaPath, clipOp = androidx.compose.ui.graphics.ClipOp.Difference) {
+                            drawPath(shorePath, Color(0xFFE6D8A6), style = Stroke(width = 22.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+                            for (row in 0..3) {
+                                val ry = horizonY + (0.04f + 0.17f * row) * size.height
+                                val rx = shoreX(ry)
+                                drawTrees(
+                                    points = listOf(Offset(rx, ry), Offset(rx + 120.dp.toPx(), ry)),
+                                    mix = treeMix,
+                                    sizePx = (4f + 1.8f * row).dp.toPx(),
+                                    color = Color(0xFF3F6B3A).copy(alpha = 0.9f),
+                                    seed = seed + 500 + row,
+                                    xMin = rx + 9.dp.toPx(),
+                                    xMax = rx + 95.dp.toPx()
+                                )
+                            }
+                        }
                     }
                 }
             }

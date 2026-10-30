@@ -274,6 +274,9 @@ internal val LayerWashColorNorth = Color(0xFFF1ECD8)
 /** How much of the coast's sweep each of the three far ranges follows when the view turns: the farther, the slower. */
 internal val LAND_SLIDE = floatArrayOf(0.55f, 0.75f, 0.9f)
 
+/** How many points the shore is drawn with, from the horizon down. */
+internal const val SHORE_STEPS = 40
+
 /** How slanted the coast is where the sea meets the land at an angle between west and north, as a share of the chart's width. */
 internal const val COAST_SLANT = 0.45f
 
