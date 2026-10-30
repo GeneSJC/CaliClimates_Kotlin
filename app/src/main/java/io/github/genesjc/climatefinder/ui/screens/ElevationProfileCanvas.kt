@@ -420,6 +420,18 @@ internal fun ElevationProfileCanvas(
             }
         }
 
+        // When the band axis switches, the labels that were showing stay showing, now at their stations' new places,
+        // until the chart is zoomed or panned; then the labels are chosen afresh and fade in and out as usual
+        val labelHold = remember(sorted) { LabelHold(bandAxis) }
+        if (labelHold.axis != bandAxis) {
+            labelHold.axis = bandAxis
+            labelHold.ids = labelHold.lastPlaced
+            labelHold.zoom = zoom
+            labelHold.pan = pan
+        }
+        if (labelHold.ids != null && (zoom != labelHold.zoom || pan != labelHold.pan)) labelHold.ids = null
+        val held = labelHold.ids
+
         // Which labels have room at this zoom: more as the profile spreads out. Only the target (room
         // or no room) is decided here; each label's opacity eases toward it on its own. With a station selected, the
         // others show their distance and no height, except [feetIds]: a few reference points for the heights in between
@@ -493,6 +505,18 @@ internal fun ElevationProfileCanvas(
             val plans = mutableListOf<PlacedLabel>()
             var shown = 0
             for (idx in rankedLandmarks) {
+                if (held != null) {
+                    // Holding the labels from before the axis switched: those stations keep a label (in a free spot if
+                    // there is one, else over others), and no other station gets one
+                    val heldPlan: PlacedLabel? = if (sorted[idx].id in held) {
+                        val free = plan(idx, allow = true, force = false)
+                        if (free != null && free.hasRoom) free else plan(idx, allow = true, force = true)
+                    } else {
+                        plan(idx, allow = false, force = false)
+                    }
+                    if (heldPlan != null) plans.add(heldPlan)
+                    continue
+                }
                 val p = plan(idx, allow = shown < budget, force = false) ?: continue
                 if (p.hasRoom) shown++
                 plans.add(p)
@@ -517,6 +541,7 @@ internal fun ElevationProfileCanvas(
         }
         val placedLabels = if (feetIds.isEmpty()) firstPass else layOut(feetIds)
         val placedIds = placedLabels.filter { it.hasRoom }.map { it.station.id }.toSet()
+        labelHold.lastPlaced = placedIds
         val labelFades = rememberLabelFades(placedLabels.associate { it.station.id to if (it.hasRoom) 1f else 0f })
 
         // Canvas drawing the dynamic sky, slope, shaded terrain, leader lines, and nodes
@@ -1180,4 +1205,12 @@ internal fun ElevationProfileCanvas(
                 .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)
         )
     }
+}
+
+/** Which stations' labels to keep showing after the band axis switches, until the chart is zoomed or panned. */
+private class LabelHold(var axis: BandAxis) {
+    var ids: Set<String>? = null
+    var zoom = 1f
+    var pan = Offset.Zero
+    var lastPlaced: Set<String> = emptySet()
 }
