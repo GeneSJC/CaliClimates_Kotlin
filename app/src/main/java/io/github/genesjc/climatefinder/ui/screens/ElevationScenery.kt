@@ -233,3 +233,6 @@ internal const val LAYERS_FADE_MS = 450
 
 /** A little extra on the fold of an axis pivot, so the bands have settled flat before the stations are regrouped. */
 internal const val AXIS_PIVOT_MARGIN_MS = 40
+
+/** The most of the chart's height the sea may take when the chart re-centres on a station (a share, 0 to 1). */
+internal const val MAX_WATER_SHARE = 0.25f

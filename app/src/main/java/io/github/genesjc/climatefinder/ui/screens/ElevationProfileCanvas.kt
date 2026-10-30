@@ -333,17 +333,26 @@ internal fun ElevationProfileCanvas(
         // chart is drawn with; [bandAxis] is the one asked for.
         var shownAxis by remember { mutableStateOf(bandAxis) }
         var folding by remember { mutableStateOf(false) }
+        // True from the bottom of a fold until the unfold has finished: the chart only re-centres on the station then if it
+        // would otherwise be out of view, so a pivot does not slide the whole chart about
+        var unfolding by remember { mutableStateOf(false) }
         LaunchedEffect(bandAxis) {
             if (bandAxis == shownAxis) {
                 folding = false // asked to go back before the fold reached the bottom: unfold, nothing regrouped
+                unfolding = false
                 return@LaunchedEffect
             }
             if (layersOn) {
                 folding = true
                 kotlinx.coroutines.delay((LAYERS_FADE_MS + AXIS_PIVOT_MARGIN_MS).toLong())
+                unfolding = true
             }
             shownAxis = bandAxis
             folding = false
+            if (unfolding) {
+                kotlinx.coroutines.delay(LAYERS_FADE_MS.toLong())
+                unfolding = false
+            }
         }
         val axisShown = if (!layersOn && !folding) bandAxis else shownAxis
         // The bands as the chart draws them: on while the layers are on, except at the bottom of a fold
@@ -392,8 +401,30 @@ internal fun ElevationProfileCanvas(
         }
         fun pinBaseY(idx: Int): Float = pinYAt(idx, layerMix)
 
+        // Whether a pin (at base position [bx], [by]) is well inside the chart at the current zoom and pan: clear of the
+        // edges, the tile row and the bottom
+        fun inComfortableView(bx: Float, by: Float): Boolean {
+            val vx = viewX(bx)
+            val vy = viewY(by)
+            val sideMargin = with(density) { 48.dp.toPx() }
+            val topMargin = with(density) { (if (embedded) HOME_TILE_BAND + 24.dp else 40.dp).toPx() }
+            val bottomMargin = with(density) { 40.dp.toPx() }
+            return vx in sideMargin..(canvasW - sideMargin) && vy in topMargin..(canvasH - bottomMargin)
+        }
+        // The pan that puts a pin in the middle, except that the sea never takes more than MAX_WATER_SHARE of the chart's
+        // height: a low station in the middle would otherwise leave half the screen as water
+        fun centringPan(bx: Float, by: Float): Offset {
+            val wanted = Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom)
+            val lowestPanY = canvasH * (1f - MAX_WATER_SHARE) - canvasH / 2f - (layerSeaY - canvasH / 2f) * zoom
+            return clampPan(
+                Offset(wanted.x, maxOf(wanted.y, lowestPanY)),
+                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL
+            )
+        }
+
         // Switching between the single line and the Elevation Bands moves every pin, so the chart eases over to put the
-        // selected station back in the middle (not on the first look)
+        // selected station back in the middle (not on the first look). An axis pivot is gentler: nothing moves on the
+        // fold, and the unfold only re-centres when the station would end up out of view.
         var recenterArmed by remember { mutableStateOf(false) }
         androidx.compose.runtime.LaunchedEffect(layersShown) {
             if (!recenterArmed) {
@@ -404,12 +435,11 @@ internal fun ElevationProfileCanvas(
             if (idx < 0) return@LaunchedEffect
             val bx = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
             val by = pinYAt(idx, if (layersShown) 1f else 0f)
+            if (folding) return@LaunchedEffect
+            if (unfolding && inComfortableView(bx, by)) return@LaunchedEffect
             zoomJob?.cancel()
             val from = pan
-            val target = clampPan(
-                Offset(-(bx - canvasW / 2f) * zoom, -(by - canvasH / 2f) * zoom),
-                zoom, canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL
-            )
+            val target = centringPan(bx, by)
             val startedAt = System.nanoTime()
             androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(LAYERS_FADE_MS, easing = FastOutSlowInEasing)) { v, _ ->
                 if (touchedAt[0] < startedAt) pan = Offset(from.x + (target.x - from.x) * v, from.y + (target.y - from.y) * v)
@@ -423,13 +453,7 @@ internal fun ElevationProfileCanvas(
             if (idx < 0) return@LaunchedEffect
             val bx = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
             val by = pinBaseY(idx)
-            val vx = viewX(bx)
-            val vy = viewY(by)
-            val sideMargin = with(density) { 48.dp.toPx() }
-            val topMargin = with(density) { (if (embedded) HOME_TILE_BAND + 24.dp else 40.dp).toPx() }
-            val bottomMargin = with(density) { 40.dp.toPx() }
-            val inView = vx in sideMargin..(canvasW - sideMargin) && vy in topMargin..(canvasH - bottomMargin)
-            if (inView) return@LaunchedEffect
+            if (inComfortableView(bx, by)) return@LaunchedEffect
             zoomJob?.cancel()
             val from = pan
             val target = clampPan(
