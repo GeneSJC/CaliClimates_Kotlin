@@ -110,8 +110,13 @@ object DepthBands {
     private val HAZE = floatArrayOf(0f, 0.3f, 0.45f)
     private val LINE = floatArrayOf(1f, 0.75f, 0.5f)
 
-    /** How much of the lift (see [layeredY]) a band gets, as a share of the room it leaves above itself. */
-    private const val LIFT_SHARE = 0.8f
+    /**
+     * How much of the lift (see [layeredY]) a band gets, as a share of the range between the sea and the top. Above 1 the lift is
+     * enough that the summit of each band behind stands clear above the summit of the one in front (about 7 percent of the range
+     * for each band, and the back band's summit about 15 percent above the front band's), so the bands never cover one another
+     * and the margin that gives the sense of depth holds in every region; the room for it is the sky above the highest station.
+     */
+    private const val LIFT_SHARE = 1.5f
 
     /**
      * How far back a station is when looking in the direction [degrees] (0 = north at the back, 90 = west at the back):
@@ -143,7 +148,7 @@ object DepthBands {
     fun squash(band: Int): Float = SQUASH[band.coerceIn(0, COUNT - 1)]
 
     /** The layers that do not hold the selected station are subdued: their lines and dots at this opacity, ... */
-    const val INACTIVE_FADE = 0.55f
+    const val INACTIVE_FADE = 0.7f
 
     /** ... and their ground under a wash of this opacity (white-ish), so the active layer stands out. */
     const val INACTIVE_WASH = 0.3f
@@ -156,8 +161,8 @@ object DepthBands {
 
     /**
      * Where a station's pin goes on the page. [y] is its place in the plain profile; the band squashes the height
-     * toward [seaY] and lifts the whole ridge, so the far bands sit higher and behind, and no band rises above [topY].
-     * Band 0 is the plain profile.
+     * toward [seaY] and lifts the whole ridge, so the far bands sit higher and behind, each band's summit clear above the one in
+     * front (the back band's rises above [topY] by about 15 percent of the range, into the sky). Band 0 is the plain profile.
      */
     fun layeredY(y: Float, band: Int, topY: Float, seaY: Float): Float {
         val squash = squash(band)
