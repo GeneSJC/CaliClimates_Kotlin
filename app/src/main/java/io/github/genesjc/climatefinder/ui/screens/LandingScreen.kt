@@ -99,6 +99,9 @@ private val HEADER_HEIGHT = 42.dp
 data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
 
+/** How much taller the menu panel is than its content: 1.7 shows 70 percent more of the soft green below the items. */
+private const val MENU_PANEL_STRETCH = 1.7f
+
 @Composable
 fun LandingScreen(
     selectedRegionId: String,
@@ -213,7 +216,15 @@ fun LandingScreen(
                 ).width(menuWidth)
             ) {
               Box {
-                Box(modifier = Modifier.background(sheetBrush())) {
+                // The panel runs 70 percent taller than its content, so more of the soft green shows below the items
+                Box(
+                    modifier = Modifier
+                        .background(sheetBrush())
+                        .layout { measurable, constraints ->
+                            val content = measurable.measure(constraints)
+                            layout(content.width, (content.height * MENU_PANEL_STRETCH).roundToInt()) { content.placeRelative(0, 0) }
+                        }
+                ) {
                 MenuDrawerContent(
                     appName = appName,
                     buildLabel = buildLabel,
@@ -623,8 +634,8 @@ fun LandingScreen(
                             },
                             modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
                         )
-                        // The two view buttons keep their places at the top right: Elevation, then Topography at the edge, as
-                        // before. Elevation is raised to the row of controls; Topography stays 9 dp lower, a small offset
+                        // The two view buttons sit at the top right: Topography first, level with the row of controls, then Elevation at
+                        // the edge, 9 dp lower, a small offset (they traded places in build 117.15)
                         Row(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
@@ -632,10 +643,10 @@ fun LandingScreen(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.Top
                         ) {
-                            MapViewButton(label = stringResource(R.string.tab_elevation), index = 1, selected = homeTab, onSelect = onHomeTabChange)
+                            MapViewButton(label = stringResource(R.string.tab_topography), index = 0, selected = homeTab, onSelect = onHomeTabChange)
                             MapViewButton(
-                                label = stringResource(R.string.tab_topography),
-                                index = 0,
+                                label = stringResource(R.string.tab_elevation),
+                                index = 1,
                                 selected = homeTab,
                                 onSelect = onHomeTabChange,
                                 modifier = Modifier
