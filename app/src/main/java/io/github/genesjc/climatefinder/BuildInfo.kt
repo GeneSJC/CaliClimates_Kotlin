@@ -5,5 +5,5 @@ package io.github.genesjc.climatefinder
  * Bump the commit number with every commit, so a screenshot tells you exactly which build is running.
  */
 object BuildInfo {
-    const val LABEL = "113.14"
+    const val LABEL = "113.15"
 }

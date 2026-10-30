@@ -78,7 +78,7 @@ each, and how the numbers change as the ground climbs.
   <tr>
     <td valign="top">
       <h4>📈 Elevation view</h4>
-      The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes. Switch on <b>Elevation Bands</b> and the stations separate into three layers by latitude, north at the back, with distance from the selected station on every label.
+      The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes. Switch on <b>Elevation Bands</b> and the stations separate into three layers, north at the back, with distance from the selected station on every label. A switch in the key turns the view to look west instead, with west at the back and the sea at the horizon.
     </td>
     <td valign="top">
       <h4>🪪 Station cards and lists</h4>
@@ -160,7 +160,7 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
   </thead>
   <tr>
     <td width="30%" valign="top"><img src="docs/images/chip-elevation-bands.png" alt="Elevation Bands" width="200"></td>
-    <td valign="top">Switch it on and the Elevation chart splits the stations by latitude into South, Central and North bands, each drawn as its own ridge as if you were looking north across the region: the farther the band, the lower, hazier and differently coloured. The band holding the selected station stays sharp, with a ripple when it changes, and a key at the bottom jumps between bands.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/DepthBands.kt"><code>DepthBands.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/map/ElevationViewModel.kt"><code>ElevationViewModel.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationProfileCanvas.kt"><code>ElevationProfileCanvas.kt</code></a></sub></td>
+    <td valign="top">Switch it on and the Elevation chart splits the stations into three bands, each drawn as its own ridge: by latitude looking north (south in front), or by longitude looking west (east in front). A switch in the key turns between the two: the chart folds flat, regroups and unfolds, the band colours swap order, and looking west the sea moves to the horizon. The band holding the selected station stays sharp, with a ripple when it changes, and the key jumps between bands.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/DepthBands.kt"><code>DepthBands.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/map/ElevationViewModel.kt"><code>ElevationViewModel.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationProfileCanvas.kt"><code>ElevationProfileCanvas.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/LayerLegend.kt"><code>LayerLegend.kt</code></a></sub></td>
   </tr>
 </table>
 
@@ -345,7 +345,7 @@ app/src/core/  demo/  foss/  commercial/   per-flavor code      docs/   restore 
 
 | | |
 |---|---|
-| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread, and an Elevation view with distance cues and Elevation Bands (stations in three latitude layers) |
+| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread, and an Elevation view with distance cues and Elevation Bands (stations in three layers, by latitude or by longitude) |
 | ⏸️ **Parked** | Ads (AdMob banner and a one-hour ad-free reward) and a local-news block, each kept recoverable by a tag and a restore guide |
 | 🔜 **Next** | A first release (store listing, privacy policy, signing), real screenshots for this page, and continuous integration |
 | 💡 **Later** | A second USA state, localized place names, search on the Station List, and a cross-section chart (distance along a line) for the Elevation view |
