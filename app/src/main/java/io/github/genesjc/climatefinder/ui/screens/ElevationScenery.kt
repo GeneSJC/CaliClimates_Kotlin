@@ -276,9 +276,9 @@ internal val LAND_SLIDE = floatArrayOf(0.55f, 0.75f, 0.9f)
 
 /**
  * How much the bands tilt looking west, as a slope: the rise across the chart's width, from the right end to the left, per unit of
- * width (0.12 is about 7 degrees); the far bands tilt [BAND_TILT_CONVERGE] less per band behind the front one.
+ * width (0.20 is about 11 degrees); the far bands tilt [BAND_TILT_CONVERGE] less per band behind the front one.
  */
-internal const val BAND_TILT = 0.12f
+internal const val BAND_TILT = 0.20f
 internal const val BAND_TILT_CONVERGE = 0.15f
 
 /** How much of the tags' opacity is taken away in the top half of the chart while the viewing angle moves: the selected station's tag keeps more. */
