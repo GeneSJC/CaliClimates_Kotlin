@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Brush
 import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import io.github.genesjc.climatefinder.ui.text.rememberFeetFormatter
 import io.github.genesjc.climatefinder.ui.text.rememberMilesFormatter
+import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.DepthBands
 import io.github.genesjc.climatefinder.domain.DepthCue
 import io.github.genesjc.climatefinder.domain.StationDistance
@@ -332,9 +333,9 @@ internal fun ElevationProfileCanvas(
             label = "layerMix"
         )
         val bandsActive = layersOn || layerMix > 0.001f
-        // Every station's latitude band, always: the tags and the key use it in both views; the layout only when the
-        // Elevation Bands are on (otherwise everything is in band 0, the plain profile)
-        val latBands = remember(sorted) { DepthBands.byLatitude(sorted.map { it.latitude }) }
+        // Every station's band, always: the tags and the key use it in both views; the layout only when the
+        // Elevation Bands are on (otherwise everything is in band 0, the plain profile). Looking north for now.
+        val latBands = remember(sorted) { DepthBands.byRank(sorted.map { BandAxis.NORTH_SOUTH.depthKey(it.latitude, it.longitude) }) }
         val bandIndex = remember(sorted, bandsActive, latBands) {
             if (bandsActive) latBands else IntArray(sorted.size)
         }
