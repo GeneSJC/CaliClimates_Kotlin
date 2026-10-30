@@ -220,7 +220,7 @@ communities alike) and measured the distance to the nearest bundled station. The
 | 10 miles | 306 |
 | 20 miles | 74 |
 
-So most places have no station of their own, and a fifth of them are more than 10 miles from one. Some gaps are small (Boulder Creek is 2.5
+So most places have no station of their own, and more than a quarter of them are more than 10 miles from one. Some gaps are small (Boulder Creek is 2.5
 miles from the Ben Lomond station) and some are large (Indio is 34 miles from the nearest).
 
 **The decision: a rule, not a list.** Nobody can pick the missing towns for the whole state by hand, and a hand-picked list would be wrong
@@ -235,8 +235,8 @@ nearest station are next.
 **For developers.** The script is [`tools/places/build_places.py`](tools/places/README.md); it reads three Census files (public domain)
 and writes `app/src/main/assets/places.csv`. Run it again when the Census files or the cut-off change. The README in that folder
 lists the files, the command and the last coverage numbers. Honest limits: the 2020 Census population is the newest per-place count, the
-point for each place is the middle of its largest piece of land (the Census's own point puts San Francisco out at sea, which is why we do not use it), and a
-place sitting next to a big one can still be hidden by label crowding, which the map's label planner handles by population.
+point for each place is the middle of its largest piece of land (the Census's own point puts San Francisco out at sea, which is why we do not use it), and
+crowded areas will need the map to choose which names to show, which is part of the next step.
 
 ## 🚀 Run it
 
