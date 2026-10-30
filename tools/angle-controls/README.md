@@ -46,8 +46,7 @@ Both take the viewing angle as whole degrees (0 north, 90 west, see `BandAngle`)
    ```
 
 3. Keep the labels clear of the control: the `taken` list in `layOut` holds a rectangle for each control (the dial's is the
-   `the quarter dial` entry); give the slider and strip rectangles of their own heights above the key, and move the direction note
-   (`BandAngleToast`) up by their height, since it sits above the key to the left of the dial.
+   `the quarter dial` entry); give the slider and strip rectangles of their own heights above the key.
 4. The compass at the top right (`BandCompass`) is independent of the control and can stay with either.
 
 The strings these use are still in `strings_ui.xml` and `strings_accessibility.xml`

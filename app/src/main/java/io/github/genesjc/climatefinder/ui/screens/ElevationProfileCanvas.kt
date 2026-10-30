@@ -90,7 +90,6 @@ import io.github.genesjc.climatefinder.ui.components.BAND_ARC_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.BandAngleArc
 import io.github.genesjc.climatefinder.ui.components.BAND_COMPASS_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BandCompass
-import io.github.genesjc.climatefinder.ui.components.BandAngleToast
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.layerLegendWidthDp
 import io.github.genesjc.climatefinder.ui.components.LayerLegend
@@ -1444,18 +1443,6 @@ internal fun ElevationProfileCanvas(
                     .padding(end = LEGEND_MARGIN_DP.dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp)
             )
         }
-        // The direction note sits just above the key, to the left of the dial, clear of the bands it describes
-        BandAngleToast(
-            angle = bandAngle,
-            layersOn = layersOn,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(
-                    end = (LEGEND_MARGIN_DP + BAND_ARC_SIZE_DP + 8f).dp,
-                    bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp
-                )
-                .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_SIZE_DP - 8f - 10f).dp)
-        )
         LayersToggleButton(
             on = layersOn,
             onToggle = onToggleLayers,

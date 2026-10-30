@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -167,18 +168,30 @@ fun LayerLegend(
     }
 }
 
-/** The viewing angle in degrees, a plain reading to the left of the switch. */
+/** The viewing angle as a reading to the left of the switch: the compass name above (NW), the degrees below (56°). */
 @Composable
 private fun DegreeCell(angle: Int) {
-    Box(
-        contentAlignment = Alignment.Center,
+    val name = stringResource(
+        when (BandAngle.point(angle)) {
+            0 -> R.string.elevation_heading_n
+            1 -> R.string.elevation_heading_nnw
+            2 -> R.string.elevation_heading_nw
+            3 -> R.string.elevation_heading_wnw
+            else -> R.string.elevation_heading_w
+        }
+    )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
         modifier = Modifier.width(DEGREE_CELL_WIDTH_DP.dp).height(34.dp)
     ) {
+        Text(text = name, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.7f), lineHeight = 11.sp)
         Text(
             text = stringResource(R.string.elevation_angle_reading, angle),
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color.White.copy(alpha = 0.9f)
+            color = Color.White.copy(alpha = 0.95f),
+            lineHeight = 14.sp
         )
     }
 }
