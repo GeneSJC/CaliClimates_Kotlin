@@ -33,6 +33,9 @@ import kotlin.math.sin
 /** The quarter dial's width and height (dp), which the chart also keeps its labels clear of. */
 const val BAND_ARC_SIZE_DP = 118f
 
+/** The gap between the dial and the key under it (dp). */
+const val BAND_ARC_GAP_DP = 4f
+
 /** The thickness of the dial's band (dp); the ends of the band are round, so its half-thickness is the radius of the ends. */
 private const val BAND_WIDTH_DP = 50f
 

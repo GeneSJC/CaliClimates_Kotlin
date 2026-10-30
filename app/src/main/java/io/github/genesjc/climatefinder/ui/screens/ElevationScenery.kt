@@ -301,12 +301,6 @@ internal const val AXIS_PIVOT_MARGIN_MS = 40
 internal const val TURNING_LINGER_MS = 1500L
 internal const val TURNING_LABEL_FADE_SECONDS = 0.7f
 
-/**
- * Which control turns the viewing angle: the quarter dial (true), with the compass at the top of the chart showing the heading, or
- * the horizontal slider with its heading strip (false). Both stay in the code while the two are compared on a device.
- */
-internal const val ANGLE_ARC = true
-
 /** The viewing angle has to move this many degrees at once (the axis switch) for the chart to fold; smaller moves (the slider) regroup at once. */
 internal const val AXIS_PIVOT_JUMP_DEGREES = 30
 

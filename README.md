@@ -78,7 +78,7 @@ each, and how the numbers change as the ground climbs.
   <tr>
     <td valign="top">
       <h4>📈 Elevation view</h4>
-      The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes. Switch on <b>Elevation Bands</b> and the stations separate into three layers, north at the back, with distance from the selected station on every label. A slider turns the view from north toward west, with the sea coming in at the horizon as you turn.
+      The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes. Switch on <b>Elevation Bands</b> and the stations separate into three layers, north at the back, with distance from the selected station on every label. A quarter dial turns the view from north toward west, and the scenery pans as you turn: the sea and a few sailboats slide in at the horizon beside a wandering shore.
     </td>
     <td valign="top">
       <h4>🪪 Station cards and lists</h4>
@@ -160,7 +160,7 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
   </thead>
   <tr>
     <td width="30%" valign="top"><img src="docs/images/chip-elevation-bands.png" alt="Elevation Bands" width="200"></td>
-    <td valign="top">Switch it on and the Elevation chart splits the stations into three bands, each drawn as its own ridge: by latitude looking north (south in front), by longitude looking west (east in front), or at any angle between. A slider above the key turns the view, snapping to north, northwest and west, with a compass strip and a short note naming the heading; the stations regroup as it moves, the band names and colours blend between the two ends, and the scenery follows: green and golden hills looking north, a slanted coast with the sea and a sailboat looking northwest, open sea looking west. A switch in the key jumps to the other end. The band holding the selected station stays sharp, with a ripple when it changes, and the key jumps between bands.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/DepthBands.kt"><code>DepthBands.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/map/ElevationViewModel.kt"><code>ElevationViewModel.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationProfileCanvas.kt"><code>ElevationProfileCanvas.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/LayerLegend.kt"><code>LayerLegend.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/BandAngleSlider.kt"><code>BandAngleSlider.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/BandHeadingStrip.kt"><code>BandHeadingStrip.kt</code></a></sub></td>
+    <td valign="top">Switch it on and the Elevation chart splits the stations into three bands, each drawn as its own ridge: by latitude looking north (south in front), by longitude looking west (east in front), or at any angle between. A quarter-ring dial in the corner turns the view, snapping to north, northwest and west with a click, while a small heading-up compass at the top and a short note show the way it looks; the stations regroup as it moves, the band names and colours blend between the two ends, the lines tilt a little, and the scenery pans as one picture: green and golden hills looking north, a shore with sand, trees and hills sloping into the sea looking northwest, open sea with boats looking west. The bands keep a clear margin between them, the farther ones higher. A switch in the key jumps to the other end. The band holding the selected station stays sharp, with a ripple when it changes, and the key jumps between bands.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/DepthBands.kt"><code>DepthBands.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/map/ElevationViewModel.kt"><code>ElevationViewModel.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationProfileCanvas.kt"><code>ElevationProfileCanvas.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/LayerLegend.kt"><code>LayerLegend.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/BandAngleArc.kt"><code>BandAngleArc.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/BandCompass.kt"><code>BandCompass.kt</code></a></sub></td>
   </tr>
 </table>
 
@@ -339,13 +339,14 @@ app/src/core/  demo/  foss/  commercial/   per-flavor code      docs/   restore 
 |---|---|
 | [`docs/ads-restore.md`](docs/ads-restore.md) | How to bring the parked ads work back, step by step |
 | [`docs/news-restore.md`](docs/news-restore.md) | What the parked local-news feature was and how to bring it back |
+| [`tools/angle-controls/`](tools/angle-controls/README.md) | Two earlier controls for the viewing angle, a slider and a heading strip, kept outside the build for comparing |
 | [`docs/images/README.md`](docs/images/README.md) | The README artwork: what each image is and how to regenerate it |
 
 ## 📊 Status
 
 | | |
 |---|---|
-| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread, and an Elevation view with distance cues and Elevation Bands (stations in three layers, by latitude, by longitude or at any angle between, turned with a slider) |
+| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread, and an Elevation view with distance cues and Elevation Bands (stations in three layers, by latitude, by longitude or at any angle between, turned with a dial) |
 | ⏸️ **Parked** | Ads (AdMob banner and a one-hour ad-free reward) and a local-news block, each kept recoverable by a tag and a restore guide |
 | 🔜 **Next** | A first release (store listing, privacy policy, signing), real screenshots for this page, and continuous integration |
 | 💡 **Later** | A second USA state, localized place names, search on the Station List, and a cross-section chart (distance along a line) for the Elevation view |

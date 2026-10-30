@@ -84,17 +84,13 @@ import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
 import io.github.genesjc.climatefinder.ui.components.LayerColors
 import io.github.genesjc.climatefinder.ui.components.hazeColor
 import io.github.genesjc.climatefinder.ui.components.layerColor
-import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_GAP_DP
-import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_HEIGHT_DP
+import io.github.genesjc.climatefinder.ui.components.BAND_ARC_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_SIZE_DP
+import io.github.genesjc.climatefinder.ui.components.BAND_ARC_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.BandAngleArc
 import io.github.genesjc.climatefinder.ui.components.BAND_COMPASS_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BandCompass
-import io.github.genesjc.climatefinder.ui.components.BandAngleSlider
 import io.github.genesjc.climatefinder.ui.components.BandAngleToast
-import io.github.genesjc.climatefinder.ui.components.BAND_HEADING_GAP_DP
-import io.github.genesjc.climatefinder.ui.components.BAND_HEADING_HEIGHT_DP
-import io.github.genesjc.climatefinder.ui.components.BandHeadingStrip
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.layerLegendWidthDp
 import io.github.genesjc.climatefinder.ui.components.LayerLegend
@@ -527,19 +523,11 @@ internal fun ElevationProfileCanvas(
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
                 listOf(widthDp.value - 44f, layersButtonTop.value, widthDp.value, layersButtonTop.value + 36f),  // layers button
-                if (layersOn && ANGLE_ARC) listOf(widthDp.value - 6f - BAND_COMPASS_SIZE_DP, layersButtonTop.value + 44f, widthDp.value, layersButtonTop.value + 44f + BAND_COMPASS_SIZE_DP) else listOf(0f, 0f, 0f, 0f),  // the compass
+                if (layersOn) listOf(widthDp.value - 6f - BAND_COMPASS_SIZE_DP, layersButtonTop.value + 44f, widthDp.value, layersButtonTop.value + 44f + BAND_COMPASS_SIZE_DP) else listOf(0f, 0f, 0f, 0f),  // the compass
                 listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(layersOn), heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value),  // the bands key
-                if (layersOn && ANGLE_ARC) {
-                    val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ARC_SIZE_DP
+                if (layersOn) {
+                    val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ARC_GAP_DP - BAND_ARC_SIZE_DP
                     listOf(widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_SIZE_DP, top, widthDp.value, top + BAND_ARC_SIZE_DP)  // the quarter dial
-                } else listOf(0f, 0f, 0f, 0f),
-                if (layersOn && !ANGLE_ARC) {
-                    val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ANGLE_SLIDER_HEIGHT_DP
-                    listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(true), top, widthDp.value, top + BAND_ANGLE_SLIDER_HEIGHT_DP)  // the angle slider
-                } else listOf(0f, 0f, 0f, 0f),
-                if (layersOn && !ANGLE_ARC) {
-                    val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ANGLE_SLIDER_HEIGHT_DP - BAND_HEADING_GAP_DP - BAND_HEADING_HEIGHT_DP
-                    listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(true), top, widthDp.value, top + BAND_HEADING_HEIGHT_DP)  // the heading strip
                 } else listOf(0f, 0f, 0f, 0f),
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
@@ -1443,7 +1431,7 @@ internal fun ElevationProfileCanvas(
             onPick = ::pickInBand,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
         )
-        if (layersOn && ANGLE_ARC) {
+        if (layersOn) {
             BandCompass(
                 angle = bandAngle,
                 modifier = Modifier.align(Alignment.TopEnd).padding(end = 6.dp, top = layersButtonTop + 44.dp)
@@ -1453,19 +1441,7 @@ internal fun ElevationProfileCanvas(
                 onAngleChange = onAngleChange,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = LEGEND_MARGIN_DP.dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP).dp)
-            )
-        }
-        if (layersOn && !ANGLE_ARC) {
-            BandHeadingStrip(
-                angle = bandAngle,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(
-                        end = LEGEND_MARGIN_DP.dp,
-                        bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP + BAND_ANGLE_SLIDER_HEIGHT_DP + BAND_HEADING_GAP_DP).dp
-                    )
-                    .width(layerLegendWidthDp(true).dp)
+                    .padding(end = LEGEND_MARGIN_DP.dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp)
             )
         }
         // The direction note sits just above the key, to the left of the dial, clear of the bands it describes
@@ -1475,22 +1451,11 @@ internal fun ElevationProfileCanvas(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
-                    end = (LEGEND_MARGIN_DP + (if (ANGLE_ARC) BAND_ARC_SIZE_DP else 0f) + 8f).dp,
-                    bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP +
-                        (if (ANGLE_ARC) 0f else BAND_ANGLE_SLIDER_HEIGHT_DP + BAND_HEADING_GAP_DP + BAND_HEADING_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP)).dp
+                    end = (LEGEND_MARGIN_DP + BAND_ARC_SIZE_DP + 8f).dp,
+                    bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp
                 )
-                .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - (if (ANGLE_ARC) BAND_ARC_SIZE_DP else 0f) - 8f - 10f).dp)
+                .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_SIZE_DP - 8f - 10f).dp)
         )
-        if (layersOn && !ANGLE_ARC) {
-            BandAngleSlider(
-                angle = bandAngle,
-                onAngleChange = onAngleChange,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = LEGEND_MARGIN_DP.dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP).dp)
-                    .width(layerLegendWidthDp(true).dp)
-            )
-        }
         LayersToggleButton(
             on = layersOn,
             onToggle = onToggleLayers,
