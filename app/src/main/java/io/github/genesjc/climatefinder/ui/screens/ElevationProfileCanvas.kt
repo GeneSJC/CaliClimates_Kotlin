@@ -82,7 +82,7 @@ import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
 import io.github.genesjc.climatefinder.ui.components.LayerColors
 import io.github.genesjc.climatefinder.ui.components.LayerHazeColors
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
-import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_WIDTH_DP
+import io.github.genesjc.climatefinder.ui.components.layerLegendWidthDp
 import io.github.genesjc.climatefinder.ui.components.LayerLegend
 import io.github.genesjc.climatefinder.ui.components.LayersToggleButton
 import io.github.genesjc.climatefinder.ui.components.SliderToggleButton
@@ -469,7 +469,7 @@ internal fun ElevationProfileCanvas(
                 if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
                 listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
                 listOf(widthDp.value - 44f, layersButtonTop.value, widthDp.value, layersButtonTop.value + 36f),  // layers button
-                listOf(widthDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_WIDTH_DP, heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value),  // the bands key
+                listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(layersOn), heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP, widthDp.value, heightDp.value),  // the bands key
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
             // Null when the station is out of view; otherwise its label spot, marked with or without room
@@ -1162,6 +1162,7 @@ internal fun ElevationProfileCanvas(
             axis = axisShown,
             requestedAxis = bandAxis,
             onToggleAxis = onToggleAxis,
+            showAxisSwitch = layersOn,
             activeBand = keyBand,
             hasStations = List(DepthBands.COUNT) { band -> stationBands.any { it == band } },
             alpha = 1f,

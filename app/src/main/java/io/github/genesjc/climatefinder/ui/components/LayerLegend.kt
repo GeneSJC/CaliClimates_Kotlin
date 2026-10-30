@@ -42,14 +42,18 @@ val LayerKeyColors = List(DepthBands.COUNT) { band ->
 /** The axis switch at the left of the key (dp). */
 private const val AXIS_CELL_WIDTH_DP = 40f
 
-/** The key's size (dp), which the chart also keeps its labels clear of: the axis switch and three segments in a bar. */
-const val LAYER_LEGEND_WIDTH_DP = AXIS_CELL_WIDTH_DP + 3 * 64f + 3 * 2f + 6f
+/** The key's height (dp), which the chart also keeps its labels clear of. */
 const val LAYER_LEGEND_HEIGHT_DP = 40f
+
+/** The key's width (dp), which the chart also keeps its labels clear of: three segments in a bar, and the axis switch when it shows. */
+fun layerLegendWidthDp(withAxisSwitch: Boolean): Float =
+    3 * 64f + 2 * 2f + 6f + (if (withAxisSwitch) AXIS_CELL_WIDTH_DP + 2f else 0f)
 
 /**
  * The key to the bands (shown in the single-line view too, where the tags carry the band's colour as a stripe), and a way to move between them: a bar of three segments, from left to right the back ridge first
- * (North, Central and South looking north; West, Central and East looking west), each in its band's colour. A small cell at the
- * left switches the axis ([onToggleAxis]); it reads the axis a tap would switch to. The active band's segment, the one
+ * (North, Central and South looking north; West, Central and East looking west), each in its band's colour. With the bands on
+ * ([showAxisSwitch]) a small cell at the left switches the axis ([onToggleAxis]); it reads the axis a tap would switch to. With
+ * the single line showing there is nothing for the axis to change, so the cell is left out. The active band's segment, the one
  * holding the selected station, is filled with a darker tone of that band's ground colour on the chart, with white text, and outlined in its line colour. Tapping another band's segment calls [onPick] with that band; a band with
  * no stations ([hasStations] false) is greyed out. It floats in one place whatever the pan and zoom, and [alpha]
  * fades it in and out with the view.
@@ -58,6 +62,7 @@ const val LAYER_LEGEND_HEIGHT_DP = 40f
 fun LayerLegend(
     axis: BandAxis,
     onToggleAxis: () -> Unit,
+    showAxisSwitch: Boolean,
     activeBand: Int?,
     hasStations: List<Boolean>,
     alpha: Float,
@@ -80,7 +85,7 @@ fun LayerLegend(
         modifier = modifier.alpha(alpha)
     ) {
         Row(modifier = Modifier.padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            AxisCell(requestedAxis, onToggleAxis)
+            if (showAxisSwitch) AxisCell(requestedAxis, onToggleAxis)
             for (band in names.indices.reversed()) {
                 val color = LayerColors[band]
                 val active = band == activeBand
