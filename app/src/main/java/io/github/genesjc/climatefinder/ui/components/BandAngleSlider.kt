@@ -20,8 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -49,7 +48,7 @@ const val BAND_ANGLE_SLIDER_GAP_DP = 4f
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BandAngleSlider(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier = Modifier) {
-    val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
     val colors = SliderDefaults.colors(
         thumbColor = Color.White,
         activeTrackColor = Color.White.copy(alpha = 0.55f),
@@ -73,8 +72,8 @@ fun BandAngleSlider(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier
                     val next = BandAngle.snap(BandAngle.WEST - position)
                     if (next != angle) {
                         when (BandAngle.tickBetween(angle, next)) {
-                            BandAngle.Tick.DETENT -> haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            BandAngle.Tick.LIGHT -> haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            BandAngle.Tick.DETENT -> AngleHaptics.detent(context)
+                            BandAngle.Tick.LIGHT -> AngleHaptics.light(context)
                             BandAngle.Tick.NONE -> Unit
                         }
                         onAngleChange(next)
