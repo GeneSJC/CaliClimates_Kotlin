@@ -805,45 +805,56 @@ internal fun ElevationProfileCanvas(
                         )
                         drawLine(Color.White.copy(alpha = 0.6f), Offset(-size.width, horizonY), Offset(size.width * 3f, horizonY), strokeWidth = 2.5f)
                     }
-                    // One sailboat on the water, so looking west is recognisable at a glance. Nobody tracks where it is, so it is
-                    // placed on the screen, not in the chart: always in the water that is showing, between the top of the sea and
-                    // the coast (the back band's ridge, the westernmost stations), above the labels. Across the screen it
-                    // drifts at a third of the pan and wraps round, fading near the edges, and it fades out when too little
-                    // water is showing, so it comes and goes the way a label does.
+                    // Sailboats on the water, so looking west is recognisable at a glance. Nobody tracks where they are, so they are
+                    // placed on the screen, not in the chart: always in the water that is showing, between the top of the sea and the coast
+                    // (the back band's ridge, the westernmost stations), above the labels, and fading out when too little water is showing,
+                    // so they come and go the way a label does.
                     val backMembers = sorted.indices.filter { bandIndex[it] == DepthBands.COUNT - 1 }
                     if (backMembers.isNotEmpty()) {
                         val ridgeXs = backMembers.map { viewX(padding + it.toFloat() / (sorted.size - 1).coerceAtLeast(1) * w) }
                         val ridgeYs = backMembers.map { viewY(pinBaseY(it)) }
-                        // The boat is part of the mural: it keeps its distance from the coast, so it slides across with the sea as the
-                        // view turns, coming in from the left, and drifts a little with the pan
-                        val gap = (0.25f + 0.40f * (((seed * 31) and 0xFF) / 255f)) * size.width
-                        val boatX0 = coastTopX - gap + pan.x * follow
-                        val coastY = when {
-                            boatX0 <= ridgeXs.first() -> ridgeYs.first()
-                            boatX0 >= ridgeXs.last() -> ridgeYs.last()
+                        // The boats are part of the mural: each keeps its share of the water that is showing, so they slide across with the
+                        // sea as the view turns, always on the water, and drift a little with the pan. The big one is the anchor; two small
+                        // ones are further off, nearer the horizon.
+                        fun coastYAt(x: Float): Float = when {
+                            x <= ridgeXs.first() -> ridgeYs.first()
+                            x >= ridgeXs.last() -> ridgeYs.last()
                             else -> {
-                                val k = ridgeXs.indexOfLast { it <= boatX0 }
-                                val t = (boatX0 - ridgeXs[k]) / (ridgeXs[k + 1] - ridgeXs[k])
+                                val k = ridgeXs.indexOfLast { it <= x }
+                                val t = (x - ridgeXs[k]) / (ridgeXs[k + 1] - ridgeXs[k])
                                 ridgeYs[k] + (ridgeYs[k + 1] - ridgeYs[k]) * t
                             }
                         }
                         // Below the weather badge and the controls, above the key and the labels near the coast
                         val topSafe = ((if (embedded) HOME_TILE_BAND.value else 0f) + 110f).dp.toPx()
                         val waterTop = maxOf(horizonY + 14.dp.toPx(), topSafe)
-                        val waterBottom = minOf(coastY - 110.dp.toPx(), size.height - 170.dp.toPx())
-                        val room = waterBottom - waterTop
-                        val boatY = waterTop + room * 0.6f
-                        val boatX = shoreX(boatY) - gap + pan.x * follow
-                        // Fading in and out at the edges of the screen as the sea slides past
-                        val edgeFade = (minOf(boatX, size.width - boatX) / 48.dp.toPx()).coerceIn(0f, 1f)
-                        val boatAlpha = edgeFade * (room / 60.dp.toPx()).coerceIn(0f, 1f)
-                        if (boatAlpha > 0.01f) {
-                            drawSailboat(
-                                x = boatX,
-                                y = boatY,
-                                unit = 3.2.dp.toPx() * (1f + (zoom - 1f) * 0.3f),
-                                alpha = boatAlpha
-                            )
+                        val seed01 = ((seed * 31) and 0xFF) / 255f
+                        // (share of the visible water across, share of the room down, size)
+                        val boats = listOf(
+                            Triple(0.40f + 0.15f * seed01, 0.6f, 1f),
+                            Triple(0.16f + 0.08f * seed01, 0.10f, 0.5f),
+                            Triple(0.74f - 0.08f * seed01, 0.26f, 0.62f)
+                        )
+                        for ((across, down, scale) in boats) {
+                            val probeY = waterTop + 80.dp.toPx()
+                            val sea = minOf(shoreX(probeY), size.width)
+                            val coastY = coastYAt(across * sea)
+                            val waterBottom = minOf(coastY - 110.dp.toPx(), size.height - 170.dp.toPx())
+                            val room = waterBottom - waterTop
+                            val boatY = waterTop + room * down
+                            val boatX = across * minOf(shoreX(boatY), size.width) + pan.x * follow
+                            // Fading in and out as the sea comes and goes at the left, and at the edges of the screen
+                            val seaFade = ((minOf(shoreX(boatY), size.width) - 100.dp.toPx()) / 80.dp.toPx()).coerceIn(0f, 1f)
+                            val edgeFade = (minOf(boatX, size.width - boatX) / 48.dp.toPx()).coerceIn(0f, 1f)
+                            val boatAlpha = seaFade * edgeFade * (room / 60.dp.toPx()).coerceIn(0f, 1f)
+                            if (boatAlpha > 0.01f) {
+                                drawSailboat(
+                                    x = boatX,
+                                    y = boatY,
+                                    unit = 3.2.dp.toPx() * scale * (1f + (zoom - 1f) * 0.3f),
+                                    alpha = boatAlpha
+                                )
+                            }
                         }
                     }
                 }
