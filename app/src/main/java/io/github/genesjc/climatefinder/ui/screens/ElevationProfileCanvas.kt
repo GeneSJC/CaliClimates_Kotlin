@@ -709,16 +709,30 @@ internal fun ElevationProfileCanvas(
                         alpha = seaMix
                     )
                     drawLine(Color.White.copy(alpha = 0.6f * seaMix), Offset(0f, horizonY), Offset(size.width, horizonY), strokeWidth = 2.5f)
-                    // A sailboat on the water, so looking west is recognisable at a glance: a fixed spot for the region,
-                    // drifting with the sea when the chart is panned or zoomed
-                    val boatScale = 1f + (zoom - 1f) * follow
-                    val boatBaseX = size.width * (0.30f + 0.45f * (((seed * 31) and 0xFF) / 255f))
-                    drawSailboat(
-                        x = size.width / 2f + (boatBaseX - size.width / 2f) * boatScale + pan.x * follow,
-                        y = horizonY + depthPx * 0.16f,
-                        unit = 3.2.dp.toPx() * boatScale,
-                        alpha = seaMix
-                    )
+                    // A sailboat on the water, so looking west is recognisable at a glance. It sits just off the coast, above
+                    // the labels: the coast is the back band's ridge (the westernmost stations), so the boat is at a fixed
+                    // spot across the chart (set by the region) and a set height above that ridge, and moves with the chart.
+                    val backMembers = sorted.indices.filter { bandIndex[it] == DepthBands.COUNT - 1 }
+                    if (backMembers.isNotEmpty()) {
+                        val ridgeXs = backMembers.map { viewX(padding + it.toFloat() / (sorted.size - 1).coerceAtLeast(1) * w) }
+                        val ridgeYs = backMembers.map { viewY(pinBaseY(it)) }
+                        val boatX = viewX(padding + (0.30f + 0.45f * (((seed * 31) and 0xFF) / 255f)) * w)
+                        val coastY = when {
+                            boatX <= ridgeXs.first() -> ridgeYs.first()
+                            boatX >= ridgeXs.last() -> ridgeYs.last()
+                            else -> {
+                                val k = ridgeXs.indexOfLast { it <= boatX }
+                                val t = (boatX - ridgeXs[k]) / (ridgeXs[k + 1] - ridgeXs[k])
+                                ridgeYs[k] + (ridgeYs[k + 1] - ridgeYs[k]) * t
+                            }
+                        }
+                        drawSailboat(
+                            x = boatX,
+                            y = maxOf(horizonY + 14.dp.toPx(), coastY - 110.dp.toPx()),
+                            unit = 3.2.dp.toPx() * (1f + (zoom - 1f) * 0.3f),
+                            alpha = seaMix
+                        )
+                    }
                 }
                 RIDGE_LAYERS.forEachIndexed { layer, spec ->
                     // The three far ranges give way to the sea at the horizon
