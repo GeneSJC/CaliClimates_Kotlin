@@ -1,0 +1,156 @@
+package io.github.genesjc.climatefinder.ui.components
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import io.github.genesjc.climatefinder.R
+import io.github.genesjc.climatefinder.domain.BandAngle
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+
+/** The quarter dial's width and height (dp), which the chart also keeps its labels clear of. */
+const val BAND_ARC_SIZE_DP = 118f
+
+/** The gap between the dial and the key under it (dp). */
+const val BAND_ARC_GAP_DP = 4f
+
+/** The thickness of the dial's band (dp); the ends of the band are round, so its half-thickness is the radius of the ends. */
+private const val BAND_WIDTH_DP = 50f
+
+private const val HANDLE_RADIUS_DP = 13f
+
+/**
+ * The control that turns the viewing angle: a quarter of a ring in the bottom corner, a curved band from north (straight up from
+ * the middle of the corner) round to west (straight along the bottom to the left), with round ends, a hole in the middle so the
+ * chart shows through, and a round handle on a track that shows where the view is. Drag the handle, or touch the band, to turn
+ * the view; it snaps onto 0, 45 and 90 and ticks as the slider does (see [BandAngle.snap] and [BandAngle.tickBetween]). It only
+ * sets the angle: the compass that shows where the view points is a separate display ([BandCompass]). It takes the angle and
+ * reports changes and nothing else, so another widget can take its place.
+ */
+@Composable
+fun BandAngleArc(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val measurer = rememberTextMeasurer()
+    val currentAngle = rememberUpdatedState(angle)
+    val report = rememberUpdatedState(onAngleChange)
+    val description = stringResource(R.string.elevation_angle_arc)
+    val state = stringResource(R.string.elevation_angle_state, angle)
+    val north = stringResource(R.string.elevation_heading_n)
+    val west = stringResource(R.string.elevation_heading_w)
+    fun set(position: Offset, pivot: Offset) {
+        // The finger's angle from north (straight up from the pivot) toward west (along the bottom to the left)
+        val degrees = Math.toDegrees(atan2((pivot.x - position.x).toDouble(), (pivot.y - position.y).toDouble())).toFloat()
+        val next = BandAngle.snap(degrees)
+        val from = currentAngle.value
+        if (next == from) return
+        when (BandAngle.tickBetween(from, next)) {
+            BandAngle.Tick.DETENT -> AngleHaptics.detent(context)
+            BandAngle.Tick.LIGHT -> AngleHaptics.light(context)
+            BandAngle.Tick.NONE -> Unit
+        }
+        report.value(next)
+    }
+    Canvas(
+        modifier = modifier
+            .size(BAND_ARC_SIZE_DP.dp)
+            .semantics {
+                contentDescription = description
+                stateDescription = state
+            }
+            .pointerInput(Unit) {
+                // The middle of the ring sits a half-band in from the corner, so the round ends have room
+                val pivot = Offset(size.width - BAND_WIDTH_DP.dp.toPx() / 2f, size.height - BAND_WIDTH_DP.dp.toPx() / 2f)
+                val centreRadius = minOf(pivot.x, pivot.y) - BAND_WIDTH_DP.dp.toPx() / 2f - 2.dp.toPx()
+                // A touch has to start on the band (a little generously), not in the hole or outside it
+                fun onBand(at: Offset): Boolean {
+                    val d = (at - pivot).getDistance()
+                    return d in (centreRadius - BAND_WIDTH_DP.dp.toPx() / 2f - 10.dp.toPx())..(centreRadius + BAND_WIDTH_DP.dp.toPx() / 2f + 10.dp.toPx())
+                }
+                var dragging = false
+                detectDragGestures(
+                    onDragStart = {
+                        dragging = onBand(it)
+                        if (dragging) set(it, pivot)
+                    },
+                    onDrag = { change, _ ->
+                        if (dragging) {
+                            change.consume()
+                            set(change.position, pivot)
+                        }
+                    }
+                )
+            }
+            .pointerInput(Unit) {
+                val pivot = Offset(size.width - BAND_WIDTH_DP.dp.toPx() / 2f, size.height - BAND_WIDTH_DP.dp.toPx() / 2f)
+                val centreRadius = minOf(pivot.x, pivot.y) - BAND_WIDTH_DP.dp.toPx() / 2f - 2.dp.toPx()
+                detectTapGestures {
+                    val d = (it - pivot).getDistance()
+                    if (d in (centreRadius - BAND_WIDTH_DP.dp.toPx() / 2f - 10.dp.toPx())..(centreRadius + BAND_WIDTH_DP.dp.toPx() / 2f + 10.dp.toPx())) set(it, pivot)
+                }
+            }
+    ) {
+        val bandWidth = BAND_WIDTH_DP.dp.toPx()
+        val pivot = Offset(size.width - bandWidth / 2f, size.height - bandWidth / 2f)
+        val centreRadius = minOf(pivot.x, pivot.y) - bandWidth / 2f - 2.dp.toPx()
+        val outer = centreRadius + bandWidth / 2f
+        val bandRect = Rect(center = pivot, radius = centreRadius)
+        // The band: a quarter of a ring with round ends, dark and a little see-through like the key under it, outlined faintly
+        drawArc(Color.White.copy(alpha = 0.18f), startAngle = 180f, sweepAngle = 90f, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = bandWidth + 2.dp.toPx(), cap = StrokeCap.Round))
+        drawArc(Color(0xE61E293B), startAngle = 180f, sweepAngle = 90f, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = bandWidth, cap = StrokeCap.Round))
+        // Ticks every 15 degrees, longer at 0, 45 and 90, along the outer edge
+        for (k in 0..6) {
+            val degrees = k * BandAngle.TICK_EVERY
+            val rad = Math.toRadians(degrees.toDouble())
+            val long = BandAngle.isDetent(degrees)
+            val tickOuter = outer - 4.dp.toPx()
+            val tickInner = tickOuter - (if (long) 9 else 5).dp.toPx()
+            drawLine(
+                Color.White.copy(alpha = if (long) 0.6f else 0.35f),
+                Offset(pivot.x - sin(rad).toFloat() * tickInner, pivot.y - cos(rad).toFloat() * tickInner),
+                Offset(pivot.x - sin(rad).toFloat() * tickOuter, pivot.y - cos(rad).toFloat() * tickOuter),
+                strokeWidth = 1.dp.toPx()
+            )
+        }
+        // The track from west round to north, and the part from north to the handle lit
+        val track = centreRadius + 2.dp.toPx()
+        val trackRect = Rect(center = pivot, radius = track)
+        drawArc(Color.White.copy(alpha = 0.3f), startAngle = 180f, sweepAngle = 90f, useCenter = false, topLeft = trackRect.topLeft, size = trackRect.size, style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round))
+        drawArc(Color.White.copy(alpha = 0.7f), startAngle = 270f - angle, sweepAngle = angle.toFloat(), useCenter = false, topLeft = trackRect.topLeft, size = trackRect.size, style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round))
+        // The two ends, named on the inner part of the band
+        val labelRadius = centreRadius - 16.dp.toPx()
+        listOf(0 to north, 90 to west).forEach { (degrees, name) ->
+            val rad = Math.toRadians(degrees.toDouble())
+            val layout = measurer.measure(name, TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = 0.85f)))
+            val at = Offset(pivot.x - sin(rad).toFloat() * labelRadius, pivot.y - cos(rad).toFloat() * labelRadius)
+            drawText(layout, topLeft = Offset(at.x - layout.size.width / 2f, at.y - layout.size.height / 2f))
+        }
+        // The handle: a round knob on the track, with a ring so it reads as something to take hold of
+        val rad = Math.toRadians(angle.toDouble())
+        val handle = Offset(pivot.x - sin(rad).toFloat() * track, pivot.y - cos(rad).toFloat() * track)
+        drawCircle(Color.Black.copy(alpha = 0.25f), radius = HANDLE_RADIUS_DP.dp.toPx() + 2.dp.toPx(), center = handle + Offset(0f, 1.dp.toPx()))
+        drawCircle(Color.White, radius = HANDLE_RADIUS_DP.dp.toPx(), center = handle)
+        drawCircle(Color(0xFF1E293B), radius = 3.dp.toPx(), center = handle)
+    }
+}
