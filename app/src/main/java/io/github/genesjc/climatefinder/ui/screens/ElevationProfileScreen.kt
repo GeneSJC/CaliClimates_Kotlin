@@ -2,6 +2,7 @@ package io.github.genesjc.climatefinder.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import io.github.genesjc.climatefinder.R
+import io.github.genesjc.climatefinder.domain.BandAxis
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -100,8 +101,15 @@ fun ElevationProfileScreen(
     val skyline by remember(dataset.regionId) { viewModel.skyline(dataset.regionId) }.collectAsStateWithLifecycle()
 
     val layersOn by viewModel.layers.collectAsStateWithLifecycle()
-    val layersOnNotice = stringResource(R.string.elevation_layers_on_notice)
+    val bandAxis by viewModel.bandAxis.collectAsStateWithLifecycle()
+    // The notice for the layers button names the direction the bands now look; the axis switch has its own notice
+    val layersOnNotice = stringResource(
+        R.string.elevation_layers_on_notice,
+        stringResource(if (bandAxis == BandAxis.NORTH_SOUTH) R.string.elevation_axis_hint_north_south else R.string.elevation_axis_hint_west_east)
+    )
     val layersOffNotice = stringResource(R.string.elevation_layers_off_notice)
+    val axisNorthSouthNotice = stringResource(R.string.elevation_axis_notice_north_south)
+    val axisWestEastNotice = stringResource(R.string.elevation_axis_notice_west_east)
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     var localSelectedId by remember(stations) { mutableStateOf(stations.firstOrNull()?.id) }
@@ -216,6 +224,11 @@ fun ElevationProfileScreen(
                     onToggleLayers = {
                         viewModel.toggleLayers()
                         onNotice?.invoke(if (layersOn) layersOffNotice else layersOnNotice)
+                    },
+                    bandAxis = bandAxis,
+                    onToggleAxis = {
+                        viewModel.toggleBandAxis()
+                        onNotice?.invoke(if (bandAxis == BandAxis.NORTH_SOUTH) axisWestEastNotice else axisNorthSouthNotice)
                     },
                     selectedStationId = selectedStationId,
                     initialZoom = initialZoom,

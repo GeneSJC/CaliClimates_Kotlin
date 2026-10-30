@@ -112,9 +112,12 @@ internal fun ElevationProfileCanvas(
     onLineTapped: () -> Unit,
     embedded: Boolean,
     expandT: Float = 0f,
-    /** The layers view (stations in bands by latitude), and the button's toggle. */
+    /** The layers view (stations in bands), and the button's toggle. */
     layersOn: Boolean = false,
     onToggleLayers: () -> Unit = {},
+    /** The direction the bands look across the region, and the key's switch between the two. */
+    bandAxis: BandAxis = BandAxis.NORTH_SOUTH,
+    onToggleAxis: () -> Unit = {},
     selectedStationId: String?,
     initialZoom: Float = 1f,
     onZoomChange: ((Float) -> Unit)? = null,
@@ -334,17 +337,17 @@ internal fun ElevationProfileCanvas(
         )
         val bandsActive = layersOn || layerMix > 0.001f
         // Every station's band, always: the tags and the key use it in both views; the layout only when the
-        // Elevation Bands are on (otherwise everything is in band 0, the plain profile). Looking north for now.
-        val latBands = remember(sorted) { DepthBands.byRank(sorted.map { BandAxis.NORTH_SOUTH.depthKey(it.latitude, it.longitude) }) }
-        val bandIndex = remember(sorted, bandsActive, latBands) {
-            if (bandsActive) latBands else IntArray(sorted.size)
+        // Elevation Bands are on (otherwise everything is in band 0, the plain profile)
+        val stationBands = remember(sorted, bandAxis) { DepthBands.byRank(sorted.map { bandAxis.depthKey(it.latitude, it.longitude) }) }
+        val bandIndex = remember(sorted, bandsActive, stationBands) {
+            if (bandsActive) stationBands else IntArray(sorted.size)
         }
         val layered = bandIndex.any { it > 0 }
         // The layer that holds the selected station is the active one; the others step back (null: no layers)
         val activeIdx = sorted.indexOfFirst { it.id == currentStation?.id }
         val activeBand: Int? = if (activeIdx >= 0) bandIndex[activeIdx] else null
         // The band of the selected station, for the key (in both views)
-        val keyBand: Int? = if (activeIdx >= 0) latBands[activeIdx] else null
+        val keyBand: Int? = if (activeIdx >= 0) stationBands[activeIdx] else null
         // A ripple runs along the line when the active layer changes (or the layers come on), not on the first look:
         // the visit's own ripple covers that
         var rippleArmed by remember { mutableStateOf(false) }
@@ -1056,7 +1059,7 @@ internal fun ElevationProfileCanvas(
             val depth = depthOf(station.id)
             // A far station's text is fainter, but its tag stays solid
             val depthFade = depth?.let { DepthCue.alpha(it) } ?: 1f
-            val stripe = LayerColors[latBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)]]
+            val stripe = LayerColors[stationBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)]]
 
             Surface(
                 shape = RoundedCornerShape(6.dp),
@@ -1097,7 +1100,7 @@ internal fun ElevationProfileCanvas(
         fun pickInBand(band: Int) {
             val middle = Offset(canvasW / 2f, canvasH / 2f)
             sorted.indices
-                .filter { latBands[it] == band }
+                .filter { stationBands[it] == band }
                 .minByOrNull { i ->
                     val spot = Offset(
                         viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
@@ -1108,8 +1111,10 @@ internal fun ElevationProfileCanvas(
                 ?.let { onSelectStation(sorted[it]) }
         }
         LayerLegend(
+            axis = bandAxis,
+            onToggleAxis = onToggleAxis,
             activeBand = keyBand,
-            hasStations = List(DepthBands.COUNT) { band -> latBands.any { it == band } },
+            hasStations = List(DepthBands.COUNT) { band -> stationBands.any { it == band } },
             alpha = 1f,
             onPick = ::pickInBand,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)

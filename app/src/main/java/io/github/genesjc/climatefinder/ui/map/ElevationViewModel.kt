@@ -3,6 +3,7 @@ package io.github.genesjc.climatefinder.ui.map
 import androidx.lifecycle.viewModelScope
 import io.github.genesjc.climatefinder.data.local.AppSettings
 import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,12 +20,22 @@ class ElevationViewModel : MapViewModel() {
 
     private val layersOn = MutableStateFlow(settings.elevationLayers())
 
-    /** Whether the chart shows its layers (bands by latitude) instead of the single line. */
+    /** Whether the chart shows its layers (the bands) instead of the single line. */
     val layers: StateFlow<Boolean> = layersOn
 
     fun toggleLayers() {
         layersOn.value = !layersOn.value
         settings.saveElevationLayers(layersOn.value)
+    }
+
+    private val axis = MutableStateFlow(settings.elevationBandAxis())
+
+    /** The direction the bands look across the region: north to south (the default) or west to east. */
+    val bandAxis: StateFlow<BandAxis> = axis
+
+    fun toggleBandAxis() {
+        axis.value = axis.value.other()
+        settings.saveElevationBandAxis(axis.value)
     }
 
     private val skylines = HashMap<String, MutableStateFlow<List<FloatArray>?>>()

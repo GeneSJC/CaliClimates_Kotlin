@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import io.github.genesjc.climatefinder.data.local.AppSettings
 import io.github.genesjc.climatefinder.data.local.DatasetKind
 import io.github.genesjc.climatefinder.data.local.RegionDatasets
+import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.data.local.StateUsaTerrain
 import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationSource
@@ -26,7 +27,8 @@ class FakeAppSettings(
     var dark: Boolean = false,
     var launches: Int = 0,
     var tapped: Boolean = false,
-    var layers: Boolean = false
+    var layers: Boolean = false,
+    var axis: BandAxis = BandAxis.NORTH_SOUTH
 ) : AppSettings {
     override fun selectedRegionId() = region
     override fun saveSelectedRegionId(regionId: String) {
@@ -62,6 +64,11 @@ class FakeAppSettings(
     override fun elevationLayers() = layers
     override fun saveElevationLayers(on: Boolean) {
         layers = on
+    }
+
+    override fun elevationBandAxis() = axis
+    override fun saveElevationBandAxis(axis: BandAxis) {
+        this.axis = axis
     }
 }
 

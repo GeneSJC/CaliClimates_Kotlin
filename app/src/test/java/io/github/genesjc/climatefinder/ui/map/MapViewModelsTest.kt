@@ -8,6 +8,7 @@ import io.github.genesjc.climatefinder.domain.model.StateUsaCA
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
 import io.github.genesjc.climatefinder.data.local.AppSettings
 import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.testLiveReadings
 import io.github.genesjc.climatefinder.testStation
 import io.github.genesjc.climatefinder.testutil.FakeAppSettings
@@ -61,6 +62,32 @@ class MapViewModelsTest {
     private fun elevation(): ElevationViewModel {
         register()
         return ElevationViewModel()
+    }
+
+    @Test
+    fun theElevationBandsStartFromTheSavedAxis() {
+        assertEquals(BandAxis.NORTH_SOUTH, elevation().bandAxis.value)
+        hints.axis = BandAxis.WEST_EAST
+        assertEquals(BandAxis.WEST_EAST, elevation().bandAxis.value)
+    }
+
+    @Test
+    fun togglingTheBandAxisFlipsItAndSavesIt() {
+        val vm = elevation()
+        vm.toggleBandAxis()
+        assertEquals(BandAxis.WEST_EAST, vm.bandAxis.value)
+        assertEquals(BandAxis.WEST_EAST, hints.axis)
+        vm.toggleBandAxis()
+        assertEquals(BandAxis.NORTH_SOUTH, vm.bandAxis.value)
+        assertEquals(BandAxis.NORTH_SOUTH, hints.axis)
+    }
+
+    @Test
+    fun togglingTheBandAxisDoesNotTouchTheLayersSetting() {
+        val vm = elevation()
+        vm.toggleBandAxis()
+        assertFalse(vm.layers.value)
+        assertFalse(hints.layers)
     }
 
     @Test
