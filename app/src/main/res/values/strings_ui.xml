@@ -12,6 +12,13 @@
     <string name="elevation_axis_cell_north_south">N-S</string>
     <string name="elevation_angle_end_north">N</string>
     <string name="elevation_angle_end_west">W</string>
+    <string name="elevation_heading_n">N</string>
+    <string name="elevation_heading_nnw">NNW</string>
+    <string name="elevation_heading_nw">NW</string>
+    <string name="elevation_heading_wnw">WNW</string>
+    <string name="elevation_heading_w">W</string>
+    <string name="elevation_heading_ne">NE</string>
+    <string name="elevation_heading_sw">SW</string>
 
     <!-- About dialog -->
     <string name="about_live_title">Live readings</string>

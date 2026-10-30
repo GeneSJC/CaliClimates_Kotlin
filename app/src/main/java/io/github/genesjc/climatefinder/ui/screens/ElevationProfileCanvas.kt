@@ -88,6 +88,9 @@ import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ANGLE_SLIDER_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.BandAngleSlider
 import io.github.genesjc.climatefinder.ui.components.BandAngleToast
+import io.github.genesjc.climatefinder.ui.components.BAND_HEADING_GAP_DP
+import io.github.genesjc.climatefinder.ui.components.BAND_HEADING_HEIGHT_DP
+import io.github.genesjc.climatefinder.ui.components.BandHeadingStrip
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.layerLegendWidthDp
 import io.github.genesjc.climatefinder.ui.components.LayerLegend
@@ -520,6 +523,10 @@ internal fun ElevationProfileCanvas(
                 if (layersOn) {
                     val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ANGLE_SLIDER_HEIGHT_DP
                     listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(true), top, widthDp.value, top + BAND_ANGLE_SLIDER_HEIGHT_DP)  // the angle slider
+                } else listOf(0f, 0f, 0f, 0f),
+                if (layersOn) {
+                    val top = heightDp.value - LEGEND_MARGIN_DP - LAYER_LEGEND_HEIGHT_DP - BAND_ANGLE_SLIDER_GAP_DP - BAND_ANGLE_SLIDER_HEIGHT_DP - BAND_HEADING_GAP_DP - BAND_HEADING_HEIGHT_DP
+                    listOf(widthDp.value - LEGEND_MARGIN_DP - layerLegendWidthDp(true), top, widthDp.value, top + BAND_HEADING_HEIGHT_DP)  // the heading strip
                 } else listOf(0f, 0f, 0f, 0f),
                 listOf(52f, 50f + (if (embedded) HOME_TILE_BAND.value else 0f), 222f, 97f + (if (embedded) HOME_TILE_BAND.value else 0f))  // weather badge
             )
@@ -1352,6 +1359,18 @@ internal fun ElevationProfileCanvas(
             onPick = ::pickInBand,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
         )
+        if (layersOn) {
+            BandHeadingStrip(
+                angle = bandAngle,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(
+                        end = LEGEND_MARGIN_DP.dp,
+                        bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP + BAND_ANGLE_SLIDER_HEIGHT_DP + BAND_HEADING_GAP_DP).dp
+                    )
+                    .width(layerLegendWidthDp(true).dp)
+            )
+        }
         BandAngleToast(angle = bandAngle, layersOn = layersOn, modifier = Modifier.align(Alignment.Center))
         if (layersOn) {
             BandAngleSlider(
