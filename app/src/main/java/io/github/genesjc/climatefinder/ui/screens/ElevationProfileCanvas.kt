@@ -709,14 +709,18 @@ internal fun ElevationProfileCanvas(
                         alpha = seaMix
                     )
                     drawLine(Color.White.copy(alpha = 0.6f * seaMix), Offset(0f, horizonY), Offset(size.width, horizonY), strokeWidth = 2.5f)
-                    // A sailboat on the water, so looking west is recognisable at a glance. It sits just off the coast, above
-                    // the labels: the coast is the back band's ridge (the westernmost stations), so the boat is at a fixed
-                    // spot across the chart (set by the region) and a set height above that ridge, and moves with the chart.
+                    // One sailboat on the water, so looking west is recognisable at a glance. Nobody tracks where it is, so it is
+                    // placed on the screen, not in the chart: always in the water that is showing, between the top of the sea and
+                    // the coast (the back band's ridge, the westernmost stations), above the labels. Across the screen it
+                    // drifts at a third of the pan and wraps round, fading near the edges, and it fades out when too little
+                    // water is showing, so it comes and goes the way a label does.
                     val backMembers = sorted.indices.filter { bandIndex[it] == DepthBands.COUNT - 1 }
                     if (backMembers.isNotEmpty()) {
                         val ridgeXs = backMembers.map { viewX(padding + it.toFloat() / (sorted.size - 1).coerceAtLeast(1) * w) }
                         val ridgeYs = backMembers.map { viewY(pinBaseY(it)) }
-                        val boatX = viewX(padding + (0.30f + 0.45f * (((seed * 31) and 0xFF) / 255f)) * w)
+                        val shareAcross = 0.30f + 0.45f * (((seed * 31) and 0xFF) / 255f)
+                        val boatX = (((shareAcross * size.width + pan.x * follow) % size.width) + size.width) % size.width
+                        val edgeFade = (minOf(boatX, size.width - boatX) / 48.dp.toPx()).coerceIn(0f, 1f)
                         val coastY = when {
                             boatX <= ridgeXs.first() -> ridgeYs.first()
                             boatX >= ridgeXs.last() -> ridgeYs.last()
@@ -726,12 +730,20 @@ internal fun ElevationProfileCanvas(
                                 ridgeYs[k] + (ridgeYs[k + 1] - ridgeYs[k]) * t
                             }
                         }
-                        drawSailboat(
-                            x = boatX,
-                            y = maxOf(horizonY + 14.dp.toPx(), coastY - 110.dp.toPx()),
-                            unit = 3.2.dp.toPx() * (1f + (zoom - 1f) * 0.3f),
-                            alpha = seaMix
-                        )
+                        // Below the weather badge and the controls, above the key and the labels near the coast
+                        val topSafe = ((if (embedded) HOME_TILE_BAND.value else 0f) + 110f).dp.toPx()
+                        val waterTop = maxOf(horizonY + 14.dp.toPx(), topSafe)
+                        val waterBottom = minOf(coastY - 110.dp.toPx(), size.height - 170.dp.toPx())
+                        val room = waterBottom - waterTop
+                        val boatAlpha = seaMix * edgeFade * (room / 60.dp.toPx()).coerceIn(0f, 1f)
+                        if (boatAlpha > 0.01f) {
+                            drawSailboat(
+                                x = boatX,
+                                y = waterTop + room * 0.6f,
+                                unit = 3.2.dp.toPx() * (1f + (zoom - 1f) * 0.3f),
+                                alpha = boatAlpha
+                            )
+                        }
                     }
                 }
                 RIDGE_LAYERS.forEachIndexed { layer, spec ->
