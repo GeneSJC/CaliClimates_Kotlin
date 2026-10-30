@@ -15,7 +15,7 @@
 <br>
 
 **An Android app that shows how California's weather changes from the coast to the mountains to the desert.**<br>
-Live National Weather Service readings from about 360 stations in six regions, on shaded-relief maps and an elevation chart.
+Live National Weather Service readings from 344 stations in six regions, on shaded-relief maps and an elevation chart.
 
 <br>
 
@@ -64,7 +64,7 @@ each, and how the numbers change as the ground climbs.
   <tr>
     <td width="33%" valign="top">
       <h4>🌡️ Live readings</h4>
-      Temperature, humidity, wind and pressure from about 360 National Weather Service stations, fetched on demand and kept for a few minutes so the app stays quick and polite.
+      Temperature, humidity, wind and pressure from 344 National Weather Service stations, fetched on demand and kept for a few minutes so the app stays quick and polite.
     </td>
     <td width="33%" valign="top">
       <h4>🗺️ Six regions</h4>
@@ -78,7 +78,7 @@ each, and how the numbers change as the ground climbs.
   <tr>
     <td valign="top">
       <h4>📈 Elevation view</h4>
-      The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes. Switch on <b>Elevation Bands</b> and the stations separate into three layers, north at the back, with distance from the selected station on every label. A switch in the key turns the view to look west instead, with west at the back and the sea at the horizon.
+      The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes. Switch on <b>Elevation Bands</b> and the stations separate into three layers, north at the back, with distance from the selected station on every label. A slider turns the view from north toward west, with the sea coming in at the horizon as you turn.
     </td>
     <td valign="top">
       <h4>🪪 Station cards and lists</h4>
@@ -160,7 +160,7 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
   </thead>
   <tr>
     <td width="30%" valign="top"><img src="docs/images/chip-elevation-bands.png" alt="Elevation Bands" width="200"></td>
-    <td valign="top">Switch it on and the Elevation chart splits the stations into three bands, each drawn as its own ridge: by latitude looking north (south in front), or by longitude looking west (east in front). A switch in the key turns between the two: the chart folds flat, regroups and unfolds, the band colours swap order, and looking west the sea moves to the horizon. The band holding the selected station stays sharp, with a ripple when it changes, and the key jumps between bands.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/DepthBands.kt"><code>DepthBands.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/map/ElevationViewModel.kt"><code>ElevationViewModel.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationProfileCanvas.kt"><code>ElevationProfileCanvas.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/LayerLegend.kt"><code>LayerLegend.kt</code></a></sub></td>
+    <td valign="top">Switch it on and the Elevation chart splits the stations into three bands, each drawn as its own ridge: by latitude looking north (south in front), by longitude looking west (east in front), or at any angle between. A slider above the key turns the view, snapping to north, northwest and west, with a compass strip and a short note naming the heading; the stations regroup as it moves, the band names and colours blend between the two ends, and the scenery follows: green and golden hills looking north, a slanted coast with the sea and a sailboat looking northwest, open sea looking west. A switch in the key jumps to the other end. The band holding the selected station stays sharp, with a ripple when it changes, and the key jumps between bands.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/DepthBands.kt"><code>DepthBands.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/map/ElevationViewModel.kt"><code>ElevationViewModel.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationProfileCanvas.kt"><code>ElevationProfileCanvas.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/LayerLegend.kt"><code>LayerLegend.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/BandAngleSlider.kt"><code>BandAngleSlider.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/components/BandHeadingStrip.kt"><code>BandHeadingStrip.kt</code></a></sub></td>
   </tr>
 </table>
 
@@ -345,7 +345,7 @@ app/src/core/  demo/  foss/  commercial/   per-flavor code      docs/   restore 
 
 | | |
 |---|---|
-| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread, and an Elevation view with distance cues and Elevation Bands (stations in three layers, by latitude or by longitude) |
+| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread, and an Elevation view with distance cues and Elevation Bands (stations in three layers, by latitude, by longitude or at any angle between, turned with a slider) |
 | ⏸️ **Parked** | Ads (AdMob banner and a one-hour ad-free reward) and a local-news block, each kept recoverable by a tag and a restore guide |
 | 🔜 **Next** | A first release (store listing, privacy policy, signing), real screenshots for this page, and continuous integration |
 | 💡 **Later** | A second USA state, localized place names, search on the Station List, and a cross-section chart (distance along a line) for the Elevation view |

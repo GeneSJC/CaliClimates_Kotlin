@@ -27,6 +27,10 @@ const val BAND_HEADING_HEIGHT_DP = 28f
 /** The gap between the strip and the slider under it (dp). */
 const val BAND_HEADING_GAP_DP = 4f
 
+/** The mark in the middle, red like the lubber line of a boat's compass, and the red of north on the card. */
+private val HEADING_MARK_RED = Color(0xFFEF4444)
+private val NORTH_RED = Color(0xFFF87171)
+
 /** How many degrees of heading the strip shows across its width. */
 private const val WINDOW_DEGREES = 130f
 
@@ -77,14 +81,15 @@ fun BandHeadingStrip(angle: Int, modifier: Modifier = Modifier) {
                 val alpha = (1f - away).coerceIn(0f, 1f)
                 if (alpha <= 0.05f) return@forEachIndexed
                 val bold = away < 0.12f
+                // North is red, as on a boat's compass card
                 val layout = measurer.measure(
                     names[i],
-                    TextStyle(fontSize = 12.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium, color = Color.White.copy(alpha = 0.25f + 0.75f * alpha))
+                    TextStyle(fontSize = 12.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium, color = (if (pointHeading == 0f) NORTH_RED else Color.White).copy(alpha = 0.25f + 0.75f * alpha))
                 )
                 drawText(layout, topLeft = Offset(x - layout.size.width / 2f, 3.dp.toPx()))
             }
             // The mark: a short line down from the top at the middle
-            drawLine(Color.White, Offset(centre, 0f), Offset(centre, 4.dp.toPx()), strokeWidth = 2.dp.toPx())
+            drawLine(HEADING_MARK_RED, Offset(centre, 0f), Offset(centre, 5.dp.toPx()), strokeWidth = 2.5.dp.toPx())
         }
     }
 }
