@@ -114,6 +114,20 @@ internal val RIDGE_LAYERS = listOf(
 )
 
 /**
+ * The colours of the far ranges looking north across the region, far to near, as (top of the range, its haze below): sage
+ * and green hills, then golden and brown, so the land reads as land (the blue of the sky hazes the ranges everywhere else).
+ * They take over from the sky's haze as the bands come on looking north.
+ */
+internal val LAND_RIDGE_COLORS = listOf(
+    Color(0xFF8A9A7E) to Color(0xFFC9C39A),
+    Color(0xFF6F8F5C) to Color(0xFFC7BE86),
+    Color(0xFF5E8250) to Color(0xFFB9AD72),
+    Color(0xFF7A8A4A) to Color(0xFFC4A95F),
+    Color(0xFF9A8A4E) to Color(0xFFC9B070),
+    Color(0xFF8A7A4A) to Color(0xFFB89A5E)
+)
+
+/**
  * The height (0 to 1) of every point of every ridge layer. These depend only on the chart's width, the region's seed
  * and its real skyline, never on zoom or pan, so they are worked out once and reused on every frame of a pan or zoom.
  */
@@ -254,11 +268,24 @@ internal data class SkyAtmosphereTheme(
 // The wash laid over the layers that do not hold the selected station (strength: DepthBands.INACTIVE_WASH)
 internal val LayerWashColor = Color(0xFFE8EEF4)
 
+/** The wash over the layers that do not hold the selected station, looking north: a warm cream instead of the cool white-blue. */
+internal val LayerWashColorNorth = Color(0xFFF1ECD8)
+
+/** How slanted the coast is where the sea meets the land at an angle between west and north, as a share of the chart's width. */
+internal const val COAST_SLANT = 0.45f
+
 /** How long the chart takes to fade between the single line and the layers. */
 internal const val LAYERS_FADE_MS = 450
 
 /** A little extra on the fold of an axis pivot, so the bands have settled flat before the stations are regrouped. */
 internal const val AXIS_PIVOT_MARGIN_MS = 40
+
+/** How long the labels keep their slow fade after the viewing angle last changed (ms), and how long that fade takes (seconds). */
+internal const val TURNING_LINGER_MS = 1500L
+internal const val TURNING_LABEL_FADE_SECONDS = 0.7f
+
+/** The viewing angle has to move this many degrees at once (the axis switch) for the chart to fold; smaller moves (the slider) regroup at once. */
+internal const val AXIS_PIVOT_JUMP_DEGREES = 30
 
 /** The most of the chart's height the sea may take, however the chart is dragged, zoomed or re-centred (a share, 0 to 1). */
 internal const val MAX_WATER_SHARE = 0.25f
