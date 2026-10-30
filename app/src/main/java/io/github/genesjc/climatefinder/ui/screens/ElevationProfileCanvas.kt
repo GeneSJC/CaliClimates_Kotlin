@@ -90,6 +90,7 @@ import io.github.genesjc.climatefinder.ui.components.LAYERS_BUTTON_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.BandAngleArc
+import io.github.genesjc.climatefinder.ui.components.BandsNotice
 import io.github.genesjc.climatefinder.ui.components.BAND_COMPASS_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BandCompass
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
@@ -111,6 +112,8 @@ import io.github.genesjc.climatefinder.ui.components.zoomDotGrowth
 
 @Composable
 internal fun ElevationProfileCanvas(
+    /** A short note to show beside the bands controls, such as which view the bands button switched to. */
+    notice: String? = null,
     stations: List<MicroclimateStation>,
     regionId: String,
     terrain: TerrainImage?,
@@ -1446,6 +1449,17 @@ internal fun ElevationProfileCanvas(
                     .padding(end = LEGEND_MARGIN_DP.dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp)
             )
         }
+        // The note about the bands button sits above the key, to the left of the dial and the button, beside what it describes
+        BandsNotice(
+            message = notice,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(
+                    end = (LEGEND_MARGIN_DP + BAND_ARC_SIZE_DP + 8f).dp,
+                    bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp
+                )
+                .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_SIZE_DP - 8f - 10f).dp)
+        )
         // The bands button sits in the hole of the dial, above the key; with the bands off it stays there on its own
         LayersToggleButton(
             on = layersOn,
