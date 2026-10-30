@@ -402,7 +402,13 @@ internal fun ElevationProfileCanvas(
         // A ripple runs along the line when the active layer changes (or the layers come on), not on the first look:
         // the visit's own ripple covers that
         var rippleArmed by remember { mutableStateOf(false) }
+        var rippleAngle by remember { mutableStateOf(bandAngle) }
         LaunchedEffect(layersShown, activeBand) {
+            // Sliding the angle regroups the stations and so changes the active band, over and over; only a jump (the axis
+            // switch) or a new selection ripples
+            val slid = bandAngle != rippleAngle && abs(bandAngle - rippleAngle) < AXIS_PIVOT_JUMP_DEGREES
+            rippleAngle = bandAngle
+            if (slid) return@LaunchedEffect
             if (!rippleArmed) {
                 rippleArmed = true
                 return@LaunchedEffect
@@ -622,7 +628,23 @@ internal fun ElevationProfileCanvas(
         val placedLabels = if (feetIds.isEmpty()) firstPass else layOut(feetIds)
         val placedIds = placedLabels.filter { it.hasRoom }.map { it.station.id }.toSet()
         labelHold.lastPlaced = placedIds
-        val labelFades = rememberLabelFades(placedLabels.associate { it.station.id to if (it.hasRoom) 1f else 0f })
+        // While the angle is moving the labels change as the stations regroup, so they fade slowly, and keep fading for a moment
+        // after the slider stops, instead of popping in and out
+        var turning by remember { mutableStateOf(false) }
+        var turningArmed by remember { mutableStateOf(false) }
+        LaunchedEffect(bandAngle) {
+            if (!turningArmed) {
+                turningArmed = true
+                return@LaunchedEffect
+            }
+            turning = true
+            kotlinx.coroutines.delay(TURNING_LINGER_MS)
+            turning = false
+        }
+        val labelFades = rememberLabelFades(
+            placedLabels.associate { it.station.id to if (it.hasRoom) 1f else 0f },
+            fadeSeconds = if (turning) TURNING_LABEL_FADE_SECONDS else 0.18f
+        )
 
         // Canvas drawing the dynamic sky, slope, shaded terrain, leader lines, and nodes
         Canvas(

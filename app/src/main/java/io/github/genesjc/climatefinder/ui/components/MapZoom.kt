@@ -116,6 +116,8 @@ fun rememberLabelFades(targets: Map<String, Float>, fadeSeconds: Float = 0.18f):
     val alphas = remember { mutableStateMapOf<String, Float>() }
     var latest by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
     SideEffect { if (latest != targets) latest = targets.toMap() }
+    // Read on every frame, so a change of speed (a slow fade while a slider moves) applies to a fade already running
+    val seconds by rememberUpdatedState(fadeSeconds)
     LaunchedEffect(Unit) {
         snapshotFlow { latest }.collectLatest { wanted ->
             var lastFrame = 0L
@@ -125,7 +127,7 @@ fun rememberLabelFades(targets: Map<String, Float>, fadeSeconds: Float = 0.18f):
                 val now = withFrameNanos { it }
                 val dt = if (lastFrame == 0L) 0f else ((now - lastFrame) / 1_000_000_000f).coerceIn(0f, 0.05f)
                 lastFrame = now
-                val step = dt / fadeSeconds
+                val step = dt / seconds
                 pending.forEach { id ->
                     val current = alphas[id] ?: 0f
                     val goal = wanted[id] ?: 0f

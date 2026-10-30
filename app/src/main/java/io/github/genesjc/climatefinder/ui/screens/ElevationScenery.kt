@@ -274,6 +274,10 @@ internal const val LAYERS_FADE_MS = 450
 /** A little extra on the fold of an axis pivot, so the bands have settled flat before the stations are regrouped. */
 internal const val AXIS_PIVOT_MARGIN_MS = 40
 
+/** How long the labels keep their slow fade after the viewing angle last changed (ms), and how long that fade takes (seconds). */
+internal const val TURNING_LINGER_MS = 1500L
+internal const val TURNING_LABEL_FADE_SECONDS = 0.7f
+
 /** The viewing angle has to move this many degrees at once (the axis switch) for the chart to fold; smaller moves (the slider) regroup at once. */
 internal const val AXIS_PIVOT_JUMP_DEGREES = 30
 
