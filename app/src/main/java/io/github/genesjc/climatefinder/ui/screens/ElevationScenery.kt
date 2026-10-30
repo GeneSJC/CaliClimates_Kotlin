@@ -281,6 +281,10 @@ internal val LAND_SLIDE = floatArrayOf(0.55f, 0.75f, 0.9f)
 internal const val BAND_TILT = 0.12f
 internal const val BAND_TILT_CONVERGE = 0.15f
 
+/** How much of the tags' opacity is taken away in the top half of the chart while the viewing angle moves: the selected station's tag keeps more. */
+internal const val UPPER_MUTE = 0.9f
+internal const val UPPER_MUTE_SELECTED = 0.4f
+
 /** How many points the shore is drawn with, from the horizon down. */
 internal const val SHORE_STEPS = 40
 

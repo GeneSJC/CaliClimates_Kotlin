@@ -1354,10 +1354,18 @@ internal fun ElevationProfileCanvas(
                 else -> 2 + band
             }
         }
+        // While the viewing angle is moving, the tags in the top half of the chart step back so the bands changing behind them can be
+        // seen, and come back when the control is still
+        val upperMute by animateFloatAsState(
+            targetValue = if (turning && layersOn) 1f else 0f,
+            animationSpec = tween(if (turning) 450 else 700),
+            label = "upperLabelMute"
+        )
         labelsBackToFront.forEach { label ->
             val station = label.station
             val isSelected = station.id == selectedStationId
-            val fade = labelFades[station.id] ?: 0f
+            val muted = if (label.yDp < heightDp.value / 2f) 1f - (if (isSelected) UPPER_MUTE_SELECTED else UPPER_MUTE) * upperMute else 1f
+            val fade = (labelFades[station.id] ?: 0f) * muted
             if (fade <= 0.01f) return@forEach
             val depth = depthOf(station.id)
             // A far station's text is fainter, but its tag stays solid
@@ -1449,7 +1457,19 @@ internal fun ElevationProfileCanvas(
                     .width(layerLegendWidthDp(true).dp)
             )
         }
-        BandAngleToast(angle = bandAngle, layersOn = layersOn, modifier = Modifier.align(Alignment.Center))
+        // The direction note sits just above the key, to the left of the dial, clear of the bands it describes
+        BandAngleToast(
+            angle = bandAngle,
+            layersOn = layersOn,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(
+                    end = (LEGEND_MARGIN_DP + (if (ANGLE_ARC) BAND_ARC_SIZE_DP else 0f) + 8f).dp,
+                    bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP +
+                        (if (ANGLE_ARC) 0f else BAND_ANGLE_SLIDER_HEIGHT_DP + BAND_HEADING_GAP_DP + BAND_HEADING_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP)).dp
+                )
+                .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - (if (ANGLE_ARC) BAND_ARC_SIZE_DP else 0f) - 8f - 56f).dp)
+        )
         if (layersOn && !ANGLE_ARC) {
             BandAngleSlider(
                 angle = bandAngle,

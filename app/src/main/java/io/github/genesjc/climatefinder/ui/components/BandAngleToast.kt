@@ -67,8 +67,9 @@ fun BandAngleToast(angle: Int, layersOn: Boolean, modifier: Modifier = Modifier)
     )
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = Color(0xCC1E293B),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
+        // Green, to stand apart from the dark controls beside it
+        color = BandsGreen.copy(alpha = 0.95f),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
         modifier = modifier.alpha(fade)
     ) {
         Text(
