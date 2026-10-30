@@ -27,9 +27,10 @@ const val BAND_COMPASS_SIZE_DP = 58f
 private val NEEDLE_RED = Color(0xFFEF4444)
 
 /**
- * A small compass that shows where the chart is looking: north at the top, a needle pointing the way the view points, swinging
- * from north toward west as [angle] (degrees from north toward west) grows. It is only a picture of the heading (the control
- * that turns the view is separate) and takes no touches.
+ * A small compass that shows where the chart is looking, heading-up like a boat's compass card: the way the view points is always
+ * the top, and the card turns under a fixed red arrow, so looking north has N at the top and looking west has W at the top with N
+ * at three o'clock. [angle] is the viewing angle in degrees from north toward west. It is only a picture of the heading (the
+ * control that turns the view is separate) and takes no touches.
  */
 @Composable
 fun BandCompass(angle: Int, modifier: Modifier = Modifier) {
@@ -50,41 +51,43 @@ fun BandCompass(angle: Int, modifier: Modifier = Modifier) {
         Canvas(modifier = Modifier.size(BAND_COMPASS_SIZE_DP.dp).clearAndSetSemantics { }) {
             val centre = Offset(size.width / 2f, size.height / 2f)
             val radius = size.minDimension / 2f
-            // The four points, fixed: north at the top in red
-            letters.forEach { (heading, name) ->
-                val layout = measurer.measure(
-                    name,
-                    TextStyle(
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = (if (heading == 0f) Color(0xFFF87171) else Color.White).copy(alpha = if (heading == 0f || heading == 270f) 0.95f else 0.5f)
+            // The card turns with the view: the point the view looks toward comes to the top
+            rotate(degrees = angle.toFloat(), pivot = centre) {
+                for (k in 0 until 24) {
+                    if (k % 6 == 0) continue // the letters stand there
+                    rotate(degrees = k * 15f, pivot = centre) {
+                        drawLine(
+                            Color.White.copy(alpha = if (k % 3 == 0) 0.5f else 0.28f),
+                            Offset(centre.x, centre.y - radius + 3.dp.toPx()),
+                            Offset(centre.x, centre.y - radius + (if (k % 3 == 0) 8 else 5).dp.toPx()),
+                            strokeWidth = 1.dp.toPx()
+                        )
+                    }
+                }
+                letters.forEach { (heading, name) ->
+                    val layout = measurer.measure(
+                        name,
+                        TextStyle(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = (if (heading == 0f) Color(0xFFF87171) else Color.White).copy(alpha = if (heading == 0f || heading == 270f) 0.95f else 0.55f)
+                        )
                     )
-                )
-                rotate(degrees = 0f, pivot = centre) {
-                    val rad = Math.toRadians(heading.toDouble())
-                    val at = Offset(centre.x + Math.sin(rad).toFloat() * (radius - 8.dp.toPx()), centre.y - Math.cos(rad).toFloat() * (radius - 8.dp.toPx()))
-                    drawText(layout, topLeft = Offset(at.x - layout.size.width / 2f, at.y - layout.size.height / 2f))
+                    // Each letter stands on the card's rim, turning with it
+                    rotate(degrees = heading, pivot = centre) {
+                        drawText(layout, topLeft = Offset(centre.x - layout.size.width / 2f, centre.y - radius + 4.dp.toPx()))
+                    }
                 }
             }
-            // The needle: red toward the heading, grey behind, swinging counter-clockwise from north as the view turns west
-            rotate(degrees = -angle.toFloat(), pivot = centre) {
-                val tip = radius - 15.dp.toPx()
-                val head = Path().apply {
-                    moveTo(centre.x, centre.y - tip)
-                    lineTo(centre.x + 4.dp.toPx(), centre.y)
-                    lineTo(centre.x - 4.dp.toPx(), centre.y)
-                    close()
-                }
-                val tail = Path().apply {
-                    moveTo(centre.x, centre.y + tip * 0.55f)
-                    lineTo(centre.x + 4.dp.toPx(), centre.y)
-                    lineTo(centre.x - 4.dp.toPx(), centre.y)
-                    close()
-                }
-                drawPath(tail, Color.White.copy(alpha = 0.45f))
-                drawPath(head, NEEDLE_RED)
+            // The fixed arrow: where the view points, always up
+            val arrow = Path().apply {
+                moveTo(centre.x, centre.y - radius * 0.5f)
+                lineTo(centre.x + 5.dp.toPx(), centre.y + 6.dp.toPx())
+                lineTo(centre.x, centre.y + 2.dp.toPx())
+                lineTo(centre.x - 5.dp.toPx(), centre.y + 6.dp.toPx())
+                close()
             }
-            drawCircle(Color.White, radius = 2.dp.toPx(), center = centre)
+            drawPath(arrow, NEEDLE_RED)
         }
     }
 }
