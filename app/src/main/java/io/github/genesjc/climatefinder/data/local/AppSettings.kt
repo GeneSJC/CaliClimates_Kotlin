@@ -41,7 +41,7 @@ interface AppSettings {
 
     fun markElevationLineTapped()
 
-    /** Whether the Elevation view shows its layers (bands by latitude). It starts off: the single line. */
+    /** Whether the Elevation view shows its layers (the bands). It starts on: the bands are the view the app is built around, and the single line is one tap away. */
     fun elevationLayers(): Boolean
 
     fun saveElevationLayers(on: Boolean)
@@ -109,7 +109,7 @@ class AppSettingsPreferences(
         if (!prefs.getBoolean(KEY_HINT_TAPPED, false)) prefs.edit().putBoolean(KEY_HINT_TAPPED, true).apply()
     }
 
-    override fun elevationLayers(): Boolean = prefs.getBoolean(KEY_ELEVATION_LAYERS, false)
+    override fun elevationLayers(): Boolean = prefs.getBoolean(KEY_ELEVATION_LAYERS, true)
 
     override fun saveElevationLayers(on: Boolean) {
         prefs.edit().putBoolean(KEY_ELEVATION_LAYERS, on).apply()

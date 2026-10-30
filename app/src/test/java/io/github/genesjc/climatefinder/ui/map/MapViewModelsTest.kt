@@ -89,9 +89,10 @@ class MapViewModelsTest {
     @Test
     fun settingTheBandAngleDoesNotTouchTheLayersSetting() {
         val vm = elevation()
+        val before = hints.layers
         vm.setBandAngle(90)
-        assertFalse(vm.layers.value)
-        assertFalse(hints.layers)
+        assertEquals(before, vm.layers.value)
+        assertEquals(before, hints.layers)
     }
 
     @Test
