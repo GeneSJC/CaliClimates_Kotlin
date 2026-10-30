@@ -1479,7 +1479,7 @@ internal fun ElevationProfileCanvas(
                     bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP +
                         (if (ANGLE_ARC) 0f else BAND_ANGLE_SLIDER_HEIGHT_DP + BAND_HEADING_GAP_DP + BAND_HEADING_HEIGHT_DP + BAND_ANGLE_SLIDER_GAP_DP)).dp
                 )
-                .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - (if (ANGLE_ARC) BAND_ARC_SIZE_DP else 0f) - 8f - 56f).dp)
+                .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - (if (ANGLE_ARC) BAND_ARC_SIZE_DP else 0f) - 8f - 10f).dp)
         )
         if (layersOn && !ANGLE_ARC) {
             BandAngleSlider(
