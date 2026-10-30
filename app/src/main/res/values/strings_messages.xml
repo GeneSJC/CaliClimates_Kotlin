@@ -9,7 +9,13 @@
     <string name="elevation_band_north">North</string>
     <string name="elevation_band_central">Central</string>
     <string name="elevation_band_south">South</string>
-    <string name="elevation_layers_on_notice">Switching to Elevation Bands\nNorth at the back, south in front</string>
+    <string name="elevation_band_west">West</string>
+    <string name="elevation_band_east">East</string>
+    <string name="elevation_axis_hint_north_south">North at the back, south in front</string>
+    <string name="elevation_axis_hint_west_east">West at the back, east in front</string>
+    <string name="elevation_axis_notice_north_south">Bands run north to south\nNorth at the back, south in front</string>
+    <string name="elevation_axis_notice_west_east">Bands run west to east\nWest at the back, east in front</string>
+    <string name="elevation_layers_on_notice">Switching to Elevation Bands\n%1$s</string>
     <string name="elevation_layers_off_notice">Switching to the single line\nEvery station by height</string>
     <string name="elevation_range">%1$,d–%2$,d ft</string>
     <string name="elevation_note_about">About as high as %1$s (%2$,d ft).</string>

@@ -2,6 +2,7 @@ package io.github.genesjc.climatefinder.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
 
 /**
@@ -43,6 +44,11 @@ interface AppSettings {
     fun elevationLayers(): Boolean
 
     fun saveElevationLayers(on: Boolean)
+
+    /** The direction the Elevation Bands look across the region. It starts north to south, as the bands always did. */
+    fun elevationBandAxis(): BandAxis
+
+    fun saveElevationBandAxis(axis: BandAxis)
 }
 
 /** [AppSettings] kept in one SharedPreferences file, with one key per value. */
@@ -105,6 +111,14 @@ class AppSettingsPreferences(
         prefs.edit().putBoolean(KEY_ELEVATION_LAYERS, on).apply()
     }
 
+    // Stored by name; a missing or unknown value (an older app, a renamed axis) reads as north to south
+    override fun elevationBandAxis(): BandAxis =
+        BandAxis.entries.firstOrNull { it.name == prefs.getString(KEY_ELEVATION_BAND_AXIS, null) } ?: BandAxis.NORTH_SOUTH
+
+    override fun saveElevationBandAxis(axis: BandAxis) {
+        prefs.edit().putString(KEY_ELEVATION_BAND_AXIS, axis.name).apply()
+    }
+
     companion object {
         const val FILE_NAME = "app_settings"
         const val MAX_HINT_LAUNCHES = 3
@@ -118,5 +132,6 @@ class AppSettingsPreferences(
         private const val KEY_HINT_LAUNCHES = "hint_launches"
         private const val KEY_HINT_TAPPED = "hint_line_tapped"
         private const val KEY_ELEVATION_LAYERS = "elevation_layers"
+        private const val KEY_ELEVATION_BAND_AXIS = "elevation_band_axis"
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.lerp
 import io.github.genesjc.climatefinder.R
+import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.DepthBands
 
 /** The haze laid over each layer's ground in the Elevation Bands view, nearest first (the nearest has none); the strength is [DepthBands.haze]. */
@@ -38,26 +39,43 @@ val LayerKeyColors = List(DepthBands.COUNT) { band ->
     lerp(lerp(FOOTHILL_GROUND, LayerHazeColors[band], DepthBands.haze(band)), Color.Black, 0.5f)
 }
 
-/** The key's size (dp), which the chart also keeps its labels clear of: three segments in a bar. */
-const val LAYER_LEGEND_WIDTH_DP = 3 * 64f + 2 * 2f + 6f
+/** The axis switch at the left of the key (dp). */
+private const val AXIS_CELL_WIDTH_DP = 40f
+
+/** The key's height (dp), which the chart also keeps its labels clear of. */
 const val LAYER_LEGEND_HEIGHT_DP = 40f
 
+/** The key's width (dp), which the chart also keeps its labels clear of: three segments in a bar, and the axis switch when it shows. */
+fun layerLegendWidthDp(withAxisSwitch: Boolean): Float =
+    3 * 64f + 2 * 2f + 6f + (if (withAxisSwitch) AXIS_CELL_WIDTH_DP + 2f else 0f)
+
 /**
- * The key to the bands (shown in the single-line view too, where the tags carry the band's colour as a stripe), and a way to move between them: a bar of three segments, North, Central
- * and South from left to right (the back ridge first), each in its band's colour. The active band's segment, the one
+ * The key to the bands (shown in the single-line view too, where the tags carry the band's colour as a stripe), and a way to move between them: a bar of three segments, from left to right the back ridge first
+ * (North, Central and South looking north; West, Central and East looking west), each in its band's colour. With the bands on
+ * ([showAxisSwitch]) a small cell at the left switches the axis ([onToggleAxis]); it reads the axis a tap would switch to. With
+ * the single line showing there is nothing for the axis to change, so the cell is left out. The active band's segment, the one
  * holding the selected station, is filled with a darker tone of that band's ground colour on the chart, with white text, and outlined in its line colour. Tapping another band's segment calls [onPick] with that band; a band with
  * no stations ([hasStations] false) is greyed out. It floats in one place whatever the pan and zoom, and [alpha]
  * fades it in and out with the view.
  */
 @Composable
 fun LayerLegend(
+    axis: BandAxis,
+    onToggleAxis: () -> Unit,
+    showAxisSwitch: Boolean,
     activeBand: Int?,
     hasStations: List<Boolean>,
     alpha: Float,
     onPick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** The axis the chart is being switched to, when it differs from [axis] (during a pivot); the switch cell follows it. */
+    requestedAxis: BandAxis = axis
 ) {
-    val names = listOf(R.string.elevation_band_south, R.string.elevation_band_central, R.string.elevation_band_north)
+    // Front first: band 0 is the nearest ridge
+    val names = when (axis) {
+        BandAxis.NORTH_SOUTH -> listOf(R.string.elevation_band_south, R.string.elevation_band_central, R.string.elevation_band_north)
+        BandAxis.WEST_EAST -> listOf(R.string.elevation_band_east, R.string.elevation_band_central, R.string.elevation_band_west)
+    }
     Surface(
         shape = RoundedCornerShape(12.dp),
         // Dark and a little see-through, like the weather badge and the notice, so the bar sits back in the chart
@@ -67,8 +85,9 @@ fun LayerLegend(
         modifier = modifier.alpha(alpha)
     ) {
         Row(modifier = Modifier.padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (showAxisSwitch) AxisCell(requestedAxis, onToggleAxis)
             for (band in names.indices.reversed()) {
-                val color = LayerColors[band]
+                val color = layerColor(band, axis)
                 val active = band == activeBand
                 val enabled = hasStations.getOrElse(band) { false }
                 val name = stringResource(names[band])
@@ -79,7 +98,7 @@ fun LayerLegend(
                         .height(34.dp)
                         .clip(RoundedCornerShape(9.dp))
                         .border(if (active) 1.5.dp else 0.dp, if (active) color else Color.Transparent, RoundedCornerShape(9.dp))
-                        .background(if (active) LayerKeyColors[band] else Color.Transparent)
+                        .background(if (active) LayerKeyColors[bandLook(band, axis)] else Color.Transparent)
                         .clickable(
                             enabled = enabled && !active,
                             onClickLabel = stringResource(R.string.elevation_band_pick, name),
@@ -96,5 +115,29 @@ fun LayerLegend(
                 }
             }
         }
+    }
+}
+
+/** The switch between the two axes: it shows where a tap would go (W-E while the bands run north to south), as the layers button shows its action. */
+@Composable
+private fun AxisCell(axis: BandAxis, onToggle: () -> Unit) {
+    val target = axis.other()
+    val label = stringResource(if (target == BandAxis.WEST_EAST) R.string.elevation_axis_cell_west_east else R.string.elevation_axis_cell_north_south)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .width(AXIS_CELL_WIDTH_DP.dp)
+            .height(34.dp)
+            .clip(RoundedCornerShape(9.dp))
+            .background(Color.White.copy(alpha = 0.10f))
+            .clickable(
+                onClickLabel = stringResource(
+                    if (target == BandAxis.WEST_EAST) R.string.elevation_axis_to_west_east else R.string.elevation_axis_to_north_south
+                ),
+                role = Role.Button,
+                onClick = onToggle
+            )
+    ) {
+        Text(text = label, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = 0.85f))
     }
 }

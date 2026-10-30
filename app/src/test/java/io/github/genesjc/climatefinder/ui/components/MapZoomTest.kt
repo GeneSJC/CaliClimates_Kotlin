@@ -26,6 +26,20 @@ class MapZoomTest {
     }
 
     @Test
+    fun aVerticalFloorStopsTheContentBeingDraggedUpTooFar() {
+        // Zoom 1, a viewport 1000 tall, 40% overscroll: the pan could go to -400, but the floor at this zoom is -100
+        val floor = { _: Float -> -100f }
+        assertOffset(0f, -100f, clampPan(Offset(0f, -300f), 1f, 1000f, 1000f, overscroll = 0.4f, lowestPanY = floor))
+        assertOffset(0f, -60f, clampPan(Offset(0f, -60f), 1f, 1000f, 1000f, overscroll = 0.4f, lowestPanY = floor))
+        assertOffset(0f, 400f, clampPan(Offset(0f, 700f), 1f, 1000f, 1000f, overscroll = 0.4f, lowestPanY = floor))
+    }
+
+    @Test
+    fun theVerticalFloorNeverPassesTheOtherLimit() {
+        assertEquals(40f, clampPan(Offset(0f, 0f), 1f, 100f, 100f, overscroll = 0.4f, lowestPanY = { 500f }).y, 1e-3f)
+    }
+
+    @Test
     fun panIsLockedWhenFullyZoomedOut() {
         assertOffset(0f, 0f, clampPan(Offset(80f, -40f), 1f, 100f, 200f))
     }
