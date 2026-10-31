@@ -285,6 +285,13 @@ internal const val BAND_TILT_CONVERGE = 0.15f
 internal const val UPPER_MUTE = 0.9f
 internal const val UPPER_MUTE_SELECTED = 0.4f
 
+/**
+ * The band hinge experiment: how far the band lines swing at the middle angle, in degrees (60 narrows them to half their width),
+ * and where the axis is in the chart's width (0 the left edge, 0.5 the middle, 1 the right edge).
+ */
+internal const val BAND_PIVOT_MAX_DEGREES = 60f
+internal const val BAND_PIVOT_HINGE = 0.5f
+
 /** How many points the shore is drawn with, from the horizon down. */
 internal const val SHORE_STEPS = 40
 

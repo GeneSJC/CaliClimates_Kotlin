@@ -438,6 +438,22 @@ internal fun ElevationProfileCanvas(
         }
         fun pinBaseY(idx: Int): Float = pinYAt(idx, layerMix)
 
+        // The hinge (an experiment): as the dial turns, the band lines swing like a door about a vertical axis. They narrow
+        // sideways to a partial squeeze at the middle angle and open out again at the other end, so the swing is a pure
+        // function of the angle (0 at both ends, the most at 45 degrees). [BAND_PIVOT_HINGE] says where the axis is in the
+        // chart's width: 0 the left edge, 0.5 the middle, 1 the right edge.
+        fun pivotScale(mix: Float): Float {
+            val swingDegrees = BAND_PIVOT_MAX_DEGREES * kotlin.math.sin(Math.toRadians(angleShown * 2.0)).toFloat()
+            return 1f - (1f - kotlin.math.cos(Math.toRadians(swingDegrees.toDouble())).toFloat()) * mix
+        }
+        // A pin's base x (before the zoom and pan), with the layers [mix] of the way on
+        fun pinXAt(idx: Int, mix: Float): Float {
+            val base = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
+            val hinge = canvasW * BAND_PIVOT_HINGE
+            return hinge + (base - hinge) * pivotScale(mix)
+        }
+        fun pinBaseX(idx: Int): Float = pinXAt(idx, layerMix)
+
         // Whether a pin (at base position [bx], [by]) is well inside the chart at the current zoom and pan: clear of the
         // edges, the tile row and the bottom
         fun inComfortableView(bx: Float, by: Float): Boolean {
@@ -466,7 +482,7 @@ internal fun ElevationProfileCanvas(
             }
             val idx = sorted.indexOfFirst { it.id == currentStation?.id }
             if (idx < 0) return@LaunchedEffect
-            val bx = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
+            val bx = pinXAt(idx, if (layersShown) 1f else 0f)
             val by = pinYAt(idx, if (layersShown) 1f else 0f)
             if (folding) return@LaunchedEffect
             if (unfolding && inComfortableView(bx, by)) return@LaunchedEffect
@@ -484,7 +500,7 @@ internal fun ElevationProfileCanvas(
         androidx.compose.runtime.LaunchedEffect(selectedStationId, sorted) {
             val idx = sorted.indexOfFirst { it.id == selectedStationId }
             if (idx < 0) return@LaunchedEffect
-            val bx = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
+            val bx = pinBaseX(idx)
             val by = pinBaseY(idx)
             if (inComfortableView(bx, by)) return@LaunchedEffect
             zoomJob?.cancel()
@@ -546,7 +562,7 @@ internal fun ElevationProfileCanvas(
                 val station = sorted[idx]
                 val ratioX = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1)
                 val elevRatio = station.elevationMeters / maxElevation
-                val pinX = with(density) { viewX(paddingPx + ratioX * widthPx).toDp().value }
+                val pinX = with(density) { viewX(pinBaseX(idx)).toDp().value }
                 val pinY = with(density) { viewY(pinBaseY(idx)).toDp().value }
                 if (pinX < 0f || pinX > widthDp.value || pinY < 0f || pinY > heightDp.value) return null
                 val miles = milesFromSelected[station.id]
@@ -676,7 +692,7 @@ internal fun ElevationProfileCanvas(
                         var closestDist = Float.MAX_VALUE
 
                         sorted.forEachIndexed { index, station ->
-                            val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
+                            val x = viewX(pinBaseX(index))
                             val y = viewY(pinBaseY(index))
 
                             val dx = tapOffset.x - x
@@ -717,7 +733,7 @@ internal fun ElevationProfileCanvas(
                     lineTo(bleedRight, bleedTop)
                     lineTo(bleedRight, viewY(pinBaseY(sorted.lastIndex.coerceAtLeast(0))))
                     for (i in (sorted.size - 1) downTo 0) {
-                        lineTo(viewX(padding + (i.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w), viewY(pinBaseY(i)))
+                        lineTo(viewX(pinBaseX(i)), viewY(pinBaseY(i)))
                     }
                     lineTo(bleedLeft, viewY(pinBaseY(0)))
                 }
@@ -806,7 +822,7 @@ internal fun ElevationProfileCanvas(
                     // so they come and go the way a label does.
                     val backMembers = sorted.indices.filter { bandIndex[it] == DepthBands.COUNT - 1 }
                     if (backMembers.isNotEmpty()) {
-                        val ridgeXs = backMembers.map { viewX(padding + it.toFloat() / (sorted.size - 1).coerceAtLeast(1) * w) }
+                        val ridgeXs = backMembers.map { viewX(pinBaseX(it)) }
                         val ridgeYs = backMembers.map { viewY(pinBaseY(it)) }
                         // The boats are part of the mural: each keeps its share of the water that is showing, so they slide across with the
                         // sea as the view turns, always on the water, and drift a little with the pan. The big one is the anchor; two small
@@ -1015,7 +1031,7 @@ internal fun ElevationProfileCanvas(
                 val rightEdge = bleedRight
 
                 members.forEachIndexed { k, index ->
-                    val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
+                    val x = viewX(pinBaseX(index))
                     val y = viewY(pinBaseY(index))
                     if (k == 0) {
                         // A layer runs level out to the chart's edge beyond its first and last stations
@@ -1154,7 +1170,7 @@ internal fun ElevationProfileCanvas(
 
             // Station points along the slope & leader lines for landmarks
             sorted.forEachIndexed { index, station ->
-                val x = viewX(padding + (index.toFloat() / (sorted.size - 1).coerceAtLeast(1)) * w)
+                val x = viewX(pinBaseX(index))
                 val y = viewY(pinBaseY(index))
                 val isSelected = station.id == selectedStationId
 
@@ -1420,7 +1436,7 @@ internal fun ElevationProfileCanvas(
                 .filter { stationBands[it] == band }
                 .minByOrNull { i ->
                     val spot = Offset(
-                        viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
+                        viewX(pinBaseX(i)),
                         viewY(pinBaseY(i))
                     )
                     (spot - middle).getDistance()
@@ -1478,7 +1494,7 @@ internal fun ElevationProfileCanvas(
             return sorted.indices
                 .map { i ->
                     Offset(
-                        viewX(paddingPx + i.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx),
+                        viewX(pinBaseX(i)),
                         viewY(pinBaseY(i))
                     )
                 }
