@@ -427,19 +427,25 @@ internal fun ElevationProfileCanvas(
         }
         val layerTopY = paddingPx + PROFILE_HEAD * heightPx
         val layerSeaY = paddingPx + (1f - SEA_FRACTION) * heightPx
-        // The hinge (an experiment): the band lines turn about a vertical axis through the chart, from broadside (the dial at north)
-        // toward the line of sight (the dial at west), by up to [BAND_PIVOT_MAX_DEGREES]. Seen in perspective: the end swinging
-        // away gets smaller and climbs toward the horizon, the end swinging toward you a little bigger. [BAND_PIVOT_HINGE] says
-        // where the axis is in the chart's width (0 the left edge, 0.5 the middle, 1 the right edge).
+        // The hinge (an experiment): the three bands are flat cards standing at different depths (the back one furthest), and the
+        // stack turns about a vertical axis through the chart, from broadside (the dial at north) to [BAND_PIVOT_MAX_DEGREES] at
+        // west. Seen in perspective: the side swinging toward you gets bigger, the side swinging away smaller and nearer the
+        // horizon, and the cards fan out sideways because each turns about the same axis from its own depth. At the broadside
+        // position nothing moves. [BAND_PIVOT_HINGE] says where the axis is in the chart's width (0 the left edge, 0.5 the
+        // middle, 1 the right edge).
         val hingeX = canvasW * BAND_PIVOT_HINGE
         val pivotHorizonY = paddingPx + (with(density) { CHART_REGULAR_HEIGHT.toPx() } - paddingPx * 2) * 0.55f
         fun swing(mix: Float): Float =
             Math.toRadians((BAND_PIVOT_MAX_DEGREES * angleShown / BandAngle.WEST.toFloat() * mix).toDouble()).toFloat()
         fun pinFlatX(idx: Int): Float = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
-        // How much bigger (or smaller) the pin is for its distance: 1 on the axis, under 1 on the side swinging away
+        // The card's depth from the axis, in pixels: the front band is nearer, the back band further
+        fun cardDepth(idx: Int): Float = (bandIndex[idx] - 1) * widthPx * BAND_PIVOT_DEPTH_STEP
+        // How much bigger (or smaller) the pin looks for how its distance has changed by the turn: 1 when nothing has turned
         fun pivotP(idx: Int, mix: Float): Float {
+            val phi = swing(mix)
             val focal = widthPx * BAND_PIVOT_FOCAL
-            return focal / (focal + (pinFlatX(idx) - hingeX) * kotlin.math.sin(swing(mix)))
+            val change = (pinFlatX(idx) - hingeX) * kotlin.math.sin(phi) + cardDepth(idx) * (kotlin.math.cos(phi) - 1f)
+            return focal / (focal + change)
         }
         // The pin's place with the layers [mix] of the way on (0 the single line, 1 the Elevation Bands)
         fun pinYAt(idx: Int, mix: Float): Float {
@@ -453,8 +459,11 @@ internal fun ElevationProfileCanvas(
         }
         fun pinBaseY(idx: Int): Float = pinYAt(idx, layerMix)
         // A pin's base x (before the zoom and pan), with the layers [mix] of the way on: narrowed by the turn and by the distance
-        fun pinXAt(idx: Int, mix: Float): Float =
-            hingeX + (pinFlatX(idx) - hingeX) * kotlin.math.cos(swing(mix)) * pivotP(idx, mix)
+        fun pinXAt(idx: Int, mix: Float): Float {
+            val phi = swing(mix)
+            val turned = (pinFlatX(idx) - hingeX) * kotlin.math.cos(phi) - cardDepth(idx) * kotlin.math.sin(phi)
+            return hingeX + turned * pivotP(idx, mix)
+        }
         fun pinBaseX(idx: Int): Float = pinXAt(idx, layerMix)
 
 
@@ -1178,6 +1187,7 @@ internal fun ElevationProfileCanvas(
             sorted.forEachIndexed { index, station ->
                 val x = viewX(pinBaseX(index))
                 val y = viewY(pinBaseY(index))
+                val pivotDot = pivotP(index, layerMix)
                 val isSelected = station.id == selectedStationId
 
                 val isLandmark = station.id in placedIds
@@ -1219,12 +1229,12 @@ internal fun ElevationProfileCanvas(
                 val fadeCue = (depth?.let { DepthCue.alpha(it) } ?: 1f) * bandMute
                 drawCircle(
                     color = Color.White.copy(alpha = fadeCue),
-                    radius = (if (isSelected) 8f else (if (isLandmark) 6.5f else 4.5f)) * dotGrowth * dotCue,
+                    radius = (if (isSelected) 8f else (if (isLandmark) 6.5f else 4.5f)) * dotGrowth * dotCue * pivotDot,
                     center = Offset(x, y)
                 )
                 drawCircle(
                     color = (if (isSelected) skyTheme.accent else pinColor).copy(alpha = fadeCue),
-                    radius = (if (isSelected) 6f else (if (isLandmark) 4.8f else 3.2f)) * dotGrowth * dotCue,
+                    radius = (if (isSelected) 6f else (if (isLandmark) 4.8f else 3.2f)) * dotGrowth * dotCue * pivotDot,
                     center = Offset(x, y)
                 )
 

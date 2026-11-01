@@ -286,13 +286,14 @@ internal const val UPPER_MUTE = 0.9f
 internal const val UPPER_MUTE_SELECTED = 0.4f
 
 /**
- * The band hinge experiment: how far the band lines have turned when the dial is at west, in degrees from broadside (60 narrows
- * them to half their width), where the vertical axis is in the chart's width (0 the left edge, 0.5 the middle, 1 the right
- * edge), and how strong the perspective is (the eye's distance in chart widths: smaller is stronger).
+ * The band hinge experiment: how far the stack of bands has turned when the dial is at west, in degrees from broadside; where the
+ * vertical axis is in the chart's width (0 the left edge, 0.5 the middle, 1 the right edge); the eye's distance in chart widths
+ * (smaller is stronger perspective); and the depth between neighbouring bands, in chart widths (how far they fan out).
  */
-internal const val BAND_PIVOT_MAX_DEGREES = 60f
+internal const val BAND_PIVOT_MAX_DEGREES = 45f
 internal const val BAND_PIVOT_HINGE = 0.5f
-internal const val BAND_PIVOT_FOCAL = 3.0f
+internal const val BAND_PIVOT_FOCAL = 1.4f
+internal const val BAND_PIVOT_DEPTH_STEP = 0.22f
 
 /** How many points the shore is drawn with, from the horizon down. */
 internal const val SHORE_STEPS = 40
