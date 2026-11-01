@@ -147,7 +147,8 @@ internal fun ElevationProfileCanvas(
     val sorted = remember(stations) { stations.sortedBy { it.elevationMeters } }
     val maxElevation = remember(sorted) { (sorted.maxOfOrNull { it.elevationMeters } ?: 1500).toFloat() }
     // Stations ranked for labels; the first few are the ones the sky badge cycles through
-    val rankedLandmarks = remember(sorted) { rankLandmarkIndexes(sorted) }
+    val landmarkIds = LocalStateUsa.current.landmarkStations[regionId] ?: emptyList()
+    val rankedLandmarks = remember(sorted, landmarkIds) { rankLandmarkIndexes(sorted, landmarkIds) }
     // Each station's label text, made once (label placement runs on every zoom and pan frame)
     val feetText = rememberFeetFormatter()
     val labelNames = remember(sorted) { sorted.map { cityName(it) } }

@@ -289,6 +289,28 @@ object StateUsaCA : StateUsaDefinition {
     )
 
     /** The kinds of tree along the near hills, by region (repeats make a kind more common). */
+    /**
+     * The places people look for first (a station stands for a place when it is the airport or the station by it). The Bay Area
+     * has no station in San Francisco itself, so the city's airport stands for it, and none in Santa Cruz, so that waits for the
+     * station data refresh (the Central Coast has Monterey, Salinas and Watsonville, which is next to it).
+     */
+    override val landmarkStations: Map<String, List<String>> = mapOf(
+        "bay_area_sacramento" to listOf(
+            "KRHV", // San Jose
+            "KSMF", // Sacramento
+            "KSFO", // San Francisco (the airport, south of the city)
+            "KOAK", // Oakland
+            "KSCK", // Stockton
+            "KAPC", // Napa
+            "KDVO"  // Novato, the nearest to Marin
+        ),
+        "central_coast" to listOf(
+            "KMRY", // Monterey
+            "KWVI", // Watsonville
+            "KSNS"  // Salinas
+        )
+    )
+
     override val treeMix: Map<String, List<TreeKind>> = mapOf(
         "northern_california" to listOf(TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.OAK),
         "bay_area_sacramento" to listOf(TreeKind.CONIFER, TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),

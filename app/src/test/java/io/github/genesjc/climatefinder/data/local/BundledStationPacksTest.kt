@@ -1,5 +1,6 @@
 package io.github.genesjc.climatefinder.data.local
 
+import io.github.genesjc.climatefinder.domain.model.StateUsaCA
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -43,6 +44,19 @@ class BundledStationPacksTest {
             for (column in listOf("id", "name", "latitude", "longitude", "elevation_meters", "terrain_type", "tier")) {
                 assertTrue("$fileName ($region) is missing the '$column' column", column in header)
             }
+        }
+    }
+
+    @Test
+    fun everyLandmarkStationIsInItsRegionsPack() {
+        val regionPack = mapOf(
+            "northern_california" to "a.txt", "bay_area_sacramento" to "b.txt", "central_coast" to "c.txt",
+            "central_valley" to "d.txt", "los_angeles" to "e.txt", "san_diego" to "f.txt"
+        )
+        for ((regionId, ids) in StateUsaCA.landmarkStations) {
+            val pack = regionPack.getValue(regionId)
+            val stationIds = StationPack.decode(packText(pack))!!.lines().drop(1).filter { it.isNotBlank() }.map { it.substringBefore(",") }.toSet()
+            for (id in ids) assertTrue("$id is not in $pack ($regionId)", id in stationIds)
         }
     }
 
