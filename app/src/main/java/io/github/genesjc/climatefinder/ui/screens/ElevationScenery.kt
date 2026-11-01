@@ -292,6 +292,19 @@ internal const val UPPER_MUTE_SELECTED = 0.4f
 internal const val SKYLINE_SMOOTH = 1f
 
 /**
+ * How the stations are spaced across the view with the bands on: 1 spreads them evenly in their west-to-east (or south-to-north)
+ * order, which keeps nearby stations from piling onto the same spot and sending the line shooting up and down; 0 spaces them by their
+ * true places on the map. In between blends the two.
+ */
+internal const val SKYLINE_EVEN_SPACING = 1f
+
+/**
+ * How much of its height a station keeps in the bands view (1 is the full height of the single line): the heights are drawn
+ * compressed toward the sea so the skyline's peaks and valleys stay on the screen and the band reads as a line, not a cliff.
+ */
+internal const val SKYLINE_HEIGHT_SCALE = 0.45f
+
+/**
  * Continues this path through [points] (left to right; the path is already at the first one) as a smooth curve: each piece is a
  * cubic whose ends lean along the line between the neighbouring points, scaled by [smooth], with the control heights held
  * between the two points' heights so the curve does not overshoot. [smooth] 0 gives straight lines.

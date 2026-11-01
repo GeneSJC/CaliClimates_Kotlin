@@ -427,8 +427,9 @@ internal fun ElevationProfileCanvas(
         }
         val layerTopY = paddingPx + PROFILE_HEAD * heightPx
         val layerSeaY = paddingPx + (1f - SEA_FRACTION) * heightPx
-        // With the bands on, a station stands where it is across the line of sight (west to east looking north, south to north
-        // looking west), spread over the chart's width by its true place; with the single line it stands where it ranks by height
+        // With the bands on, a station stands in its order across the line of sight (west to east looking north, south to north
+        // looking west) over the chart's width: evenly spaced in that order, or by its true place on the map, or a blend of the two
+        // ([SKYLINE_EVEN_SPACING]); with the single line it stands where it ranks by height
         val lateralFrac = remember(sorted, angleShown) {
             if (sorted.isEmpty()) {
                 FloatArray(0)
@@ -436,7 +437,13 @@ internal fun ElevationProfileCanvas(
                 val keys = sorted.map { DepthBands.lateralKey(it.latitude, it.longitude, angleShown.toDouble()) }
                 val low = keys.min()
                 val span = (keys.max() - low).takeIf { it > 1e-9 } ?: 1.0
-                FloatArray(sorted.size) { ((keys[it] - low) / span).toFloat() }
+                val order = keys.indices.sortedBy { keys[it] }
+                val rankFrac = FloatArray(sorted.size)
+                order.forEachIndexed { rank, i -> rankFrac[i] = rank.toFloat() / (sorted.size - 1).coerceAtLeast(1) }
+                FloatArray(sorted.size) {
+                    val trueFrac = ((keys[it] - low) / span).toFloat()
+                    trueFrac + (rankFrac[it] - trueFrac) * SKYLINE_EVEN_SPACING
+                }
             }
         }
         // A station's base x (before the zoom and pan), with the layers [mix] of the way on (0 the single line, 1 the bands)
@@ -453,7 +460,9 @@ internal fun ElevationProfileCanvas(
             // little less than the near ones, so the lines converge like lines in perspective: the bands seem to turn with the view
             val across = lateralFrac[idx] - 0.5f
             val tilt = BAND_TILT * (angleShown / BandAngle.WEST.toFloat()) * (1f - BAND_TILT_CONVERGE * bandIndex[idx]) * across * widthPx
-            return plain + (DepthBands.layeredY(plain, bandIndex[idx], layerTopY, layerSeaY) - plain) * mix + tilt * mix
+            // The bands show the heights compressed toward the sea ([SKYLINE_HEIGHT_SCALE]), so each band's swings fit on the screen
+            val compressed = layerSeaY - (layerSeaY - plain) * SKYLINE_HEIGHT_SCALE
+            return plain + (DepthBands.layeredY(compressed, bandIndex[idx], layerTopY, layerSeaY) - plain) * mix + tilt * mix
         }
         fun pinBaseY(idx: Int): Float = pinYAt(idx, layerMix)
 
