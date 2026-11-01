@@ -520,13 +520,15 @@ internal fun ElevationProfileCanvas(
         // until the chart is zoomed or touched; then the labels are chosen afresh and fade in and out as usual
         val labelHold = remember(sorted) { LabelHold(bandAngle) }
         if (labelHold.angle != bandAngle) {
-            // A jump (the axis switch) keeps the labels as they were through the pivot; a small move (the angle slider)
-            // lays them out afresh at every angle, so they do not pile up as the stations regroup
-            val jump = abs(bandAngle - labelHold.angle) >= AXIS_PIVOT_JUMP_DEGREES
+            // The tag set stays as it is while the dial turns: which stations carry tags follows the view (the zoom and the
+            // pan), and the compass only changes how they are grouped. Zooming or touching the chart ends the hold below,
+            // and the tags are chosen afresh for the view that is then showing.
             labelHold.angle = bandAngle
-            labelHold.ids = if (jump) labelHold.lastPlaced else null
-            labelHold.zoom = zoom
-            labelHold.touch = touchedAt[0]
+            if (labelHold.ids == null) {
+                labelHold.ids = labelHold.lastPlaced
+                labelHold.zoom = zoom
+                labelHold.touch = touchedAt[0]
+            }
         }
         // Ended by a pinch, a drag or any change of zoom, but not by the chart easing itself over (the pivot re-centres it)
         if (labelHold.ids != null && (zoom != labelHold.zoom || touchedAt[0] != labelHold.touch)) labelHold.ids = null
