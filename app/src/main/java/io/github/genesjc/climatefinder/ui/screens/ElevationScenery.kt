@@ -292,8 +292,11 @@ internal const val UPPER_MUTE_SELECTED = 0.4f
  */
 internal const val BAND_PIVOT_MAX_DEGREES = 45f
 internal const val BAND_PIVOT_HINGE = 0.5f
-internal const val BAND_PIVOT_FOCAL = 1.4f
-internal const val BAND_PIVOT_DEPTH_STEP = 0.22f
+internal const val BAND_PIVOT_FOCAL = 1.0f
+internal const val BAND_PIVOT_DEPTH_STEP = 0.30f
+
+/** How much of the dial's travel (0 to 1) it takes for a band's level run-out to shrink away and leave a card with ends. */
+internal const val BAND_PIVOT_WINGS_UNTIL = 0.35f
 
 /** How many points the shore is drawn with, from the horizon down. */
 internal const val SHORE_STEPS = 40

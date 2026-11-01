@@ -1042,8 +1042,13 @@ internal fun ElevationProfileCanvas(
                 val linePath = Path()
                 // The ground runs on below the chart's bottom edge: the ocean covers it there, except looking west
                 val floor = viewY(size.height - padding) + size.height
-                val leftEdge = bleedLeft
-                val rightEdge = bleedRight
+                // Turning the stack turns each band into a card: the level run-out beyond its first and last stations shrinks away
+                // as the turn grows, so the card's ends show (at the broadside position the ground still runs to the screen's edges)
+                val firstX = viewX(pinBaseX(members.first()))
+                val lastX = viewX(pinBaseX(members.last()))
+                val wing = (1f - (angleShown / BandAngle.WEST.toFloat() * layerMix) / BAND_PIVOT_WINGS_UNTIL).coerceIn(0f, 1f)
+                val leftEdge = firstX - (firstX - bleedLeft).coerceAtLeast(0f) * wing
+                val rightEdge = lastX + (bleedRight - lastX).coerceAtLeast(0f) * wing
 
                 members.forEachIndexed { k, index ->
                     val x = viewX(pinBaseX(index))
