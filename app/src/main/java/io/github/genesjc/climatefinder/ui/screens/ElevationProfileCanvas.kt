@@ -427,6 +427,20 @@ internal fun ElevationProfileCanvas(
         }
         val layerTopY = paddingPx + PROFILE_HEAD * heightPx
         val layerSeaY = paddingPx + (1f - SEA_FRACTION) * heightPx
+        // The hinge (an experiment): the band lines turn about a vertical axis through the chart, from broadside (the dial at north)
+        // toward the line of sight (the dial at west), by up to [BAND_PIVOT_MAX_DEGREES]. Seen in perspective: the end swinging
+        // away gets smaller and climbs toward the horizon, the end swinging toward you a little bigger. [BAND_PIVOT_HINGE] says
+        // where the axis is in the chart's width (0 the left edge, 0.5 the middle, 1 the right edge).
+        val hingeX = canvasW * BAND_PIVOT_HINGE
+        val pivotHorizonY = paddingPx + (with(density) { CHART_REGULAR_HEIGHT.toPx() } - paddingPx * 2) * 0.55f
+        fun swing(mix: Float): Float =
+            Math.toRadians((BAND_PIVOT_MAX_DEGREES * angleShown / BandAngle.WEST.toFloat() * mix).toDouble()).toFloat()
+        fun pinFlatX(idx: Int): Float = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
+        // How much bigger (or smaller) the pin is for its distance: 1 on the axis, under 1 on the side swinging away
+        fun pivotP(idx: Int, mix: Float): Float {
+            val focal = widthPx * BAND_PIVOT_FOCAL
+            return focal / (focal + (pinFlatX(idx) - hingeX) * kotlin.math.sin(swing(mix)))
+        }
         // The pin's place with the layers [mix] of the way on (0 the single line, 1 the Elevation Bands)
         fun pinYAt(idx: Int, mix: Float): Float {
             val plain = paddingPx + profileFrac(sorted[idx].elevationMeters / maxElevation) * heightPx
@@ -434,25 +448,15 @@ internal fun ElevationProfileCanvas(
             // little less than the near ones, so the lines converge like lines in perspective: the bands seem to turn with the view
             val across = idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) - 0.5f
             val tilt = BAND_TILT * (angleShown / BandAngle.WEST.toFloat()) * (1f - BAND_TILT_CONVERGE * bandIndex[idx]) * across * widthPx
-            return plain + (DepthBands.layeredY(plain, bandIndex[idx], layerTopY, layerSeaY) - plain) * mix + tilt * mix
+            val flatY = plain + (DepthBands.layeredY(plain, bandIndex[idx], layerTopY, layerSeaY) - plain) * mix + tilt * mix
+            return pivotHorizonY + (flatY - pivotHorizonY) * pivotP(idx, mix)
         }
         fun pinBaseY(idx: Int): Float = pinYAt(idx, layerMix)
-
-        // The hinge (an experiment): as the dial turns, the band lines swing like a door about a vertical axis. They narrow
-        // sideways to a partial squeeze at the middle angle and open out again at the other end, so the swing is a pure
-        // function of the angle (0 at both ends, the most at 45 degrees). [BAND_PIVOT_HINGE] says where the axis is in the
-        // chart's width: 0 the left edge, 0.5 the middle, 1 the right edge.
-        fun pivotScale(mix: Float): Float {
-            val swingDegrees = BAND_PIVOT_MAX_DEGREES * kotlin.math.sin(Math.toRadians(angleShown * 2.0)).toFloat()
-            return 1f - (1f - kotlin.math.cos(Math.toRadians(swingDegrees.toDouble())).toFloat()) * mix
-        }
-        // A pin's base x (before the zoom and pan), with the layers [mix] of the way on
-        fun pinXAt(idx: Int, mix: Float): Float {
-            val base = paddingPx + idx.toFloat() / (sorted.size - 1).coerceAtLeast(1) * widthPx
-            val hinge = canvasW * BAND_PIVOT_HINGE
-            return hinge + (base - hinge) * pivotScale(mix)
-        }
+        // A pin's base x (before the zoom and pan), with the layers [mix] of the way on: narrowed by the turn and by the distance
+        fun pinXAt(idx: Int, mix: Float): Float =
+            hingeX + (pinFlatX(idx) - hingeX) * kotlin.math.cos(swing(mix)) * pivotP(idx, mix)
         fun pinBaseX(idx: Int): Float = pinXAt(idx, layerMix)
+
 
         // Whether a pin (at base position [bx], [by]) is well inside the chart at the current zoom and pan: clear of the
         // edges, the tile row and the bottom

@@ -278,7 +278,7 @@ internal val LAND_SLIDE = floatArrayOf(0.55f, 0.75f, 0.9f)
  * How much the bands tilt looking west, as a slope: the rise across the chart's width, from the right end to the left, per unit of
  * width (0.20 is about 11 degrees); the far bands tilt [BAND_TILT_CONVERGE] less per band behind the front one.
  */
-internal const val BAND_TILT = 0.20f
+internal const val BAND_TILT = 0.0f  // off while the hinge experiment gives the lines their own slant
 internal const val BAND_TILT_CONVERGE = 0.15f
 
 /** How much of the tags' opacity is taken away in the top half of the chart while the viewing angle moves: the selected station's tag keeps more. */
@@ -286,11 +286,13 @@ internal const val UPPER_MUTE = 0.9f
 internal const val UPPER_MUTE_SELECTED = 0.4f
 
 /**
- * The band hinge experiment: how far the band lines swing at the middle angle, in degrees (60 narrows them to half their width),
- * and where the axis is in the chart's width (0 the left edge, 0.5 the middle, 1 the right edge).
+ * The band hinge experiment: how far the band lines have turned when the dial is at west, in degrees from broadside (60 narrows
+ * them to half their width), where the vertical axis is in the chart's width (0 the left edge, 0.5 the middle, 1 the right
+ * edge), and how strong the perspective is (the eye's distance in chart widths: smaller is stronger).
  */
 internal const val BAND_PIVOT_MAX_DEGREES = 60f
 internal const val BAND_PIVOT_HINGE = 0.5f
+internal const val BAND_PIVOT_FOCAL = 3.0f
 
 /** How many points the shore is drawn with, from the horizon down. */
 internal const val SHORE_STEPS = 40
