@@ -27,7 +27,8 @@ class FakeAppSettings(
     var launches: Int = 0,
     var tapped: Boolean = false,
     var layers: Boolean = true,
-    var angle: Int = 0
+    var angle: Int = 0,
+    var tab: Int = 0
 ) : AppSettings {
     override fun selectedRegionId() = region
     override fun saveSelectedRegionId(regionId: String) {
@@ -63,6 +64,11 @@ class FakeAppSettings(
     override fun elevationLayers() = layers
     override fun saveElevationLayers(on: Boolean) {
         layers = on
+    }
+
+    override fun homeTab() = tab
+    override fun saveHomeTab(tab: Int) {
+        this.tab = tab
     }
 
     override fun elevationBandAngle() = angle

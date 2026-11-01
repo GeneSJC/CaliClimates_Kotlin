@@ -96,6 +96,12 @@ interface StateUsaDefinition {
     /** The trees along the near hills, by region id (repeats make a kind more common). */
     val treeMix: Map<String, List<TreeKind>>
 
+    /**
+     * The stations that stand for each region's best-known places, by region id, in the order they should be labelled: the
+     * Elevation view shows them first whenever they are in view. Each id is a station in that region's pack.
+     */
+    val landmarkStations: Map<String, List<String>> get() = emptyMap()
+
     /** The regions as (longitude, latitude) polygons that share their boundary points, by region id. */
     val regionShapes: Map<String, List<Pair<Float, Float>>>
 
