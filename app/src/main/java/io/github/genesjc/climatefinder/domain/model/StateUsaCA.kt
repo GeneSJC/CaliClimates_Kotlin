@@ -296,10 +296,10 @@ object StateUsaCA : StateUsaDefinition {
      */
     override val landmarkStations: Map<String, List<String>> = mapOf(
         "bay_area_sacramento" to listOf(
-            "KRHV", // San Jose
-            "KSMF", // Sacramento
             "KSFO", // San Francisco (the airport, south of the city)
             "KOAK", // Oakland
+            "KRHV", // San Jose
+            "KSMF", // Sacramento
             "KSCK", // Stockton
             "KAPC", // Napa
             "KDVO"  // Novato, the nearest to Marin
