@@ -351,7 +351,6 @@ object StateUsaCA : StateUsaDefinition {
             "KRNM"   // Ramona
         )
     )
-    )
 
     override val treeMix: Map<String, List<TreeKind>> = mapOf(
         "northern_california" to listOf(TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.OAK),
