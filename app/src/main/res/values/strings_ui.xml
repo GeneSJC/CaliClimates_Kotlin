@@ -49,6 +49,8 @@
     <!-- Stations dropdown -->
     <string name="stations_title">Stations</string>
     <string name="stations_search">Search stations</string>
+    <string name="stations_main_places">Main places</string>
+    <string name="stations_all">All stations</string>
 
     <!-- Region info -->
     <string name="region_terrain_mix">Terrain mix</string>

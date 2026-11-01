@@ -84,6 +84,8 @@ internal fun MapControlRow(
     showLocate: Boolean = false,
     onLocate: () -> Unit = {},
     stations: List<MicroclimateStation> = emptyList(),
+    /** The region's best-known places as station ids, in order: the drop-down lists them first. */
+    landmarkIds: List<String> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
     /** Told where the menu button's top edge is on the screen (px), so the menu panel can open level with it. */
@@ -96,7 +98,7 @@ internal fun MapControlRow(
             Text(text = "\u2630", fontSize = 18.sp, color = blue)
         }
         if (onElevation) {
-            StationsDropdown(stations, selectedStationId, onPickStation)
+            StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation)
         } else {
             // The north indicator, as a button-sized tile (not a button: it does nothing)
             Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {
@@ -136,17 +138,21 @@ internal fun MapControlRow(
     }
 }
 
-/** The Elevation view's "Stations" drop-down: every station by name; picking one makes it the selected station. */
+/**
+ * The Elevation view's "Stations" drop-down: the region's best-known places first ([landmarkIds], in their order, under a
+ * heading), then every other station by name; picking one makes it the selected station. A search filters both parts.
+ */
 @Composable
-private fun StationsDropdown(stations: List<MicroclimateStation>, selectedStationId: String?, onPick: (String) -> Unit) {
+private fun StationsDropdown(stations: List<MicroclimateStation>, landmarkIds: List<String>, selectedStationId: String?, onPick: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     val ink = Color(0xFF334155)
-    val sorted = remember(stations) { stations.sortedBy { it.name.lowercase() } }
+    val landmarks = remember(stations, landmarkIds) { landmarkIds.mapNotNull { id -> stations.firstOrNull { it.id == id } } }
+    val rest = remember(stations, landmarks) { stations.filter { it !in landmarks }.sortedBy { it.name.lowercase() } }
     var query by remember { mutableStateOf("") }
-    val matches = remember(sorted, query) {
-        val q = query.trim()
-        if (q.isEmpty()) sorted else sorted.filter { it.name.contains(q, ignoreCase = true) }
-    }
+    val q = query.trim()
+    val landmarkMatches = remember(landmarks, query) { if (q.isEmpty()) landmarks else landmarks.filter { it.name.contains(q, ignoreCase = true) } }
+    val restMatches = remember(rest, query) { if (q.isEmpty()) rest else rest.filter { it.name.contains(q, ignoreCase = true) } }
+    val matches = landmarkMatches + restMatches
     Box {
         // The same type as the Topography / Elevation buttons
         Surface(
@@ -230,7 +236,19 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, selectedStatio
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                     )
                 }
-                matches.forEach { station ->
+                fun heading(text: String) = Text(
+                    text = text,
+                    fontSize = ms(8f),
+                    fontWeight = FontWeight.Bold,
+                    color = ink.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp)
+                )
+                if (landmarkMatches.isNotEmpty() && restMatches.isNotEmpty()) heading(stringResource(R.string.stations_main_places))
+                matches.forEachIndexed { position, station ->
+                    if (position == landmarkMatches.size && landmarkMatches.isNotEmpty() && restMatches.isNotEmpty()) {
+                        androidx.compose.material3.HorizontalDivider(color = ink.copy(alpha = 0.25f), modifier = Modifier.padding(vertical = 4.dp))
+                        heading(stringResource(R.string.stations_all))
+                    }
                     val current = station.id == selectedStationId
                     DropdownMenuItem(
                         text = {

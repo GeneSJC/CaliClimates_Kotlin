@@ -616,6 +616,7 @@ fun LandingScreen(
                         MapControlRow(
                             onElevation = homeTab == 1,
                             stations = snapshotStations,
+                            landmarkIds = stateUsa.landmarkStations[region.id] ?: emptyList(),
                             selectedStationId = selectedStationId,
                             onPickStation = onStationSelected,
                             onMenu = { scope.launch { drawerState.open() } },
