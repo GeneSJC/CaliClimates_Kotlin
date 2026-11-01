@@ -327,6 +327,12 @@ internal fun Path.curveThrough(points: List<Offset>, smooth: Float) {
     }
 }
 
+/**
+ * How far the Elevation chart can be zoomed out (1 is the full chart filling the screen; less shows more of the land around it, so
+ * the whole skyline and its landmark stations can be seen at once).
+ */
+internal const val ELEVATION_MIN_ZOOM = 0.6f
+
 /** How many points the shore is drawn with, from the horizon down. */
 internal const val SHORE_STEPS = 40
 

@@ -178,7 +178,7 @@ internal fun ElevationProfileCanvas(
     val layersButtonTop = if (embedded) HOME_TILE_BAND + 62.dp else 56.dp
 
     // View transform: an even zoom (like a magnifying glass) about the centre plus a pan in pixels
-    var zoom by remember(sorted) { mutableStateOf(initialZoom.coerceIn(1f, MAX_MAP_ZOOM)) }
+    var zoom by remember(sorted) { mutableStateOf(initialZoom.coerceIn(ELEVATION_MIN_ZOOM, MAX_MAP_ZOOM)) }
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
 
     // Every visit: a pulse runs up the line once. First launches only: a hint in words says the line can be tapped
@@ -310,7 +310,7 @@ internal fun ElevationProfileCanvas(
                     touchedAt[0] = System.nanoTime()
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
-                    val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
+                    val newZoom = (zoom * zoomChange).coerceIn(ELEVATION_MIN_ZOOM, MAX_MAP_ZOOM)
                     val waterLimit = { z: Float -> elevationLowestPanY(z, h) }
                     val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit)
                     pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit)
@@ -323,7 +323,7 @@ internal fun ElevationProfileCanvas(
                     val w = size.width.toFloat()
                     val h = size.height.toFloat()
                     if (zoom >= MAX_MAP_ZOOM * 0.99f) {
-                        animateZoomTo(1f, Offset(w / 2f, h / 2f), w, h)
+                        animateZoomTo(ELEVATION_MIN_ZOOM.coerceAtLeast(1f), Offset(w / 2f, h / 2f), w, h)
                     } else {
                         animateZoomTo((zoom * 2f).coerceAtMost(MAX_MAP_ZOOM), spot, w, h)
                     }
@@ -1541,6 +1541,7 @@ internal fun ElevationProfileCanvas(
                 zoom = newZoom
             },
             onStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) },
+            minValue = ELEVATION_MIN_ZOOM,
             // At the left here (the chart has no use for that side); its top stays put, the bottom follows the chart
             modifier = Modifier
                 .align(Alignment.TopStart)

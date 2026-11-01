@@ -26,12 +26,18 @@ internal data class PlacedLabel(
 )
 
 /**
- * Ranks stations for labels, most useful first: each next pick is the station farthest along the
- * profile from those already picked, with airports (K-prefixed, recognizable cities) preferred.
+ * Stations that are shown first whenever they are in view, ahead of the rest: the region's featured stations and the airports
+ * (K-prefixed, which stand for the recognizable cities, such as Sacramento, Oakland and San Jose in the Bay Area).
+ */
+internal fun isMajorStation(station: MicroclimateStation): Boolean = station.isFeatured || station.id.startsWith("K")
+
+/**
+ * Ranks stations for labels, most useful first: the major stations first (see [isMajorStation]), then the rest, each next pick
+ * being the station farthest along the profile from those already picked, with airports preferred among the rest.
  */
 internal fun rankLandmarkIndexes(sorted: List<MicroclimateStation>): List<Int> {
     if (sorted.isEmpty()) return emptyList()
-    fun bonus(i: Int) = if (sorted[i].id.startsWith("K")) 2f else 0f
+    fun bonus(i: Int) = (if (isMajorStation(sorted[i])) 1000f else 0f) + (if (sorted[i].id.startsWith("K")) 2f else 0f)
     val chosen = mutableListOf(0)
     while (chosen.size < minOf(sorted.size, 60)) {
         val next = sorted.indices
