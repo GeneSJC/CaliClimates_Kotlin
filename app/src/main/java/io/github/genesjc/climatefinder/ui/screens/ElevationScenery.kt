@@ -285,6 +285,35 @@ internal const val BAND_TILT_CONVERGE = 0.15f
 internal const val UPPER_MUTE = 0.9f
 internal const val UPPER_MUTE_SELECTED = 0.4f
 
+/**
+ * How round the bands' skylines are at the turns: 0 is straight lines between the stations, 1 a smooth spline through them
+ * (the curve is held between the neighbouring stations' heights, so it never swings past a peak or below a valley).
+ */
+internal const val SKYLINE_SMOOTH = 1f
+
+/**
+ * Continues this path through [points] (left to right; the path is already at the first one) as a smooth curve: each piece is a
+ * cubic whose ends lean along the line between the neighbouring points, scaled by [smooth], with the control heights held
+ * between the two points' heights so the curve does not overshoot. [smooth] 0 gives straight lines.
+ */
+internal fun Path.curveThrough(points: List<Offset>, smooth: Float) {
+    if (points.size < 2) return
+    for (i in 0 until points.size - 1) {
+        val p0 = points[(i - 1).coerceAtLeast(0)]
+        val p1 = points[i]
+        val p2 = points[i + 1]
+        val p3 = points[(i + 2).coerceAtMost(points.size - 1)]
+        val k = smooth / 6f
+        val lowY = minOf(p1.y, p2.y)
+        val highY = maxOf(p1.y, p2.y)
+        cubicTo(
+            p1.x + (p2.x - p0.x) * k, (p1.y + (p2.y - p0.y) * k).coerceIn(lowY, highY),
+            p2.x - (p3.x - p1.x) * k, (p2.y - (p3.y - p1.y) * k).coerceIn(lowY, highY),
+            p2.x, p2.y
+        )
+    }
+}
+
 /** How many points the shore is drawn with, from the horizon down. */
 internal const val SHORE_STEPS = 40
 

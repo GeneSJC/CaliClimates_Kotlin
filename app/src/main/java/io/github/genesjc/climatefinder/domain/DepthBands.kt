@@ -132,6 +132,20 @@ object DepthBands {
     }
 
     /**
+     * How far across the line of sight a station stands when looking in the direction [degrees]: bigger is farther to the
+     * right. Looking north (0) the right is east, so it is the longitude; looking west (90) the right is north, so it is the
+     * latitude. It is at right angles to [depthKey], so the two together place a station on the land seen from that way.
+     */
+    fun lateralKey(latitude: Double, longitude: Double, degrees: Double): Double {
+        val (c, s) = when (degrees) {
+            0.0 -> 1.0 to 0.0
+            90.0 -> 0.0 to 1.0
+            else -> Math.toRadians(degrees).let { cos(it) to sin(it) }
+        }
+        return longitude * c + latitude * s
+    }
+
+    /**
      * The band of each station, given their depth keys in the stations' own order: the smallest third is band 0
      * (front), the largest the last band (back). Split by rank, so each band gets about the same number of stations.
      */
