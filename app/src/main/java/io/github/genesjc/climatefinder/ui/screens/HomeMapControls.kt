@@ -236,6 +236,7 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, landmarkIds: L
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                     )
                 }
+                @Composable
                 fun heading(text: String) = Text(
                     text = text,
                     fontSize = ms(8f),
