@@ -123,6 +123,21 @@ class AppSettingsPreferencesTest {
     }
 
     @Test
+    fun theHomeViewStartsOnTopographyAndKeepsTheChoice() {
+        assertEquals(0, launch().homeTab())
+        launch().saveHomeTab(1)
+        assertEquals(1, launch().homeTab())
+        launch().saveHomeTab(0)
+        assertEquals(0, launch().homeTab())
+    }
+
+    @Test
+    fun aStoredHomeViewOutOfRangeIsHeldInsideIt() {
+        values["home_tab"] = 7
+        assertEquals(1, launch().homeTab())
+    }
+
+    @Test
     fun theBandAngleStartsAtNorthAndKeepsTheChoice() {
         assertEquals(0, launch().elevationBandAngle())
         launch().saveElevationBandAngle(90)

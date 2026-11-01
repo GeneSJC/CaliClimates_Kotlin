@@ -84,7 +84,7 @@ class HomeViewModel : AppBaseViewModel() {
 
     private val _uiState = MutableStateFlow(
         settings.selectedRegionId().let { regionId ->
-            HomeUiState(selectedRegionId = regionId, selectedStationId = settings.selectedStationId(regionId))
+            HomeUiState(selectedRegionId = regionId, tab = settings.homeTab(), selectedStationId = settings.selectedStationId(regionId))
         }
     )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -200,7 +200,10 @@ class HomeViewModel : AppBaseViewModel() {
         zoomChanges.tryEmit(zoom)
     }
 
-    fun setTab(tab: Int) = _uiState.update { it.copy(tab = tab) }
+    fun setTab(tab: Int) {
+        _uiState.update { it.copy(tab = tab) }
+        settings.saveHomeTab(tab)
+    }
 
     fun setPinScale(scale: Float) = _uiState.update { it.copy(pinScale = scale) }
 
