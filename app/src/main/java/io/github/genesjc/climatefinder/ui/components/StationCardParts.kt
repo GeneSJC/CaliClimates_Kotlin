@@ -1,5 +1,6 @@
 package io.github.genesjc.climatefinder.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -80,6 +81,59 @@ internal fun CardToggle(label: String, onClickLabel: String, onClick: () -> Unit
 }
 
 /**
+ * A row that folds the section under it: the [content] at the left, a small chevron at the right, and a tap area
+ * of at least 40dp. The row stays when the section is folded, so what it says is what a folded section shows.
+ */
+@Composable
+internal fun SectionToggleRow(open: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 40.dp)
+            .clickable(onClickLabel = stringResource(R.string.card_section_toggle), role = Role.Button, onClick = onToggle),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.weight(1f)) { content() }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = if (open) "\u25B4" else "\u25BE",
+            fontSize = ms(11f),
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+    }
+}
+
+/** The readings as a section: a "Readings" row (with the values in one line while folded) over the three tiles. */
+@Composable
+internal fun ReadingsSection(summary: String, open: Boolean, onToggle: () -> Unit, tiles: @Composable () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SectionToggleRow(open = open, onToggle = onToggle) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.card_readings),
+                    fontSize = ms(11f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+                if (!open) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = summary,
+                        fontSize = ms(11f),
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+        AnimatedVisibility(visible = open) { tiles() }
+    }
+}
+
+/**
  * One reading as a small rounded tile: a coloured dot and the label, the number large, the unit under it. The
  * [value] is the formatted reading ("3.4 mph"); its last word, if it has one, is shown as the unit.
  */
@@ -131,75 +185,82 @@ private val SPECTRUM_COLORS = listOf(Color(0xFF34D399), Color(0xFFFBBF24), Color
 
 /**
  * Where the station stands in its region's heights: a gradient track from the lowest station to the highest, a
- * marker at this station's place, and the station's own height written above it where nothing can clip it.
+ * marker at this station's place, and the station's own height written above it where nothing can clip it. The
+ * height row folds the track; the height stays in view when it is folded.
  */
 @Composable
-internal fun ElevationSpectrum(stationMeters: Int, minMeters: Int, maxMeters: Int, markerColor: Color) {
+internal fun ElevationSpectrum(stationMeters: Int, minMeters: Int, maxMeters: Int, markerColor: Color, open: Boolean, onToggle: () -> Unit) {
     val range = maxMeters - minMeters
     val fraction = if (range > 0) ((stationMeters - minMeters).toFloat() / range).coerceIn(0f, 1f) else 0f
     val markerSize = 16.dp
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stringResource(R.string.card_station_elevation),
-                fontSize = ms(11f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = elevationFeetText(stationMeters),
-                fontSize = ms(13f),
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
-            )
+        SectionToggleRow(open = open, onToggle = onToggle) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.card_station_elevation),
+                    fontSize = ms(11f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = elevationFeetText(stationMeters),
+                    fontSize = ms(13f),
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+            }
         }
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(markerSize)) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Brush.horizontalGradient(SPECTRUM_COLORS))
-            )
-            Box(
-                modifier = Modifier
-                    .offset(x = (maxWidth - markerSize) * fraction)
-                    .size(markerSize)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .padding(3.dp)
-                    .clip(CircleShape)
-                    .background(markerColor)
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = elevationFeetText(minMeters),
-                fontSize = ms(9f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
-            )
-            Text(
-                text = elevationFeetText(maxMeters),
-                fontSize = ms(9f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
-            )
+        AnimatedVisibility(visible = open) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(markerSize)) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Brush.horizontalGradient(SPECTRUM_COLORS))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .offset(x = (maxWidth - markerSize) * fraction)
+                            .size(markerSize)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                            .padding(3.dp)
+                            .clip(CircleShape)
+                            .background(markerColor)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = elevationFeetText(minMeters),
+                        fontSize = ms(9f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = elevationFeetText(maxMeters),
+                        fontSize = ms(9f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+            }
         }
     }
 }
 
-/** A tinted note under the readings: the terrain's name as its title, and a sentence about the height. */
+/** A tinted note under the readings: the terrain's name as its title (which folds the note), and a sentence about the height. */
 @Composable
-internal fun MicroclimateCallout(terrainName: String, color: Color, note: String) {
+internal fun MicroclimateCallout(terrainName: String, color: Color, note: String, open: Boolean, onToggle: () -> Unit) {
     val shape = RoundedCornerShape(12.dp)
     Column(
         modifier = Modifier
@@ -209,20 +270,24 @@ internal fun MicroclimateCallout(terrainName: String, color: Color, note: String
             .border(BorderStroke(1.dp, color.copy(alpha = 0.25f)), shape)
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
-        Text(
-            text = stringResource(R.string.card_microclimate, terrainName),
-            fontSize = ms(11f),
-            fontWeight = FontWeight.Bold,
-            color = color,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = note,
-            fontSize = ms(11f),
-            lineHeight = ms(14f),
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 2.dp)
-        )
+        SectionToggleRow(open = open, onToggle = onToggle, modifier = Modifier.heightIn(min = 32.dp)) {
+            Text(
+                text = stringResource(R.string.card_microclimate, terrainName),
+                fontSize = ms(11f),
+                fontWeight = FontWeight.Bold,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        AnimatedVisibility(visible = open) {
+            Text(
+                text = note,
+                fontSize = ms(11f),
+                lineHeight = ms(14f),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 2.dp)
+            )
+        }
     }
 }

@@ -34,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -218,8 +219,8 @@ fun StationCard(
 
 /**
  * The refined card body, top to bottom: the terrain badge and the height band with the Less control; the
- * station's name on its own line; the temperature with the reading's age; Humidity, Wind and Pressure as tiles;
- * where the station stands in the region's heights; and a note about the height.
+ * station's name on its own line; the temperature with the reading's age; then three sections that fold: the
+ * readings as tiles, where the station stands in the region's heights, and a note about the height.
  */
 @Composable
 private fun CompactStationBody(
@@ -230,6 +231,10 @@ private fun CompactStationBody(
     onLess: (() -> Unit)? = null,
     elevationNote: String? = null
 ) {
+    // Which sections are open: the readings are, the height and the note start folded, so more of the map shows
+    var readingsOpen by rememberSaveable { mutableStateOf(true) }
+    var spectrumOpen by rememberSaveable { mutableStateOf(false) }
+    var noteOpen by rememberSaveable { mutableStateOf(false) }
     Column(modifier = Modifier.padding(start = 14.dp, end = 8.dp, top = 2.dp, bottom = 12.dp)) {
         // Row 1: the badges at the left, and the card's fold control (Less) at the right
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -293,33 +298,45 @@ private fun CompactStationBody(
                 )
             }
         }
-        // Row 4: Humidity, Wind and Pressure, three tiles of one height
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp, end = 6.dp).height(IntrinsicSize.Min),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            MetricTile(stringResource(R.string.metric_humidity), display.humidityText(), Color(0xFF3B82F6), Modifier.weight(1f).fillMaxHeight())
-            MetricTile(stringResource(R.string.metric_wind), display.windText(), Color(0xFF14B8A6), Modifier.weight(1f).fillMaxHeight())
-            MetricTile(stringResource(display.thirdLabelRes), display.thirdText(), Color(0xFFF59E0B), Modifier.weight(1f).fillMaxHeight())
+        // Row 4: Humidity, Wind and Pressure, three tiles of one height; folds to one line of values
+        Box(modifier = Modifier.padding(top = 4.dp, end = 6.dp)) {
+            ReadingsSection(
+                summary = listOf(display.humidityText(), display.windText(), display.thirdText()).joinToString(" \u00B7 "),
+                open = readingsOpen,
+                onToggle = { readingsOpen = !readingsOpen }
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp).height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MetricTile(stringResource(R.string.metric_humidity), display.humidityText(), Color(0xFF3B82F6), Modifier.weight(1f).fillMaxHeight())
+                    MetricTile(stringResource(R.string.metric_wind), display.windText(), Color(0xFF14B8A6), Modifier.weight(1f).fillMaxHeight())
+                    MetricTile(stringResource(display.thirdLabelRes), display.thirdText(), Color(0xFFF59E0B), Modifier.weight(1f).fillMaxHeight())
+                }
+            }
         }
-        // Row 5: where this station stands among the region's heights
+        // Row 5: where this station stands among the region's heights; the height row folds the track
         if (regionRangeMeters != null) {
-            Box(modifier = Modifier.padding(top = 12.dp, end = 6.dp)) {
+            Box(modifier = Modifier.padding(top = 2.dp, end = 6.dp)) {
                 ElevationSpectrum(
                     stationMeters = station.elevationMeters,
                     minMeters = regionRangeMeters.first,
                     maxMeters = regionRangeMeters.second,
-                    markerColor = badgeColor
+                    markerColor = badgeColor,
+                    open = spectrumOpen,
+                    onToggle = { spectrumOpen = !spectrumOpen }
                 )
             }
         }
-        // Row 6: the terrain's name and a sentence about the height
+        // Row 6: the terrain's name and a sentence about the height; the name folds the sentence
         if (elevationNote != null) {
-            Box(modifier = Modifier.padding(top = 10.dp, end = 6.dp)) {
+            Box(modifier = Modifier.padding(top = 6.dp, end = 6.dp)) {
                 MicroclimateCallout(
                     terrainName = stringResource(station.terrain.labelRes),
                     color = badgeColor,
-                    note = elevationNote
+                    note = elevationNote,
+                    open = noteOpen,
+                    onToggle = { noteOpen = !noteOpen }
                 )
             }
         }
