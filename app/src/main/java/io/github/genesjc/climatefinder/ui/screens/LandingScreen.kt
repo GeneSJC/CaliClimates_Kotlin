@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -414,7 +415,9 @@ fun LandingScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
                         ) {
-                            Box(modifier = Modifier.weight(1f)) {
+                            // The tile fills the height it is given, so it is held to its own content's height (without this it
+                            // fills the whole map); the picker and Info column beside it can be taller
+                            Box(modifier = Modifier.weight(1f).height(IntrinsicSize.Min)) {
                                 if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || menuDrawerShowing || pickerState.visible, readingFor = readingFor)
                             }
                             // At the right: the region picker (the region's shape and a chevron; it opens the graphical picker), and under it
