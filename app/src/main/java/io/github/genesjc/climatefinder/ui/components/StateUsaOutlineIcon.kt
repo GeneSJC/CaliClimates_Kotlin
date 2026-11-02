@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import io.github.genesjc.climatefinder.ui.theme.LocalStateUsa
 
 // Longitude degrees are narrower than latitude degrees at the middle latitudes of the USA.

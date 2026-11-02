@@ -1,7 +1,7 @@
 package io.github.genesjc.climatefinder.viewmodel
 
 import androidx.lifecycle.ViewModel
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 

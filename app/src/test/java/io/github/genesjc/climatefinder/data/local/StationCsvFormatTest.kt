@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder.data.local
 
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaCA
 import io.github.genesjc.climatefinder.domain.model.TerrainType
 import java.io.BufferedReader
 import java.io.StringReader

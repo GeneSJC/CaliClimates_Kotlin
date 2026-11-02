@@ -72,7 +72,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.domain.model.TerrainType
 import io.github.genesjc.climatefinder.ui.theme.LocalStateUsa
@@ -109,6 +109,7 @@ import io.github.genesjc.climatefinder.ui.components.labelBudget
 import io.github.genesjc.climatefinder.ui.components.rememberLabelFades
 import io.github.genesjc.climatefinder.ui.components.panForZoom
 import io.github.genesjc.climatefinder.ui.components.zoomDotGrowth
+import androidx.compose.ui.graphics.asImageBitmap
 
 @Composable
 internal fun ElevationProfileCanvas(
@@ -141,6 +142,8 @@ internal fun ElevationProfileCanvas(
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
+    // The terrain picture as a Compose image, made once per picture (the data layer hands over a plain bitmap)
+    val terrainPicture = remember(terrain) { terrain?.bitmap?.asImageBitmap() }
 
     val treeMix = LocalStateUsa.current.treeMix[regionId] ?: DEFAULT_TREE_MIX
     // Sort stations by elevation ascending (valley 5m -> ridge 1406m)
@@ -1056,7 +1059,7 @@ internal fun ElevationProfileCanvas(
                 // A faint relief texture from the region's own terrain picture (decoration, not data). It
                 // drifts slower than the profile when you pan and zoom, which gives the ground some depth.
                 // (with the bands on, only the front layer and the active one: it is the costliest part of a frame)
-                if (terrain != null && (!layered || band == 0 || band == activeBand)) {
+                if (terrain != null && terrainPicture != null && (!layered || band == 0 || band == activeBand)) {
                     val b = terrain.bounds
                     val lonSpan = b.maxLon - b.minLon
                     val latSpan = b.maxLat - b.minLat
@@ -1065,7 +1068,7 @@ internal fun ElevationProfileCanvas(
                     val sRight = ((stations.maxOf { it.longitude } - b.minLon) / lonSpan).coerceIn(0.0, 1.0)
                     val sTop = ((b.maxLat - stations.maxOf { it.latitude }) / latSpan).coerceIn(0.0, 1.0)
                     val sBottom = ((b.maxLat - stations.minOf { it.latitude }) / latSpan).coerceIn(0.0, 1.0)
-                    val img = terrain.image
+                    val img = terrainPicture
                     val srcX = (sLeft * img.width).toInt()
                     val srcY = (sTop * img.height).toInt()
                     val srcW = ((sRight - sLeft) * img.width).toInt().coerceAtLeast(1)

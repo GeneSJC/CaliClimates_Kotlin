@@ -1,4 +1,7 @@
-package io.github.genesjc.climatefinder.domain.model
+package io.github.genesjc.climatefinder.config
+
+import io.github.genesjc.climatefinder.domain.model.GeoBounds
+import io.github.genesjc.climatefinder.domain.model.StateUsaBorderLine
 
 /** The artwork of the hand-drawn region picker map, in longitude and latitude. */
 data class StateUsaPickerMap(

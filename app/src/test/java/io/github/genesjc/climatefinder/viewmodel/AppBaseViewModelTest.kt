@@ -1,7 +1,7 @@
 package io.github.genesjc.climatefinder.viewmodel
 
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import io.github.genesjc.climatefinder.testutil.StopKoinRule
 import io.github.genesjc.climatefinder.testutil.restartKoin
 import org.junit.Assert.assertEquals

@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 
 /**
  * Holds each station's latest result with the time it was received. It stores and reports; whether a result is still

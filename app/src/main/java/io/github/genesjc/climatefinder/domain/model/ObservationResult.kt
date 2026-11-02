@@ -1,4 +1,4 @@
-package io.github.genesjc.climatefinder.data.remote
+package io.github.genesjc.climatefinder.domain.model
 
 /** Outcome of one fetch: a reading, a station with nothing usable right now, or a failed request. */
 sealed interface ObservationResult {

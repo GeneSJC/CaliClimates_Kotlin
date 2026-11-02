@@ -3,10 +3,10 @@ package io.github.genesjc.climatefinder.ui.home
 import androidx.lifecycle.viewModelScope
 import io.github.genesjc.climatefinder.data.local.AppSettings
 import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
 import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.climatefinder.ui.screens.DEFAULT_PIN_SCALE

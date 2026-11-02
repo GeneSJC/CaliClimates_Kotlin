@@ -1,11 +1,11 @@
 package io.github.genesjc.climatefinder.ui.stationlist
 
 import io.github.genesjc.climatefinder.R
-import io.github.genesjc.climatefinder.data.local.DatasetKind
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.DatasetKind
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
 import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.viewmodel.AppBaseViewModel
 import androidx.lifecycle.viewModelScope

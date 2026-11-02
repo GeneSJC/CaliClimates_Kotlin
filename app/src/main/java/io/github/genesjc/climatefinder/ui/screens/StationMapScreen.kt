@@ -42,7 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.ui.components.MapExpandToggle
 import io.github.genesjc.climatefinder.ui.components.TerrainLegend
 import io.github.genesjc.climatefinder.ui.components.RegionPickerButton

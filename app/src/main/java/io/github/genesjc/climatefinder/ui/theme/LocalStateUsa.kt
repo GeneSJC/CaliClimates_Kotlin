@@ -1,8 +1,8 @@
 package io.github.genesjc.climatefinder.ui.theme
 
 import androidx.compose.runtime.staticCompositionLocalOf
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 
 /**
  * The USA state the screens are drawn for: its regions, outline and picker artwork. The root provides the registered

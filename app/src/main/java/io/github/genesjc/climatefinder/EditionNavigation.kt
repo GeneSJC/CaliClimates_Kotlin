@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder
 
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.ui.navigation.AppScreen
 
 /**

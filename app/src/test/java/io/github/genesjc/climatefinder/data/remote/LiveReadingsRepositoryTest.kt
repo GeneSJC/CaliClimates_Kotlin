@@ -14,6 +14,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
+import io.github.genesjc.climatefinder.domain.model.LiveObservation
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LiveReadingsRepositoryTest {

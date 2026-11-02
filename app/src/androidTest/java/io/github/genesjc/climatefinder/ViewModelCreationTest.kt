@@ -13,7 +13,7 @@ import io.github.genesjc.climatefinder.data.local.TerrainRepository
 import io.github.genesjc.climatefinder.data.local.TerrainSource
 import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
 import io.github.genesjc.climatefinder.data.remote.ObservationSource
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import io.github.genesjc.climatefinder.ui.home.HomeViewModel
 import io.github.genesjc.climatefinder.ui.map.ElevationViewModel
 import io.github.genesjc.climatefinder.ui.map.StationMapViewModel

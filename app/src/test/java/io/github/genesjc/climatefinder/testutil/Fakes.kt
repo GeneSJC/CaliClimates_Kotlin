@@ -1,15 +1,15 @@
 package io.github.genesjc.climatefinder.testutil
 
-import androidx.compose.ui.graphics.ImageBitmap
+import android.graphics.Bitmap
 import io.github.genesjc.climatefinder.data.local.AppSettings
-import io.github.genesjc.climatefinder.data.local.DatasetKind
+import io.github.genesjc.climatefinder.domain.model.DatasetKind
 import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
 import io.github.genesjc.climatefinder.data.local.StateUsaTerrain
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationSource
 import io.github.genesjc.climatefinder.data.local.TerrainImage
 import io.github.genesjc.climatefinder.data.local.TerrainSource
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.data.remote.ObservationSource
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.testStation
@@ -116,7 +116,7 @@ class FakeTerrainSource : TerrainSource {
         return null
     }
 
-    override fun loadBackdropRelief(): ImageBitmap? {
+    override fun loadBackdropRelief(): Bitmap? {
         backdropLoads++
         return null
     }

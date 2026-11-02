@@ -1,5 +1,7 @@
 package io.github.genesjc.climatefinder.data.remote
 
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
+
 /**
  * The rule for how long a result may be reused before it is asked for again. A real reading is reused for 15 minutes
  * (NWS stations report about hourly). Anything else (a station with no usable reading, a failed request) is reused for

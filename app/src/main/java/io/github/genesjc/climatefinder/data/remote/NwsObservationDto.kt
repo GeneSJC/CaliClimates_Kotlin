@@ -3,6 +3,8 @@ package io.github.genesjc.climatefinder.data.remote
 import kotlinx.serialization.Serializable
 import java.text.SimpleDateFormat
 import java.util.Locale
+import io.github.genesjc.climatefinder.domain.model.LiveObservation
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 
 /** The part of an api.weather.gov observation (GeoJSON) the app reads. Values can be null and carry a unit code. */
 @Serializable

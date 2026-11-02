@@ -2,11 +2,13 @@ package io.github.genesjc.climatefinder.data.local
 
 import android.content.Context
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
+import io.github.genesjc.climatefinder.domain.model.DatasetKind
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 
 /**
  * Finds station data per region, first match wins:

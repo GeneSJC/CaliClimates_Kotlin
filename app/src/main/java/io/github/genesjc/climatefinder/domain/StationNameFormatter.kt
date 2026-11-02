@@ -11,7 +11,7 @@ private val FACILITY_WORDS = Regex(
 
 /**
  * Station names as the app shows them: the town a station is in, and the cleaned-up station name where there is no
- * town on record. The table of towns is the USA state's ([io.github.genesjc.climatefinder.domain.model.StateUsaDefinition.stationTowns]);
+ * town on record. The table of towns is the USA state's ([io.github.genesjc.climatefinder.config.StateUsaDefinition.stationTowns]);
  * the container builds this over the registered definition's table. (The local news code that once shared this file is
  * parked; see docs/news-restore.md.)
  */

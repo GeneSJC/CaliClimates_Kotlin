@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder.data.local
 
-import androidx.compose.ui.graphics.ImageBitmap
+import android.graphics.Bitmap
 
 /** Where the terrain pictures are read from (the app's assets; a fake in tests). Every call may be slow: call off the main thread. */
 interface TerrainSource {
@@ -18,5 +18,5 @@ interface TerrainSource {
     fun loadState(): StateUsaTerrain?
 
     /** The relief texture behind the light backdrop, or null when it is missing. */
-    fun loadBackdropRelief(): ImageBitmap?
+    fun loadBackdropRelief(): Bitmap?
 }
