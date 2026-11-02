@@ -324,21 +324,34 @@ fun LandingScreen(
                                 // In a small button of its own, so it reads as tappable
                                 Box(
                                     modifier = Modifier
-                                        .size(width = 46.dp, height = 34.dp)
+                                        .size(width = 62.dp, height = 34.dp)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(Color.White.copy(alpha = 0.6f))
                                         .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    RegionPickerButton(
-                                        state = pickerState,
-                                        selectedRegionId = selectedRegionId,
-                                        background = Color.Transparent,
-                                        content = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        border = Color.Transparent,
-                                        size = 34.dp,
-                                        iconSize = 28.dp
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        RegionPickerButton(
+                                            state = pickerState,
+                                            selectedRegionId = selectedRegionId,
+                                            background = Color.Transparent,
+                                            content = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            border = Color.Transparent,
+                                            size = 34.dp,
+                                            iconSize = 28.dp
+                                        )
+                                        // A chevron beside the shape: this is a choice, like a select list. It opens the same picker
+                                        Text(
+                                            text = "\u25BE",
+                                            fontSize = 16.sp,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier
+                                                .padding(start = 2.dp, end = 6.dp)
+                                                .clickable(enabled = !pickerState.visible, onClickLabel = stringResource(R.string.region_picker_change), role = Role.Button) {
+                                                    pickerState.open(selectedRegionId)
+                                                }
+                                        )
+                                    }
                                 }
                             }
 
