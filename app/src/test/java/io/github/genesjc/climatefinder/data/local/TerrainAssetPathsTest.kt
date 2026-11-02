@@ -12,7 +12,7 @@ import org.junit.Test
  * it is a WebP of a sensible size, and its bounds cover that region's stations with room around them.
  * If the station data changes, regenerate the pictures so the stations stay inside.
  */
-class TerrainMapsTest {
+class TerrainAssetPathsTest {
 
     // Station pack file and the region it holds
     private val packs = listOf(
@@ -42,7 +42,7 @@ class TerrainMapsTest {
     fun everyRegionHasATerrainPicture() {
         for ((_, regionId) in packs) {
             assertNotNull("No bounds for $regionId", StateUsaCA.terrainBounds[regionId])
-            val file = File("src/main/assets/${TerrainMaps.assetPath(regionId)}")
+            val file = File("src/main/assets/${TerrainAssetPaths.assetPath(regionId)}")
             assertTrue("${file.path} is missing", file.exists())
             // A WebP file starts with "RIFF", then a size, then "WEBP"
             val head = file.inputStream().use { it.readNBytes(12) }
@@ -55,7 +55,7 @@ class TerrainMapsTest {
     @Test
     fun everyRegionHasASkyline() {
         for ((_, regionId) in packs) {
-            val file = File("src/main/assets/${TerrainMaps.skylineAssetPath(regionId)}")
+            val file = File("src/main/assets/${TerrainAssetPaths.skylineAssetPath(regionId)}")
             assertTrue("${file.path} is missing", file.exists())
             // Three layers (far, middle, near) of 160 numbers from 0 to 255
             val lines = file.readLines().filter { it.isNotBlank() }

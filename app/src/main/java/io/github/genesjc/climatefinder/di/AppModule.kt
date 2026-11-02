@@ -4,14 +4,14 @@ import io.github.genesjc.climatefinder.data.local.AppSettings
 import io.github.genesjc.climatefinder.data.local.AppSettingsPreferences
 import io.github.genesjc.climatefinder.data.local.AssetStationSource
 import io.github.genesjc.climatefinder.data.local.AssetTerrainSource
-import io.github.genesjc.climatefinder.data.local.RegionDatasets
-import io.github.genesjc.climatefinder.data.local.StationDataStore
+import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
+import io.github.genesjc.climatefinder.data.local.AssetDatasetCatalog
 import io.github.genesjc.climatefinder.data.local.StationRepository
 import io.github.genesjc.climatefinder.data.local.StationSource
-import io.github.genesjc.climatefinder.data.local.StationTowns
+import io.github.genesjc.climatefinder.domain.StationNameFormatter
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
 import io.github.genesjc.climatefinder.data.local.TerrainSource
-import io.github.genesjc.climatefinder.data.remote.LiveReadings
+import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
 import io.github.genesjc.climatefinder.domain.model.StateUsaCA
 import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
 import io.github.genesjc.climatefinder.data.remote.createNwsApi
@@ -42,7 +42,7 @@ val appModule = module {
     // Platform edge: preference stores and data sources
     single<AppSettings> { AppSettingsPreferences(androidContext(), get()) }
     single<StringResolver> { ContextStringResolver(androidContext()) }
-    single { StationTowns(get<StateUsaDefinition>().stationTowns) }
+    single { StationNameFormatter(get<StateUsaDefinition>().stationTowns) }
     single<StationSource> { AssetStationSource(androidContext(), get()) }
     single<TerrainSource> { AssetTerrainSource(androidContext(), get()) }
     single { createNwsHttpClient() }
@@ -52,8 +52,8 @@ val appModule = module {
     // Repositories
     single { StationRepository(get()) }
     single { TerrainRepository(get()) }
-    single<RegionDatasets> { StationDataStore.fromAssets(androidContext(), get(), get()) }
+    single<RegionDatasetCatalog> { AssetDatasetCatalog.fromAssets(androidContext(), get(), get()) }
 
     // State holders
-    single { LiveReadings(get()) }
+    single { LiveReadingsRepository(get()) }
 }

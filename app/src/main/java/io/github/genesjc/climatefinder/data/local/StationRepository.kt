@@ -1,23 +1,10 @@
 package io.github.genesjc.climatefinder.data.local
 
-import android.content.Context
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-/** Where a dataset's stations are read from (the app's assets; a fake in tests). */
-interface StationSource {
-    fun loadStations(dataset: StationDatasetInfo): List<MicroclimateStation>
-}
-
-/** Reads a dataset's stations from the station packs (or a CSV override) in the app's assets. */
-class AssetStationSource(context: Context, towns: StationTowns) : StationSource {
-    private val parser = StationCsvParser(context.applicationContext, towns)
-
-    override fun loadStations(dataset: StationDatasetInfo): List<MicroclimateStation> = parser.loadStations(dataset)
-}
 
 /**
  * The stations of each dataset, read once and kept for the life of the app. A region's pack is unzipped and parsed the

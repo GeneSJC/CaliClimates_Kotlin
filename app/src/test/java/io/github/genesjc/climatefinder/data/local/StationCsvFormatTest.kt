@@ -9,11 +9,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import io.github.genesjc.climatefinder.domain.StationNameFormatter
 
 /** The station CSV format: columns, aliases, defaults, flags and the terrain rules. */
 class StationCsvFormatTest {
 
-    private val format = StationCsvFormat(StationTowns(StateUsaCA.stationTowns))
+    private val format = StationCsvFormat(StationNameFormatter(StateUsaCA.stationTowns))
 
     private fun parse(csv: String) = format.parse(BufferedReader(StringReader(csv)))
 

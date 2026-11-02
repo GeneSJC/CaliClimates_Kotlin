@@ -8,44 +8,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
-/** Where a dataset's stations come from. The screens turn this into words; the data layer only reports it. */
-enum class DatasetKind { BUNDLED_PACK, CSV_OVERRIDE, NONE }
-
-/** A station dataset for one region: its bundled station pack, or a CSV override. */
-data class StationDatasetInfo(
-    val regionId: String,
-    val fileName: String,
-    val kind: DatasetKind,
-    val stationCount: Int,
-    val minElevationMeters: Int,
-    val maxElevationMeters: Int,
-    /** Set when the stations come from a station pack (a.txt to f.txt) instead of a CSV file. */
-    val packFileName: String? = null
-)
-
-/** What the app asks of its station data: a dataset per region, the fallback one, and how many regions have data. */
-interface RegionDatasets {
-    /** The region's dataset, or null when it has none. Reads the station pack the first time, off the main thread. */
-    suspend fun datasetFor(regionId: String): StationDatasetInfo?
-
-    /** The region's dataset if it has already been read; never reads anything, so it is safe to call from the screen. */
-    fun cachedDatasetFor(regionId: String): StationDatasetInfo?
-
-    /** The default region's data, or [emptyDefaultDataset] if it cannot be loaded. Reads off the main thread. */
-    suspend fun defaultDataset(): StationDatasetInfo
-
-    /** An empty stand-in for the default region's data, for while [defaultDataset] has not been read (no reading). */
-    fun emptyDefaultDataset(): StationDatasetInfo
-
-    /** Number of regions with full station data (a CSV override or a pack), not just the sample. */
-    fun fullDataRegionCount(): Int
-
-    fun totalRegionCount(): Int
-
-    /** The region's stations (empty when it has none), read off the main thread. */
-    suspend fun stationsFor(regionId: String): List<MicroclimateStation>
-}
-
 /**
  * Finds station data per region, first match wins:
  *  1. a raw CSV in assets (stations_<regionId>.csv, dropped into the gitignored app/src/debug/assets
@@ -53,12 +15,12 @@ interface RegionDatasets {
  *  2. the region's station pack (a.txt to f.txt in assets).
  * A region neither can supply has no stations; the app shows its limited-data banner.
  */
-class StationDataStore(
+class AssetDatasetCatalog(
     private val listAssets: () -> Set<String>,
     private val repository: StationRepository,
     private val stateUsa: StateUsaDefinition,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) : RegionDatasets {
+) : RegionDatasetCatalog {
 
     private val assetNames: Set<String> by lazy { listAssets() }
 
@@ -146,8 +108,8 @@ class StationDataStore(
     }
 
     companion object {
-        /** The store over the app's real assets; a missing or unreadable asset folder reads as no data. */
-        fun fromAssets(context: Context, repository: StationRepository, stateUsa: StateUsaDefinition) = StationDataStore(
+        /** The catalog over the app's real assets; a missing or unreadable asset folder reads as no data. */
+        fun fromAssets(context: Context, repository: StationRepository, stateUsa: StateUsaDefinition) = AssetDatasetCatalog(
             listAssets = { try { context.assets.list("")?.toSet() ?: emptySet() } catch (e: Exception) { emptySet() } },
             repository = repository,
             stateUsa = stateUsa

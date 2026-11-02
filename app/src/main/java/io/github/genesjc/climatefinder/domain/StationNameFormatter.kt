@@ -1,6 +1,4 @@
-package io.github.genesjc.climatefinder.data.local
-
-import io.github.genesjc.climatefinder.domain.placeAndStationName
+package io.github.genesjc.climatefinder.domain
 
 // Words that describe the facility, not the place. "County" goes too ("Yuba County Airport"), except in the
 // place name "County Line".
@@ -17,10 +15,10 @@ private val FACILITY_WORDS = Regex(
  * the container builds this over the registered definition's table. (The local news code that once shared this file is
  * parked; see docs/news-restore.md.)
  */
-class StationTowns(private val towns: Map<String, String>) {
+class StationNameFormatter(private val towns: Map<String, String>) {
 
     /** The short name the maps' labels use: the station's town when the state has one on record, else its cleaned name. */
-    fun getCleanCityName(stationId: String, stationName: String): String =
+    fun cleanCityName(stationId: String, stationName: String): String =
         mappedCity(stationId) ?: cityFromStationName(stationName)
 
     /** The name shown on the chip, cards and lists: the town and the station's own name together, where they differ. */

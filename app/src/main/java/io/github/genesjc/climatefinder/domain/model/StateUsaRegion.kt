@@ -1,7 +1,6 @@
 package io.github.genesjc.climatefinder.domain.model
 
 import androidx.annotation.StringRes
-import io.github.genesjc.climatefinder.R
 
 /**
  * One regional section of a USA state, for microclimate transects and geographical constraint definition.
@@ -29,7 +28,3 @@ data class StateUsaRegion(
     val colorHex: String
 )
 
-enum class RegionStatus(@StringRes val labelRes: Int) {
-    ACTIVE_TRANSECT(R.string.region_status_active),
-    PLANNED_CONSTRAINTS(R.string.region_status_planned)
-}
