@@ -346,19 +346,17 @@ private fun CompactStationBody(
 /**
  * The summary of a station for the Home row: the temperature in °F, a pipe divider, then the name,
  * and a chevron on the right. The age of the reading is in the full card that the chevron opens. When
- * there is no reading, the reason shows where the °C would be. [regionName], when given, is a small line under them.
+ * there is no reading, the reason shows where the °C would be. [regionName], when given, is a centred line above them.
  */
 @Composable
 fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult? = null, regionName: String? = null) {
     val display = liveDisplay(reading)
-    // One line: the temperature in °F, a pipe divider, the name, and the chevron at the right. The name gives way
-    // (with an ellipsis) only when it really cannot fit; the temperature always shows
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
+        if (regionName != null) RegionLabel(regionName)
+        // One line: the temperature in °F, a pipe divider, the name, and the chevron at the right. The name gives way
+        // (with an ellipsis) only when it really cannot fit; the temperature always shows
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "\u2014",
                     fontSize = 15.sp,
@@ -382,24 +380,15 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
                     modifier = Modifier.weight(1f, fill = false)
                 )
             }
-            if (regionName != null) {
-                Text(
-                    text = regionName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = "\u25BC",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1
+            )
         }
-        Spacer(modifier = Modifier.width(10.dp))
-        Text(
-            text = "\u25BC",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            maxLines = 1
-        )
     }
 }
 

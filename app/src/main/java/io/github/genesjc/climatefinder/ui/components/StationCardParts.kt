@@ -32,8 +32,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import androidx.compose.ui.res.stringResource
@@ -42,6 +44,21 @@ import androidx.compose.ui.res.stringResource
  * The shared pieces of the refined station card: the same shapes, spacing and weights wherever a station is
  * shown. Sizes pass through ms() so they follow the map's one text scale.
  */
+
+/** The region's name, centred, 50 percent larger than the label size it started at (11sp): on the tile and on the open card. */
+@Composable
+internal fun RegionLabel(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        fontSize = 16.5.sp,
+        fontWeight = FontWeight.Medium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier.fillMaxWidth()
+    )
+}
 
 /** The small rounded badge: the terrain name, in the terrain's colour. */
 @Composable
