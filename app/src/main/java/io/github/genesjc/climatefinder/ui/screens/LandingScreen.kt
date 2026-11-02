@@ -405,6 +405,11 @@ fun LandingScreen(
                                 .align(Alignment.TopStart)
                                 .fillMaxWidth()
                                 .padding(start = 6.dp, end = 6.dp, top = 5.dp)
+                                // A solid strip behind the tile, the link and the picker, so they read over any map
+                                // (a shaped background, not a clip, so the card that opens from the tile is never cut off)
+                                .background(MaterialTheme.colorScheme.background, RoundedCornerShape(10.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                                .padding(4.dp)
                                 .height(IntrinsicSize.Min)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
