@@ -28,8 +28,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import io.github.genesjc.climatefinder.R
 
-/** How much of the row's height the button takes (it is centred in the rest). 0.8 is 20 percent smaller than full height. */
-private const val CHIP_HEIGHT_SHARE = 0.8f
+/** How much of the row's height the button takes (it is centred in the rest). 0.7 is 30 percent smaller than full height. */
+private const val CHIP_HEIGHT_SHARE = 0.7f
 
 /**
  * The region picker as an outlined button, [CHIP_HEIGHT_SHARE] of the height of the space it is given, centred in it: the state's silhouette with the current
