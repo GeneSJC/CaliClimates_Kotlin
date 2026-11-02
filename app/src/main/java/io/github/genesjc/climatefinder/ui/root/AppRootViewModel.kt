@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder.ui.root
 
-import androidx.compose.ui.graphics.ImageBitmap
+import android.graphics.Bitmap
 import androidx.lifecycle.viewModelScope
 import io.github.genesjc.climatefinder.data.local.AppSettings
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
@@ -24,10 +24,10 @@ class AppRootViewModel : AppBaseViewModel() {
     private val _darkMode = MutableStateFlow(settings.darkMode())
     val darkMode: StateFlow<Boolean> = _darkMode.asStateFlow()
 
-    private val _backdropTexture = MutableStateFlow<ImageBitmap?>(null)
+    private val _backdropTexture = MutableStateFlow<Bitmap?>(null)
 
     /** The relief picture for the light backdrop: null until it has loaded, or when there is none. */
-    val backdropTexture: StateFlow<ImageBitmap?> = _backdropTexture.asStateFlow()
+    val backdropTexture: StateFlow<Bitmap?> = _backdropTexture.asStateFlow()
 
     init {
         viewModelScope.launch { _backdropTexture.value = terrains.backdropRelief() }

@@ -2,6 +2,7 @@ package io.github.genesjc.climatefinder.data.remote
 
 import android.util.Log
 import kotlinx.coroutines.CancellationException
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 
 /**
  * Fetches one station's latest observation from api.weather.gov (no key needed) through [api]. The answer is read into

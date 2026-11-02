@@ -34,6 +34,7 @@ import io.github.genesjc.climatefinder.ui.screens.LandingScreen
 import io.github.genesjc.climatefinder.ui.screens.RegionOption
 import io.github.genesjc.climatefinder.ui.screens.StationListScreen
 import io.github.genesjc.climatefinder.ui.theme.CaliClimatesTheme
+import androidx.compose.ui.graphics.asImageBitmap
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +45,8 @@ class MainActivity : ComponentActivity() {
             val appRoot: AppRootViewModel = viewModel()
             val homeViewModel: HomeViewModel = viewModel()
             val darkMode by appRoot.darkMode.collectAsStateWithLifecycle()
-            val backdropTexture by appRoot.backdropTexture.collectAsStateWithLifecycle()
+            val backdropBitmap by appRoot.backdropTexture.collectAsStateWithLifecycle()
+            val backdropTexture = remember(backdropBitmap) { backdropBitmap?.asImageBitmap() }
             // The backdrop takes a soft tint of the selected region's colour
             val backdropRegionId by homeViewModel.selectedRegionId.collectAsStateWithLifecycle()
             // The opening view shows once per launch (and not again after a rotation)

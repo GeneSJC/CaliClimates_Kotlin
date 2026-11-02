@@ -1,4 +1,4 @@
-package io.github.genesjc.climatefinder.data.remote
+package io.github.genesjc.climatefinder.domain.model
 
 /** A real reading from the National Weather Service. Only temperature is guaranteed. */
 data class LiveObservation(

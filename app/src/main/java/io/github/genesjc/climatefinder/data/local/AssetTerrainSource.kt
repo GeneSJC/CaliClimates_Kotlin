@@ -3,9 +3,8 @@ package io.github.genesjc.climatefinder.data.local
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.util.Log
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import android.graphics.Bitmap
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 
 /** Reads the terrain pictures from the app's assets. */
 class AssetTerrainSource(context: Context, private val stateUsa: StateUsaDefinition) : TerrainSource {
@@ -19,7 +18,7 @@ class AssetTerrainSource(context: Context, private val stateUsa: StateUsaDefinit
         val bounds = stateUsa.terrainBounds[regionId] ?: return null
         return try {
             assets.open(TerrainAssetPaths.assetPath(regionId)).use { BitmapFactory.decodeStream(it) }
-                ?.let { TerrainImage(it.asImageBitmap(), bounds) }
+                ?.let { TerrainImage(it, bounds) }
         } catch (e: Exception) {
             Log.w(TAG, "No terrain picture for $regionId", e)
             null
@@ -45,7 +44,7 @@ class AssetTerrainSource(context: Context, private val stateUsa: StateUsaDefinit
             fun decode(name: String) = assets.open("terrain/$name").use { BitmapFactory.decodeStream(it) }
             val state = decode("california.webp")
             val surround = decode("california_surround.webp")
-            if (state != null && surround != null) StateUsaTerrain(state.asImageBitmap(), surround.asImageBitmap()) else null
+            if (state != null && surround != null) StateUsaTerrain(state, surround) else null
         } catch (e: Exception) {
             Log.w(TAG, "No statewide terrain picture", e)
             null
@@ -54,9 +53,9 @@ class AssetTerrainSource(context: Context, private val stateUsa: StateUsaDefinit
         return loaded
     }
 
-    override fun loadBackdropRelief(): ImageBitmap? =
+    override fun loadBackdropRelief(): Bitmap? =
         try {
-            assets.open("terrain/bg_relief.webp").use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
+            assets.open("terrain/bg_relief.webp").use { BitmapFactory.decodeStream(it) }
         } catch (e: Exception) {
             Log.w(TAG, "No backdrop relief picture", e)
             null

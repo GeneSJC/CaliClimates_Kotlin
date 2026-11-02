@@ -60,7 +60,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,7 +84,7 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 import io.github.genesjc.climatefinder.EditionConfig
 import io.github.genesjc.climatefinder.R
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.ui.theme.LocalStateUsa
 import io.github.genesjc.climatefinder.ui.components.AboutDialog
 import io.github.genesjc.climatefinder.ui.components.MenuDrawerContent

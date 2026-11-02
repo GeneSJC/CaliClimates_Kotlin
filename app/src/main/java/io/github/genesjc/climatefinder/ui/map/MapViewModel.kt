@@ -2,12 +2,12 @@ package io.github.genesjc.climatefinder.ui.map
 
 import androidx.lifecycle.viewModelScope
 import io.github.genesjc.climatefinder.domain.StationNameFormatter
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
 import io.github.genesjc.climatefinder.data.local.TerrainImage
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
 import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.viewmodel.AppBaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

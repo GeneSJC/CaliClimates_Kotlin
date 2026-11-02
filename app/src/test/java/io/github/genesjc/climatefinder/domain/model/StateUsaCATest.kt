@@ -3,6 +3,7 @@ package io.github.genesjc.climatefinder.domain.model
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import io.github.genesjc.climatefinder.config.StateUsaCA
 
 /** The regions and facts of the California definition (the checks every definition must pass are in StateUsaDefinitionContractTest). */
 class StateUsaCATest {

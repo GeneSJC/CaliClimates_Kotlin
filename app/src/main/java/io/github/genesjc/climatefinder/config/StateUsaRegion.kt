@@ -1,4 +1,4 @@
-package io.github.genesjc.climatefinder.domain.model
+package io.github.genesjc.climatefinder.config
 
 import androidx.annotation.StringRes
 

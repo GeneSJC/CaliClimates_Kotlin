@@ -1,6 +1,11 @@
-package io.github.genesjc.climatefinder.domain.model
+package io.github.genesjc.climatefinder.config
 
 import io.github.genesjc.climatefinder.R
+import io.github.genesjc.climatefinder.domain.model.GeoBounds
+import io.github.genesjc.climatefinder.domain.model.Landmark
+import io.github.genesjc.climatefinder.domain.model.StateUsaBorderLine
+import io.github.genesjc.climatefinder.domain.model.StateUsaOutline
+import io.github.genesjc.climatefinder.domain.model.TreeKind
 
 /**
  * California, the one USA state defined so far: its six regions, outline, picture bounds, station packs, landmarks,

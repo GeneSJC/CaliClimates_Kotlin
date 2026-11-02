@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import io.github.genesjc.climatefinder.domain.BandAngle
 import io.github.genesjc.climatefinder.domain.BandAxis
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 
 /** [AppSettings] kept in one SharedPreferences file, with one key per value. */
 class AppSettingsPreferences(

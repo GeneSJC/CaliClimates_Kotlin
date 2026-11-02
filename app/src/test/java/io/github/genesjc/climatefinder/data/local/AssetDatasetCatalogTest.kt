@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder.data.local
 
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaCA
 import io.github.genesjc.climatefinder.testStation
 import io.github.genesjc.climatefinder.testutil.FakeStationSource
 import kotlinx.coroutines.CoroutineDispatcher
@@ -12,6 +12,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.coroutines.CoroutineContext
+import io.github.genesjc.climatefinder.domain.model.DatasetKind
 
 class AssetDatasetCatalogTest {
 

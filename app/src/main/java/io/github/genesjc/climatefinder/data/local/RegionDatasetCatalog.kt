@@ -1,6 +1,7 @@
 package io.github.genesjc.climatefinder.data.local
 
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 
 /** What the app asks of its station data: a dataset per region, the fallback one, and how many regions have data. */
 interface RegionDatasetCatalog {

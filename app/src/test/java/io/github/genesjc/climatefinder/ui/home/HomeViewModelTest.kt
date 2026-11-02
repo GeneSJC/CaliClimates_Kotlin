@@ -1,11 +1,11 @@
 package io.github.genesjc.climatefinder.ui.home
 
 import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
 import io.github.genesjc.climatefinder.testLiveReadingsRepository
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import io.github.genesjc.climatefinder.testutil.FakeDatasets
 import io.github.genesjc.climatefinder.testutil.FakeObservationSource
 import io.github.genesjc.climatefinder.data.local.AppSettings

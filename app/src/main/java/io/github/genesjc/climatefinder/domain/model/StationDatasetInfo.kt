@@ -1,4 +1,4 @@
-package io.github.genesjc.climatefinder.data.local
+package io.github.genesjc.climatefinder.domain.model
 
 /** A station dataset for one region: its bundled station pack, or a CSV override. */
 data class StationDatasetInfo(

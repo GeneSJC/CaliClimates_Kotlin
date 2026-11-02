@@ -2,7 +2,7 @@ package io.github.genesjc.climatefinder.ui.map
 
 import androidx.lifecycle.viewModelScope
 import io.github.genesjc.climatefinder.data.local.AppSettings
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.BandAngle
 import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation

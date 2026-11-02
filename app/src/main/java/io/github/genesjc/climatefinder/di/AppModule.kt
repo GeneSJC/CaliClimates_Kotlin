@@ -12,8 +12,8 @@ import io.github.genesjc.climatefinder.domain.StationNameFormatter
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
 import io.github.genesjc.climatefinder.data.local.TerrainSource
 import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import io.github.genesjc.climatefinder.data.remote.createNwsApi
 import io.github.genesjc.climatefinder.data.remote.createNwsHttpClient
 import io.github.genesjc.climatefinder.data.remote.NwsObservationClient

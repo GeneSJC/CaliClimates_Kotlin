@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 
 /**
  * The stations of each dataset, read once and kept for the life of the app. A region's pack is unzipped and parsed the

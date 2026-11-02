@@ -1,6 +1,10 @@
-package io.github.genesjc.climatefinder.domain.model
+package io.github.genesjc.climatefinder.config
 
 import androidx.annotation.StringRes
+import io.github.genesjc.climatefinder.domain.model.GeoBounds
+import io.github.genesjc.climatefinder.domain.model.Landmark
+import io.github.genesjc.climatefinder.domain.model.StateUsaOutline
+import io.github.genesjc.climatefinder.domain.model.TreeKind
 
 /**
  * Everything that differs from one USA state to the next: its regions, outline, picture bounds, station packs,

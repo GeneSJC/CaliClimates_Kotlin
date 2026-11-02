@@ -6,6 +6,7 @@ import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import java.io.BufferedReader
 import java.io.StringReader
 import io.github.genesjc.climatefinder.domain.StationNameFormatter
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 
 class StationCsvParser(private val context: Context, private val towns: StationNameFormatter) {
 

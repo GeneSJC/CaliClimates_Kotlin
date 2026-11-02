@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder.data.local
 
-import androidx.compose.ui.graphics.ImageBitmap
+import android.graphics.Bitmap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,5 +23,5 @@ class TerrainRepository(
     suspend fun stateTerrain(): StateUsaTerrain? = withContext(ioDispatcher) { source.loadState() }
 
     /** The relief texture behind the light backdrop, or null when it is missing. */
-    suspend fun backdropRelief(): ImageBitmap? = withContext(ioDispatcher) { source.loadBackdropRelief() }
+    suspend fun backdropRelief(): Bitmap? = withContext(ioDispatcher) { source.loadBackdropRelief() }
 }

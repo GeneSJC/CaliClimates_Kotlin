@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import java.util.concurrent.ConcurrentHashMap
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 
 /**
  * The repository of the app's live readings: the one place the rest of the app asks for a station's reading (one
