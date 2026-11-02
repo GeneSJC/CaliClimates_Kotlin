@@ -64,3 +64,11 @@ internal fun referenceStationIds(visible: List<MicroclimateStation>, selectedMet
 
 /** A side of the selected height with this many labels or more gets a middle reference as well. */
 internal const val MIDDLE_REFERENCE_MIN = 6
+
+/** Which stations' labels to keep showing after the band axis switches, until the chart is zoomed or touched. */
+internal class LabelHold(var angle: Int) {
+    var ids: Set<String>? = null
+    var zoom = 1f
+    var touch = 0L
+    var lastPlaced: Set<String> = emptySet()
+}

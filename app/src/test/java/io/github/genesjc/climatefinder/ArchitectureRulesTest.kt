@@ -27,7 +27,7 @@ class ArchitectureRulesTest {
         "NwsObservationDto.kt",      // the three shapes of one JSON answer
         "RegionPicker.kt",           // a composable and the state it is given
         "LandingScreen.kt",          // the screen and the row type of its region list
-        "ElevationLabels.kt",        // label placement, moves with the Elevation chart decomposition
+        "ElevationLabels.kt",        // label placement types (PlacedLabel, LabelHold), one family
         "ElevationScenery.kt",       // scenery types, moves with the Elevation chart decomposition
         "StationMapCanvas.kt"        // label types, moves with the map canvas split
     )

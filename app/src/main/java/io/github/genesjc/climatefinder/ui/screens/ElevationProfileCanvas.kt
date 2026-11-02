@@ -88,7 +88,6 @@ import io.github.genesjc.climatefinder.ui.components.BAND_ARC_CENTRE_INSET_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.LAYERS_BUTTON_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_SIZE_DP
-import io.github.genesjc.climatefinder.ui.components.BAND_ARC_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.BandAngleArc
 import io.github.genesjc.climatefinder.ui.components.BandsNotice
 import io.github.genesjc.climatefinder.ui.components.BAND_COMPASS_SIZE_DP
@@ -1377,42 +1376,16 @@ internal fun ElevationProfileCanvas(
             val fade = (labelFades[station.id] ?: 0f) * muted
             if (fade <= 0.01f) return@forEach
             val depth = depthOf(station.id)
-            // A far station's text is fainter, but its tag stays solid
-            val depthFade = depth?.let { DepthCue.alpha(it) } ?: 1f
             val stripe = layerColor(stationBands[sorted.indexOfFirst { it.id == station.id }.coerceAtLeast(0)], angleShown)
 
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    // Nearly solid, so the ridges and ground behind never show through the tag
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-                },
-                border = BorderStroke(
-                    width = 1.dp,
-                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f * depthFade)
-                ),
-                modifier = Modifier
-                    .offset(x = label.xDp.dp, y = label.yDp.dp)
-                    .widthIn(max = LABEL_MAX_WIDTH_DP.dp)
-                    .alpha(fade)
-                    .clickable { onSelectStation(station) }
-            ) {
-                Text(
-                    text = label.text,
-                    maxLines = 2,
-                    fontSize = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f)),
-                    // A tight line height (the theme's default is far taller than this small text), so a wrapped tag stays compact
-                    lineHeight = ms(9f * (depth?.let { DepthCue.textScale(it) } ?: 1f) * 1.15f),
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = depthFade),
-                    // A stripe down the tag's left edge in its band's colour (see the key at the bottom right)
-                    modifier = Modifier
-                        .drawBehind { drawRect(stripe, size = Size(6.dp.toPx(), size.height)) }
-                        .padding(start = 11.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
-                )
-            }
+            ElevationStationTag(
+                label = label,
+                isSelected = isSelected,
+                fade = fade,
+                depth = depth,
+                stripe = stripe,
+                onSelect = { onSelectStation(station) }
+            )
         }
 
         // The key to the bands, and a way to jump between them: in the bottom right corner, whatever the pan and zoom.
@@ -1430,49 +1403,18 @@ internal fun ElevationProfileCanvas(
                 }
                 ?.let { onSelectStation(sorted[it]) }
         }
-        LayerLegend(
-            angle = angleShown,
-            showReading = layersOn,
-            activeBand = keyBand,
+        ElevationBandControls(
+            angleShown = angleShown,
+            bandAngle = bandAngle,
+            layersOn = layersOn,
+            keyBand = keyBand,
             hasStations = List(DepthBands.COUNT) { band -> stationBands.any { it == band } },
-            alpha = 1f,
             onPick = ::pickInBand,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
-        )
-        if (layersOn) {
-            BandCompass(
-                angle = bandAngle,
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 6.dp, top = layersButtonTop)
-            )
-            BandAngleArc(
-                angle = bandAngle,
-                onAngleChange = onAngleChange,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = LEGEND_MARGIN_DP.dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp)
-            )
-        }
-        // The note about the bands button sits above the key, to the left of the dial and the button, beside what it describes
-        BandsNotice(
-            message = notice,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(
-                    end = (LEGEND_MARGIN_DP + BAND_ARC_SIZE_DP + 8f).dp,
-                    bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp
-                )
-                .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_SIZE_DP - 8f - 10f).dp)
-        )
-        // The bands button sits in the hole of the dial, above the key; with the bands off it stays there on its own
-        LayersToggleButton(
-            on = layersOn,
-            onToggle = onToggleLayers,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(
-                    end = (LEGEND_MARGIN_DP + BAND_ARC_CENTRE_INSET_DP - LAYERS_BUTTON_SIZE_DP / 2f).dp,
-                    bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP + BAND_ARC_CENTRE_INSET_DP - LAYERS_BUTTON_SIZE_DP / 2f).dp
-                )
+            onAngleChange = onAngleChange,
+            onToggleLayers = onToggleLayers,
+            notice = notice,
+            widthDp = widthDp,
+            layersButtonTop = layersButtonTop
         )
 
         // Floating zoom slider on the right edge, where the Topography map has it
@@ -1487,66 +1429,21 @@ internal fun ElevationProfileCanvas(
                 }
                 .minByOrNull { (it - middle).getDistance() } ?: middle
         }
-        // The arrow button under the menu button: up while the slider shows (tap to tuck it away), down when hidden
-        if (sliderCollapsible) {
-            SliderToggleButton(
-                shown = sliderShown,
-                onToggle = { setSliderShown(!sliderShown) },
-                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp + 5.dp * expandT, top = 50.dp + HOME_TILE_BAND)
-            )
-        }
-        // For now the slider sets the type size instead of the zoom (see MapText)
-        if (sliderCollapsible && !sliderShown) {
-            // hidden: pinch and double-tap still zoom
-        } else if (MapText.SLIDER_SETS_FONT) {
-            ZoomSlider(
-                value = MapText.scale,
-                onValueChange = { MapText.scale = it },
-                minValue = MapText.MIN_SCALE,
-                maxValue = MapText.MAX_SCALE,
-                caption = stringResource(R.string.zoom_font_caption),
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = sliderTop, start = 4.dp + 5.dp * expandT, bottom = 4.dp)
-                    .width(40.dp)
-                    // Another 20% shorter than Topography's on Home (so the chart's bottom-left corner stays clear); the top stays under the arrow button
-                .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)
-            )
-        } else ZoomSlider(
-            value = zoom,
-            onValueChange = { newZoom ->
+        ElevationZoomControls(
+            sliderCollapsible = sliderCollapsible,
+            sliderShown = sliderShown,
+            onSliderShownChange = setSliderShown,
+            expandT = expandT,
+            sliderTop = sliderTop,
+            embedded = embedded,
+            zoom = zoom,
+            onZoomChange = { newZoom ->
                 // Zoom about the point on the line nearest the middle of the view, not the (often empty) middle itself
                 zoomJob?.cancel()
                 pan = panForZoom(pan, zoom, newZoom, nearestLinePoint(), canvasW, canvasH, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit)
                 zoom = newZoom
             },
-            onStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) },
-            // At the left here (the chart has no use for that side); its top stays put, the bottom follows the chart
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(top = sliderTop, start = 4.dp + 5.dp * expandT, bottom = 4.dp)
-                .width(40.dp)
-                // Another 20% shorter than Topography's on Home (so the chart's bottom-left corner stays clear); the top stays under the arrow button
-                .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)
+            onZoomStep = { newZoom -> animateZoomTo(newZoom, nearestLinePoint(), canvasW, canvasH) }
         )
     }
-}
-
-/** Which stations' labels to keep showing after the band axis switches, until the chart is zoomed or touched. */
-private class LabelHold(var angle: Int) {
-    var ids: Set<String>? = null
-    var zoom = 1f
-    var touch = 0L
-    var lastPlaced: Set<String> = emptySet()
-}
-
-/**
- * The lowest vertical pan the chart allows at [zoom] on a chart [canvasH] tall: any lower and the sea would take more
- * than [MAX_WATER_SHARE] of the height. Dragging the chart up stops here, which leaves a clear stopping point with the
- * water and the fish in view.
- */
-internal fun elevationLowestPanY(zoom: Float, canvasH: Float): Float {
-    val heightPx = canvasH - 2 * CHART_PADDING_PX
-    val seaY = CHART_PADDING_PX + (1f - SEA_FRACTION) * heightPx
-    return canvasH * (1f - MAX_WATER_SHARE) - canvasH / 2f - (seaY - canvasH / 2f) * zoom
 }
