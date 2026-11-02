@@ -71,6 +71,8 @@ fun StationCard(
     regionRangeMeters: Pair<Int, Int>? = null,
     // Compact only: what the card's Less control does; no control is shown when it is null
     onLess: (() -> Unit)? = null,
+    // Compact only: the region's name, centred at the top of the card
+    regionName: String? = null,
     // Compact only: a sentence about the height, shown under the terrain row
     elevationNote: String? = null,
     // Full card: a short mark next to the terrain badge while the card is the selected one (the Station List)
@@ -103,7 +105,7 @@ fun StationCard(
         // The card is the plain surface colour, selected or not (white in the light look); the selection shows in the border
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        if (compact) CompactStationBody(station, terrainBadgeColor, display, regionRangeMeters, onLess, elevationNote) else Column(modifier = Modifier.padding(16.dp)) {
+        if (compact) CompactStationBody(station, terrainBadgeColor, display, regionRangeMeters, onLess, elevationNote, regionName) else Column(modifier = Modifier.padding(16.dp)) {
             // Header row: the badge (and the selected mark) at the left take the room they need; the elevation text takes
             // what is left and aligns to the right, wrapping inside its own space, so the two never overlap
             Row(
@@ -229,13 +231,16 @@ private fun CompactStationBody(
     display: CardDisplay,
     regionRangeMeters: Pair<Int, Int>? = null,
     onLess: (() -> Unit)? = null,
-    elevationNote: String? = null
+    elevationNote: String? = null,
+    regionName: String? = null
 ) {
     // Which sections are open: the readings are, the height and the note start folded, so more of the map shows
     var readingsOpen by rememberSaveable { mutableStateOf(true) }
     var spectrumOpen by rememberSaveable { mutableStateOf(false) }
     var noteOpen by rememberSaveable { mutableStateOf(false) }
     Column(modifier = Modifier.padding(start = 14.dp, end = 8.dp, top = 2.dp, bottom = 12.dp)) {
+        // The region's name, centred, as on the folded tile (the card's left and right padding differ, so it is nudged to sit true)
+        if (regionName != null) RegionLabel(regionName, modifier = Modifier.padding(top = 8.dp, end = 6.dp))
         // Row 1: the badges at the left, and the card's fold control (Less) at the right
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             TerrainBadge(text = stringResource(station.terrain.labelRes), color = badgeColor)
