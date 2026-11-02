@@ -6,7 +6,7 @@ import io.github.genesjc.climatefinder.data.local.StationRepository
 import io.github.genesjc.climatefinder.domain.StationNameFormatter
 import io.github.genesjc.climatefinder.config.StateUsaCA
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
-import io.github.genesjc.climatefinder.data.local.AppSettings
+import io.github.genesjc.climatefinder.data.local.ElevationSettings
 import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.testLiveReadingsRepository
@@ -51,12 +51,12 @@ class MapViewModelsTest {
         single { StationNameFormatter(StateUsaCA.stationTowns) }
         single { TerrainRepository(terrain, Dispatchers.Unconfined) }
         single { testLiveReadingsRepository(CoroutineScope(Dispatchers.Unconfined), observations) }
-        single<AppSettings> { hints }
+        single<ElevationSettings> { hints }
     }
 
-    private fun topography(): StationMapViewModel {
+    private fun topography(): MapViewModel {
         register()
-        return StationMapViewModel()
+        return MapViewModel()
     }
 
     private fun elevation(): ElevationViewModel {

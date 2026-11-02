@@ -1,9 +1,10 @@
-package io.github.genesjc.climatefinder.viewmodel
+package io.github.genesjc.climatefinder.ui.common
 
 import androidx.lifecycle.ViewModel
 import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import io.github.genesjc.climatefinder.config.AppConfig
 
 /**
  * The parent of every screen ViewModel. It exposes app-level values only: no repository, no state holder, no logic and

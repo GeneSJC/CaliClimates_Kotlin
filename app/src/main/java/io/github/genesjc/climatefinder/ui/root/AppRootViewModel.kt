@@ -2,9 +2,9 @@ package io.github.genesjc.climatefinder.ui.root
 
 import android.graphics.Bitmap
 import androidx.lifecycle.viewModelScope
-import io.github.genesjc.climatefinder.data.local.AppSettings
+import io.github.genesjc.climatefinder.data.local.AppearanceSettings
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
-import io.github.genesjc.climatefinder.viewmodel.AppBaseViewModel
+import io.github.genesjc.climatefinder.ui.common.AppBaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +18,7 @@ import org.koin.core.component.inject
  */
 class AppRootViewModel : AppBaseViewModel() {
 
-    private val settings: AppSettings by inject()
+    private val settings: AppearanceSettings by inject()
     private val terrains: TerrainRepository by inject()
 
     private val _darkMode = MutableStateFlow(settings.darkMode())

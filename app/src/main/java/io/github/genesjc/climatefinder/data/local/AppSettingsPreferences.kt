@@ -6,11 +6,14 @@ import io.github.genesjc.climatefinder.domain.BandAngle
 import io.github.genesjc.climatefinder.domain.BandAxis
 import io.github.genesjc.climatefinder.config.StateUsaDefinition
 
-/** [AppSettings] kept in one SharedPreferences file, with one key per value. */
+/**
+ * The three kinds of settings ([RegionSettings], [AppearanceSettings], [ElevationSettings]) kept in one SharedPreferences
+ * file, with one key per value. Each consumer asks the container for the narrow interface it needs.
+ */
 class AppSettingsPreferences(
     private val prefs: SharedPreferences,
     private val stateUsa: StateUsaDefinition
-) : AppSettings {
+) : RegionSettings, AppearanceSettings, ElevationSettings {
 
     constructor(context: Context, stateUsa: StateUsaDefinition) :
         this(context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE), stateUsa)

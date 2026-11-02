@@ -1,7 +1,7 @@
 package io.github.genesjc.climatefinder.ui.home
 
 import androidx.lifecycle.viewModelScope
-import io.github.genesjc.climatefinder.data.local.AppSettings
+import io.github.genesjc.climatefinder.data.local.RegionSettings
 import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
 import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
@@ -10,7 +10,7 @@ import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.ui.components.MAX_MAP_ZOOM
 import io.github.genesjc.climatefinder.ui.screens.DEFAULT_PIN_SCALE
-import io.github.genesjc.climatefinder.viewmodel.AppBaseViewModel
+import io.github.genesjc.climatefinder.ui.common.AppBaseViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
@@ -75,7 +75,7 @@ sealed interface HomeEvent {
 class HomeViewModel : AppBaseViewModel() {
 
     /** What is remembered between launches: the region, and the station and map zoom set in it. */
-    private val settings: AppSettings by inject()
+    private val settings: RegionSettings by inject()
     /** The station dataset of each region, and how many regions have data. */
     private val datasets: RegionDatasetCatalog by inject()
     private val stationRepository: StationRepository by inject()

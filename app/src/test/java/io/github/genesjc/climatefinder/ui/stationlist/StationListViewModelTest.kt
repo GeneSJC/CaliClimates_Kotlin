@@ -14,7 +14,7 @@ import io.github.genesjc.climatefinder.testutil.FakeStringResolver
 import io.github.genesjc.climatefinder.testutil.MainDispatcherRule
 import io.github.genesjc.climatefinder.testutil.StopKoinRule
 import io.github.genesjc.climatefinder.testutil.restartKoin
-import io.github.genesjc.climatefinder.viewmodel.StringResolver
+import io.github.genesjc.climatefinder.ui.common.StringResolver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals

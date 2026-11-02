@@ -17,7 +17,7 @@ class WordingRulesTest {
 
     private fun uiAndViewModelFiles() = File("src/main/java").walk()
         .filter { it.extension == "kt" }
-        .filter { val p = it.invariantSeparatorsPath; "/ui/" in p || "/viewmodel/" in p }
+        .filter { val p = it.invariantSeparatorsPath; "/ui/" in p }
 
     /** A literal is wording when, ignoring templates and symbols, it has a word of two letters or more and reads as text. */
     private fun isWording(raw: String): Boolean {

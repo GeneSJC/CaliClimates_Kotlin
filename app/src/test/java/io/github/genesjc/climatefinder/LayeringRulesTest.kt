@@ -42,7 +42,7 @@ class LayeringRulesTest {
 
     @Test
     fun theDomainKnowsNoAndroidAndNoOtherLayer() {
-        val layers = listOf("data", "ui", "viewmodel", "config", "di").map { "$base.$it." }
+        val layers = listOf("data", "ui", "config", "di").map { "$base.$it." }
         val bad = offenders({ it == "domain" || it.startsWith("domain/") }) { imp ->
             imp.startsWith("android.") || imp.startsWith("androidx.") || imp == "$base.R" || layers.any { imp.startsWith(it) }
         }
@@ -52,7 +52,7 @@ class LayeringRulesTest {
     @Test
     fun theDataLayerKnowsNoComposeAndNoUi() {
         val bad = offenders({ it == "data" || it.startsWith("data/") }) { imp ->
-            imp.startsWith("androidx.compose") || imp.startsWith("$base.ui.") || imp.startsWith("$base.viewmodel.")
+            imp.startsWith("androidx.compose") || imp.startsWith("$base.ui.")
         }
         assertEquals("The data layer must not depend on Compose or the UI", emptyList<String>(), bad)
     }

@@ -1,7 +1,9 @@
 package io.github.genesjc.climatefinder.testutil
 
 import android.graphics.Bitmap
-import io.github.genesjc.climatefinder.data.local.AppSettings
+import io.github.genesjc.climatefinder.data.local.AppearanceSettings
+import io.github.genesjc.climatefinder.data.local.ElevationSettings
+import io.github.genesjc.climatefinder.data.local.RegionSettings
 import io.github.genesjc.climatefinder.domain.model.DatasetKind
 import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
 import io.github.genesjc.climatefinder.data.local.StateUsaTerrain
@@ -13,7 +15,7 @@ import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.data.remote.ObservationSource
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.testStation
-import io.github.genesjc.climatefinder.viewmodel.StringResolver
+import io.github.genesjc.climatefinder.ui.common.StringResolver
 
 /** Fakes for the platform edge, shared by the ViewModel tests. Each records what a test wants to check. */
 
@@ -29,7 +31,7 @@ class FakeAppSettings(
     var layers: Boolean = true,
     var angle: Int = 0,
     var tab: Int = 0
-) : AppSettings {
+) : RegionSettings, AppearanceSettings, ElevationSettings {
     override fun selectedRegionId() = region
     override fun saveSelectedRegionId(regionId: String) {
         region = regionId
