@@ -8,6 +8,8 @@
     <string name="metric_updated">Updated</string>
     <string name="metric_solar">Solar</string>
     <string name="metric_pressure">Pressure</string>
+    <string name="card_station_elevation">Station elevation</string>
+    <string name="card_microclimate">Microclimate: %1$s</string>
     <string name="elevation_angle_end_north">N</string>
     <string name="elevation_angle_end_west">W</string>
     <string name="elevation_heading_n">N</string>

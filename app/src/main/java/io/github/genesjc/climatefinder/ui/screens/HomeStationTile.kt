@@ -10,24 +10,18 @@ import io.github.genesjc.climatefinder.ui.components.StationSummaryTile
 import io.github.genesjc.climatefinder.ui.components.HeroTile
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.ui.text.elevationNoteText
-import io.github.genesjc.climatefinder.ui.text.elevationRangeText
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /** The selected station as a half-width tile that grows into the full compact station card. */
@@ -67,30 +61,12 @@ internal fun StationHeroTile(
                 onSelect = close,
                 compact = true,
                 elevationNote = elevationNoteText(station.elevationMeters, regionId),
-                // Inside the card's border: the region's elevation range, and the way to fold it back
-                // The region's elevation range, at the right of the terrain chip's line
-                compactFooter = {
-                    if (regionStations.isNotEmpty()) {
-                        Text(
-                            text = stringResource(R.string.region_elevation_range, elevationRangeText(regionStations.minOf { it.elevationMeters }, regionStations.maxOf { it.elevationMeters })),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
-                        )
-                    }
-                },
-                // Less at the right of the title row, where the other open cards have theirs
-                compactHeaderAction = {
-                    Text(
-                        text = stringResource(R.string.action_less),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .clickable(onClickLabel = stringResource(R.string.station_card_hide), role = Role.Button) { close() }
-                            .padding(start = 12.dp, top = 4.dp, bottom = 4.dp)
-                    )
-                }
+                // The region's lowest and highest heights, for the elevation spectrum
+                regionRangeMeters = if (regionStations.isNotEmpty()) {
+                    regionStations.minOf { it.elevationMeters } to regionStations.maxOf { it.elevationMeters }
+                } else null,
+                // Less folds the card back, at the right of its top row
+                onLess = close
             )
         }
     )
