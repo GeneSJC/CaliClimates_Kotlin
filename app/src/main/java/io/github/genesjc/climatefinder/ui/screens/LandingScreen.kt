@@ -68,6 +68,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
@@ -414,10 +415,23 @@ fun LandingScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
                         ) {
-                            // The tile fills the height it is given, so it is held to its own content's height (without this it
-                            // fills the whole map); the picker and Info column beside it can be taller
-                            Box(modifier = Modifier.weight(1f).height(IntrinsicSize.Min)) {
-                                if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || menuDrawerShowing || pickerState.visible, readingFor = readingFor)
+                            Column(modifier = Modifier.weight(1f)) {
+                                // The region's name, a static line above the station tile (it is not part of the tile)
+                                Text(
+                                    text = stringResource(region.nameRes),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
+                                )
+                                // The tile fills the height it is given, so it is held to its own content's height (without this
+                                // it fills the whole map); the picker beside it can be taller
+                                Box(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || menuDrawerShowing || pickerState.visible, readingFor = readingFor)
+                                }
                             }
                             // At the right: the region picker (the region's shape and a chevron; it opens the graphical picker)
                             RegionPickerChip(state = pickerState, selectedRegionId = selectedRegionId)

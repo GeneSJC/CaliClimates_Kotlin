@@ -50,7 +50,7 @@ internal fun StationHeroTile(
         tileCornerRadius = 8.dp,
         // The Region Info sheet sits above this card: opening it folds the card
         forceClosed = folded,
-        tile = { StationSummaryTile(station, reading = reading, regionName = regionName) },
+        tile = { StationSummaryTile(station, reading = reading) },
         panel = { close ->
             StationCard(
                 station = station,

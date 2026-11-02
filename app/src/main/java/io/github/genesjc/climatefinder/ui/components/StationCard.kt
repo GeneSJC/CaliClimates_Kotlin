@@ -358,27 +358,15 @@ private fun CompactStationBody(
 }
 
 /**
- * The summary of a station for the Home row, in two lines: the region's name (when given), centred, then the
- * temperature in °F, a pipe divider, the station's name and a chevron at the right. The age of the reading is in the
+ * The summary of a station for the Home row, on one line: the temperature in °F, a pipe divider, the station's name
+ * and a chevron at the right. The age of the reading is in the
  * full card that the chevron opens. When there is no reading, a dash shows where the temperature would be. The name
  * gives way (with an ellipsis) only when it really cannot fit; the temperature always shows.
  */
 @Composable
-fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult? = null, regionName: String? = null) {
+fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult? = null) {
     val display = liveDisplay(reading)
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-        if (regionName != null) {
-            Text(
-                text = regionName,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Text(
