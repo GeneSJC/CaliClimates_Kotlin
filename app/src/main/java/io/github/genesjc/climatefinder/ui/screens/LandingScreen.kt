@@ -15,9 +15,6 @@ import io.github.genesjc.climatefinder.ui.components.MapViewButton
 import io.github.genesjc.climatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.climatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.foundation.Canvas
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -420,58 +417,16 @@ fun LandingScreen(
                             Box(modifier = Modifier.weight(1f).height(IntrinsicSize.Min)) {
                                 if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || menuDrawerShowing || pickerState.visible, readingFor = readingFor)
                             }
-                            // At the right: the region picker (the region's shape and a chevron; it opens the graphical picker), and under it
-                            // the Region Info link
-                            Column(horizontalAlignment = Alignment.End) {
-                                RegionPickerChip(state = pickerState, selectedRegionId = selectedRegionId)
-                                // The info link, under the region picker; the sheet slides in from the right, the X takes
-                                // its place. Topography only: the Elevation view has no Region Info, so the tile takes the whole width there
-                                if (homeTab == 0) {
-                                    val handleColor = MaterialTheme.colorScheme.primary
-                                    // The link text always takes its space (hidden while the X shows), so the station tile beside it
-                                    // keeps one width and does not grow when the link becomes the X
-                                    Box(
-                                        modifier = Modifier
-                                            .clickable(
-                                                onClickLabel = stringResource(if (infoOpen) R.string.region_info_close else R.string.region_info_open),
-                                                role = Role.Button
-                                            ) { if (infoOpen) closeInfo() else openInfo() }
-                                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.region_info_link),
-                                            style = MaterialTheme.typography.titleLarge,
-                                            fontSize = 15.84.sp,
-                                            lineHeight = 22.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = handleColor,
-                                            modifier = Modifier.alpha(if (infoOpen) 0f else 1f)
-                                        )
-                                        if (infoOpen) {
-                                            // A bold X, drawn so its weight and size are exact
-                                            Canvas(modifier = Modifier.size(13.dp)) {
-                                                val stroke = 2.2.dp.toPx()
-                                                val inset = stroke / 2f
-                                                drawLine(
-                                                    color = handleColor,
-                                                    start = Offset(inset, inset),
-                                                    end = Offset(size.width - inset, size.height - inset),
-                                                    strokeWidth = stroke,
-                                                    cap = StrokeCap.Round
-                                                )
-                                                drawLine(
-                                                    color = handleColor,
-                                                    start = Offset(size.width - inset, inset),
-                                                    end = Offset(inset, size.height - inset),
-                                                    strokeWidth = stroke,
-                                                    cap = StrokeCap.Round
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            // At the right: the region picker (the region's shape and a chevron; it opens the graphical picker)
+                            RegionPickerChip(state = pickerState, selectedRegionId = selectedRegionId)
+                        }
+                        // The Region Info button, under the menu button at the left (Topography only: Elevation has no Region Info)
+                        if (homeTab == 0) {
+                            InfoControlButton(
+                                open = infoOpen,
+                                onClick = { if (infoOpen) closeInfo() else openInfo() },
+                                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + 40.dp)
+                            )
                         }
                         // Below the tile, at the left: the menu, the north indicator and the About button
                         MapControlRow(

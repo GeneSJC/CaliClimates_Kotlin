@@ -72,6 +72,34 @@ private fun MapControlButton(label: String, onClick: () -> Unit, modifier: Modif
 }
 
 /**
+ * The Region Info button, in the style of the menu button above it: a drawn "i" in a circle, which becomes an X while the
+ * panel is open. Topography only; the panel slides in from the right.
+ */
+@Composable
+internal fun InfoControlButton(open: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val blue = Color(0xFF0284C7)
+    MapControlButton(
+        stringResource(if (open) R.string.region_info_close else R.string.region_info_open),
+        onClick,
+        modifier
+    ) {
+        Canvas(modifier = Modifier.size(20.dp)) {
+            val stroke = 2.dp.toPx()
+            if (open) {
+                val inset = size.width * 0.18f
+                drawLine(blue, Offset(inset, inset), Offset(size.width - inset, size.height - inset), strokeWidth = stroke * 1.2f, cap = StrokeCap.Round)
+                drawLine(blue, Offset(size.width - inset, inset), Offset(inset, size.height - inset), strokeWidth = stroke * 1.2f, cap = StrokeCap.Round)
+            } else {
+                drawCircle(blue, radius = size.width / 2f - stroke / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+                val cx = size.width / 2f
+                drawCircle(blue, radius = stroke * 0.6f, center = Offset(cx, size.height * 0.30f))
+                drawLine(blue, Offset(cx, size.height * 0.45f), Offset(cx, size.height * 0.74f), strokeWidth = stroke, cap = StrokeCap.Round)
+            }
+        }
+    }
+}
+
+/**
  * The row of small buttons at the map's top left. On Topography: the menu at the left, the north indicator in the
  * middle and the About (i) at the right. On Elevation: the menu, then a Stations drop-down (the north indicator and
  * the About button are not shown there). [stations] is only used by the drop-down.
