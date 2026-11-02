@@ -408,6 +408,8 @@ fun LandingScreen(
                                 // The Region Info sheet opens below this strip (the tile, the picker and the Info link / X), so it never covers them
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
                                 .padding(4.dp)
+                                // The picker takes the height of the tile beside it
+                                .height(IntrinsicSize.Min)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
