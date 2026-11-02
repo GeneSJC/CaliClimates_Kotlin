@@ -98,7 +98,7 @@ fun UnifiedDraggableMapScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val parser = remember { StationCsvParser(context, io.github.genesjc.climatefinder.data.local.StationTowns(io.github.genesjc.climatefinder.domain.model.StateUsaCA.stationTowns)) }
+    val parser = remember { StationCsvParser(context, io.github.genesjc.climatefinder.data.local.StationNameFormatter(io.github.genesjc.climatefinder.config.StateUsaCA.stationTowns)) }
     val stations = remember(config) {
         try {
             val unified = parser.loadStationsFromCsv(config.assetFileName)
@@ -1055,13 +1055,13 @@ fun UnifiedDraggableMapScreen(
         ) {
             selectedStation?.let { st ->
                 // The demo edition reads the live cache directly (it has no ViewModel)
-                val reading by androidx.compose.runtime.produceState<io.github.genesjc.climatefinder.data.remote.ObservationResult?>(
+                val reading by androidx.compose.runtime.produceState<io.github.genesjc.climatefinder.domain.model.ObservationResult?>(
                     io.github.genesjc.climatefinder.data.remote.LiveObservationCache.peek(st.id), st.id
                 ) {
                     value = if (st.canHaveLiveReading) {
                         io.github.genesjc.climatefinder.data.remote.LiveObservationCache.get(st.id)
                     } else {
-                        io.github.genesjc.climatefinder.data.remote.ObservationResult.NoReading
+                        io.github.genesjc.climatefinder.domain.model.ObservationResult.NoReading
                     }
                 }
                 StationCard(

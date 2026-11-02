@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder.domain
 
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaCA
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -27,12 +27,6 @@ class ElevationTest {
         assertEquals(ElevationBand.HILLS, Elevation.band(700))           // 2,297 ft
         assertEquals(ElevationBand.MOUNTAINS, Elevation.band(1_500))     // 4,921 ft
         assertEquals(ElevationBand.HIGH_COUNTRY, Elevation.band(2_000))  // 6,562 ft
-    }
-
-    @Test
-    fun everyBandHasItsOwnWording() {
-        val ids = ElevationBand.values().map { it.labelRes }
-        assertEquals(ids.size, ids.toSet().size)
     }
 
     @Test

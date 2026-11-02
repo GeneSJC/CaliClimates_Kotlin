@@ -2,7 +2,7 @@ package io.github.genesjc.climatefinder.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaCA
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just

@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder.ui.root
 
-import io.github.genesjc.climatefinder.data.local.AppSettings
+import io.github.genesjc.climatefinder.data.local.AppearanceSettings
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
 import io.github.genesjc.climatefinder.testutil.FakeAppSettings
 import io.github.genesjc.climatefinder.testutil.FakeTerrainSource
@@ -25,7 +25,7 @@ class AppRootViewModelTest {
 
     private val terrain = FakeTerrainSource()
 
-    private fun viewModel(store: AppSettings): AppRootViewModel {
+    private fun viewModel(store: AppearanceSettings): AppRootViewModel {
         restartKoin {
             single { store }
             single { TerrainRepository(terrain, Dispatchers.Unconfined) }

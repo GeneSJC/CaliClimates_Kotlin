@@ -3,6 +3,7 @@ package io.github.genesjc.climatefinder.data.remote
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import io.github.genesjc.climatefinder.domain.model.LiveObservation
 
 class LiveObservationTest {
     private fun observation(observedAtMillis: Long?) = LiveObservation(

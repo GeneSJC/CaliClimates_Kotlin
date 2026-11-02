@@ -4,6 +4,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import io.github.genesjc.climatefinder.config.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 
 /**
  * What every USA state definition must satisfy, whatever the state: each fact the app looks up by region id covers

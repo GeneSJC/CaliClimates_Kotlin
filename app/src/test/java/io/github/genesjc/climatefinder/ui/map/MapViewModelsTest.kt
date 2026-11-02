@@ -1,15 +1,15 @@
 package io.github.genesjc.climatefinder.ui.map
 
-import io.github.genesjc.climatefinder.data.local.DatasetKind
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.DatasetKind
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
-import io.github.genesjc.climatefinder.data.local.StationTowns
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
+import io.github.genesjc.climatefinder.domain.StationNameFormatter
+import io.github.genesjc.climatefinder.config.StateUsaCA
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
-import io.github.genesjc.climatefinder.data.local.AppSettings
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.data.local.ElevationSettings
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.BandAxis
-import io.github.genesjc.climatefinder.testLiveReadings
+import io.github.genesjc.climatefinder.testLiveReadingsRepository
 import io.github.genesjc.climatefinder.testStation
 import io.github.genesjc.climatefinder.testutil.FakeAppSettings
 import io.github.genesjc.climatefinder.testutil.FakeObservationSource
@@ -48,15 +48,15 @@ class MapViewModelsTest {
 
     private fun register() = restartKoin {
         single { StationRepository(FakeStationSource(stations), Dispatchers.Unconfined) }
-        single { StationTowns(StateUsaCA.stationTowns) }
+        single { StationNameFormatter(StateUsaCA.stationTowns) }
         single { TerrainRepository(terrain, Dispatchers.Unconfined) }
-        single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), observations) }
-        single<AppSettings> { hints }
+        single { testLiveReadingsRepository(CoroutineScope(Dispatchers.Unconfined), observations) }
+        single<ElevationSettings> { hints }
     }
 
-    private fun topography(): StationMapViewModel {
+    private fun topography(): MapViewModel {
         register()
-        return StationMapViewModel()
+        return MapViewModel()
     }
 
     private fun elevation(): ElevationViewModel {

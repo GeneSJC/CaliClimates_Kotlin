@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset

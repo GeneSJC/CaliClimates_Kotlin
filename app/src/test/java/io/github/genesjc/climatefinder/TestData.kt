@@ -35,9 +35,9 @@ fun testStation(
 )
 
 /** Live readings over a fake source (every fetch answers Failed and is recorded) and a clock that stands still. */
-fun testLiveReadings(
+fun testLiveReadingsRepository(
     scope: kotlinx.coroutines.CoroutineScope,
     source: io.github.genesjc.climatefinder.data.remote.ObservationSource =
         io.github.genesjc.climatefinder.testutil.FakeObservationSource(),
     now: () -> Long = { 0L }
-) = io.github.genesjc.climatefinder.data.remote.LiveReadings(source, scope, now)
+) = io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository(source, scope, now)

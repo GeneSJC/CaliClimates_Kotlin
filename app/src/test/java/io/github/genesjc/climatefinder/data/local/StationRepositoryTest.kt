@@ -8,6 +8,8 @@ import org.junit.Assert.assertSame
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import io.github.genesjc.climatefinder.domain.model.DatasetKind
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 
 class StationRepositoryTest {
 

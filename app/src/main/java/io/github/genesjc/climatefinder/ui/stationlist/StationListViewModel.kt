@@ -1,13 +1,13 @@
 package io.github.genesjc.climatefinder.ui.stationlist
 
 import io.github.genesjc.climatefinder.R
-import io.github.genesjc.climatefinder.data.local.DatasetKind
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.DatasetKind
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
-import io.github.genesjc.climatefinder.data.remote.LiveReadings
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
-import io.github.genesjc.climatefinder.viewmodel.AppBaseViewModel
+import io.github.genesjc.climatefinder.ui.common.AppBaseViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +38,7 @@ data class StationListUiState(
 class StationListViewModel : AppBaseViewModel() {
 
     private val repository: StationRepository by inject()
-    private val readings: LiveReadings by inject()
+    private val readings: LiveReadingsRepository by inject()
 
     /** The station's live reading for its card, null while it is being checked. Ask once per card shown. */
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)

@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.domain.model.GeoBounds
 import io.github.genesjc.climatefinder.ui.theme.LocalStateUsa
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.runtime.remember
 
 /** Where the map's longitude and latitude fall on a canvas of [w] by [h]: one scale for both axes, centred. */
 private class PickerProjection(private val view: GeoBounds, w: Float, h: Float, verticalStretch: Float) {
@@ -84,6 +86,9 @@ internal fun StateUsaClassicMapCanvas(
     val stateUsa = LocalStateUsa.current
     val art = stateUsa.pickerMap
     val tintAlpha = if (terrain != null) 0.58f else 0.72f
+    // The statewide pictures as Compose images, made once per picture (the data layer hands over plain bitmaps)
+    val statePicture = remember(terrain) { terrain?.state?.asImageBitmap() }
+    val surroundPicture = remember(terrain) { terrain?.surround?.asImageBitmap() }
     val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
     // The names drawn on the map are read here, because the drawing code below is not composable
     val regionLabelTexts = art.regionLabels.map { stringResource(it.textRes) }
@@ -192,7 +197,7 @@ internal fun StateUsaClassicMapCanvas(
             }
 
             // The land itself: shaded relief of the whole state under translucent region tints
-            terrain?.let { t ->
+            if (statePicture != null && surroundPicture != null) {
                 val state = stateUsa.stateBounds
                 val dstOffset = androidx.compose.ui.unit.IntOffset(px(state.minLon.toFloat()).toInt(), py(state.maxLat.toFloat()).toInt())
                 val dstSize = androidx.compose.ui.unit.IntSize(
@@ -200,8 +205,8 @@ internal fun StateUsaClassicMapCanvas(
                     (availH * (state.maxLat - state.minLat).toFloat() / (art.view.maxLat - art.view.minLat).toFloat()).toInt()
                 )
                 // The neighbours first, quieter; then the state over them
-                drawImage(image = t.surround, dstOffset = dstOffset, dstSize = dstSize)
-                drawImage(image = t.state, dstOffset = dstOffset, dstSize = dstSize)
+                drawImage(image = surroundPicture, dstOffset = dstOffset, dstSize = dstSize)
+                drawImage(image = statePicture, dstOffset = dstOffset, dstSize = dstSize)
             }
 
             // Fills lock together seamlessly — richer gradient fills instead of flat washed-out tints
