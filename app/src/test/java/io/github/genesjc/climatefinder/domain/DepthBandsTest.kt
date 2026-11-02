@@ -105,6 +105,38 @@ class DepthBandsTest {
     }
 
     @Test
+    fun lateralKeyIsTheLongitudeLookingNorthAndTheLatitudeLookingWest() {
+        assertEquals(-121.3513, DepthBands.lateralKey(38.9092, -121.3513, 0.0), 1e-9)
+        assertEquals(38.9092, DepthBands.lateralKey(38.9092, -121.3513, 90.0), 1e-9)
+    }
+
+    @Test
+    fun lateralKeyPutsWestOnTheLeftLookingNorthAndSouthOnTheLeftLookingWest() {
+        val sanJose = 37.3333 to -121.8167
+        val sacramento = 38.5816 to -121.4944
+        fun lateral(p: Pair<Double, Double>, degrees: Double) = DepthBands.lateralKey(p.first, p.second, degrees)
+        // Looking north San Jose is west of Sacramento, so it stands to its left; looking west it is south of it, so also to its left
+        assertTrue(lateral(sanJose, 0.0) < lateral(sacramento, 0.0))
+        assertTrue(lateral(sanJose, 90.0) < lateral(sacramento, 90.0))
+    }
+
+    @Test
+    fun lateralKeyIsAtRightAnglesToTheDepthKey() {
+        // Moving a station along the line of sight changes its depth and not its place across it
+        for (degrees in listOf(0.0, 20.0, 45.0, 70.0, 90.0)) {
+            val rad = Math.toRadians(degrees)
+            val dLat = Math.cos(rad)
+            val dLon = -Math.sin(rad)
+            val depthBefore = DepthBands.depthKey(37.0, -122.0, degrees)
+            val depthAfter = DepthBands.depthKey(37.0 + dLat, -122.0 + dLon, degrees)
+            val lateralBefore = DepthBands.lateralKey(37.0, -122.0, degrees)
+            val lateralAfter = DepthBands.lateralKey(37.0 + dLat, -122.0 + dLon, degrees)
+            assertTrue(depthAfter > depthBefore)
+            assertEquals(lateralBefore, lateralAfter, 1e-9)
+        }
+    }
+
+    @Test
     fun southIsInFrontAndNorthAtTheBack() {
         // Auburn 38.96, Gilroy-ish 37.0, Sacramento 38.7, Palo Alto 37.46, Vacaville 38.38, Santa Cruz 36.99
         val bands = DepthBands.byRank(listOf(38.96, 37.0, 38.7, 37.46, 38.38, 36.99))

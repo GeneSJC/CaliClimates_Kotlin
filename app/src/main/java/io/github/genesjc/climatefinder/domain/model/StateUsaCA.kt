@@ -289,6 +289,69 @@ object StateUsaCA : StateUsaDefinition {
     )
 
     /** The kinds of tree along the near hills, by region (repeats make a kind more common). */
+    /**
+     * The places people look for first (a station stands for a place when it is the airport or the station by it). The Bay Area
+     * has no station in San Francisco itself, so the city's airport stands for it, and none in Santa Cruz, so that waits for the
+     * station data refresh (the Central Coast has Monterey, Salinas and Watsonville, which is next to it). In each region the best
+     * known place comes first (San Francisco, Santa Barbara, Fresno, Los Angeles, San Diego, Redding), then by size and fame.
+     * Stations that report nothing are left out, which is why Eureka is the Arcata / Eureka airport and not Woodley Island.
+     */
+    override val landmarkStations: Map<String, List<String>> = mapOf(
+        "bay_area_sacramento" to listOf(
+            "KSFO", // San Francisco (the airport, south of the city)
+            "KOAK", // Oakland
+            "KRHV", // San Jose
+            "KSMF", // Sacramento
+            "KSCK", // Stockton
+            "KAPC", // Napa
+            "KDVO"  // Novato, the nearest to Marin
+        ),
+        "northern_california" to listOf(
+            "KRDD", // Redding
+            "KCIC", // Chico
+            "KACV", // Eureka and Arcata (the Arcata / Eureka airport)
+            "KTRK", // Truckee and Tahoe
+            "KMHS", // Mount Shasta
+            "KUKI", // Ukiah
+            "KCEC"  // Crescent City
+        ),
+        "central_coast" to listOf(
+            "KSBA", // Santa Barbara
+            "KMRY", // Monterey
+            "KSBP", // San Luis Obispo
+            "KSMX", // Santa Maria
+            "KSNS", // Salinas
+            "KWVI", // Watsonville, next to Santa Cruz
+            "KPRB"  // Paso Robles
+        ),
+        "central_valley" to listOf(
+            "KFAT", // Fresno
+            "KBFL", // Bakersfield
+            "KVIS", // Visalia
+            "KMCE", // Merced
+            "KMMH", // Mammoth Lakes
+            "KHJO"  // Hanford
+        ),
+        "los_angeles" to listOf(
+            "KLAX",  // Los Angeles (the airport)
+            "FHMC1", // Los Angeles Downtown
+            "KSMO",  // Santa Monica
+            "KLGB",  // Long Beach
+            "KBUR",  // Burbank
+            "KSNA",  // Orange County (Santa Ana)
+            "KONT",  // Ontario
+            "KRAL"   // Riverside
+        ),
+        "san_diego" to listOf(
+            "KSAN",  // San Diego
+            "LJAC1", // La Jolla
+            "KCRQ",  // Carlsbad
+            "KOKB",  // Oceanside
+            "KSEE",  // El Cajon (Gillespie Field)
+            "KRNM"   // Ramona
+        )
+    )
+
     override val treeMix: Map<String, List<TreeKind>> = mapOf(
         "northern_california" to listOf(TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.CONIFER, TreeKind.OAK),
         "bay_area_sacramento" to listOf(TreeKind.CONIFER, TreeKind.OAK, TreeKind.OAK, TreeKind.CONIFER),

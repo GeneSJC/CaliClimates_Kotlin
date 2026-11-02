@@ -53,6 +53,11 @@ interface AppSettings {
     fun elevationBandAngle(): Int
 
     fun saveElevationBandAngle(degrees: Int)
+
+    /** Which map view Home shows, kept across restarts: 0 Topography (the start), 1 Elevation. */
+    fun homeTab(): Int
+
+    fun saveHomeTab(tab: Int)
 }
 
 /** [AppSettings] kept in one SharedPreferences file, with one key per value. */
@@ -130,6 +135,12 @@ class AppSettingsPreferences(
         prefs.edit().putInt(KEY_ELEVATION_BAND_ANGLE, BandAngle.clamp(degrees.toFloat())).apply()
     }
 
+    override fun homeTab(): Int = prefs.getInt(KEY_HOME_TAB, 0).coerceIn(0, 1)
+
+    override fun saveHomeTab(tab: Int) {
+        prefs.edit().putInt(KEY_HOME_TAB, tab.coerceIn(0, 1)).apply()
+    }
+
     companion object {
         const val FILE_NAME = "app_settings"
         const val MAX_HINT_LAUNCHES = 3
@@ -143,6 +154,7 @@ class AppSettingsPreferences(
         private const val KEY_HINT_LAUNCHES = "hint_launches"
         private const val KEY_HINT_TAPPED = "hint_line_tapped"
         private const val KEY_ELEVATION_LAYERS = "elevation_layers"
+        private const val KEY_HOME_TAB = "home_tab"
         private const val KEY_ELEVATION_BAND_AXIS = "elevation_band_axis"
         private const val KEY_ELEVATION_BAND_ANGLE = "elevation_band_angle"
         private const val NO_ANGLE = -1

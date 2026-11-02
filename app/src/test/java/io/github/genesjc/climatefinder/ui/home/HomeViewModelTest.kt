@@ -121,6 +121,15 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun theChosenViewIsSavedAndTheNextLaunchStartsOnIt() {
+        val vm = viewModel()
+        assertEquals(0, vm.uiState.value.tab)
+        vm.setTab(1)
+        assertEquals(1, settings.tab)
+        assertEquals(1, viewModel().uiState.value.tab)
+    }
+
+    @Test
     fun sharedMapSettingsAreKeptInOneState() {
         val vm = viewModel()
         vm.setTab(1)
