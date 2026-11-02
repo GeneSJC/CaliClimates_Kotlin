@@ -358,25 +358,52 @@ private fun CompactStationBody(
 }
 
 /**
- * The summary of a station for the Home row, in two lines: the station's name with a chevron at the right, then the
- * temperature in °F, a pipe divider and the region's name. The age of the reading is in the full card that the chevron
- * opens. When there is no reading, a dash shows where the temperature would be. The name gets the whole first line
- * and gives way (with an ellipsis) only when it really cannot fit; the temperature always shows.
+ * The summary of a station for the Home row, in two lines: the region's name (when given), centred, then the
+ * temperature in °F, a pipe divider, the station's name and a chevron at the right. The age of the reading is in the
+ * full card that the chevron opens. When there is no reading, a dash shows where the temperature would be. The name
+ * gives way (with an ellipsis) only when it really cannot fit; the temperature always shows.
  */
 @Composable
 fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult? = null, regionName: String? = null) {
     val display = liveDisplay(reading)
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        if (regionName != null) {
             Text(
-                text = station.name,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                text = regionName,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth()
             )
+        }
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "\u2014",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+                Text(
+                    text = "|",
+                    fontSize = 17.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                Text(
+                    text = station.name,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+            }
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = "\u25BC",
@@ -385,32 +412,6 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1
             )
-        }
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "\u2014",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
-            )
-            if (regionName != null) {
-                Text(
-                    text = "|",
-                    fontSize = 17.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-                Text(
-                    text = regionName,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-            }
         }
     }
 }
