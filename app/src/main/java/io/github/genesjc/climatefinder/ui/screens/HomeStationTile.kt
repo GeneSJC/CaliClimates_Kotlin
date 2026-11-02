@@ -9,7 +9,6 @@ import io.github.genesjc.climatefinder.ui.components.StationCard
 import io.github.genesjc.climatefinder.ui.components.StationSummaryTile
 import io.github.genesjc.climatefinder.ui.components.HeroTile
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -37,12 +36,11 @@ internal fun StationHeroTile(
     val reading by remember(station.id) { readingFor(station) }.collectAsStateWithLifecycle()
     HeroTile(
         fullWidthPx = fullWidthPx,
-        // The same colour as the open card: its tint over the page colour, not over the backdrop
-        tileColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-            .compositeOver(MaterialTheme.colorScheme.background),
+        // The same colour as the open card: the plain surface, white in the light look
+        tileColor = MaterialTheme.colorScheme.surface,
         tileBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-        // The card draws its own tint and border; this backs it so nothing shows through
-        panelColor = MaterialTheme.colorScheme.background,
+        // The card draws its own border; this backs it so nothing shows through
+        panelColor = MaterialTheme.colorScheme.surface,
         openLabel = stringResource(R.string.station_card_show),
         closeLabel = stringResource(R.string.station_card_hide),
         // Stays open when another station is picked from the map, and the map stays tappable behind it

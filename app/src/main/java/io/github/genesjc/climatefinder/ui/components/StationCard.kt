@@ -39,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -100,15 +99,8 @@ fun StationCard(
             .clickable(onClick = onSelect),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                // A light tint laid over the card colour, so the card stays fully solid (never see-through)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-                    .compositeOver(MaterialTheme.colorScheme.surface)
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
-        )
+        // The card is the plain surface colour, selected or not (white in the light look); the selection shows in the border
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         if (compact) CompactStationBody(station, terrainBadgeColor, display, regionRangeMeters, onLess, elevationNote) else Column(modifier = Modifier.padding(16.dp)) {
             // Header row: the badge (and the selected mark) at the left take the room they need; the elevation text takes
