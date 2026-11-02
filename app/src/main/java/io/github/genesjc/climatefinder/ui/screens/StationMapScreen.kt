@@ -32,7 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.github.genesjc.climatefinder.ui.map.StationMapViewModel
+import io.github.genesjc.climatefinder.ui.map.MapViewModel
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -79,7 +79,7 @@ fun StationMapScreen(
     onSelectedOffscreenChange: ((Boolean) -> Unit)? = null,
     /** Home: bumped to ask the map to bring the selected station back to the middle of the view. */
     recenterTick: Int = 0,
-    viewModel: StationMapViewModel = viewModel(),
+    viewModel: MapViewModel = viewModel(),
 ) {
     val stations by remember(dataset) { viewModel.stations(dataset) }.collectAsStateWithLifecycle()
 

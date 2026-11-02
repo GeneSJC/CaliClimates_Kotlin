@@ -9,7 +9,7 @@ import io.github.genesjc.climatefinder.data.local.TerrainRepository
 import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
 import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
-import io.github.genesjc.climatefinder.viewmodel.AppBaseViewModel
+import io.github.genesjc.climatefinder.ui.common.AppBaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -17,10 +17,11 @@ import org.koin.core.component.inject
 
 /**
  * What both map views (Topography and Elevation) need from the data: a region's stations, its terrain picture,
- * the station's live reading for its card, and the name each station goes by on a label. A specialised base: it
- * extends [AppBaseViewModel] and holds data access for the map screens only. Its helpers come from the container.
+ * the station's live reading for its card, and the name each station goes by on a label. It is the Topography map's
+ * ViewModel as it stands, and the base of [ElevationViewModel], which adds what only the Elevation view needs. It extends
+ * [AppBaseViewModel] and holds data access for the map screens only. Its helpers come from the container.
  */
-abstract class MapViewModel : AppBaseViewModel() {
+open class MapViewModel : AppBaseViewModel() {
 
     private val repository: StationRepository by inject()
     protected val terrains: TerrainRepository by inject()

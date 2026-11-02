@@ -305,15 +305,17 @@ contains any advertising code or library today.
 
 ```text
 app/src/main/java/io/github/genesjc/climatefinder/
-├── data/         repositories, the live-readings holder, the NWS client, saved settings
+├── config/       the USA state definition (regions, geography, artwork, wording as resource ids), the build config
+├── data/         repositories, the live-readings repository and its cache, the NWS client, saved settings
 ├── di/           AppModule: the one place Koin is told how things are built
-├── domain/       the plain model: stations, regions, the USA state definition, elevation facts
-├── viewmodel/    the base ViewModel, the build config, the string resolver
+├── domain/       the plain model, with no Android: stations, readings, elevation facts, the bands' maths
 └── ui/
+    ├── common/       the base ViewModel and the string resolver
     ├── components/   cards, the region picker, drawers, map controls
     ├── home/ map/ regionpicker/ root/ stationlist/   the ViewModels
+    ├── navigation/   which screen is showing (a ViewModel) and the navigation host
     ├── screens/      Home, the maps, the Elevation view, the Station List, the region screen
-    ├── text/         the helpers that turn facts into words
+    ├── text/         the helpers that turn facts into words, and the resource ids for domain values
     └── theme/        colors, the backdrop, and the USA state handed to the screens
 
 app/src/main/assets/   the station packs and the terrain pictures

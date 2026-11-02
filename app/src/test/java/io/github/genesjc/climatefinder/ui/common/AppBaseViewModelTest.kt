@@ -1,4 +1,4 @@
-package io.github.genesjc.climatefinder.viewmodel
+package io.github.genesjc.climatefinder.ui.common
 
 import io.github.genesjc.climatefinder.config.StateUsaCA
 import io.github.genesjc.climatefinder.config.StateUsaDefinition
@@ -10,6 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.io.File
+import io.github.genesjc.climatefinder.config.AppConfig
 
 class AppBaseViewModelTest {
 

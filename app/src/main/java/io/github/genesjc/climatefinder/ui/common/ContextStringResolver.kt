@@ -1,4 +1,4 @@
-package io.github.genesjc.climatefinder.viewmodel
+package io.github.genesjc.climatefinder.ui.common
 
 import android.content.Context
 

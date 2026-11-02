@@ -1,4 +1,4 @@
-package io.github.genesjc.climatefinder.viewmodel
+package io.github.genesjc.climatefinder.ui.common
 
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes

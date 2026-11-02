@@ -8,7 +8,7 @@ import io.github.genesjc.climatefinder.config.StateUsaCA
 import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import io.github.genesjc.climatefinder.testutil.FakeDatasets
 import io.github.genesjc.climatefinder.testutil.FakeObservationSource
-import io.github.genesjc.climatefinder.data.local.AppSettings
+import io.github.genesjc.climatefinder.data.local.RegionSettings
 import io.github.genesjc.climatefinder.testutil.FakeAppSettings
 import io.github.genesjc.climatefinder.testutil.FakeStationSource
 import io.github.genesjc.climatefinder.testutil.MainDispatcherRule
@@ -53,7 +53,7 @@ class HomeViewModelTest {
 
     private fun viewModel(datasets: RegionDatasetCatalog = FakeDatasets()): HomeViewModel {
         restartKoin {
-            single<AppSettings> { settings }
+            single<RegionSettings> { settings }
             single<RegionDatasetCatalog> { datasets }
             single<StateUsaDefinition> { StateUsaCA }
             single { repository }

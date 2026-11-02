@@ -1,7 +1,9 @@
 package io.github.genesjc.climatefinder.di
 
-import io.github.genesjc.climatefinder.data.local.AppSettings
 import io.github.genesjc.climatefinder.data.local.AppSettingsPreferences
+import io.github.genesjc.climatefinder.data.local.AppearanceSettings
+import io.github.genesjc.climatefinder.data.local.ElevationSettings
+import io.github.genesjc.climatefinder.data.local.RegionSettings
 import io.github.genesjc.climatefinder.data.local.AssetStationSource
 import io.github.genesjc.climatefinder.data.local.AssetTerrainSource
 import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
@@ -20,9 +22,9 @@ import io.github.genesjc.climatefinder.data.remote.NwsObservationClient
 import io.github.genesjc.climatefinder.data.remote.ObservationSource
 import io.github.genesjc.climatefinder.BuildConfig
 import io.github.genesjc.climatefinder.BuildInfo
-import io.github.genesjc.climatefinder.viewmodel.AppConfig
-import io.github.genesjc.climatefinder.viewmodel.ContextStringResolver
-import io.github.genesjc.climatefinder.viewmodel.StringResolver
+import io.github.genesjc.climatefinder.config.AppConfig
+import io.github.genesjc.climatefinder.ui.common.ContextStringResolver
+import io.github.genesjc.climatefinder.ui.common.StringResolver
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -40,7 +42,10 @@ val appModule = module {
     single<StateUsaDefinition> { StateUsaCA }
 
     // Platform edge: preference stores and data sources
-    single<AppSettings> { AppSettingsPreferences(androidContext(), get()) }
+    single { AppSettingsPreferences(androidContext(), get()) }
+    single<RegionSettings> { get<AppSettingsPreferences>() }
+    single<AppearanceSettings> { get<AppSettingsPreferences>() }
+    single<ElevationSettings> { get<AppSettingsPreferences>() }
     single<StringResolver> { ContextStringResolver(androidContext()) }
     single { StationNameFormatter(get<StateUsaDefinition>().stationTowns) }
     single<StationSource> { AssetStationSource(androidContext(), get()) }
