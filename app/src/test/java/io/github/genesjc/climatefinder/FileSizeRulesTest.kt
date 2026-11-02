@@ -11,7 +11,6 @@ import java.io.File
 class FileSizeRulesTest {
 
     private val allowed = setOf(
-        "ElevationProfileCanvas.kt",  // the Canvas drawing body is split next, with a device test
         "LandingScreen.kt"            // waiting for its decomposition
     )
 
