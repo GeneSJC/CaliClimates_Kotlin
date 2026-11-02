@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder.data.local
 
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaCA
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

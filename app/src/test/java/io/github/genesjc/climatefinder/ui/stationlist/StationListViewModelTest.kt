@@ -1,20 +1,20 @@
 package io.github.genesjc.climatefinder.ui.stationlist
 
 import io.github.genesjc.climatefinder.R
-import io.github.genesjc.climatefinder.data.local.DatasetKind
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.DatasetKind
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.config.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
-import io.github.genesjc.climatefinder.testLiveReadings
+import io.github.genesjc.climatefinder.testLiveReadingsRepository
 import io.github.genesjc.climatefinder.testStation
 import io.github.genesjc.climatefinder.testutil.FakeStationSource
 import io.github.genesjc.climatefinder.testutil.FakeStringResolver
 import io.github.genesjc.climatefinder.testutil.MainDispatcherRule
 import io.github.genesjc.climatefinder.testutil.StopKoinRule
 import io.github.genesjc.climatefinder.testutil.restartKoin
-import io.github.genesjc.climatefinder.viewmodel.StringResolver
+import io.github.genesjc.climatefinder.ui.common.StringResolver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
@@ -43,7 +43,7 @@ class StationListViewModelTest {
     private fun viewModel(list: List<MicroclimateStation> = stations): StationListViewModel {
         restartKoin {
             single { StationRepository(FakeStationSource(list), Dispatchers.Unconfined) }
-            single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined)) }
+            single { testLiveReadingsRepository(CoroutineScope(Dispatchers.Unconfined)) }
             single<StringResolver> { FakeStringResolver }
             single<StateUsaDefinition> { StateUsaCA }
         }

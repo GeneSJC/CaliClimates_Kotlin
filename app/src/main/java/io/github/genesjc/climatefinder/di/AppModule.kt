@@ -1,28 +1,30 @@
 package io.github.genesjc.climatefinder.di
 
-import io.github.genesjc.climatefinder.data.local.AppSettings
 import io.github.genesjc.climatefinder.data.local.AppSettingsPreferences
+import io.github.genesjc.climatefinder.data.local.AppearanceSettings
+import io.github.genesjc.climatefinder.data.local.ElevationSettings
+import io.github.genesjc.climatefinder.data.local.RegionSettings
 import io.github.genesjc.climatefinder.data.local.AssetStationSource
 import io.github.genesjc.climatefinder.data.local.AssetTerrainSource
-import io.github.genesjc.climatefinder.data.local.RegionDatasets
-import io.github.genesjc.climatefinder.data.local.StationDataStore
+import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
+import io.github.genesjc.climatefinder.data.local.AssetDatasetCatalog
 import io.github.genesjc.climatefinder.data.local.StationRepository
 import io.github.genesjc.climatefinder.data.local.StationSource
-import io.github.genesjc.climatefinder.data.local.StationTowns
+import io.github.genesjc.climatefinder.domain.StationNameFormatter
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
 import io.github.genesjc.climatefinder.data.local.TerrainSource
-import io.github.genesjc.climatefinder.data.remote.LiveReadings
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
+import io.github.genesjc.climatefinder.config.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import io.github.genesjc.climatefinder.data.remote.createNwsApi
 import io.github.genesjc.climatefinder.data.remote.createNwsHttpClient
 import io.github.genesjc.climatefinder.data.remote.NwsObservationClient
 import io.github.genesjc.climatefinder.data.remote.ObservationSource
 import io.github.genesjc.climatefinder.BuildConfig
 import io.github.genesjc.climatefinder.BuildInfo
-import io.github.genesjc.climatefinder.viewmodel.AppConfig
-import io.github.genesjc.climatefinder.viewmodel.ContextStringResolver
-import io.github.genesjc.climatefinder.viewmodel.StringResolver
+import io.github.genesjc.climatefinder.config.AppConfig
+import io.github.genesjc.climatefinder.ui.common.ContextStringResolver
+import io.github.genesjc.climatefinder.ui.common.StringResolver
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -40,9 +42,12 @@ val appModule = module {
     single<StateUsaDefinition> { StateUsaCA }
 
     // Platform edge: preference stores and data sources
-    single<AppSettings> { AppSettingsPreferences(androidContext(), get()) }
+    single { AppSettingsPreferences(androidContext(), get()) }
+    single<RegionSettings> { get<AppSettingsPreferences>() }
+    single<AppearanceSettings> { get<AppSettingsPreferences>() }
+    single<ElevationSettings> { get<AppSettingsPreferences>() }
     single<StringResolver> { ContextStringResolver(androidContext()) }
-    single { StationTowns(get<StateUsaDefinition>().stationTowns) }
+    single { StationNameFormatter(get<StateUsaDefinition>().stationTowns) }
     single<StationSource> { AssetStationSource(androidContext(), get()) }
     single<TerrainSource> { AssetTerrainSource(androidContext(), get()) }
     single { createNwsHttpClient() }
@@ -52,8 +57,8 @@ val appModule = module {
     // Repositories
     single { StationRepository(get()) }
     single { TerrainRepository(get()) }
-    single<RegionDatasets> { StationDataStore.fromAssets(androidContext(), get(), get()) }
+    single<RegionDatasetCatalog> { AssetDatasetCatalog.fromAssets(androidContext(), get(), get()) }
 
     // State holders
-    single { LiveReadings(get()) }
+    single { LiveReadingsRepository(get()) }
 }

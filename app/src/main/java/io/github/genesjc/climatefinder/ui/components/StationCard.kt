@@ -47,11 +47,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.annotation.StringRes
 import io.github.genesjc.climatefinder.R
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.domain.model.TerrainType
 import io.github.genesjc.climatefinder.domain.Units
 import io.github.genesjc.climatefinder.ui.text.elevationDescribeText
+import io.github.genesjc.climatefinder.ui.text.labelRes
 import io.github.genesjc.climatefinder.ui.text.terrainDescriptionText
 
 @Composable

@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import io.github.genesjc.climatefinder.R
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.ui.theme.LocalStateUsa
 
 /** The dataset's region name, shown as its title. */

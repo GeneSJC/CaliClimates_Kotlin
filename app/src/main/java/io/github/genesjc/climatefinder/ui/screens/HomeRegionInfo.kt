@@ -47,7 +47,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.github.genesjc.climatefinder.domain.model.StateUsaRegion
+import io.github.genesjc.climatefinder.config.StateUsaRegion
 import io.github.genesjc.climatefinder.ui.components.StateUsaOutlineIcon
 
 /** The mix of terrain types in the region, as a bar with counts. */

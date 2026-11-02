@@ -3,7 +3,7 @@ package io.github.genesjc.climatefinder.ui.regionpicker
 import androidx.lifecycle.viewModelScope
 import io.github.genesjc.climatefinder.data.local.StateUsaTerrain
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
-import io.github.genesjc.climatefinder.viewmodel.AppBaseViewModel
+import io.github.genesjc.climatefinder.ui.common.AppBaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch

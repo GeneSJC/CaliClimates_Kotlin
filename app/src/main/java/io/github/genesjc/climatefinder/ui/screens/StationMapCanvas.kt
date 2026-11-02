@@ -67,6 +67,7 @@ import io.github.genesjc.climatefinder.ui.components.labelBudget
 import io.github.genesjc.climatefinder.ui.components.panForZoom
 import io.github.genesjc.climatefinder.ui.components.rememberLabelFades
 import io.github.genesjc.climatefinder.ui.components.zoomDotGrowth
+import androidx.compose.ui.graphics.asImageBitmap
 
 /** A landmark's label text and its estimated width: fixed per station, so made once, not on every zoom or pan frame. */
 internal class LandmarkLabel(val station: MicroclimateStation, val city: String, val elevText: String, val widthDp: Dp)
@@ -99,6 +100,8 @@ internal fun SpatialMapCanvas(
 ) {
     val outline = LocalStateUsa.current.outline
     if (stations.isEmpty()) return
+    // The terrain picture as a Compose image, made once per picture (the data layer hands over a plain bitmap)
+    val terrainPicture = remember(terrain) { terrain?.bitmap?.asImageBitmap() }
 
     // The selected station; when none is selected yet (or the id is not in this region) Home shows the first one, so this does too
     val selectedStation = stations.firstOrNull { it.id == selectedStationId } ?: stations.firstOrNull()
@@ -274,16 +277,16 @@ internal fun SpatialMapCanvas(
                     }
                 }
         ) {
-            if (terrain != null) {
+            if (terrain != null && terrainPicture != null) {
                 // Land colour first (the picture may not reach every edge), then the terrain, then a light grid
                 drawRect(color = Color(0xFFE4EBDA))
                 val b = terrain.bounds
                 val left = mapX(b.minLon)
                 val top = mapY(b.maxLat)
                 drawImage(
-                    image = terrain.image,
+                    image = terrainPicture,
                     srcOffset = IntOffset.Zero,
-                    srcSize = IntSize(terrain.image.width, terrain.image.height),
+                    srcSize = IntSize(terrainPicture.width, terrainPicture.height),
                     dstOffset = IntOffset(left.roundToInt(), top.roundToInt()),
                     dstSize = IntSize((mapX(b.maxLon) - left).roundToInt(), (mapY(b.minLat) - top).roundToInt()),
                     filterQuality = FilterQuality.Medium

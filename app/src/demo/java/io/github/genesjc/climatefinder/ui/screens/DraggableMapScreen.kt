@@ -53,7 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.data.local.StationCsvParser
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.ui.components.StationCard
 import kotlin.math.hypot
@@ -79,7 +79,7 @@ fun DraggableMapScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val parser = remember(dataset.fileName) { StationCsvParser(context, io.github.genesjc.climatefinder.data.local.StationTowns(io.github.genesjc.climatefinder.domain.model.StateUsaCA.stationTowns)) }
+    val parser = remember(dataset.fileName) { StationCsvParser(context, io.github.genesjc.climatefinder.data.local.StationNameFormatter(io.github.genesjc.climatefinder.config.StateUsaCA.stationTowns)) }
     val stations = remember(dataset) { parser.loadStations(dataset) }
 
     var selectedStation by remember {

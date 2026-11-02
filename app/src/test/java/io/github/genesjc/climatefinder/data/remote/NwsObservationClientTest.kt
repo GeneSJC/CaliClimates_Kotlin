@@ -10,6 +10,7 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 
 /** The client over a local web server: the request it makes and what it does with each kind of answer. */
 class NwsObservationClientTest {

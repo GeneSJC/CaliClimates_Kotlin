@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder.data.local
 
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaCA
 
 /** Per-region settings for the Transect Map: which stations to load and how to label them. */
 data class TransectConfig(

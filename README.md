@@ -112,7 +112,7 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
   </thead>
   <tr>
     <td width="30%" valign="top"><img src="docs/images/chip-live-nws.png" alt="Live NWS Readings" width="200"></td>
-    <td valign="top">Every temperature, humidity, wind and pressure value comes from the National Weather Service's public API: no key, no made-up numbers. A reading is reused for 15 minutes, a station that failed is tried again after 5, and only four requests run at once, so the app stays quick and polite. A station with no reading says so.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/data/remote/NwsApi.kt"><code>NwsApi.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/remote/NwsObservationClient.kt"><code>NwsObservationClient.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/remote/LiveReadings.kt"><code>LiveReadings.kt</code></a></sub></td>
+    <td valign="top">Every temperature, humidity, wind and pressure value comes from the National Weather Service's public API: no key, no made-up numbers. A reading is reused for 15 minutes, a station that failed is tried again after 5, and only four requests run at once, so the app stays quick and polite. A station with no reading says so.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/data/remote/NwsApi.kt"><code>NwsApi.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/remote/NwsObservationClient.kt"><code>NwsObservationClient.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/remote/LiveReadingsRepository.kt"><code>LiveReadingsRepository.kt</code></a></sub></td>
   </tr>
 </table>
 
@@ -128,7 +128,7 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
   </thead>
   <tr>
     <td width="30%" valign="top"><img src="docs/images/chip-terrain-relief.png" alt="Terrain Relief" width="200"></td>
-    <td valign="top">Each region has a shaded-relief picture built from public elevation data (USGS 3DEP and NASA SRTM, through AWS Terrain Tiles). It is the ground under the Topography map, the texture behind the Elevation ridges and the relief behind every page. The pictures are made with scripts outside the app, so the app only loads them, off the main thread.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainRepository.kt"><code>TerrainRepository.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainMaps.kt"><code>TerrainMaps.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/theme/AppBackground.kt"><code>AppBackground.kt</code></a></sub></td>
+    <td valign="top">Each region has a shaded-relief picture built from public elevation data (USGS 3DEP and NASA SRTM, through AWS Terrain Tiles). It is the ground under the Topography map, the texture behind the Elevation ridges and the relief behind every page. The pictures are made with scripts outside the app, so the app only loads them, off the main thread.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainRepository.kt"><code>TerrainRepository.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainAssetPaths.kt"><code>TerrainAssetPaths.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/theme/AppBackground.kt"><code>AppBackground.kt</code></a></sub></td>
   </tr>
 </table>
 
@@ -305,15 +305,17 @@ contains any advertising code or library today.
 
 ```text
 app/src/main/java/io/github/genesjc/climatefinder/
-├── data/         repositories, the live-readings holder, the NWS client, saved settings
+├── config/       the USA state definition (regions, geography, artwork, wording as resource ids), the build config
+├── data/         repositories, the live-readings repository and its cache, the NWS client, saved settings
 ├── di/           AppModule: the one place Koin is told how things are built
-├── domain/       the plain model: stations, regions, the USA state definition, elevation facts
-├── viewmodel/    the base ViewModel, the build config, the string resolver
+├── domain/       the plain model, with no Android: stations, readings, elevation facts, the bands' maths
 └── ui/
+    ├── common/       the base ViewModel and the string resolver
     ├── components/   cards, the region picker, drawers, map controls
     ├── home/ map/ regionpicker/ root/ stationlist/   the ViewModels
+    ├── navigation/   which screen is showing (a ViewModel) and the navigation host
     ├── screens/      Home, the maps, the Elevation view, the Station List, the region screen
-    ├── text/         the helpers that turn facts into words
+    ├── text/         the helpers that turn facts into words, and the resource ids for domain values
     └── theme/        colors, the backdrop, and the USA state handed to the screens
 
 app/src/main/assets/   the station packs and the terrain pictures
@@ -365,7 +367,7 @@ tag, what is missing, and how to bring it back onto a fresh branch from `develop
 | **Local news** (a news block and story dialog on the station card) | `news-parked-2026-10-27` | [docs/news-restore.md](docs/news-restore.md) | Removed at Build 98.1. It was never shown to users (sample stories, behind a switch that was off). The tag is `develop` at Build 96.1, the last commit that had it, and it worked. |
 
 Read a file from a tag without checking it out: `git show <tag>:<path>`. The station-to-town naming that used to live
-beside the news code stays in the app, in `StationTowns`.
+beside the news code stays in the app, in `StationNameFormatter`.
 
 ## 📄 License
 

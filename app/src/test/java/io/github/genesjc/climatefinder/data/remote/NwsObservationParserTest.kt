@@ -7,6 +7,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import io.github.genesjc.climatefinder.domain.model.LiveObservation
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 
 /** Reads api.weather.gov observation text: unit conversion, missing values, odd timestamps. */
 class NwsObservationParserTest {

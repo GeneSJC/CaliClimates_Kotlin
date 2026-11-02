@@ -2,34 +2,7 @@ package io.github.genesjc.climatefinder.data.remote
 
 import android.util.Log
 import kotlinx.coroutines.CancellationException
-
-/** A real reading from the National Weather Service. Only temperature is guaranteed. */
-data class LiveObservation(
-    val temperatureCelsius: Double,
-    val humidityPercent: Double?,
-    val windSpeedKmh: Double?,
-    val pressureHpa: Double?,
-    val observedAtMillis: Long?
-) {
-    val temperatureFahrenheit: Double
-        get() = temperatureCelsius * 9.0 / 5.0 + 32.0
-
-    /** Minutes since the station observed this, or null when the timestamp is unknown. */
-    fun ageMinutes(now: Long = System.currentTimeMillis()): Long? =
-        observedAtMillis?.let { ((now - it) / 60_000).coerceAtLeast(0) }
-}
-
-/** Outcome of one fetch: a reading, a station with nothing usable right now, or a failed request. */
-sealed interface ObservationResult {
-    data class Reading(val observation: LiveObservation) : ObservationResult
-    object NoReading : ObservationResult
-    object Failed : ObservationResult
-}
-
-/** Where a station's latest observation comes from (api.weather.gov; a fake in tests). */
-interface ObservationSource {
-    suspend fun fetchLatest(stationId: String): ObservationResult
-}
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 
 /**
  * Fetches one station's latest observation from api.weather.gov (no key needed) through [api]. The answer is read into

@@ -53,7 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.ui.theme.LocalStateUsa
-import io.github.genesjc.climatefinder.domain.model.RegionStatus
+import io.github.genesjc.climatefinder.config.RegionStatus
 
 /** How much the picker's map is stretched vertically (1 = true shape). Taller, at the cost of some skew. */
 internal const val PICKER_VERTICAL_STRETCH = 1.35f

@@ -1,14 +1,14 @@
 package io.github.genesjc.climatefinder.ui.home
 
-import io.github.genesjc.climatefinder.data.local.RegionDatasets
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
-import io.github.genesjc.climatefinder.testLiveReadings
-import io.github.genesjc.climatefinder.domain.model.StateUsaCA
-import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
+import io.github.genesjc.climatefinder.testLiveReadingsRepository
+import io.github.genesjc.climatefinder.config.StateUsaCA
+import io.github.genesjc.climatefinder.config.StateUsaDefinition
 import io.github.genesjc.climatefinder.testutil.FakeDatasets
 import io.github.genesjc.climatefinder.testutil.FakeObservationSource
-import io.github.genesjc.climatefinder.data.local.AppSettings
+import io.github.genesjc.climatefinder.data.local.RegionSettings
 import io.github.genesjc.climatefinder.testutil.FakeAppSettings
 import io.github.genesjc.climatefinder.testutil.FakeStationSource
 import io.github.genesjc.climatefinder.testutil.MainDispatcherRule
@@ -51,19 +51,19 @@ class HomeViewModelTest {
 
     private val repository = StationRepository(FakeStationSource(), Dispatchers.Unconfined)
 
-    private fun viewModel(datasets: RegionDatasets = FakeDatasets()): HomeViewModel {
+    private fun viewModel(datasets: RegionDatasetCatalog = FakeDatasets()): HomeViewModel {
         restartKoin {
-            single<AppSettings> { settings }
-            single<RegionDatasets> { datasets }
+            single<RegionSettings> { settings }
+            single<RegionDatasetCatalog> { datasets }
             single<StateUsaDefinition> { StateUsaCA }
             single { repository }
-            single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined), observations) }
+            single { testLiveReadingsRepository(CoroutineScope(Dispatchers.Unconfined), observations) }
         }
         return HomeViewModel()
     }
 
     /** Datasets where reading the stations of the region called "slow" waits until the test lets it finish. */
-    private class GatedDatasets(private val gate: CompletableDeferred<Unit>) : RegionDatasets by FakeDatasets() {
+    private class GatedDatasets(private val gate: CompletableDeferred<Unit>) : RegionDatasetCatalog by FakeDatasets() {
         override suspend fun stationsFor(regionId: String): List<MicroclimateStation> {
             if (regionId == "slow") gate.await()
             return FakeDatasets().stationsFor(regionId)
@@ -71,7 +71,7 @@ class HomeViewModelTest {
     }
 
     /** Datasets where no region has any data. */
-    private class NoDataDatasets : RegionDatasets by FakeDatasets() {
+    private class NoDataDatasets : RegionDatasetCatalog by FakeDatasets() {
         override suspend fun datasetFor(regionId: String): StationDatasetInfo? = null
         override fun cachedDatasetFor(regionId: String): StationDatasetInfo? = null
         override suspend fun stationsFor(regionId: String): List<MicroclimateStation> = emptyList()

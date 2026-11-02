@@ -1,19 +1,21 @@
 package io.github.genesjc.climatefinder.testutil
 
-import androidx.compose.ui.graphics.ImageBitmap
-import io.github.genesjc.climatefinder.data.local.AppSettings
-import io.github.genesjc.climatefinder.data.local.DatasetKind
-import io.github.genesjc.climatefinder.data.local.RegionDatasets
+import android.graphics.Bitmap
+import io.github.genesjc.climatefinder.data.local.AppearanceSettings
+import io.github.genesjc.climatefinder.data.local.ElevationSettings
+import io.github.genesjc.climatefinder.data.local.RegionSettings
+import io.github.genesjc.climatefinder.domain.model.DatasetKind
+import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
 import io.github.genesjc.climatefinder.data.local.StateUsaTerrain
-import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
+import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationSource
 import io.github.genesjc.climatefinder.data.local.TerrainImage
 import io.github.genesjc.climatefinder.data.local.TerrainSource
-import io.github.genesjc.climatefinder.data.remote.ObservationResult
+import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.data.remote.ObservationSource
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.testStation
-import io.github.genesjc.climatefinder.viewmodel.StringResolver
+import io.github.genesjc.climatefinder.ui.common.StringResolver
 
 /** Fakes for the platform edge, shared by the ViewModel tests. Each records what a test wants to check. */
 
@@ -29,7 +31,7 @@ class FakeAppSettings(
     var layers: Boolean = true,
     var angle: Int = 0,
     var tab: Int = 0
-) : AppSettings {
+) : RegionSettings, AppearanceSettings, ElevationSettings {
     override fun selectedRegionId() = region
     override fun saveSelectedRegionId(regionId: String) {
         region = regionId
@@ -78,7 +80,7 @@ class FakeAppSettings(
 }
 
 /** A dataset for any region id, with one featured station named after the region. */
-class FakeDatasets : RegionDatasets {
+class FakeDatasets : RegionDatasetCatalog {
     override suspend fun datasetFor(regionId: String) = cachedDatasetFor(regionId)
 
     override fun cachedDatasetFor(regionId: String) = StationDatasetInfo(
@@ -122,7 +124,7 @@ class FakeTerrainSource : TerrainSource {
         return null
     }
 
-    override fun loadBackdropRelief(): ImageBitmap? {
+    override fun loadBackdropRelief(): Bitmap? {
         backdropLoads++
         return null
     }
