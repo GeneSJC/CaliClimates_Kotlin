@@ -1,13 +1,12 @@
 package io.github.genesjc.climatefinder.domain
 
-import io.github.genesjc.climatefinder.data.local.StationTowns
 import io.github.genesjc.climatefinder.domain.model.StateUsaCA
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class StationNamesTest {
 
-    private val towns = StationTowns(StateUsaCA.stationTowns)
+    private val towns = StationNameFormatter(StateUsaCA.stationTowns)
 
     @Test
     fun putsTheTownFirstWhenTheStationNameDoesNotSayIt() {
@@ -29,20 +28,20 @@ class StationNamesTest {
     @Test
     fun theTownListGivesTheCombinedNameAndTheShortLabel() {
         assertEquals("Jackson (Mount Zion)", towns.displayName("MTZC1", "Mount Zion"))
-        assertEquals("Jackson", towns.getCleanCityName("MTZC1", "Mount Zion"))
+        assertEquals("Jackson", towns.cleanCityName("MTZC1", "Mount Zion"))
         // the label does not change when the name already carries the town
-        assertEquals("Jackson", towns.getCleanCityName("MTZC1", "Jackson (Mount Zion)"))
+        assertEquals("Jackson", towns.cleanCityName("MTZC1", "Jackson (Mount Zion)"))
     }
 
     @Test
     fun aStationOutsideTheTownListKeepsItsOwnName() {
         assertEquals("Rose Peak", towns.displayName("RSPC1", "Rose Peak"))
-        assertEquals("Rose Peak", towns.getCleanCityName("RSPC1", "Rose Peak"))
+        assertEquals("Rose Peak", towns.cleanCityName("RSPC1", "Rose Peak"))
     }
 
     @Test
     fun countyIsDroppedFromAFacilityNameButKeptInCountyLine() {
-        assertEquals("Yuba", towns.getCleanCityName("KXXX", "Yuba County Airport"))
-        assertEquals("County Line", towns.getCleanCityName("CLNC1", "County Line"))
+        assertEquals("Yuba", towns.cleanCityName("KXXX", "Yuba County Airport"))
+        assertEquals("County Line", towns.cleanCityName("CLNC1", "County Line"))
     }
 }

@@ -13,7 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.coroutines.CoroutineContext
 
-class StationDataStoreTest {
+class AssetDatasetCatalogTest {
 
     private val north = StateUsaCA.NORTHERN_CALIFORNIA.id
     private val bay = StateUsaCA.BAY_AREA_SACRAMENTO.id
@@ -29,7 +29,7 @@ class StationDataStoreTest {
     }
 
     private fun store(assets: Set<String>, dispatcher: CoroutineDispatcher = Dispatchers.Unconfined) =
-        StationDataStore(
+        AssetDatasetCatalog(
             listAssets = { assets },
             repository = StationRepository(FakeStationSource(stations), Dispatchers.Unconfined),
             stateUsa = StateUsaCA,

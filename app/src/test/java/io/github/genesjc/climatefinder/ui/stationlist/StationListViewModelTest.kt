@@ -7,7 +7,7 @@ import io.github.genesjc.climatefinder.data.local.StationRepository
 import io.github.genesjc.climatefinder.domain.model.StateUsaCA
 import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
-import io.github.genesjc.climatefinder.testLiveReadings
+import io.github.genesjc.climatefinder.testLiveReadingsRepository
 import io.github.genesjc.climatefinder.testStation
 import io.github.genesjc.climatefinder.testutil.FakeStationSource
 import io.github.genesjc.climatefinder.testutil.FakeStringResolver
@@ -43,7 +43,7 @@ class StationListViewModelTest {
     private fun viewModel(list: List<MicroclimateStation> = stations): StationListViewModel {
         restartKoin {
             single { StationRepository(FakeStationSource(list), Dispatchers.Unconfined) }
-            single { testLiveReadings(CoroutineScope(Dispatchers.Unconfined)) }
+            single { testLiveReadingsRepository(CoroutineScope(Dispatchers.Unconfined)) }
             single<StringResolver> { FakeStringResolver }
             single<StateUsaDefinition> { StateUsaCA }
         }

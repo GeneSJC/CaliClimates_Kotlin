@@ -2,53 +2,6 @@ package io.github.genesjc.climatefinder.domain.model
 
 import androidx.annotation.StringRes
 
-/** A box of longitude and latitude. */
-data class GeoBounds(val minLon: Double, val maxLon: Double, val minLat: Double, val maxLat: Double)
-
-/** A well-known place and its height in feet (approximate), for comparisons in plain words. */
-data class Landmark(val name: String, val feet: Int)
-
-/** The kinds of tree drawn along the near hills of the Elevation view. */
-enum class TreeKind { CONIFER, OAK, PALM }
-
-/** A state's own outline as (longitude, latitude) pairs, for the maps that have no region artwork. */
-data class StateUsaOutline(
-    /** The sea coast, from the northern border to the southern one. */
-    val coast: List<Pair<Double, Double>>,
-    /** The land border, from the southern coast end round to the northern coast end. */
-    val landBorder: List<Pair<Double, Double>>
-)
-
-/** A name drawn on the hand-drawn picker map: its string resource and where it sits. */
-data class StateUsaMapLabel(
-    @StringRes val textRes: Int,
-    val lon: Float,
-    val lat: Float,
-    /** A bigger, heavier name (for the neighbour that matters most). */
-    val emphasis: Boolean = false
-)
-
-/** The dashed line where the state meets its neighbours, from [fromLon] east to the map's edge. */
-data class StateUsaBorderLine(val lat: Float, val fromLon: Float)
-
-/** The artwork of the hand-drawn region picker map, in longitude and latitude. */
-data class StateUsaPickerMap(
-    /** The window the map shows. */
-    val view: GeoBounds,
-    /** The sea along the coast, from the map's top-left corner round to its bottom edge at [seaBottomLon]. */
-    val seaPoints: List<Pair<Float, Float>>,
-    val seaBottomLon: Float,
-    /** Latitudes of the faint grid lines. */
-    val gridLatitudes: List<Float>,
-    /** Mountain ranges drawn as hachure lines when there is no terrain picture. */
-    val ridges: List<List<Pair<Float, Float>>>,
-    val borderLine: StateUsaBorderLine,
-    /** Region names, drawn on pills. */
-    val regionLabels: List<StateUsaMapLabel>,
-    /** The neighbours, drawn quietly. */
-    val neighbourLabels: List<StateUsaMapLabel>
-)
-
 /**
  * Everything that differs from one USA state to the next: its regions, outline, picture bounds, station packs,
  * landmarks, scenery and the picker map's artwork. The app asks the registered definition (Koin, and

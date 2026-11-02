@@ -4,7 +4,7 @@ import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.data.local.DatasetKind
 import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
-import io.github.genesjc.climatefinder.data.remote.LiveReadings
+import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
 import io.github.genesjc.climatefinder.data.remote.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.viewmodel.AppBaseViewModel
@@ -38,7 +38,7 @@ data class StationListUiState(
 class StationListViewModel : AppBaseViewModel() {
 
     private val repository: StationRepository by inject()
-    private val readings: LiveReadings by inject()
+    private val readings: LiveReadingsRepository by inject()
 
     /** The station's live reading for its card, null while it is being checked. Ask once per card shown. */
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)

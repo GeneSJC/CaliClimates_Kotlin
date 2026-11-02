@@ -1,12 +1,12 @@
 package io.github.genesjc.climatefinder.ui.map
 
 import androidx.lifecycle.viewModelScope
-import io.github.genesjc.climatefinder.data.local.StationTowns
+import io.github.genesjc.climatefinder.domain.StationNameFormatter
 import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
 import io.github.genesjc.climatefinder.data.local.TerrainImage
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
-import io.github.genesjc.climatefinder.data.remote.LiveReadings
+import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
 import io.github.genesjc.climatefinder.data.remote.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.viewmodel.AppBaseViewModel
@@ -24,8 +24,8 @@ abstract class MapViewModel : AppBaseViewModel() {
 
     private val repository: StationRepository by inject()
     protected val terrains: TerrainRepository by inject()
-    protected val readings: LiveReadings by inject()
-    private val towns: StationTowns by inject()
+    protected val readings: LiveReadingsRepository by inject()
+    private val towns: StationNameFormatter by inject()
 
     private val terrainFlows = HashMap<String, MutableStateFlow<TerrainImage?>>()
 
@@ -63,5 +63,5 @@ abstract class MapViewModel : AppBaseViewModel() {
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 
     /** The name a station goes by on the maps' labels. */
-    fun cityName(station: MicroclimateStation): String = towns.getCleanCityName(station.id, station.name)
+    fun cityName(station: MicroclimateStation): String = towns.cleanCityName(station.id, station.name)
 }

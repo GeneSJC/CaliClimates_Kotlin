@@ -3,7 +3,7 @@ package io.github.genesjc.climatefinder.testutil
 import androidx.compose.ui.graphics.ImageBitmap
 import io.github.genesjc.climatefinder.data.local.AppSettings
 import io.github.genesjc.climatefinder.data.local.DatasetKind
-import io.github.genesjc.climatefinder.data.local.RegionDatasets
+import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
 import io.github.genesjc.climatefinder.data.local.StateUsaTerrain
 import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationSource
@@ -72,7 +72,7 @@ class FakeAppSettings(
 }
 
 /** A dataset for any region id, with one featured station named after the region. */
-class FakeDatasets : RegionDatasets {
+class FakeDatasets : RegionDatasetCatalog {
     override suspend fun datasetFor(regionId: String) = cachedDatasetFor(regionId)
 
     override fun cachedDatasetFor(regionId: String) = StationDatasetInfo(

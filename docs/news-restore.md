@@ -26,7 +26,7 @@ to a news search. The stories were samples with invented sources; none were live
 
 | Path | What it was |
 |---|---|
-| `main/.../data/local/LocalNewsRepository.kt` | The sample archive and `getLocalStories`. **Not deleted as a whole:** the station-to-town table and the name cleaning in the same file stayed, and moved to `data/local/StationTowns.kt`. |
+| `main/.../data/local/LocalNewsRepository.kt` | The sample archive and `getLocalStories`. **Not deleted as a whole:** the station-to-town table and the name cleaning in the same file stayed, and moved to `domain/StationNameFormatter.kt` (first as `data/local/StationTowns.kt`). |
 | `main/.../domain/model/LocalNewsStory.kt` | The story model: title, source, url, published, snippet. |
 | `main/.../AppFeatures.kt` | The `LOCAL_NEWS` switch (the only switch it held). |
 | `main/.../ui/components/StationCard.kt` | The Local News row, the story dialog, the `onOpenStory` parameter and the `cleanCity` and `newsStories` values. |
@@ -78,7 +78,7 @@ The strings, verbatim:
 3. `LocalNewsRepository.kt`: do not overwrite. Create a news-only file (for example `data/local/LocalNewsSource.kt`) from the
    tag's `getLocalStories` and `ARCHIVE` (everything after `getLocalStories` in
    `git show news-parked-2026-10-27:app/src/main/java/io/github/genesjc/microclimatefinder/data/local/LocalNewsRepository.kt`),
-   and have it take the town as a parameter, as before. The town now comes from `StationTowns.getCleanCityName`.
+   and have it take the town as a parameter, as before. The town now comes from `StationNameFormatter.cleanCityName`.
 4. Re-add the strings above (the repository's string rules apply: wording in the category files).
 5. Re-add the `NEWS_STORY_VIEWER` entry to `AppScreen`.
 6. `StationCard.kt`: the removed blocks are in the tag; read them with

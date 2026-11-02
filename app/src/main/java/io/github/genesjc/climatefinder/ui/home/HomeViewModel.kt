@@ -2,10 +2,10 @@ package io.github.genesjc.climatefinder.ui.home
 
 import androidx.lifecycle.viewModelScope
 import io.github.genesjc.climatefinder.data.local.AppSettings
-import io.github.genesjc.climatefinder.data.local.RegionDatasets
+import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
 import io.github.genesjc.climatefinder.data.local.StationDatasetInfo
 import io.github.genesjc.climatefinder.data.local.StationRepository
-import io.github.genesjc.climatefinder.data.remote.LiveReadings
+import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
 import io.github.genesjc.climatefinder.data.remote.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.ui.components.MAX_MAP_ZOOM
@@ -66,7 +66,7 @@ sealed interface HomeEvent {
  *   they are in). Choosing a region reads its stations off the main thread too, then saves it and clears the selected
  *   station. The selected station and the map zoom are saved too, and come back on the next launch as long as they were
  *   set in the saved region.
- * - Live readings: whenever the region changes, it opens a visit to the new region in [LiveReadings], which fetches
+ * - Live readings: whenever the region changes, it opens a visit to the new region in [LiveReadingsRepository], which fetches
  *   the region's featured stations and cancels the previous visit's fetch.
  *
  * Its helpers come from the dependency container with `by inject()`, so it has no constructor arguments.
@@ -77,10 +77,10 @@ class HomeViewModel : AppBaseViewModel() {
     /** What is remembered between launches: the region, and the station and map zoom set in it. */
     private val settings: AppSettings by inject()
     /** The station dataset of each region, and how many regions have data. */
-    private val datasets: RegionDatasets by inject()
+    private val datasets: RegionDatasetCatalog by inject()
     private val stationRepository: StationRepository by inject()
     /** The live readings the station tile and card show; also fetches a region's featured stations when it is opened. */
-    private val readings: LiveReadings by inject()
+    private val readings: LiveReadingsRepository by inject()
 
     private val _uiState = MutableStateFlow(
         settings.selectedRegionId().let { regionId ->

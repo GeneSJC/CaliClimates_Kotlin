@@ -16,7 +16,7 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class LiveReadingsTest {
+class LiveReadingsRepositoryTest {
 
     private val minute = 60_000L
     private var clock = 0L
@@ -27,11 +27,11 @@ class LiveReadingsTest {
     private var onFetch: suspend (String) -> Unit = {}
 
     private val scope = CoroutineScope(UnconfinedTestDispatcher())
-    private lateinit var readings: LiveReadings
+    private lateinit var readings: LiveReadingsRepository
 
     @Before
     fun setUp() {
-        readings = LiveReadings(
+        readings = LiveReadingsRepository(
             source = object : ObservationSource {
                 override suspend fun fetchLatest(stationId: String): ObservationResult {
                     calls.incrementAndGet()
@@ -142,12 +142,12 @@ class LiveReadingsTest {
 
     @Test
     fun prefetchStopsAtTheLimit() = runBlocking {
-        val stations = (1..LiveReadings.PREFETCH_LIMIT + 10).map { testStation(id = "S$it", isFeatured = true) }
+        val stations = (1..LiveReadingsRepository.PREFETCH_LIMIT + 10).map { testStation(id = "S$it", isFeatured = true) }
         readings.prefetch(stations)
-        assertEquals(LiveReadings.PREFETCH_LIMIT, calls.get())
+        assertEquals(LiveReadingsRepository.PREFETCH_LIMIT, calls.get())
         // The first ones in the list are the ones fetched
         assertSame(reading, readings.peek("S1"))
-        assertNull(readings.peek("S${LiveReadings.PREFETCH_LIMIT + 1}"))
+        assertNull(readings.peek("S${LiveReadingsRepository.PREFETCH_LIMIT + 1}"))
     }
 
     @Test

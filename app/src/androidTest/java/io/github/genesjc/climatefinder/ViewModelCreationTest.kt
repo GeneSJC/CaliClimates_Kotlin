@@ -5,13 +5,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.genesjc.climatefinder.data.local.AppSettings
-import io.github.genesjc.climatefinder.data.local.RegionDatasets
+import io.github.genesjc.climatefinder.data.local.RegionDatasetCatalog
 import io.github.genesjc.climatefinder.data.local.StationRepository
-import io.github.genesjc.climatefinder.data.local.StationTowns
+import io.github.genesjc.climatefinder.domain.StationNameFormatter
 import io.github.genesjc.climatefinder.data.local.StationSource
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
 import io.github.genesjc.climatefinder.data.local.TerrainSource
-import io.github.genesjc.climatefinder.data.remote.LiveReadings
+import io.github.genesjc.climatefinder.data.remote.LiveReadingsRepository
 import io.github.genesjc.climatefinder.data.remote.ObservationSource
 import io.github.genesjc.climatefinder.domain.model.StateUsaDefinition
 import io.github.genesjc.climatefinder.ui.home.HomeViewModel
@@ -53,9 +53,9 @@ class ViewModelCreationTest {
     fun everyRegisteredObjectCanBeBuilt() {
         val koin = GlobalContext.get()
         val types: List<KClass<*>> = listOf(
-            AppConfig::class, StateUsaDefinition::class, StationTowns::class, AppSettings::class, StringResolver::class, StationSource::class, TerrainSource::class,
-            ObservationSource::class, StationRepository::class, TerrainRepository::class, RegionDatasets::class,
-            LiveReadings::class
+            AppConfig::class, StateUsaDefinition::class, StationNameFormatter::class, AppSettings::class, StringResolver::class, StationSource::class, TerrainSource::class,
+            ObservationSource::class, StationRepository::class, TerrainRepository::class, RegionDatasetCatalog::class,
+            LiveReadingsRepository::class
         )
         types.forEach { type -> assertNotNull("Not registered: ${type.simpleName}", koin.get<Any>(type, null, null)) }
     }
