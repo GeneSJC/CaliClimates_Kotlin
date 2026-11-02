@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
@@ -50,9 +51,12 @@ fun RegionPickerChip(state: RegionPickerState, selectedRegionId: String, modifie
             )
             // A chevron beside the shape: this is a choice, like a select list. It opens the same picker
             Text(
-                text = "\u25BE",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                // The station tile's chevron (a solid triangle, in the same colour), a little smaller
+                text = "\u25BC",
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .padding(start = 2.dp, end = 6.dp)
                     .clickable(enabled = !state.visible, onClickLabel = stringResource(R.string.region_picker_change), role = Role.Button) {

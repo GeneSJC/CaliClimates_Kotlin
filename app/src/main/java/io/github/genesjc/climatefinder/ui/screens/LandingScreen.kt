@@ -19,11 +19,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.layout.layout
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -409,71 +407,68 @@ fun LandingScreen(
                                 // (a shaped background, not a clip, so the card that opens from the tile is never cut off)
                                 .background(MaterialTheme.colorScheme.background, RoundedCornerShape(10.dp))
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                                // The Region Info sheet opens below this strip (the tile, the picker and the Info link / X), so it never covers them
+                                .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
                                 .padding(4.dp)
-                                .height(IntrinsicSize.Min)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.Top
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    // The Region Info sheet opens below this row (the tile and the Info link / X beside it), so it never covers them
-                                    .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
-                            ) {
+                            Box(modifier = Modifier.weight(1f)) {
                                 if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible, readingFor = readingFor)
                             }
-                            // The info link, on its own to the right of the station tile; the sheet slides in from the right, the X takes
-                            // its place. Topography only: the Elevation view has no Region Info, so the tile takes the whole width there
-                            if (homeTab == 0) {
-                                val handleColor = MaterialTheme.colorScheme.primary
-                                // The link text always takes its space (hidden while the X shows), so the station tile beside it
-                                // keeps one width and does not grow when the link becomes the X
-                                Box(
-                                    modifier = Modifier
-                                        .clickable(
-                                            onClickLabel = stringResource(if (infoOpen) R.string.region_info_close else R.string.region_info_open),
-                                            role = Role.Button
-                                        ) { if (infoOpen) closeInfo() else openInfo() }
-                                        .padding(horizontal = 4.dp, vertical = 2.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.region_info_link),
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontSize = 15.84.sp,
-                                        lineHeight = 22.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = handleColor,
-                                        modifier = Modifier.alpha(if (infoOpen) 0f else 1f)
-                                    )
-                                    if (infoOpen) {
-                                        // A bold X, drawn so its weight and size are exact
-                                        Canvas(modifier = Modifier.size(13.dp)) {
-                                            val stroke = 2.2.dp.toPx()
-                                            val inset = stroke / 2f
-                                            drawLine(
-                                                color = handleColor,
-                                                start = Offset(inset, inset),
-                                                end = Offset(size.width - inset, size.height - inset),
-                                                strokeWidth = stroke,
-                                                cap = StrokeCap.Round
-                                            )
-                                            drawLine(
-                                                color = handleColor,
-                                                start = Offset(size.width - inset, inset),
-                                                end = Offset(inset, size.height - inset),
-                                                strokeWidth = stroke,
-                                                cap = StrokeCap.Round
-                                            )
+                            // At the right: the region picker (the region's shape and a chevron; it opens the graphical picker), and under it
+                            // the Region Info link
+                            Column(horizontalAlignment = Alignment.End) {
+                                RegionPickerChip(state = pickerState, selectedRegionId = selectedRegionId)
+                                // The info link, under the region picker; the sheet slides in from the right, the X takes
+                                // its place. Topography only: the Elevation view has no Region Info, so the tile takes the whole width there
+                                if (homeTab == 0) {
+                                    val handleColor = MaterialTheme.colorScheme.primary
+                                    // The link text always takes its space (hidden while the X shows), so the station tile beside it
+                                    // keeps one width and does not grow when the link becomes the X
+                                    Box(
+                                        modifier = Modifier
+                                            .clickable(
+                                                onClickLabel = stringResource(if (infoOpen) R.string.region_info_close else R.string.region_info_open),
+                                                role = Role.Button
+                                            ) { if (infoOpen) closeInfo() else openInfo() }
+                                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.region_info_link),
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontSize = 15.84.sp,
+                                            lineHeight = 22.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = handleColor,
+                                            modifier = Modifier.alpha(if (infoOpen) 0f else 1f)
+                                        )
+                                        if (infoOpen) {
+                                            // A bold X, drawn so its weight and size are exact
+                                            Canvas(modifier = Modifier.size(13.dp)) {
+                                                val stroke = 2.2.dp.toPx()
+                                                val inset = stroke / 2f
+                                                drawLine(
+                                                    color = handleColor,
+                                                    start = Offset(inset, inset),
+                                                    end = Offset(size.width - inset, size.height - inset),
+                                                    strokeWidth = stroke,
+                                                    cap = StrokeCap.Round
+                                                )
+                                                drawLine(
+                                                    color = handleColor,
+                                                    start = Offset(size.width - inset, inset),
+                                                    end = Offset(inset, size.height - inset),
+                                                    strokeWidth = stroke,
+                                                    cap = StrokeCap.Round
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
-                            // The region picker, at the right end of the row: the region's shape and a chevron (the region name
-                            // bar is parked). It opens the graphical picker
-                            RegionPickerChip(state = pickerState, selectedRegionId = selectedRegionId)
                         }
                         // Below the tile, at the left: the menu, the north indicator and the About button
                         MapControlRow(
