@@ -10,9 +10,8 @@ import java.io.File
  */
 class FileSizeRulesTest {
 
-    private val allowed = setOf(
-        "LandingScreen.kt"            // waiting for its decomposition
-    )
+    // Empty: every file is within the limit. A file that needs more room is listed here only until it is split.
+    private val allowed = emptySet<String>()
 
     private fun lineCounts(): Map<String, Int> = File("src/main/java").walk()
         .filter { it.extension == "kt" }
