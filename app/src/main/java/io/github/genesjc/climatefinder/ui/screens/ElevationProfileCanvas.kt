@@ -1,44 +1,26 @@
 package io.github.genesjc.climatefinder.ui.screens
 
-import androidx.compose.ui.res.stringResource
-import io.github.genesjc.climatefinder.R
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import io.github.genesjc.climatefinder.ui.text.rememberFeetFormatter
 import io.github.genesjc.climatefinder.ui.text.rememberMilesFormatter
 import io.github.genesjc.climatefinder.domain.BandAngle
@@ -52,32 +34,26 @@ import kotlin.math.sin
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.BlendMode
 import io.github.genesjc.climatefinder.data.local.TerrainImage
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.domain.model.TerrainType
 import io.github.genesjc.climatefinder.ui.theme.LocalStateUsa
 import io.github.genesjc.climatefinder.ui.components.MAX_MAP_ZOOM
-import io.github.genesjc.climatefinder.ui.components.ZoomSlider
 import io.github.genesjc.climatefinder.ui.components.MapText
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.BRING_INTO_VIEW_MS
@@ -88,19 +64,11 @@ import io.github.genesjc.climatefinder.ui.components.BAND_ARC_CENTRE_INSET_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_GAP_DP
 import io.github.genesjc.climatefinder.ui.components.LAYERS_BUTTON_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_SIZE_DP
-import io.github.genesjc.climatefinder.ui.components.BandAngleArc
-import io.github.genesjc.climatefinder.ui.components.BandsNotice
 import io.github.genesjc.climatefinder.ui.components.BAND_COMPASS_SIZE_DP
-import io.github.genesjc.climatefinder.ui.components.BandCompass
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.layerLegendWidthDp
-import io.github.genesjc.climatefinder.ui.components.LayerLegend
-import io.github.genesjc.climatefinder.ui.components.LayersToggleButton
-import io.github.genesjc.climatefinder.ui.components.SliderToggleButton
-import io.github.genesjc.climatefinder.ui.components.ms
 import io.github.genesjc.climatefinder.ui.components.animateZoom
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import io.github.genesjc.climatefinder.ui.components.clampPan
@@ -241,65 +209,7 @@ internal fun ElevationProfileCanvas(
     }
     val tempF: Double? = (live as? ObservationResult.Reading)?.observation?.temperatureFahrenheit
 
-    val skyTheme = remember(tempF) {
-        when {
-            tempF == null -> SkyAtmosphereTheme(
-                colors = listOf(
-                    Color(0xFF475569).copy(alpha = 0.40f),
-                    Color(0xFF94A3B8).copy(alpha = 0.20f),
-                    Color(0xFFE2E8F0).copy(alpha = 0.05f)
-                ),
-                conditionRes = R.string.reading_none,
-                icon = null,
-                accent = Color(0xFFCBD5E1),
-                badgeBg = Color(0xFF1E293B)
-            )
-            tempF >= 84.0 -> SkyAtmosphereTheme(
-                colors = listOf(
-                    Color(0xFFC2410C).copy(alpha = 0.45f),
-                    Color(0xFFF59E0B).copy(alpha = 0.22f),
-                    Color(0xFFFEF08A).copy(alpha = 0.05f)
-                ),
-                conditionRes = R.string.sky_valley_heat,
-                icon = "☀️",
-                accent = Color(0xFFF59E0B),
-                badgeBg = Color(0xFF451A03)
-            )
-            tempF >= 74.0 -> SkyAtmosphereTheme(
-                colors = listOf(
-                    Color(0xFF0284C7).copy(alpha = 0.45f),
-                    Color(0xFF38BDF8).copy(alpha = 0.22f),
-                    Color(0xFFFEF3C7).copy(alpha = 0.05f)
-                ),
-                conditionRes = R.string.sky_fair_foothills,
-                icon = "🌤️",
-                accent = Color(0xFF38BDF8),
-                badgeBg = Color(0xFF082F49)
-            )
-            tempF >= 65.0 -> SkyAtmosphereTheme(
-                colors = listOf(
-                    Color(0xFF0369A1).copy(alpha = 0.45f),
-                    Color(0xFF06B6D4).copy(alpha = 0.22f),
-                    Color(0xFF94A3B8).copy(alpha = 0.05f)
-                ),
-                conditionRes = R.string.sky_temperate_ridge,
-                icon = "⛅",
-                accent = Color(0xFF06B6D4),
-                badgeBg = Color(0xFF164E63)
-            )
-            else -> SkyAtmosphereTheme(
-                colors = listOf(
-                    Color(0xFF312E81).copy(alpha = 0.50f),
-                    Color(0xFF6366F1).copy(alpha = 0.25f),
-                    Color(0xFF38BDF8).copy(alpha = 0.06f)
-                ),
-                conditionRes = R.string.sky_crisp_alpine,
-                icon = "❄️",
-                accent = Color(0xFFA78BFA),
-                badgeBg = Color(0xFF1E1B4B)
-            )
-        }
-    }
+    val skyTheme = remember(tempF) { skyThemeFor(tempF) }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -981,59 +891,8 @@ internal fun ElevationProfileCanvas(
                 }
             }
 
-            // 2. DYNAMIC WEATHER VISUALS (Clouds / Sun corona in the upper-left quadrant)
-            if (tempF == null) {
-                // No live reading: plain sky, no weather visuals
-            } else if (tempF >= 84.0) {
-                // Valley solar heat corona
-                drawCircle(
-                    color = Color(0xFFFDE047).copy(alpha = 0.25f),
-                    radius = 34f,
-                    center = Offset(padding + 48f, padding + 48f)
-                )
-                drawCircle(
-                    color = Color(0xFFFEF08A).copy(alpha = 0.85f),
-                    radius = 16f,
-                    center = Offset(padding + 48f, padding + 48f)
-                )
-            } else if (tempF >= 74.0) {
-                // Foothill cumulus cloud puffs
-                drawCircle(color = Color.White.copy(alpha = 0.55f), radius = 18f, center = Offset(padding + 45f, padding + 48f))
-                drawCircle(color = Color.White.copy(alpha = 0.65f), radius = 24f, center = Offset(padding + 65f, padding + 44f))
-                drawCircle(color = Color.White.copy(alpha = 0.50f), radius = 16f, center = Offset(padding + 84f, padding + 48f))
-            } else if (tempF >= 65.0) {
-                // Stratified mountain ridge streaks
-                drawLine(
-                    color = Color(0xFFBAE6FD).copy(alpha = 0.5f),
-                    start = Offset(padding + 28f, padding + 42f),
-                    end = Offset(padding + 110f, padding + 42f),
-                    strokeWidth = 4f,
-                    cap = StrokeCap.Round
-                )
-                drawLine(
-                    color = Color(0xFFE0F2FE).copy(alpha = 0.4f),
-                    start = Offset(padding + 48f, padding + 54f),
-                    end = Offset(padding + 130f, padding + 54f),
-                    strokeWidth = 3f,
-                    cap = StrokeCap.Round
-                )
-            } else {
-                // Alpine cirrus streaks
-                drawLine(
-                    color = Color(0xFFC7D2FE).copy(alpha = 0.6f),
-                    start = Offset(padding + 25f, padding + 36f),
-                    end = Offset(padding + 95f, padding + 36f),
-                    strokeWidth = 2.5f,
-                    cap = StrokeCap.Round
-                )
-                drawLine(
-                    color = Color(0xFFA5B4FC).copy(alpha = 0.5f),
-                    start = Offset(padding + 45f, padding + 48f),
-                    end = Offset(padding + 115f, padding + 48f),
-                    strokeWidth = 2f,
-                    cap = StrokeCap.Round
-                )
-            }
+            // 2. The weather pictures in the sky
+            drawWeatherVisuals(tempF, padding)
 
             // 3. Draw elevation terrain fill
             fun drawLayer(members: List<Int>, band: Int) {
@@ -1249,131 +1108,12 @@ internal fun ElevationProfileCanvas(
             }
         }
 
-        // Three fish swimming in the ocean (decoration). They are drawn in their own layer, so only it
-        // redraws as they move, and they follow the ocean when the chart is zoomed or panned.
-        // The swim is stepped about 30 times a second (not every frame), stands still while the chart is being
-        // panned or zoomed and for a moment after, and stays still when the system's animations are turned off.
-        var fishTime by remember { mutableStateOf(0f) }
-        var chartMoving by remember { mutableStateOf(true) }
-        val fishContext = androidx.compose.ui.platform.LocalContext.current
-        val animationsOn = remember {
-            android.provider.Settings.Global.getFloat(
-                fishContext.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
-            ) > 0f
-        }
-        androidx.compose.runtime.LaunchedEffect(Unit) {
-            // Each change of zoom or pan marks the chart as moving until it has been still for a little while
-            androidx.compose.runtime.snapshotFlow { zoom to pan }.collectLatest {
-                chartMoving = true
-                kotlinx.coroutines.delay(600)
-                chartMoving = false
-            }
-        }
-        androidx.compose.runtime.LaunchedEffect(animationsOn) {
-            if (!animationsOn) return@LaunchedEffect
-            androidx.compose.runtime.snapshotFlow { chartMoving }.collectLatest { moving ->
-                if (!moving) {
-                    var last = System.nanoTime()
-                    while (true) {
-                        kotlinx.coroutines.delay(FISH_STEP_MS)
-                        val now = System.nanoTime()
-                        fishTime = (fishTime + (now - last) / 1e9f / FISH_LOOP_SECONDS) % 1f
-                        last = now
-                    }
-                }
-            }
-        }
-        // The fish live in the foreground water, so they fade out with it when the sea moves to the horizon (drawn in
-        // their own layer above the chart, they would swim over the land in front of a sea at the horizon)
-        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 1f - seaMix }) {
-            val seaTop = viewY(paddingPx + (1f - SEA_FRACTION) * heightPx)
-            val seaBottom = maxOf(size.height, viewY(size.height - paddingPx) + paddingPx)
-            val band = seaBottom - seaTop
-            if (seaTop < size.height && band > 40.dp.toPx()) {
-                clipRect(top = maxOf(0f, seaTop), bottom = size.height) {
-                    for (fish in FISH) {
-                        val length = fish.lengthDp.dp.toPx()
-                        val travel = size.width + 2f * length
-                        val phase = (fishTime * fish.cycles + fish.offset) % 1f
-                        val cx = if (fish.rightward) phase * travel - length else size.width + length - phase * travel
-                        val wobble = kotlin.math.sin((fishTime * 60f * fish.cycles + fish.offset) * 2f * Math.PI.toFloat())
-                        val cy = seaTop + band * fish.depth + wobble * 4.dp.toPx()
-                        drawFish(cx, cy, length, fish.color, fish.rightward, wobble)
-                    }
-                }
-            }
-        }
+        ElevationFishLayer(zoom = zoom, pan = pan, seaMix = seaMix, viewY = { viewY(it) }, paddingPx = paddingPx, heightPx = heightPx)
 
         // The hint, in the ocean: fades away after a few seconds or at the first tap on the line
-        if (hintAlpha.value > 0.01f) {
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = Color(0xCC0F172A),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = heightDp * 0.045f + 6.dp)
-                    .graphicsLayer { alpha = hintAlpha.value }
-            ) {
-                Text(
-                    text = stringResource(R.string.elevation_hint_tap_line),
-                    color = Color.White,
-                    // A third smaller than before; fixed, not tied to the font slider
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
-                )
-            }
-        }
+        ElevationHint(hintAlpha = { hintAlpha.value }, heightDp = heightDp)
 
-        // 4. Atmospheric Sky Micro-Display in the blank space to the left of the graph, below the expand toggle
-        Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = skyTheme.badgeBg.copy(alpha = 0.85f),
-            border = BorderStroke(1.dp, skyTheme.accent.copy(alpha = 0.45f)),
-            modifier = Modifier
-                .offset(x = 52.dp + 5.dp * expandT, y = 50.dp + (if (embedded) HOME_TILE_BAND else 0.dp))
-                .clickable {
-                    // Tap to cycle landmarks
-                    if (cycleIds.isNotEmpty()) {
-                        val currentIndex = cycleIds.indexOfFirst { it == currentStation?.id }
-                        val nextIndex = if (currentIndex >= 0) (currentIndex + 1) % cycleIds.size else 0
-                        val nextId = cycleIds[nextIndex]
-                        sorted.find { it.id == nextId }?.let { onSelectStation(it) }
-                    }
-                }
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                skyTheme.icon?.let { Text(text = it, fontSize = ms(14f)) }
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = tempF?.let { stringResource(R.string.sky_temp_f, it.toInt()) } ?: stringResource(R.string.sky_temp_missing),
-                            fontSize = ms(11f),
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = currentStation?.name?.let { if (it.length > 26) it.take(25) + "\u2026" else it } ?: "",
-                            fontSize = ms(9f),
-                            fontWeight = FontWeight.Medium,
-                            color = Color.White.copy(alpha = 0.9f),
-                            maxLines = 1
-                        )
-                    }
-                    Text(
-                        text = stringResource(R.string.sky_condition_line, stringResource(skyTheme.conditionRes), currentStation?.let { elevationFeetText(it.elevationMeters) }.orEmpty()),
-                        fontSize = ms(8f),
-                        color = skyTheme.accent,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-        }
+        ElevationSkyBadge(skyTheme, tempF, currentStation, cycleIds, sorted, expandT, embedded, onSelectStation)
 
         // Overlay Interactive City Landmark Labels along the curve. They are drawn back to front: the selected station's
         // label on top, then the labels of the active band, then the other bands from the front backwards, so the
