@@ -415,7 +415,7 @@ fun LandingScreen(
                             verticalAlignment = Alignment.Top
                         ) {
                             Box(modifier = Modifier.weight(1f)) {
-                                if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, folded = infoOpen || menuDrawerShowing || pickerState.visible, readingFor = readingFor)
+                                if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || menuDrawerShowing || pickerState.visible, readingFor = readingFor)
                             }
                             // At the right: the region picker (the region's shape and a chevron; it opens the graphical picker), and under it
                             // the Region Info link

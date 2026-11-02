@@ -346,10 +346,10 @@ private fun CompactStationBody(
 /**
  * The summary of a station for the Home row: the temperature in °F, a pipe divider, then the name,
  * and a chevron on the right. The age of the reading is in the full card that the chevron opens. When
- * there is no reading, the reason shows where the °C would be.
+ * there is no reading, the reason shows where the °C would be. [regionName], when given, is a small line under them.
  */
 @Composable
-fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult? = null) {
+fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult? = null, regionName: String? = null) {
     val display = liveDisplay(reading)
     // One line: the temperature in °F, a pipe divider, the name, and the chevron at the right. The name gives way
     // (with an ellipsis) only when it really cannot fit; the temperature always shows
@@ -357,29 +357,40 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "\u2014",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
-            )
-            Text(
-                text = "|",
-                fontSize = 17.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            Text(
-                text = station.name,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
-            )
+        Column(modifier = Modifier.weight(1f)) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "\u2014",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+                Text(
+                    text = "|",
+                    fontSize = 17.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                Text(
+                    text = station.name,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+            }
+            if (regionName != null) {
+                Text(
+                    text = regionName,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
         Spacer(modifier = Modifier.width(10.dp))
         Text(

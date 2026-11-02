@@ -30,6 +30,7 @@ internal fun StationHeroTile(
     fullWidthPx: Int,
     regionStations: List<MicroclimateStation>,
     regionId: String,
+    regionName: String,
     folded: Boolean,
     readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>
 ) {
@@ -49,7 +50,7 @@ internal fun StationHeroTile(
         tileCornerRadius = 8.dp,
         // The Region Info sheet sits above this card: opening it folds the card
         forceClosed = folded,
-        tile = { StationSummaryTile(station, reading = reading) },
+        tile = { StationSummaryTile(station, reading = reading, regionName = regionName) },
         panel = { close ->
             StationCard(
                 station = station,
