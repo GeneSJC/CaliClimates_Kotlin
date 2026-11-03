@@ -84,12 +84,15 @@ fun hazeColor(band: Int, degrees: Int): Color {
 /** The reading of the viewing angle at the left of the key (dp). */
 private const val DEGREE_CELL_WIDTH_DP = 44f
 
+/** The tags switch at the left of the key (dp), with the bands on; with its divider it makes the bar wider by [TAGS_CELL_WIDTH_DP] + 5. */
+const val TAGS_CELL_WIDTH_DP = 62f
+
 /** The key's height (dp), which the chart also keeps its labels clear of. */
 const val LAYER_LEGEND_HEIGHT_DP = 40f
 
 /** The key's width (dp), which the chart also keeps its labels clear of: three segments in a bar, and the angle reading when it shows. */
 fun layerLegendWidthDp(withReading: Boolean): Float =
-    3 * 64f + 2 * 2f + 6f + (if (withReading) DEGREE_CELL_WIDTH_DP + 2f else 0f)
+    3 * 64f + 2 * 2f + 6f + (if (withReading) DEGREE_CELL_WIDTH_DP + 2f + TAGS_CELL_WIDTH_DP + 1f + 4f else 0f)
 
 /**
  * The key to the bands (shown in the single-line view too, where the tags carry the band's colour as a stripe), and a way to move between them: a bar of three segments, from left to right the back ridge first
@@ -109,7 +112,9 @@ fun LayerLegend(
     hasStations: List<Boolean>,
     alpha: Float,
     onPick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** What goes first in the bar, before the angle reading (the tags switch, with its divider); shown with the bands on. */
+    leading: (@Composable () -> Unit)? = null
 ) {
     // Front first: band 0 is the nearest ridge
     val names = when (BandAngle.nameIndex(angle)) {
@@ -126,6 +131,7 @@ fun LayerLegend(
         modifier = modifier.alpha(alpha)
     ) {
         Row(modifier = Modifier.padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (showReading) leading?.invoke()
             if (showReading) DegreeCell(angle)
             for (band in names.indices.reversed()) {
                 val color = layerColor(band, angle)

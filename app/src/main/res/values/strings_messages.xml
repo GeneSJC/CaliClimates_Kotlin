@@ -17,7 +17,6 @@
     <string name="elevation_axis_hint_west_east">West at the back, east in front</string>
     <string name="elevation_layers_on_notice">Switching to Elevation Bands\n%1$s</string>
     <string name="elevation_layers_off_notice">Switching to the single line\nEvery station by height</string>
-    <string name="elevation_range">%1$,d–%2$,d ft</string>
     <string name="elevation_note_about">About as high as %1$s (%2$,d ft).</string>
     <string name="elevation_note_higher">Higher than %1$s (%2$,d ft).</string>
     <string name="elevation_note_cooler">Typically about %1$d°F cooler than at sea level.</string>
@@ -63,7 +62,6 @@
     <string name="stations_no_match">No stations match</string>
 
     <!-- Station card -->
-    <string name="region_elevation_range">Region elevation %1$s</string>
 
     <!-- Home -->
     <string name="map_centering_on">Centering the map on %1$s</string>
