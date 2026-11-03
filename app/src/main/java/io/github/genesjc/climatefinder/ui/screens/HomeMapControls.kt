@@ -71,6 +71,18 @@ private fun MapControlButton(label: String, onClick: () -> Unit, modifier: Modif
     }
 }
 
+/** A drawn "i" in a circle, in [color]. */
+@Composable
+internal fun InfoMark(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val stroke = 2.dp.toPx()
+        drawCircle(color, radius = size.width / 2f - stroke / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+        val cx = size.width / 2f
+        drawCircle(color, radius = stroke * 0.6f, center = Offset(cx, size.height * 0.30f))
+        drawLine(color, Offset(cx, size.height * 0.45f), Offset(cx, size.height * 0.74f), strokeWidth = stroke, cap = StrokeCap.Round)
+    }
+}
+
 /**
  * The Region Info button, in the style of the menu button above it: a drawn "i" in a circle, which becomes an X while the
  * panel is open. Topography only; the panel slides in from the right.
