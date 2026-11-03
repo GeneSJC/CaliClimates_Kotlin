@@ -217,11 +217,11 @@ fun StationMapScreen(
                 .height(mapHeight)
         ) {
             Surface(
-                // The bottom corners square off as the map grows out to the screen edges
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp * (1f - expandT), bottomEnd = 16.dp * (1f - expandT)),
+                // All four corners square off, and the outline goes, as the map grows out to the screen edges
+                shape = RoundedCornerShape(topStart = 16.dp * (1f - expandT), topEnd = 16.dp * (1f - expandT), bottomStart = 16.dp * (1f - expandT), bottomEnd = 16.dp * (1f - expandT)),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 // A 1dp outline, for a crisper edge
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                border = if (expandT >= 1f) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.fillMaxSize()
             ) {
                 SpatialMapCanvas(

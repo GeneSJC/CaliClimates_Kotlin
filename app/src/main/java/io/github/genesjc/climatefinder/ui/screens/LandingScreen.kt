@@ -22,7 +22,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -144,13 +143,10 @@ fun LandingScreen(
     var mapTopPx by remember { mutableStateOf(0f) }
     // The Topography / Elevation buttons' height (it follows the text size), measured
     val mapDensity = LocalDensity.current
-    // On the Elevation view the map grows out into the page margins (west, east and south; never up), so the water
-    // reaches the screen edges; eased both ways when switching views
-    val expandT by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (homeTab == 1) 1f else 0f,
-        animationSpec = tween(380, easing = FastOutSlowInEasing),
-        label = "mapExpand"
-    )
+    // Both views fill the screen: the map grows out into the page margins (west, east and south) and has no outline or rounded
+    // corners. The views use the same value for the geometry the expanded Elevation view always had; it is no longer eased
+    // when switching views because there is nothing to ease
+    val expandT = 1f
     // Reported by the Topography map: is the selected station out of view; and a counter the locate button bumps
     var selectedOffscreen by remember { mutableStateOf(false) }
     var recenterTick by remember { mutableStateOf(0) }
@@ -184,12 +180,13 @@ fun LandingScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(start = 5.dp, end = 5.dp, top = 14.dp),
+                .padding(start = 5.dp, end = 5.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             // The region name bar is parked for now (the station tile takes the top); the region picker is in the station row
             // A region with no station data has no map or tile, so the bar stays there: it is the only way to change region
             if (SHOW_REGION_BAR || dataset == null) {
+                Spacer(modifier = Modifier.height(14.dp))
                 HomeRegionBar(region = region, regionOptions = regionOptions, selectedRegionId = selectedRegionId, pickerState = pickerState, onSelectRegion = onSelectRegion)
                 Spacer(modifier = Modifier.height(8.dp))
             }
