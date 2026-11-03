@@ -420,11 +420,8 @@ fun LandingScreen(
                 hasStationData = hasStationData,
                 stations = snapshotStations,
                 onOpenStationList = { onNavigateTo(AppScreen.STATION_LIST) },
-                // About is in the sheet's title band: the sheet closes and the dialog opens
-                onOpenAbout = {
-                    closeInfo()
-                    showAboutDialog = true
-                },
+                // About is in the sheet's title band: the dialog opens over the sheet, which stays open until it is closed
+                onOpenAbout = { showAboutDialog = true },
                 // The region picker is above the floating cards too: they fold while it is showing
                 menuOpen = pickerState.visible,
                 // The dot-size slider belongs to the map, so only the Topography view has it

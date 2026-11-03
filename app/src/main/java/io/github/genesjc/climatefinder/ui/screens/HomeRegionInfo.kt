@@ -234,7 +234,7 @@ internal fun RegionInfoContent(
     hasStationData: Boolean,
     stations: List<MicroclimateStation>,
     onOpenStationList: () -> Unit,
-    /** Opens the About dialog; its button sits in the title band. */
+    /** Opens the About dialog over the sheet; its button sits in the title band. */
     onOpenAbout: () -> Unit,
     menuOpen: Boolean,
     dotScale: Float = 1f,
