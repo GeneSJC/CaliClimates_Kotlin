@@ -238,7 +238,7 @@ object StateUsaCA : StateUsaDefinition {
         "KEDU" to "Davis",
         "KLHM" to "Lincoln",
         "KAUN" to "Auburn",
-        "KMYV" to "Marysville",
+        "181PG" to "Marysville",
         "KSCK" to "Stockton",
         "KPAO" to "Palo Alto",
         "KHAF" to "Half Moon Bay",
