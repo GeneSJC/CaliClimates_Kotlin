@@ -59,7 +59,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
@@ -329,8 +328,10 @@ fun LandingScreen(
                         // The folder's tab (the region's name) and the first line's height, measured, so the shape fits them
                         var folderTabWidth by remember { mutableStateOf(0f) }
                         var folderTabHeight by remember { mutableStateOf(0f) }
-                        val folderFill = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background
-                        val folderBorder = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+                        // The folder is the page colour (near-white in the light look), so it stands out from the map behind it: the
+                        // map's flat green shows beyond its terrain, and shows in the open space beside the tab
+                        val folderFill = MaterialTheme.colorScheme.background
+                        val folderBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
                         // The selected station as a tile across the top of the map (it grows into the full card)
                         Row(
                             modifier = Modifier
@@ -339,8 +340,7 @@ fun LandingScreen(
                                 .padding(start = 6.dp, end = 6.dp, top = 5.dp)
                                 // The header is drawn as a folder: the region's name on the tab at the top left, the station tile and
                                 // the picker in the body, and the space right of the tab open to the map (the Map and Profile buttons
-                                // sit there). In the green the map shows beyond its terrain (a draw, not a clip, so the card that opens
-                                // from the tile is never cut off)
+                                // sit there). A draw, not a clip, so the card that opens from the tile is never cut off
                                 .drawBehind {
                                     drawFolderTab(
                                         fill = folderFill,
