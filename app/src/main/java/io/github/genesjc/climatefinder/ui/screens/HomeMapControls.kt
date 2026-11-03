@@ -58,11 +58,17 @@ import androidx.compose.ui.unit.dp
 
 /** One small white button with a blue glyph, in the style of the map's other controls. */
 @Composable
-private fun MapControlButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+private fun MapControlButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    outline: Color = Color(0xFFCBD5E1),
+    content: @Composable () -> Unit
+) {
     Surface(
         shape = RoundedCornerShape(6.dp),
         color = Color.White.copy(alpha = 0.90f),
-        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        border = BorderStroke(1.dp, outline),
         modifier = modifier
             .height(32.dp)
             .clickable(onClickLabel = label, role = Role.Button, onClick = onClick)
@@ -95,7 +101,8 @@ internal fun InfoControlButton(
     label: String = stringResource(if (open) R.string.region_info_close else R.string.region_info_open)
 ) {
     val blue = Color(0xFF0284C7)
-    MapControlButton(label, onClick, modifier) {
+    // Outlined like the region picker beside it: both are buttons that open a panel
+    MapControlButton(label, onClick, modifier, outline = MaterialTheme.colorScheme.primary) {
         Canvas(modifier = Modifier.size(20.dp)) {
             val stroke = 2.dp.toPx()
             if (open) {
@@ -144,7 +151,6 @@ internal fun MapControlRow(
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = Color.White.copy(alpha = 0.90f),
-                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     Box(contentAlignment = Alignment.Center) {
