@@ -59,6 +59,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
@@ -328,9 +329,9 @@ fun LandingScreen(
                         // The folder's tab (the region's name) and the first line's height, measured, so the shape fits them
                         var folderTabWidth by remember { mutableStateOf(0f) }
                         var folderTabHeight by remember { mutableStateOf(0f) }
-                        // The folder is the page colour (near-white in the light look), so it stands out from the map behind it: the
-                        // map's flat green shows beyond its terrain, and shows in the open space beside the tab
-                        val folderFill = MaterialTheme.colorScheme.background
+                        // The folder is the green the map shows beyond its terrain, so the header and the map under it read as one
+                        // piece of paper with a tab; the space right of the tab is left open
+                        val folderFill = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background
                         val folderBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
                         // The selected station as a tile across the top of the map (it grows into the full card)
                         Row(
@@ -380,7 +381,7 @@ fun LandingScreen(
                                             lineHeight = 18.sp,
                                             maxLines = 2,
                                             overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.padding(start = 12.dp, end = 12.dp)
+                                            modifier = Modifier.padding(start = 12.dp, end = 36.dp)
                                         )
                                     }
                                     Row(
