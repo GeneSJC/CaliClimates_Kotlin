@@ -328,10 +328,14 @@ fun LandingScreen(
                         var folderTabHeight by remember { mutableStateOf(0f) }
                         // The folder is the green the map shows beyond its terrain, so the header and the map under it read as one
                         // piece of paper with a tab; the space right of the tab is left open
-                        // A little see-through (88 percent opaque, just under the buttons' 90 percent), so terrain shows faintly through
-                        val folderFill = (if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background)
-                            .copy(alpha = FOLDER_OPACITY)
-                        val folderBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+                        // The folder fades down: sharper at the tab (FOLDER_OPACITY_TOP) and more see-through toward the bottom
+                        // (FOLDER_OPACITY_BOTTOM), so the terrain shows more below; the outline fades the same way, to nothing at the
+                        // bottom, so the folder has no bottom edge
+                        val folderBase = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background
+                        val folderFillTop = folderBase.copy(alpha = FOLDER_OPACITY_TOP)
+                        val folderFillBottom = folderBase.copy(alpha = FOLDER_OPACITY_BOTTOM)
+                        val folderBorderTop = MaterialTheme.colorScheme.primary.copy(alpha = FOLDER_OUTLINE_TOP)
+                        val folderBorderBottom = MaterialTheme.colorScheme.primary.copy(alpha = FOLDER_OUTLINE_BOTTOM)
                         // The selected station as a tile across the top of the map (it grows into the full card)
                         Row(
                             modifier = Modifier
@@ -344,8 +348,10 @@ fun LandingScreen(
                                 // sit there). A draw, not a clip, so the card that opens from the tile is never cut off
                                 .drawBehind {
                                     drawFolderTab(
-                                        fill = folderFill,
-                                        border = folderBorder,
+                                        fillTop = folderFillTop,
+                                        fillBottom = folderFillBottom,
+                                        borderTop = folderBorderTop,
+                                        borderBottom = folderBorderBottom,
                                         tabWidth = folderTabWidth,
                                         tabHeight = folderTabHeight,
                                         radius = 10.dp.toPx(),
@@ -508,5 +514,10 @@ fun LandingScreen(
     }
 }
 
-/** How opaque the folder header is: 1 is solid; a little less lets the terrain behind it show faintly. */
-private const val FOLDER_OPACITY = 0.88f
+/** How opaque the folder header is at its top (the tab) and its bottom: 1 is solid, lower lets the terrain behind show. */
+private const val FOLDER_OPACITY_TOP = 0.94f
+private const val FOLDER_OPACITY_BOTTOM = 0.55f
+
+/** How strong the folder's outline is at its top and its bottom (0 is none); set the top to 0 for no outline at all. */
+private const val FOLDER_OUTLINE_TOP = 0.5f
+private const val FOLDER_OUTLINE_BOTTOM = 0f
