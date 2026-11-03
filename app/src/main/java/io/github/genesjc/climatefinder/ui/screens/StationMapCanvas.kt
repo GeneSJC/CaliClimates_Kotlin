@@ -281,8 +281,15 @@ internal fun SpatialMapCanvas(
                 }
         ) {
             if (terrain != null && terrainPicture != null) {
-                // Land colour first (the picture may not reach every edge), then the terrain, then a light grid
-                drawRect(color = Color(0xFFE4EBDA))
+                // Land colour first (the picture may not reach every edge), then the terrain, then a light grid. On Home the
+                // colour starts a little above the bottom of the header's band (it tucks under the header's folder) and not
+                // above that, so what is behind the map shows through the open space beside the folder's tab
+                val landTop = if (embedded) (topHidden - 8.dp.toPx()).coerceAtLeast(0f) else 0f
+                drawRect(
+                    color = Color(0xFFE4EBDA),
+                    topLeft = Offset(0f, landTop),
+                    size = androidx.compose.ui.geometry.Size(size.width, size.height - landTop)
+                )
                 val b = terrain.bounds
                 val left = mapX(b.minLon)
                 val top = mapY(b.maxLat)
