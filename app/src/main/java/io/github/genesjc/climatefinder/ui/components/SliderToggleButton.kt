@@ -35,8 +35,6 @@ fun SliderToggleButton(shown: Boolean, onToggle: () -> Unit, modifier: Modifier 
                 role = Role.Button,
                 onClick = onToggle
             )
-            // The map's pan and pinch must not act on touches that land on the button
-            .touchShield()
     ) {
         Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 11.dp)) {
             val stroke = 2.2.dp.toPx()

@@ -204,8 +204,7 @@ fun ZoomSlider(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
         shape = RoundedCornerShape(12.dp),
         shadowElevation = 2.dp,
-        // The map's pan and pinch must not act on touches that land on the slider
-        modifier = modifier.touchShield()
+        modifier = modifier
     ) {
         Column(
             modifier = Modifier

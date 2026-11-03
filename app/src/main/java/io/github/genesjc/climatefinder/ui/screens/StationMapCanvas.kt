@@ -161,33 +161,6 @@ internal fun SpatialMapCanvas(
         modifier = Modifier
             .fillMaxSize()
             .clipToBounds()
-            // Keyed to the data: zoom and pan are remembered per region, so when the region changes they are new state objects
-            // and the handlers must restart to use them (with a fixed key they kept writing to the old ones and touch stopped working)
-            .pointerInput(stations) {
-                // Pinch to zoom, drag to pan
-                detectTransformGestures { centroid, panChange, zoomChange, _ ->
-                    val w = size.width.toFloat()
-                    val h = size.height.toFloat()
-                    val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
-                    pan = clampPan(
-                        panForZoom(pan, zoom, newZoom, centroid, w, h, overscroll = MAP_OVERSCROLL) + panChange,
-                        newZoom, w, h, overscroll = MAP_OVERSCROLL
-                    )
-                    zoom = newZoom
-                }
-            }
-            .pointerInput(stations) {
-                // Double-tap: zoom in on the spot, and back out to the full map once fully zoomed
-                detectTapGestures(onDoubleTap = { spot ->
-                    val w = size.width.toFloat()
-                    val h = size.height.toFloat()
-                    if (zoom >= MAX_MAP_ZOOM * 0.99f) {
-                        animateZoomTo(1f, Offset(w / 2f, h / 2f), w, h)
-                    } else {
-                        animateZoomTo((zoom * 2f).coerceAtMost(MAX_MAP_ZOOM), spot, w, h)
-                    }
-                })
-            }
     ) {
         val widthDp = maxWidth
         val heightDp = maxHeight
@@ -253,6 +226,36 @@ internal fun SpatialMapCanvas(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
+                // The pan, pinch and double-tap handlers live on this layer, not on the container around it: the slider and the
+                // buttons are siblings above this layer, so a touch on them never reaches these handlers (as children of the container
+                // they shared its touches, and a drag from the slider's thumb could be taken by the map)
+                // Keyed to the data: zoom and pan are remembered per region, so when the region changes they are new state objects
+                // and the handlers must restart to use them (with a fixed key they kept writing to the old ones and touch stopped working)
+                .pointerInput(stations) {
+                    // Pinch to zoom, drag to pan
+                    detectTransformGestures { centroid, panChange, zoomChange, _ ->
+                        val w = size.width.toFloat()
+                        val h = size.height.toFloat()
+                        val newZoom = (zoom * zoomChange).coerceIn(1f, MAX_MAP_ZOOM)
+                        pan = clampPan(
+                            panForZoom(pan, zoom, newZoom, centroid, w, h, overscroll = MAP_OVERSCROLL) + panChange,
+                            newZoom, w, h, overscroll = MAP_OVERSCROLL
+                        )
+                        zoom = newZoom
+                    }
+                }
+                .pointerInput(stations) {
+                    // Double-tap: zoom in on the spot, and back out to the full map once fully zoomed
+                    detectTapGestures(onDoubleTap = { spot ->
+                        val w = size.width.toFloat()
+                        val h = size.height.toFloat()
+                        if (zoom >= MAX_MAP_ZOOM * 0.99f) {
+                            animateZoomTo(1f, Offset(w / 2f, h / 2f), w, h)
+                        } else {
+                            animateZoomTo((zoom * 2f).coerceAtMost(MAX_MAP_ZOOM), spot, w, h)
+                        }
+                    })
+                }
                 .pointerInput(stations, pinScale, projection) {
                     detectTapGestures { tapOffset ->
                         var closestStation: MicroclimateStation? = null
