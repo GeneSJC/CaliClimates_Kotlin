@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.ui.text.elevationFeetText
 import androidx.compose.ui.res.stringResource

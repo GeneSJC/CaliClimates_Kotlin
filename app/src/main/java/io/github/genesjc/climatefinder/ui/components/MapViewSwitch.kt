@@ -18,8 +18,7 @@ import io.github.genesjc.climatefinder.R
 
 /**
  * One of the two view buttons on the map (Topography is index 0, Elevation is index 1). The selected one is dark,
- * the other white. Home places them separately: Topography at the top right, Elevation in the row of controls at the
- * top left.
+ * the other white. Home puts them side by side at the right of the header's first line.
  */
 @Composable
 fun MapViewButton(label: String, index: Int, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
@@ -32,10 +31,12 @@ fun MapViewButton(label: String, index: Int, selected: Int, onSelect: (Int) -> U
     ) {
         Text(
             text = label,
-            fontSize = ms(9f),
+            // 25 percent larger than before (9 to 11.25), with a little room between letters so short words do not blur
+            fontSize = ms(11.25f),
+            letterSpacing = 0.4.sp,
             fontWeight = FontWeight.Bold,
             color = if (on) Color.White else Color(0xFF334155),
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
         )
     }
 }

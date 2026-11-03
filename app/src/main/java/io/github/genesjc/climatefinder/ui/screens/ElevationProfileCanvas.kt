@@ -186,33 +186,6 @@ internal fun ElevationProfileCanvas(
         modifier = Modifier
             .fillMaxSize()
             .clipToBounds()
-            // Keyed to the data: zoom and pan are remembered per region, so when the region changes they are new state objects
-            // and the handlers must restart to use them (with a fixed key they kept writing to the old ones and touch stopped working)
-            .pointerInput(sorted) {
-                // Pinch to zoom in on the profile, drag to pan
-                detectTransformGestures { centroid, panChange, zoomChange, _ ->
-                    touchedAt[0] = System.nanoTime()
-                    val w = size.width.toFloat()
-                    val h = size.height.toFloat()
-                    val newZoom = (zoom * zoomChange).coerceIn(ELEVATION_MIN_ZOOM, MAX_MAP_ZOOM)
-                    val waterLimit = { z: Float -> elevationLowestPanY(z, h) }
-                    val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit)
-                    pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit)
-                    zoom = newZoom
-                }
-            }
-            .pointerInput(sorted) {
-                // Double-tap: zoom in on the spot, and back out once fully zoomed
-                detectTapGestures(onDoubleTap = { spot ->
-                    val w = size.width.toFloat()
-                    val h = size.height.toFloat()
-                    if (zoom >= MAX_MAP_ZOOM * 0.99f) {
-                        animateZoomTo(ELEVATION_MIN_ZOOM.coerceAtLeast(1f), Offset(w / 2f, h / 2f), w, h)
-                    } else {
-                        animateZoomTo((zoom * 2f).coerceAtMost(MAX_MAP_ZOOM), spot, w, h)
-                    }
-                })
-            }
     ) {
         val widthDp = maxWidth
         val heightDp = maxHeight
@@ -429,7 +402,39 @@ internal fun ElevationProfileCanvas(
 
         // Canvas drawing the dynamic sky, slope, shaded terrain, leader lines, and nodes
         Canvas(
-            modifier = Modifier.fillMaxSize().elevationStationTaps(
+            modifier = Modifier
+                .fillMaxSize()
+                // The pan, pinch and double-tap handlers live on this layer, not on the container around it: the slider, the dial and
+                // the buttons are siblings above this layer, so a touch on them never reaches these handlers (as children of the
+                // container they shared its touches, and a drag from a control could be taken by the chart)
+                // Keyed to the data: zoom and pan are remembered per region, so when the region changes they are new state objects
+                // and the handlers must restart to use them (with a fixed key they kept writing to the old ones and touch stopped working)
+                .pointerInput(sorted) {
+                    // Pinch to zoom in on the profile, drag to pan
+                    detectTransformGestures { centroid, panChange, zoomChange, _ ->
+                        touchedAt[0] = System.nanoTime()
+                        val w = size.width.toFloat()
+                        val h = size.height.toFloat()
+                        val newZoom = (zoom * zoomChange).coerceIn(ELEVATION_MIN_ZOOM, MAX_MAP_ZOOM)
+                        val waterLimit = { z: Float -> elevationLowestPanY(z, h) }
+                        val anchored = panForZoom(pan, zoom, newZoom, centroid, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit)
+                        pan = clampPan(anchored + panChange, newZoom, w, h, CHART_PADDING_PX, CHART_PADDING_PX, ELEVATION_OVERSCROLL, waterLimit)
+                        zoom = newZoom
+                    }
+                }
+                .pointerInput(sorted) {
+                    // Double-tap: zoom in on the spot, and back out once fully zoomed
+                    detectTapGestures(onDoubleTap = { spot ->
+                        val w = size.width.toFloat()
+                        val h = size.height.toFloat()
+                        if (zoom >= MAX_MAP_ZOOM * 0.99f) {
+                            animateZoomTo(ELEVATION_MIN_ZOOM.coerceAtLeast(1f), Offset(w / 2f, h / 2f), w, h)
+                        } else {
+                            animateZoomTo((zoom * 2f).coerceAtMost(MAX_MAP_ZOOM), spot, w, h)
+                        }
+                    })
+                }
+                .elevationStationTaps(
                 sorted = sorted,
                 canvasW = canvasW,
                 stationPosition = { Offset(viewX(pinBaseX(it)), viewY(pinBaseY(it))) },

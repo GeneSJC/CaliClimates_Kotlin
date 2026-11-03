@@ -243,6 +243,8 @@ fun ZoomSlider(
                 val thumbHeightPx = with(density) { thumbHeight.toPx() }
                 val trackHeightPx = with(density) { trackHeight.toPx() }
                 val usableHeightPx = (trackHeightPx - thumbHeightPx).coerceAtLeast(1f)
+                // The handlers below read this as it is now, so they never restart (and miss touches) while the layout settles
+                val latestUsableHeightPx by rememberUpdatedState(usableHeightPx)
 
                 // Track Background
                 Box(
@@ -284,27 +286,27 @@ fun ZoomSlider(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(trackHeightPx) {
+                        .pointerInput(Unit) {
                             detectTapGestures { tapOffset ->
-                                val relativeY = (tapOffset.y - thumbHeightPx / 2f).coerceIn(0f, usableHeightPx)
-                                val ratio = 1f - (relativeY / usableHeightPx)
+                                val relativeY = (tapOffset.y - thumbHeightPx / 2f).coerceIn(0f, latestUsableHeightPx)
+                                val ratio = 1f - (relativeY / latestUsableHeightPx)
                                 val newScale = zoomFromRatio(ratio)
                                 currentOnStep((newScale * 10f).roundToInt() / 10f)
                             }
                         }
-                        .pointerInput(trackHeightPx) {
+                        .pointerInput(Unit) {
                             detectVerticalDragGestures(
                                 onDragStart = { startOffset ->
-                                    val relativeY = (startOffset.y - thumbHeightPx / 2f).coerceIn(0f, usableHeightPx)
-                                    val ratio = 1f - (relativeY / usableHeightPx)
+                                    val relativeY = (startOffset.y - thumbHeightPx / 2f).coerceIn(0f, latestUsableHeightPx)
+                                    val ratio = 1f - (relativeY / latestUsableHeightPx)
                                     val newScale = zoomFromRatio(ratio)
                                     currentOnValueChange((newScale * 10f).roundToInt() / 10f)
                                 },
                                 onVerticalDrag = { change, _ ->
                                     change.consume()
                                     val touchY = change.position.y
-                                    val relativeY = (touchY - thumbHeightPx / 2f).coerceIn(0f, usableHeightPx)
-                                    val ratio = 1f - (relativeY / usableHeightPx)
+                                    val relativeY = (touchY - thumbHeightPx / 2f).coerceIn(0f, latestUsableHeightPx)
+                                    val ratio = 1f - (relativeY / latestUsableHeightPx)
                                     val newScale = zoomFromRatio(ratio)
                                     currentOnValueChange((newScale * 10f).roundToInt() / 10f)
                                 }

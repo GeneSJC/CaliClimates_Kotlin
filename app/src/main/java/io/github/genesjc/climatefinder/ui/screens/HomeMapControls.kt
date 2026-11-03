@@ -49,20 +49,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /** One small white button with a blue glyph, in the style of the map's other controls. */
 @Composable
-private fun MapControlButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+private fun MapControlButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    outline: Color = Color(0xFFCBD5E1),
+    content: @Composable () -> Unit
+) {
     Surface(
         shape = RoundedCornerShape(6.dp),
         color = Color.White.copy(alpha = 0.90f),
-        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        border = BorderStroke(1.dp, outline),
         modifier = modifier
             .height(32.dp)
             .clickable(onClickLabel = label, role = Role.Button, onClick = onClick)
@@ -71,15 +74,55 @@ private fun MapControlButton(label: String, onClick: () -> Unit, modifier: Modif
     }
 }
 
+/** A drawn "i" in a circle, in [color]. */
+@Composable
+internal fun InfoMark(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val stroke = 2.dp.toPx()
+        drawCircle(color, radius = size.width / 2f - stroke / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+        val cx = size.width / 2f
+        drawCircle(color, radius = stroke * 0.6f, center = Offset(cx, size.height * 0.30f))
+        drawLine(color, Offset(cx, size.height * 0.45f), Offset(cx, size.height * 0.74f), strokeWidth = stroke, cap = StrokeCap.Round)
+    }
+}
+
 /**
- * The row of small buttons at the map's top left. On Topography: the menu at the left, the north indicator in the
- * middle and the About (i) at the right. On Elevation: the menu, then a Stations drop-down (the north indicator and
- * the About button are not shown there). [stations] is only used by the drop-down.
+ * The Region Info button, in the style of the menu button above it: a drawn "i" in a circle, which becomes an X while the
+ * panel is open. Topography only; the panel slides in from the right.
+ */
+@Composable
+internal fun InfoControlButton(
+    open: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    label: String = stringResource(if (open) R.string.region_info_close else R.string.region_info_open)
+) {
+    val blue = Color(0xFF0284C7)
+    // Outlined like the region picker beside it: both are buttons that open a panel
+    MapControlButton(label, onClick, modifier, outline = MaterialTheme.colorScheme.primary) {
+        Canvas(modifier = Modifier.size(20.dp)) {
+            val stroke = 2.dp.toPx()
+            if (open) {
+                val inset = size.width * 0.18f
+                drawLine(blue, Offset(inset, inset), Offset(size.width - inset, size.height - inset), strokeWidth = stroke * 1.2f, cap = StrokeCap.Round)
+                drawLine(blue, Offset(size.width - inset, inset), Offset(inset, size.height - inset), strokeWidth = stroke * 1.2f, cap = StrokeCap.Round)
+            } else {
+                drawCircle(blue, radius = size.width / 2f - stroke / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+                val cx = size.width / 2f
+                drawCircle(blue, radius = stroke * 0.6f, center = Offset(cx, size.height * 0.30f))
+                drawLine(blue, Offset(cx, size.height * 0.45f), Offset(cx, size.height * 0.74f), strokeWidth = stroke, cap = StrokeCap.Round)
+            }
+        }
+    }
+}
+
+/**
+ * The row of small buttons at the map's top left. On Topography: the north indicator and, while the selected station
+ * is out of view, the locate button. On Elevation: a Stations drop-down. [stations] is only used by the drop-down.
  */
 @Composable
 internal fun MapControlRow(
     onElevation: Boolean,
-    onMenu: () -> Unit,
     /** Topography only: shows the locate button (the selected station is out of view) and what it does when tapped. */
     showLocate: Boolean = false,
     onLocate: () -> Unit = {},
@@ -88,15 +131,10 @@ internal fun MapControlRow(
     landmarkIds: List<String> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
-    /** Told where the menu button's top edge is on the screen (px), so the menu panel can open level with it. */
-    onMenuTop: (Float) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val blue = Color(0xFF0284C7)
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        MapControlButton(stringResource(R.string.menu_open), onMenu, Modifier.onGloballyPositioned { onMenuTop(it.positionInRoot().y) }) {
-            Text(text = "\u2630", fontSize = 18.sp, color = blue)
-        }
         if (onElevation) {
             StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation)
         } else {
@@ -105,7 +143,6 @@ internal fun MapControlRow(
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = Color.White.copy(alpha = 0.90f),
-                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     Box(contentAlignment = Alignment.Center) {

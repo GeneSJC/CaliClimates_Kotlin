@@ -30,6 +30,7 @@ internal fun StationHeroTile(
     fullWidthPx: Int,
     regionStations: List<MicroclimateStation>,
     regionId: String,
+    regionName: String,
     folded: Boolean,
     readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>
 ) {
@@ -64,7 +65,9 @@ internal fun StationHeroTile(
                     regionStations.minOf { it.elevationMeters } to regionStations.maxOf { it.elevationMeters }
                 } else null,
                 // Less folds the card back, at the right of its top row
-                onLess = close
+                onLess = close,
+                // The region's name stays at the top when the card is open
+                regionName = regionName
             )
         }
     )
