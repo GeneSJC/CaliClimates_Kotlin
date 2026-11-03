@@ -149,7 +149,6 @@ fun LandingScreen(
         animationSpec = tween(380, easing = FastOutSlowInEasing),
         label = "mapExpand"
     )
-    var viewSwitchHeight by remember { mutableStateOf(34.dp) }
     // Reported by the Topography map: is the selected station out of view; and a counter the locate button bumps
     var selectedOffscreen by remember { mutableStateOf(false) }
     var recenterTick by remember { mutableStateOf(0) }
@@ -301,8 +300,8 @@ fun LandingScreen(
                             onZoomChange = onMapZoomChange,
                             sliderShownShared = sliderShown,
                             onSliderShownChange = onSliderShownChange,
-                            // The slider's arrow button sits 4 dp under the view buttons, whatever their height
-                            sliderToggleTop = 21.dp + HOME_TILE_BAND + viewSwitchHeight + 4.dp,
+                            // The slider's arrow button sits at the top right of the map, level with the control row at the left
+                            sliderToggleTop = 12.dp + HOME_TILE_BAND,
                             expandT = expandT,
                             onSelectedOffscreenChange = { selectedOffscreen = it },
                             recenterTick = recenterTick
@@ -347,17 +346,26 @@ fun LandingScreen(
                             verticalAlignment = Alignment.Top
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                // The region's name: one line, centred at the top
-                                Text(
-                                    text = stringResource(region.nameRes),
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.fillMaxWidth().padding(top = 5.dp, bottom = 3.dp)
-                                )
+                                // The first line: the region's name at the left (one line), and the Topography and Elevation buttons
+                                // at the right
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(region.nameRes),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f).padding(start = 12.dp, end = 8.dp)
+                                    )
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        MapViewButton(label = stringResource(R.string.tab_topography), index = 0, selected = homeTab, onSelect = onHomeTabChange)
+                                        MapViewButton(label = stringResource(R.string.tab_elevation), index = 1, selected = homeTab, onSelect = onHomeTabChange)
+                                    }
+                                }
                                 // Under it, one row: the station tile at the left, taking all the width the picker leaves, and the
                                 // region picker at the right. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
@@ -405,26 +413,6 @@ fun LandingScreen(
                             },
                             modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
                         )
-                        // The two view buttons sit at the top right: Topography first, level with the row of controls, then Elevation at
-                        // the edge, 9 dp lower, a small offset (they traded places in build 117.15)
-                        Row(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(end = 12.dp, top = 12.dp + HOME_TILE_BAND),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.Top
-                        ) {
-                            MapViewButton(label = stringResource(R.string.tab_topography), index = 0, selected = homeTab, onSelect = onHomeTabChange)
-                            MapViewButton(
-                                label = stringResource(R.string.tab_elevation),
-                                index = 1,
-                                selected = homeTab,
-                                onSelect = onHomeTabChange,
-                                modifier = Modifier
-                                    .padding(top = 9.dp)
-                                    .onSizeChanged { viewSwitchHeight = with(mapDensity) { it.height.toDp() } }
-                            )
-                        }
                     }
                 }
             }
