@@ -357,9 +357,12 @@ private fun CompactStationBody(
     }
 }
 
+/** The summary tile's temperature colour: a warm tone, so it stands apart from the station's name. */
+private val TEMPERATURE_COLOR = Color(0xFFC2410C)
+
 /**
- * The summary of a station for the Home row, on one line: the temperature in °F, a pipe divider, the station's name
- * and a chevron at the right. The age of the reading is in the
+ * The summary of a station for the Home row, on one line: the temperature in °F (smaller, in its own colour, on the
+ * name's baseline), the station's name and a chevron at the right. The age of the reading is in the
  * full card that the chevron opens. When there is no reading, a dash shows where the temperature would be. The name
  * gives way (with an ellipsis) only when it really cannot fit; the temperature always shows.
  */
@@ -368,20 +371,17 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
     val display = liveDisplay(reading)
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // The temperature, smaller and in its own colour, sits on the same baseline as the name, close beside it
             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "\u2014",
-                    fontSize = 15.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
+                    color = TEMPERATURE_COLOR,
+                    maxLines = 1,
+                    modifier = Modifier.alignByBaseline()
                 )
-                Text(
-                    text = "|",
-                    fontSize = 17.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = station.name,
                     fontSize = 17.sp,
@@ -389,7 +389,7 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
+                    modifier = Modifier.weight(1f, fill = false).alignByBaseline()
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
