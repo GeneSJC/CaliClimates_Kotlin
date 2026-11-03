@@ -202,6 +202,7 @@ fun StationMapScreen(
         if (!embedded) {
         TerrainLegend(
             stations = stations,
+            noReadingIds = noReadingIds,
             // Dot size lives here, out of the way, instead of in a row under the map
             extra = { PinSizeSlider(value = pinScale, onValueChange = { localPinScale = it }) }
         )

@@ -98,6 +98,8 @@ fun ElevationProfileScreen(
 
     // The region's terrain picture (the one the Topography map draws), used as a faint texture in the ground
     val terrain by remember(dataset.regionId) { viewModel.terrain(dataset.regionId) }.collectAsStateWithLifecycle()
+    // Stations known to have no reading, for the legend's ring count
+    val noReadingIds by viewModel.noReadingIds.collectAsStateWithLifecycle()
 
     // The region's real skylines, for the distant ranges
     val skyline by remember(dataset.regionId) { viewModel.skyline(dataset.regionId) }.collectAsStateWithLifecycle()
@@ -258,7 +260,7 @@ fun ElevationProfileScreen(
 
         // Terrain legend: one line until opened, then this region's terrain types with counts.
         // Embedded, Home shows it beside the Region Info link.
-        if (!embedded) TerrainLegend(stations = stations)
+        if (!embedded) TerrainLegend(stations = stations, noReadingIds = noReadingIds)
 
         // The selected station card; embedded, Home shows it above the tabs
         if (!embedded) {
