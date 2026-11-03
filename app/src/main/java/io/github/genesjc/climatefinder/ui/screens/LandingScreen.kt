@@ -346,7 +346,7 @@ fun LandingScreen(
                             verticalAlignment = Alignment.Top
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                // The first line: the region's name at the left (one line), and the Topography and Elevation buttons
+                                // The first line: the region's name at the left (two lines at most), and the Topography and Elevation buttons
                                 // at the right
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp),
@@ -357,11 +357,13 @@ fun LandingScreen(
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1,
+                                        lineHeight = 18.sp,
+                                        // Two lines when the name needs them, so it does not feel squeezed against the buttons
+                                        maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f).padding(start = 12.dp, end = 8.dp)
                                     )
-                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                                         MapViewButton(label = stringResource(R.string.tab_topography), index = 0, selected = homeTab, onSelect = onHomeTabChange)
                                         MapViewButton(label = stringResource(R.string.tab_elevation), index = 1, selected = homeTab, onSelect = onHomeTabChange)
                                     }
