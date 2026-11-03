@@ -86,6 +86,8 @@ fun StationMapScreen(
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     // The region's terrain picture, loaded off the main thread; the map shows a plain base until it arrives
     val terrain by remember(dataset.regionId) { viewModel.terrain(dataset.regionId) }.collectAsStateWithLifecycle()
+    // Stations known to have no reading, drawn as rings
+    val noReadingIds by viewModel.noReadingIds.collectAsStateWithLifecycle()
     // Keyed to the data, so a region change starts from that region's first station and not the old region's id
     var localSelectedId by remember(stations) { mutableStateOf(stations.firstOrNull()?.id) }
     val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
@@ -215,11 +217,11 @@ fun StationMapScreen(
                 .height(mapHeight)
         ) {
             Surface(
-                // The bottom corners square off as the map grows out to the screen edges
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp * (1f - expandT), bottomEnd = 16.dp * (1f - expandT)),
+                // All four corners square off, and the outline goes, as the map grows out to the screen edges
+                shape = RoundedCornerShape(topStart = 16.dp * (1f - expandT), topEnd = 16.dp * (1f - expandT), bottomStart = 16.dp * (1f - expandT), bottomEnd = 16.dp * (1f - expandT)),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 // A 1dp outline, for a crisper edge
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                border = if (expandT >= 1f) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.fillMaxSize()
             ) {
                 SpatialMapCanvas(
@@ -237,6 +239,7 @@ fun StationMapScreen(
                     recenterTick = recenterTick,
                     sliderShownShared = sliderShownShared,
                     onSliderShownChange = onSliderShownChange,
+                    noReadingIds = noReadingIds,
                     onSelectStation = {
                     localSelectedId = it.id
                     onStationSelected?.invoke(it.id)

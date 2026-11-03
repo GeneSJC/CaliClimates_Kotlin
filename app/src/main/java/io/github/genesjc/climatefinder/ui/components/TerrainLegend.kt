@@ -210,6 +210,14 @@ private fun LegendBody(stations: List<MicroclimateStation>, extra: (@Composable 
                         // With the Dot size setting in play, the dot gets a fixed slot (the biggest dot, 2.5x) so the text stays put
                         dotSlot = if (dotScale != null) 8.dp * 2.5f else 8.dp)
                 }
+            // A ring on the map: the station has no reading right now (any terrain colour)
+            LegendItem(
+                color = legendColor(TerrainType.URBAN_CANYON),
+                label = stringResource(R.string.legend_no_reading),
+                dotScale = dotScale ?: 1f,
+                dotSlot = if (dotScale != null) 8.dp * 2.5f else 8.dp,
+                ring = true
+            )
         }
         Text(
             text = stringResource(R.string.legend_ridge_rule),
