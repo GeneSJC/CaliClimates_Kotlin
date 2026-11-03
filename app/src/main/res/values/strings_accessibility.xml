@@ -17,7 +17,6 @@
     <string name="region_picker_change">Change region</string>
     <string name="stations_choose">Choose a station</string>
     <string name="stations_search_clear">Clear the search</string>
-    <string name="menu_open">Open the menu</string>
     <string name="map_locate_selected">Show the selected station</string>
 
     <!-- Terrain legend -->

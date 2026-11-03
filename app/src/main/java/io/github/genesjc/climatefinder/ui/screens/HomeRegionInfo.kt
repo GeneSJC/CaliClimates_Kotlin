@@ -234,6 +234,8 @@ internal fun RegionInfoContent(
     hasStationData: Boolean,
     stations: List<MicroclimateStation>,
     onOpenStationList: () -> Unit,
+    /** Opens the About dialog over the sheet; its button sits in the title band. */
+    onOpenAbout: () -> Unit,
     menuOpen: Boolean,
     dotScale: Float = 1f,
     legendExtra: (@Composable () -> Unit)? = null
@@ -258,14 +260,29 @@ internal fun RegionInfoContent(
                     modifier = Modifier.size(40.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.region_info_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        // Off-white, not pure white, so it is easier on the eyes against the dark band
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.86f)
-                    )
+                // The About button, where the title was: the same white card and teal "i" as the menu's About row
+                Box(modifier = Modifier.weight(1f)) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White.copy(alpha = 0.95f),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable(onClickLabel = stringResource(R.string.menu_about), role = Role.Button) { onOpenAbout() }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            InfoMark(color = Color(0xFF0D9488), modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.menu_about),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                 }
                 if (hasStationData) {
                     Spacer(modifier = Modifier.width(8.dp))

@@ -117,11 +117,12 @@ fun RegionPickerButton(
             ) { state.open(selectedRegionId) }
     ) {
         Box(contentAlignment = Alignment.Center) {
-            // Only the selected region's shape, in its picker colour, so it fills the button
-            RegionShapeIcon(
-                regionId = selectedRegionId,
-                fill = regionPickerColors()[selectedRegionId] ?: content.copy(alpha = 0.18f),
+            // The state's silhouette, the current region at full strength
+            StateUsaOutlineIcon(
+                fill = content.copy(alpha = 0.18f),
                 stroke = content,
+                regionColors = regionPickerColors(),
+                selectedRegionId = selectedRegionId,
                 modifier = Modifier
                     .size(iconSize)
                     .onGloballyPositioned { state.buttonBounds = Rect(it.positionInRoot(), it.size.toSize()) }
@@ -216,11 +217,12 @@ fun RegionPickerOverlay(
                 .clickable(interactionSource = noRipple, indication = null) { },
             contentAlignment = Alignment.Center
         ) {
-            // Starts as the button's own icon (the selected region's shape), then fades out as the map takes over
-            RegionShapeIcon(
-                regionId = selectedRegionId,
-                fill = regionPickerColors()[selectedRegionId] ?: MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+            // Starts as the button's own icon (the state's silhouette), then fades out as the map takes over
+            StateUsaOutlineIcon(
+                fill = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.18f),
                 stroke = MaterialTheme.colorScheme.onPrimaryContainer,
+                regionColors = regionPickerColors(),
+                selectedRegionId = selectedRegionId,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(lerp(0f, 32f, t).dp)
