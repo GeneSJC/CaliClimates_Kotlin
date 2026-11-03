@@ -226,8 +226,13 @@ class HomeViewModelTest {
         val vm = viewModel()
         assertEquals("default", vm.defaultDataset().regionId)
         assertEquals("empty", vm.emptyDefaultDataset().regionId)
-        assertEquals(5, vm.fullDataRegionCount())
-        assertEquals(6, vm.totalRegionCount())
+    }
+
+    @Test
+    fun theRegionCountsAreInTheStateFromTheStart() {
+        val state = viewModel().uiState.value
+        assertEquals(5, state.fullDataRegions)
+        assertEquals(6, state.totalRegions)
     }
 
     @Test

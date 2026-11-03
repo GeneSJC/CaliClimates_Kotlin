@@ -49,7 +49,7 @@ fun AppNavigation(
 
     // Station data per region: a CSV override in assets, else the region's bundled pack. HomeViewModel reads the
     // region's pack off the main thread (homeState.loading is true until it is in) and keeps its dataset in the state
-    val fullDataRegions = remember { homeViewModel.fullDataRegionCount() }
+    val fullDataRegions = homeState.fullDataRegions
     val regionDataset = homeState.regionDataset
     // The Bay Area fallback dataset is only needed by the Station List when a region has none, and by the demos, so it
     // is read (off the main thread) only once a region turns out to have no data; an empty stand-in until then
@@ -82,7 +82,7 @@ fun AppNavigation(
                 selectedRegionId = selectedRegionId,
                 dataset = regionDataset,
                 fullDataRegions = fullDataRegions,
-                totalRegions = homeViewModel.totalRegionCount(),
+                totalRegions = homeState.totalRegions,
                 buildLabel = homeViewModel.buildLabel,
                 regionOptions = regionOptions,
                 onSelectRegion = { pickRegion(it) },

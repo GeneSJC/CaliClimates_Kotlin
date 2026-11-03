@@ -53,7 +53,10 @@ data class HomeUiState(
     /** The station dataset of [selectedRegionId]; null when the region has no data (Home then shows its limited-data banner). */
     val regionDataset: StationDatasetInfo? = null,
     /** True while the first region's stations are being read at start-up; Home shows a loading view until they are in. */
-    val loading: Boolean = true
+    val loading: Boolean = true,
+    /** How many of the state's regions have station data in this build, and how many regions there are: facts that do not change in a run. */
+    val fullDataRegions: Int = 0,
+    val totalRegions: Int = 0
 )
 
 /** Something Home's screen does once, in answer to a change. */
@@ -88,7 +91,13 @@ class HomeViewModel : AppBaseViewModel() {
 
     private val _uiState = MutableStateFlow(
         settings.selectedRegionId().let { regionId ->
-            HomeUiState(selectedRegionId = regionId, tab = settings.homeTab(), selectedStationId = settings.selectedStationId(regionId))
+            HomeUiState(
+                selectedRegionId = regionId,
+                tab = settings.homeTab(),
+                selectedStationId = settings.selectedStationId(regionId),
+                fullDataRegions = datasets.fullDataRegionCount(),
+                totalRegions = datasets.totalRegionCount()
+            )
         }
     )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -186,10 +195,6 @@ class HomeViewModel : AppBaseViewModel() {
 
     /** An empty stand-in for the default dataset, for while [defaultDataset] is being read. */
     fun emptyDefaultDataset(): StationDatasetInfo = datasets.emptyDefaultDataset()
-
-    fun fullDataRegionCount(): Int = datasets.fullDataRegionCount()
-
-    fun totalRegionCount(): Int = datasets.totalRegionCount()
 
     /**
      * The stations known to have no reading right now (they answered with nothing usable), for the Region Info legend's
