@@ -370,9 +370,15 @@ fun LandingScreen(
                                         .onSizeChanged { folderTabHeight = it.height.toFloat() }
                                         .padding(top = 6.dp, bottom = 2.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.Top
                                 ) {
-                                    Box(modifier = Modifier.weight(1f, fill = false).onSizeChanged { folderTabWidth = it.width.toFloat() }) {
+                                    // The tab's text is centred on the tab; the buttons sit at the top of the line
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f, fill = false)
+                                            .align(Alignment.CenterVertically)
+                                            .onSizeChanged { folderTabWidth = it.width.toFloat() }
+                                    ) {
                                         Text(
                                             text = stringResource(region.nameRes),
                                             fontSize = 15.sp,
@@ -385,9 +391,9 @@ fun LandingScreen(
                                         )
                                     }
                                     Row(
-                                        modifier = Modifier.padding(start = 8.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                        modifier = Modifier.align(Alignment.Top).padding(start = 8.dp, end = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.Top
                                     ) {
                                         MapViewButton(label = stringResource(R.string.tab_topography), index = 0, selected = homeTab, onSelect = onHomeTabChange)
                                         MapViewButton(label = stringResource(R.string.tab_elevation), index = 1, selected = homeTab, onSelect = onHomeTabChange)
