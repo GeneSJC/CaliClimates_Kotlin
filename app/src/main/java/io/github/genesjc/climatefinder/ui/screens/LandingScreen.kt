@@ -355,8 +355,8 @@ fun LandingScreen(
                                 }
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
-                                // 4dp at the sides, a little under the tile (5dp: 70 percent less than before); the room above is the first line's
-                                .padding(start = 4.dp, top = 0.dp, end = 4.dp, bottom = 5.dp)
+                                // 10dp at the sides (more room for the station tile and the picker), a little under the tile (5dp); the room above is the first line's
+                                .padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 5.dp)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
