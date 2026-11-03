@@ -2,6 +2,7 @@ package io.github.genesjc.climatefinder.ui.screens
 
 import androidx.annotation.StringRes
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
+import io.github.genesjc.climatefinder.ui.components.drawFolderTab
 import io.github.genesjc.climatefinder.ui.components.PICKER_BUTTON_HEIGHT
 import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
 import androidx.compose.animation.core.Animatable
@@ -56,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -324,19 +326,32 @@ fun LandingScreen(
                     }
                     // The tile and the buttons keep their place on the screen while the map grows out underneath them
                     Box(modifier = Modifier.matchParentSize().padding(horizontal = 5.dp * expandT)) {
+                        // The folder's tab (the region's name) and the first line's height, measured, so the shape fits them
+                        var folderTabWidth by remember { mutableStateOf(0f) }
+                        var folderTabHeight by remember { mutableStateOf(0f) }
+                        val folderFill = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background
+                        val folderBorder = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
                         // The selected station as a tile across the top of the map (it grows into the full card)
                         Row(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .fillMaxWidth()
                                 .padding(start = 6.dp, end = 6.dp, top = 5.dp)
-                                // A solid strip behind the rows, in the green the map shows beyond its terrain, so they read over any map
-                                // (a shaped background, not a clip, so the card that opens from the tile is never cut off)
-                                .background(
-                                    if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background,
-                                    RoundedCornerShape(10.dp)
-                                )
-                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                                // The header is drawn as a folder: the region's name on the tab at the top left, the station tile and
+                                // the picker in the body, and the space right of the tab open to the map (the Map and Profile buttons
+                                // sit there). In the green the map shows beyond its terrain (a draw, not a clip, so the card that opens
+                                // from the tile is never cut off)
+                                .drawBehind {
+                                    drawFolderTab(
+                                        fill = folderFill,
+                                        border = folderBorder,
+                                        tabWidth = folderTabWidth,
+                                        tabHeight = folderTabHeight,
+                                        radius = 10.dp.toPx(),
+                                        join = 12.dp.toPx(),
+                                        borderWidth = 1.dp.toPx()
+                                    )
+                                }
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
                                 // 4dp at the sides, a little under the tile (5dp: 70 percent less than before); the room above is the first line's
@@ -346,24 +361,33 @@ fun LandingScreen(
                             verticalAlignment = Alignment.Top
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                // The first line: the region's name at the left (two lines at most), and the Topography and Elevation buttons
-                                // at the right
+                                // The first line: the folder's tab with the region's name (two lines at most) at the left, and the Map
+                                // and Profile buttons at the right, on the map
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .onSizeChanged { folderTabHeight = it.height.toFloat() }
+                                        .padding(top = 6.dp, bottom = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = stringResource(region.nameRes),
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        lineHeight = 18.sp,
-                                        // Two lines when the name needs them, so it does not feel squeezed against the buttons
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f).padding(start = 12.dp, end = 8.dp)
-                                    )
-                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.weight(1f, fill = false).onSizeChanged { folderTabWidth = it.width.toFloat() }) {
+                                        Text(
+                                            text = stringResource(region.nameRes),
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            lineHeight = 18.sp,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.padding(start = 12.dp, end = 12.dp)
+                                        )
+                                    }
+                                    Row(
+                                        modifier = Modifier.padding(start = 8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         MapViewButton(label = stringResource(R.string.tab_topography), index = 0, selected = homeTab, onSelect = onHomeTabChange)
                                         MapViewButton(label = stringResource(R.string.tab_elevation), index = 1, selected = homeTab, onSelect = onHomeTabChange)
                                     }
