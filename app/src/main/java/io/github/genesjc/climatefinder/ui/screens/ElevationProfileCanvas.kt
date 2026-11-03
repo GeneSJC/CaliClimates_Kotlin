@@ -344,7 +344,7 @@ internal fun ElevationProfileCanvas(
         // When the viewing angle changes, the labels that were showing can stay showing, now at their stations' new places,
         // until the chart is zoomed or touched; then the labels are chosen afresh and fade in and out as usual (see [LabelHold])
         val labelHold = remember(sorted) { LabelHold(bandAngle) }
-        var tagsFollowView by remember { mutableStateOf(TAGS_FOLLOW_VIEW) }  // the switch to the left of the dial changes it
+        var tagsFollowView by remember { mutableStateOf(TAGS_FOLLOW_VIEW) }  // the switch in the key bar changes it
         if (labelHold.angle != bandAngle) labelHold.angleChanged(bandAngle, zoom, touchedAt[0], followView = tagsFollowView)
         // Ended by a pinch, a drag or any change of zoom, but not by the chart easing itself over (the pivot re-centres it)
         if (labelHold.ids != null && (zoom != labelHold.zoom || touchedAt[0] != labelHold.touch)) labelHold.ids = null
@@ -559,9 +559,10 @@ internal fun ElevationProfileCanvas(
             onToggleLayers = onToggleLayers,
             notice = notice,
             widthDp = widthDp,
-            layersButtonTop = layersButtonTop
+            layersButtonTop = layersButtonTop,
+            tagsFollowView = tagsFollowView,
+            onToggleTags = { tagsFollowView = !tagsFollowView; labelHold.ids = null }
         )
-        if (layersOn) ElevationTagsToggle(tagsFollowView) { tagsFollowView = !tagsFollowView; labelHold.ids = null }
 
         // Floating zoom slider on the right edge, where the Topography map has it
         fun nearestLinePoint(): Offset {
