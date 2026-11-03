@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.ui.components.TAGS_CELL_WIDTH_DP
 import kotlinx.coroutines.delay
@@ -43,6 +44,9 @@ import kotlinx.coroutines.delay
 private const val TOAST_MS = 1800L
 
 private val TOAST_GREEN = Color(0xFF14532D)
+
+/** Above the zoom slider, the compass, the dial and the key, which are all drawn at the default level (0). */
+private const val TOAST_Z_INDEX = 10f
 
 /** The words of the toast in the middle of the chart, and when it goes away. */
 @Stable
@@ -104,7 +108,8 @@ internal fun BoxScope.TagsToast(toast: TagsToastState) {
         visible = toast.message != null,
         enter = fadeIn(),
         exit = fadeOut(),
-        modifier = Modifier.align(Alignment.Center)
+        // In front of everything in the chart, the zoom slider included, whatever order they are drawn in
+        modifier = Modifier.align(Alignment.Center).zIndex(TOAST_Z_INDEX)
     ) {
         Surface(shape = RoundedCornerShape(16.dp), color = TOAST_GREEN, shadowElevation = 6.dp) {
             Text(
