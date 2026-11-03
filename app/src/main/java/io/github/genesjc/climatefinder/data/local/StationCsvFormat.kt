@@ -5,6 +5,7 @@ import io.github.genesjc.climatefinder.domain.model.TerrainType
 import io.github.genesjc.climatefinder.domain.model.WeatherReading
 import java.io.BufferedReader
 import io.github.genesjc.climatefinder.domain.StationNameFormatter
+import io.github.genesjc.climatefinder.domain.placeAndStationName
 
 /** The station CSV format itself: no Android classes, so it can be tested on the JVM. */
 internal class StationCsvFormat(private val towns: StationNameFormatter) {
@@ -41,7 +42,7 @@ internal class StationCsvFormat(private val towns: StationNameFormatter) {
         val id = getField(tokens, indices, "id", "station_id") ?: "STATION_$index"
         val stationName = getField(tokens, indices, "display_name", "name", "station_name") ?: "Station $index"
         // The town and the station together where they differ ("Jackson (Mount Zion)"); the maps' labels use the town
-        val name = towns.displayName(id, stationName)
+        val name = towns.townOf(id)?.let { placeAndStationName(it, stationName) } ?: stationName
         val lat = getField(tokens, indices, "latitude", "lat")?.toDoubleOrNull() ?: 38.5816
         val lon = getField(tokens, indices, "longitude", "lon")?.toDoubleOrNull() ?: -121.4944
         val elev = getField(tokens, indices, "elevation_meters", "elevation_m", "elevation")?.toIntOrNull() ?: 15

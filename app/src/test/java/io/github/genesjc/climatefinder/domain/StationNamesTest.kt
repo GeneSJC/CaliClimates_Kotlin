@@ -2,6 +2,7 @@ package io.github.genesjc.climatefinder.domain
 
 import io.github.genesjc.climatefinder.config.StateUsaCA
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class StationNamesTest {
@@ -27,7 +28,7 @@ class StationNamesTest {
 
     @Test
     fun theTownListGivesTheCombinedNameAndTheShortLabel() {
-        assertEquals("Jackson (Mount Zion)", towns.displayName("MTZC1", "Mount Zion"))
+        assertEquals("Jackson", towns.townOf("MTZC1"))
         assertEquals("Jackson", towns.cleanCityName("MTZC1", "Mount Zion"))
         // the label does not change when the name already carries the town
         assertEquals("Jackson", towns.cleanCityName("MTZC1", "Jackson (Mount Zion)"))
@@ -35,7 +36,7 @@ class StationNamesTest {
 
     @Test
     fun aStationOutsideTheTownListKeepsItsOwnName() {
-        assertEquals("Rose Peak", towns.displayName("RSPC1", "Rose Peak"))
+        assertNull(towns.townOf("RSPC1"))
         assertEquals("Rose Peak", towns.cleanCityName("RSPC1", "Rose Peak"))
     }
 
