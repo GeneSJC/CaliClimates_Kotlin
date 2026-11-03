@@ -3,7 +3,6 @@ package io.github.genesjc.climatefinder.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -28,52 +27,49 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import io.github.genesjc.climatefinder.R
 
-/** How much of the row's height the button takes (it is centred in the rest). 0.7 is 30 percent smaller than full height. */
-private const val CHIP_HEIGHT_SHARE = 0.7f
+/** The picker button's height in the map's control row; a little smaller than its neighbours' and tunable here. */
+val PICKER_BUTTON_HEIGHT = 36.dp
 
 /**
- * The region picker as an outlined button, [CHIP_HEIGHT_SHARE] of the height of the space it is given, centred in it: the state's silhouette with the current
+ * The region picker as an outlined button, as tall as its [modifier] makes it: the state's silhouette with the current
  * region at full strength, and a chevron beside it so it reads as a choice, like a select list. Tapping anywhere on it
  * opens the graphical picker, which grows out of the silhouette.
  */
 @Composable
 fun RegionPickerChip(state: RegionPickerState, selectedRegionId: String, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(8.dp)
-    Box(modifier = modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
-        Row(
+    Row(
+        modifier = modifier
+            .clip(shape)
+            .background(Color.White.copy(alpha = 0.9f))
+            .border(1.dp, MaterialTheme.colorScheme.primary, shape)
+            .clickable(
+                enabled = !state.visible,
+                onClickLabel = stringResource(R.string.region_picker_change),
+                role = Role.Button
+            ) { state.open(selectedRegionId) }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        StateUsaOutlineIcon(
+            fill = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.18f),
+            stroke = MaterialTheme.colorScheme.onPrimaryContainer,
+            regionColors = regionPickerColors(),
+            selectedRegionId = selectedRegionId,
             modifier = Modifier
-                .fillMaxHeight(CHIP_HEIGHT_SHARE)
-                .clip(shape)
-                .background(Color.White.copy(alpha = 0.6f))
-                .border(1.dp, MaterialTheme.colorScheme.primary, shape)
-                .clickable(
-                    enabled = !state.visible,
-                    onClickLabel = stringResource(R.string.region_picker_change),
-                    role = Role.Button
-                ) { state.open(selectedRegionId) }
-                .padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            StateUsaOutlineIcon(
-                fill = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.18f),
-                stroke = MaterialTheme.colorScheme.onPrimaryContainer,
-                regionColors = regionPickerColors(),
-                selectedRegionId = selectedRegionId,
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .aspectRatio(0.8f)
-                    .onGloballyPositioned { state.buttonBounds = Rect(it.positionInRoot(), it.size.toSize()) }
-                    .alpha(if (state.visible) 0f else 1f)
-            )
-            // The station tile's chevron (a solid triangle, in the same colour), a little smaller
-            Text(
-                text = "▼",
-                style = MaterialTheme.typography.labelMedium,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 6.dp)
-            )
-        }
+                .fillMaxHeight()
+                .aspectRatio(0.8f)
+                .onGloballyPositioned { state.buttonBounds = Rect(it.positionInRoot(), it.size.toSize()) }
+                .alpha(if (state.visible) 0f else 1f)
+        )
+        // The station tile's chevron (a solid triangle, in the same colour), a little smaller
+        Text(
+            text = "\u25BC",
+            style = MaterialTheme.typography.labelMedium,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 6.dp)
+        )
     }
 }

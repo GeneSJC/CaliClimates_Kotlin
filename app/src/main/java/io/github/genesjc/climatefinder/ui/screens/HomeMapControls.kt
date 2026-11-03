@@ -2,6 +2,9 @@ package io.github.genesjc.climatefinder.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import io.github.genesjc.climatefinder.R
+import io.github.genesjc.climatefinder.ui.components.PICKER_BUTTON_HEIGHT
+import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
+import io.github.genesjc.climatefinder.ui.components.RegionPickerState
 import androidx.compose.animation.AnimatedVisibility
 import io.github.genesjc.climatefinder.ui.components.ms
 import androidx.compose.animation.fadeIn
@@ -49,12 +52,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /** One small white button with a blue glyph, in the style of the map's other controls. */
 @Composable
@@ -88,13 +88,14 @@ internal fun InfoMark(color: Color, modifier: Modifier = Modifier) {
  * panel is open. Topography only; the panel slides in from the right.
  */
 @Composable
-internal fun InfoControlButton(open: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun InfoControlButton(
+    open: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    label: String = stringResource(if (open) R.string.region_info_close else R.string.region_info_open)
+) {
     val blue = Color(0xFF0284C7)
-    MapControlButton(
-        stringResource(if (open) R.string.region_info_close else R.string.region_info_open),
-        onClick,
-        modifier
-    ) {
+    MapControlButton(label, onClick, modifier) {
         Canvas(modifier = Modifier.size(20.dp)) {
             val stroke = 2.dp.toPx()
             if (open) {
@@ -112,14 +113,15 @@ internal fun InfoControlButton(open: Boolean, onClick: () -> Unit, modifier: Mod
 }
 
 /**
- * The row of small buttons at the map's top left. On Topography: the menu at the left, the north indicator in the
- * middle and the About (i) at the right. On Elevation: the menu, then a Stations drop-down (the north indicator and
- * the About button are not shown there). [stations] is only used by the drop-down.
+ * The row of small buttons at the map's top left. On Topography: the region picker at the left, then the north
+ * indicator and, while the selected station is out of view, the locate button. On Elevation: the region picker, then a
+ * Stations drop-down. [stations] is only used by the drop-down.
  */
 @Composable
 internal fun MapControlRow(
     onElevation: Boolean,
-    onMenu: () -> Unit,
+    pickerState: RegionPickerState,
+    selectedRegionId: String,
     /** Topography only: shows the locate button (the selected station is out of view) and what it does when tapped. */
     showLocate: Boolean = false,
     onLocate: () -> Unit = {},
@@ -128,15 +130,12 @@ internal fun MapControlRow(
     landmarkIds: List<String> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
-    /** Told where the menu button's top edge is on the screen (px), so the menu panel can open level with it. */
-    onMenuTop: (Float) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val blue = Color(0xFF0284C7)
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        MapControlButton(stringResource(R.string.menu_open), onMenu, Modifier.onGloballyPositioned { onMenuTop(it.positionInRoot().y) }) {
-            Text(text = "\u2630", fontSize = 18.sp, color = blue)
-        }
+        // The region picker, where the menu button used to be
+        RegionPickerChip(state = pickerState, selectedRegionId = selectedRegionId, modifier = Modifier.height(PICKER_BUTTON_HEIGHT))
         if (onElevation) {
             StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation)
         } else {

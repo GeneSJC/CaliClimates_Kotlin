@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.config.StateUsaRegion
+import io.github.genesjc.climatefinder.ui.components.PICKER_BUTTON_HEIGHT
 import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
 import io.github.genesjc.climatefinder.ui.components.RegionPickerState
 import io.github.genesjc.climatefinder.ui.components.regionPickerColors
@@ -111,7 +112,7 @@ internal fun HomeRegionBar(
                     // The region picker, at the right of the name's row (it belongs with the drop-down)
                     Spacer(modifier = Modifier.width(8.dp))
                     // In a small button of its own, so it reads as tappable
-                    RegionPickerChip(state = pickerState, selectedRegionId = selectedRegionId)
+                    RegionPickerChip(state = pickerState, selectedRegionId = selectedRegionId, modifier = Modifier.height(PICKER_BUTTON_HEIGHT))
                 }
 
             }

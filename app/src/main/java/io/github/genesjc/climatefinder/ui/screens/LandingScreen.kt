@@ -5,19 +5,15 @@ import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
-import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
 import io.github.genesjc.climatefinder.ui.components.MapViewButton
 import io.github.genesjc.climatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.climatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,9 +31,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -46,7 +40,6 @@ import io.github.genesjc.climatefinder.ui.components.TOP_NOTICE_MS
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import io.github.genesjc.climatefinder.domain.model.ObservationResult
@@ -67,17 +60,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
-import io.github.genesjc.climatefinder.EditionConfig
 import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.ui.theme.LocalStateUsa
 import io.github.genesjc.climatefinder.ui.components.AboutDialog
-import io.github.genesjc.climatefinder.ui.components.MenuDrawerContent
 import io.github.genesjc.climatefinder.ui.navigation.AppScreen
 import kotlinx.coroutines.launch
 
@@ -94,9 +83,6 @@ internal val HEADER_HEIGHT = 42.dp
 
 data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
-
-/** How much taller the menu panel is than its content: 1.7 shows 70 percent more of the soft green below the items. */
-private const val MENU_PANEL_STRETCH = 1.7f
 
 @Composable
 fun LandingScreen(
@@ -139,9 +125,6 @@ fun LandingScreen(
         if (dataset != null) stationsForRegion(selectedRegionId) else emptyList()
     }
     val appName = stringResource(R.string.app_name)
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    // The menu drawer is the top layer: while it is opening or open, the floating cards fold
-    val menuDrawerShowing = drawerState.targetValue != DrawerValue.Closed
     val scope = rememberCoroutineScope()
     var showAboutDialog by remember { mutableStateOf(false) }
     var showLimitedDataDialog by remember { mutableStateOf(false) }
@@ -179,7 +162,6 @@ fun LandingScreen(
     var rowWidthPx by remember { mutableStateOf(0) }
     var stationTileTopPx by remember { mutableStateOf(0f) }
     // Where the menu button's top edge is, so the menu panel opens level with it (0 until it has been placed)
-    var menuButtonTopPx by remember { mutableStateOf(0f) }
     val sheetTopPx = stationTileTopPx
     val openInfo: () -> Unit = {
         onInfoOpenChange(true)
@@ -192,64 +174,7 @@ fun LandingScreen(
     BackHandler(enabled = infoOpen) { closeInfo() }
     // Region Info is a Topography feature: switching to Elevation closes it
     LaunchedEffect(homeTab) { if (homeTab == 1 && infoOpen) closeInfo() }
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        // The menu button opens it; a swipe must not compete with the map's drag to pan (it still closes by swipe)
-        gesturesEnabled = drawerState.isOpen,
-        drawerContent = {
-            // A narrow side panel only as tall as its content, starting level with the menu button's top edge (the Region Info
-            // sheet comes in lower, from the right edge, so the two stagger). The page shows behind it; a tap there,
-            // a swipe to the left, or Back closes it.
-            val menuWidth = (LocalConfiguration.current.screenWidthDp * 0.66f).dp
-            Surface(
-                shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
-                color = Color.Transparent,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
-                modifier = (
-                    if (menuButtonTopPx > 0f) Modifier.offset { IntOffset(0, menuButtonTopPx.roundToInt()) }
-                    else Modifier.statusBarsPadding().padding(top = 14.dp)
-                ).width(menuWidth)
-            ) {
-              Box {
-                // The panel runs 70 percent taller than its content, so more of the soft green shows below the items
-                Box(
-                    modifier = Modifier
-                        .background(sheetBrush())
-                        .layout { measurable, constraints ->
-                            val content = measurable.measure(constraints)
-                            layout(content.width, (content.height * MENU_PANEL_STRETCH).roundToInt()) { content.placeRelative(0, 0) }
-                        }
-                ) {
-                MenuDrawerContent(
-                    appName = appName,
-                    buildLabel = buildLabel,
-                    // Only the demo edition has the Demos & Previews hub
-                    showDemos = EditionConfig.HAS_DEMOS,
-                    darkMode = darkMode,
-                    onDarkModeChange = onDarkModeChange,
-                    onOpenDemos = {
-                        scope.launch { drawerState.close() }
-                        onNavigateTo(AppScreen.DEMOS_AND_PREVIEWS)
-                    },
-                    onOpenAbout = {
-                        scope.launch { drawerState.close() }
-                        showAboutDialog = true
-                    }
-                )
-                }
-                // A small grip at the right edge: the cue that the panel can be swiped closed
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 5.dp)
-                        .size(width = 4.dp, height = 36.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
-                )
-              }
-            }
-        }
-    ) {
+    run {
         Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = modifier
@@ -277,7 +202,7 @@ fun LandingScreen(
                     if (dataset == null) {
                         // No map to hold the buttons: the menu and About sit here
                         Spacer(modifier = Modifier.height(6.dp))
-                        MapControlRow(onElevation = false, onMenu = { scope.launch { drawerState.open() } }, onMenuTop = { menuButtonTopPx = it })
+                        InfoControlButton(open = false, onClick = { showAboutDialog = true }, label = stringResource(R.string.menu_about))
                         Spacer(modifier = Modifier.height(6.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -406,11 +331,9 @@ fun LandingScreen(
                                 // (a shaped background, not a clip, so the card that opens from the tile is never cut off)
                                 .background(MaterialTheme.colorScheme.background, RoundedCornerShape(10.dp))
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-                                // The Region Info sheet opens below this strip (the tile, the picker and the Info link / X), so it never covers them
+                                // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
                                 .padding(4.dp)
-                                // The picker takes the height of the tile beside it
-                                .height(IntrinsicSize.Min)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
@@ -422,26 +345,23 @@ fun LandingScreen(
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
+                                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, bottom = 2.dp)
                                 )
                                 // The tile fills the height it is given, so it is held to its own content's height (without this
-                                // it fills the whole map); the picker beside it can be taller
+                                // it fills the whole map)
                                 Box(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-                                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || menuDrawerShowing || pickerState.visible, readingFor = readingFor)
+                                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
                                 }
                             }
-                            // At the right: the region picker (the region's shape and a chevron; it opens the graphical picker)
-                            RegionPickerChip(state = pickerState, selectedRegionId = selectedRegionId)
                         }
                         // The Region Info button, under the menu button at the left (Topography only: Elevation has no Region Info)
                         if (homeTab == 0) {
                             InfoControlButton(
                                 open = infoOpen,
                                 onClick = { if (infoOpen) closeInfo() else openInfo() },
-                                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + 40.dp)
+                                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + 44.dp)
                             )
                         }
                         // Below the tile, at the left: the menu, the north indicator and the About button
@@ -451,8 +371,8 @@ fun LandingScreen(
                             landmarkIds = stateUsa.landmarkStations[region.id] ?: emptyList(),
                             selectedStationId = selectedStationId,
                             onPickStation = onStationSelected,
-                            onMenu = { scope.launch { drawerState.open() } },
-                            onMenuTop = { menuButtonTopPx = it },
+                            pickerState = pickerState,
+                            selectedRegionId = selectedRegionId,
                             showLocate = selectedOffscreen && homeTab == 0,
                             onLocate = {
                                 recenterTick++
@@ -504,7 +424,7 @@ fun LandingScreen(
                     showAboutDialog = true
                 },
                 // The region picker is above the floating cards too: they fold while it is showing
-                menuOpen = menuDrawerShowing || pickerState.visible,
+                menuOpen = pickerState.visible,
                 // The dot-size slider belongs to the map, so only the Topography view has it
                 dotScale = if (homeTab == 0) pinScale else 1f,
                 legendExtra = { if (homeTab == 0) PinSizeSlider(value = pinScale, onValueChange = onPinScaleChange) }
