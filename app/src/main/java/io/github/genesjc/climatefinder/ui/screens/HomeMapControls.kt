@@ -2,9 +2,6 @@ package io.github.genesjc.climatefinder.ui.screens
 
 import androidx.compose.ui.res.stringResource
 import io.github.genesjc.climatefinder.R
-import io.github.genesjc.climatefinder.ui.components.PICKER_BUTTON_HEIGHT
-import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
-import io.github.genesjc.climatefinder.ui.components.RegionPickerState
 import androidx.compose.animation.AnimatedVisibility
 import io.github.genesjc.climatefinder.ui.components.ms
 import androidx.compose.animation.fadeIn
@@ -120,15 +117,12 @@ internal fun InfoControlButton(
 }
 
 /**
- * The row of small buttons at the map's top left. On Topography: the region picker at the left, then the north
- * indicator and, while the selected station is out of view, the locate button. On Elevation: the region picker, then a
- * Stations drop-down. [stations] is only used by the drop-down.
+ * The row of small buttons at the map's top left. On Topography: the north indicator and, while the selected station
+ * is out of view, the locate button. On Elevation: a Stations drop-down. [stations] is only used by the drop-down.
  */
 @Composable
 internal fun MapControlRow(
     onElevation: Boolean,
-    pickerState: RegionPickerState,
-    selectedRegionId: String,
     /** Topography only: shows the locate button (the selected station is out of view) and what it does when tapped. */
     showLocate: Boolean = false,
     onLocate: () -> Unit = {},
@@ -141,8 +135,6 @@ internal fun MapControlRow(
 ) {
     val blue = Color(0xFF0284C7)
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        // The region picker, where the menu button used to be
-        RegionPickerChip(state = pickerState, selectedRegionId = selectedRegionId, modifier = Modifier.height(PICKER_BUTTON_HEIGHT))
         if (onElevation) {
             StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation)
         } else {

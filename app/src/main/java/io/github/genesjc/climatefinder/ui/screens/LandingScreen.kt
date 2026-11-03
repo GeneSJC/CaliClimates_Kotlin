@@ -2,6 +2,8 @@ package io.github.genesjc.climatefinder.ui.screens
 
 import androidx.annotation.StringRes
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
+import io.github.genesjc.climatefinder.ui.components.PICKER_BUTTON_HEIGHT
+import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -340,17 +342,26 @@ fun LandingScreen(
                             verticalAlignment = Alignment.Top
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                // The region's name, a static line above the station tile (it is not part of the tile)
-                                Text(
-                                    text = stringResource(region.nameRes),
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
-                                )
+                                // The top row: the region's name, a static line centred above the station tile (it is not part
+                                // of the tile), and the region picker at the right
+                                Box(modifier = Modifier.fillMaxWidth().height(PICKER_BUTTON_HEIGHT)) {
+                                    Text(
+                                        text = stringResource(region.nameRes),
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        // Room each side for the picker, so a long name gives way before it reaches the button
+                                        modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 76.dp)
+                                    )
+                                    RegionPickerChip(
+                                        state = pickerState,
+                                        selectedRegionId = selectedRegionId,
+                                        modifier = Modifier.align(Alignment.CenterEnd).height(PICKER_BUTTON_HEIGHT)
+                                    )
+                                }
                                 // The tile fills the height it is given, so it is held to its own content's height (without this
                                 // it fills the whole map)
                                 Box(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
@@ -363,7 +374,7 @@ fun LandingScreen(
                             InfoControlButton(
                                 open = infoOpen,
                                 onClick = { if (infoOpen) closeInfo() else openInfo() },
-                                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + 44.dp)
+                                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + 40.dp)
                             )
                         }
                         // Below the tile, at the left: the menu, the north indicator and the About button
@@ -373,8 +384,6 @@ fun LandingScreen(
                             landmarkIds = stateUsa.landmarkStations[region.id] ?: emptyList(),
                             selectedStationId = selectedStationId,
                             onPickStation = onStationSelected,
-                            pickerState = pickerState,
-                            selectedRegionId = selectedRegionId,
                             showLocate = selectedOffscreen && homeTab == 0,
                             onLocate = {
                                 recenterTick++
