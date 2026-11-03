@@ -77,10 +77,45 @@ internal fun referenceStationIds(visible: List<MicroclimateStation>, selectedMet
 /** A side of the selected height with this many labels or more gets a middle reference as well. */
 internal const val MIDDLE_REFERENCE_MIN = 6
 
-/** Which stations' labels to keep showing after the band axis switches, until the chart is zoomed or touched. */
+/**
+ * Whether the tag set follows the view while the dial turns: the stations that carry tags stay the same as the viewing angle
+ * changes, and only a zoom or a touch of the chart picks them afresh. Off: only a jump of the angle (the axis switch) keeps the
+ * tags through the pivot, and a small turn lays them out afresh at every angle, so they do not pile up as the stations regroup.
+ */
+internal const val TAGS_FOLLOW_VIEW = true
+
+/** Which stations' labels to keep showing while the viewing angle changes, until the chart is zoomed or touched. */
 internal class LabelHold(var angle: Int) {
     var ids: Set<String>? = null
     var zoom = 1f
     var touch = 0L
     var lastPlaced: Set<String> = emptySet()
+
+    /**
+     * The viewing angle asked for has changed to [newAngle]: decides which labels are now held. With [followView] the labels
+     * showing are held through any turn (and the hold already running keeps its set); without it only a jump of
+     * [jumpDegrees] or more holds them, and a smaller turn lays them out afresh. The caller ends a hold when the zoom or the
+     * touch count no longer matches [zoom] and [touch] as given here.
+     */
+    fun angleChanged(
+        newAngle: Int,
+        zoom: Float,
+        touch: Long,
+        jumpDegrees: Int = AXIS_PIVOT_JUMP_DEGREES,
+        followView: Boolean = TAGS_FOLLOW_VIEW
+    ) {
+        val jump = abs(newAngle - angle) >= jumpDegrees
+        angle = newAngle
+        if (followView) {
+            if (ids == null) {
+                ids = lastPlaced
+                this.zoom = zoom
+                this.touch = touch
+            }
+        } else {
+            ids = if (jump) lastPlaced else null
+            this.zoom = zoom
+            this.touch = touch
+        }
+    }
 }
