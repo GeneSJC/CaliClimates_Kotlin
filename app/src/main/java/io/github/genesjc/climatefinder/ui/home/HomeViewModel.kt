@@ -46,6 +46,10 @@ data class HomeUiState(
     val sliderShown: Boolean = true,
     /** Whether the Region Info sheet is open; kept here so it survives a trip to the Station List. */
     val infoOpen: Boolean = false,
+    /** Whether the Region Info sheet's "More" card (the region's description) is open: kept for the app's run, so the sheet opens as it was left. */
+    val regionDetailsOpen: Boolean = false,
+    /** Whether the Region Info sheet's Terrain Legend is open: kept for the app's run, like [regionDetailsOpen]. */
+    val legendOpen: Boolean = false,
     /** The station dataset of [selectedRegionId]; null when the region has no data (Home then shows its limited-data banner). */
     val regionDataset: StationDatasetInfo? = null,
     /** True while the first region's stations are being read at start-up; Home shows a loading view until they are in. */
@@ -218,6 +222,10 @@ class HomeViewModel : AppBaseViewModel() {
     fun setSliderShown(shown: Boolean) = _uiState.update { it.copy(sliderShown = shown) }
 
     fun setInfoOpen(open: Boolean) = _uiState.update { it.copy(infoOpen = open) }
+
+    fun setRegionDetailsOpen(open: Boolean) = _uiState.update { it.copy(regionDetailsOpen = open) }
+
+    fun setLegendOpen(open: Boolean) = _uiState.update { it.copy(legendOpen = open) }
 
     private companion object {
         const val ZOOM_SAVE_DELAY_MS = 500L

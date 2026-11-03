@@ -102,6 +102,11 @@ fun LandingScreen(
     onNavigateTo: (AppScreen) -> Unit,
     infoOpen: Boolean,
     onInfoOpenChange: (Boolean) -> Unit,
+    /** Whether the Region Info sheet's "More" card and its Terrain Legend are open, kept by the caller so the sheet opens as it was left. */
+    regionDetailsOpen: Boolean,
+    onRegionDetailsOpenChange: (Boolean) -> Unit,
+    legendOpen: Boolean,
+    onLegendOpenChange: (Boolean) -> Unit,
     homeTab: Int,
     onHomeTabChange: (Int) -> Unit,
     selectedStationId: String?,
@@ -463,6 +468,10 @@ fun LandingScreen(
 
         InfoSideSheet(reveal = infoReveal, topPx = sheetTopPx, onOpen = openInfo, onClose = closeInfo) {
             RegionInfoContent(
+                regionDetailsOpen = regionDetailsOpen,
+                onRegionDetailsOpenChange = onRegionDetailsOpenChange,
+                legendOpen = legendOpen,
+                onLegendOpenChange = onLegendOpenChange,
                 noReadingIds = noReadingIds,
                 region = region,
                 hasStationData = hasStationData,

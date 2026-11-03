@@ -251,14 +251,16 @@ fun TerrainLegendCard(
     dotScale: Float = 1f,
     extra: (@Composable () -> Unit)? = null,
     /** The stations known to have no reading right now (see [TerrainLegend]). */
-    noReadingIds: Set<String> = emptySet()
+    noReadingIds: Set<String> = emptySet(),
+    /** Whether the card is open, and how to change that: held by the caller, so it can be kept when the card leaves the screen. */
+    open: Boolean,
+    onOpenChange: (Boolean) -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = containerColor,
         modifier = modifier.fillMaxWidth()
     ) {
-        var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
         Column(
             modifier = Modifier
                 .animateContentSize()
@@ -271,7 +273,7 @@ fun TerrainLegendCard(
                     .clickable(
                         onClickLabel = stringResource(if (open) R.string.legend_fold else R.string.legend_open),
                         role = androidx.compose.ui.semantics.Role.Button
-                    ) { open = !open },
+                    ) { onOpenChange(!open) },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
