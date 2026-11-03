@@ -333,8 +333,8 @@ fun LandingScreen(
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
-                                // More room under the tile than around it (4dp at the sides and top, 7dp under: 75 percent more)
-                                .padding(start = 4.dp, top = 4.dp, end = 4.dp, bottom = 7.dp)
+                                // More room under the tile than around it (4dp at the sides and top, 14dp under)
+                                .padding(start = 4.dp, top = 4.dp, end = 4.dp, bottom = 14.dp)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
