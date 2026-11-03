@@ -86,6 +86,8 @@ fun StationMapScreen(
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     // The region's terrain picture, loaded off the main thread; the map shows a plain base until it arrives
     val terrain by remember(dataset.regionId) { viewModel.terrain(dataset.regionId) }.collectAsStateWithLifecycle()
+    // Stations known to have no reading, drawn as rings
+    val noReadingIds by viewModel.noReadingIds.collectAsStateWithLifecycle()
     // Keyed to the data, so a region change starts from that region's first station and not the old region's id
     var localSelectedId by remember(stations) { mutableStateOf(stations.firstOrNull()?.id) }
     val selectedStationId = stations.firstOrNull { it.id == sharedSelectedStationId }?.id ?: localSelectedId
@@ -237,6 +239,7 @@ fun StationMapScreen(
                     recenterTick = recenterTick,
                     sliderShownShared = sliderShownShared,
                     onSliderShownChange = onSliderShownChange,
+                    noReadingIds = noReadingIds,
                     onSelectStation = {
                     localSelectedId = it.id
                     onStationSelected?.invoke(it.id)
