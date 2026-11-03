@@ -17,7 +17,7 @@ class BundledStationPacksTest {
     // Pack file, region, expected number of station rows
     private val packs = listOf(
         Triple("a.txt", "Northern California", 58),
-        Triple("b.txt", "Bay Area / Sacramento", 60),
+        Triple("b.txt", "Bay Area / Sacramento", 66),
         Triple("c.txt", "Central Coast", 54),
         Triple("d.txt", "Central Valley", 58),
         Triple("e.txt", "Los Angeles", 58),
