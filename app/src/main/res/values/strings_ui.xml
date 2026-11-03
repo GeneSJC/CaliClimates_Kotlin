@@ -42,11 +42,12 @@
     <string name="zoom_font_caption">FONT</string>
 
     <!-- Menu -->
-    <string name="menu_demos">Demos &amp; Previews</string>
-    <string name="menu_dark_mode">Dark mode</string>
     <string name="menu_about">About</string>
 
     <!-- Terrain legend -->
+    <string name="tags_toggle_label">Tags</string>
+    <string name="tags_follow_on">Tags stay put while the dial turns</string>
+    <string name="tags_follow_off">Tags are picked again as the dial turns</string>
     <string name="legend_title">Terrain Legend</string>
     <string name="legend_item_count">%1$s %2$d</string>
     <string name="legend_no_reading">Ring: no reading right now</string>
@@ -68,7 +69,6 @@
     <string name="tab_topography">Map</string>
     <string name="limited_data_title">Limited station data</string>
     <string name="no_data_title">No station data loaded</string>
-    <string name="region_info_link">« Info</string>
 
     <!-- Station map -->
     <string name="map_dot_size">Dot size</string>

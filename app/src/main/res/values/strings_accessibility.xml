@@ -20,6 +20,7 @@
     <string name="map_locate_selected">Show the selected station</string>
 
     <!-- Terrain legend -->
+    <string name="tags_toggle_action">Switch how tags behave while the dial turns</string>
     <string name="legend_show">Show the Terrain Legend</string>
     <string name="legend_hide">Hide the Terrain Legend</string>
     <string name="legend_fold">Fold the Terrain Legend</string>

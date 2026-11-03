@@ -341,18 +341,11 @@ internal fun ElevationProfileCanvas(
             easePanTo(pan, centringPan(bx, by), BRING_INTO_VIEW_MS, touchedAt) { pan = it }
         }
 
-        // When the band axis switches, the labels that were showing stay showing, now at their stations' new places,
-        // until the chart is zoomed or touched; then the labels are chosen afresh and fade in and out as usual
+        // When the viewing angle changes, the labels that were showing can stay showing, now at their stations' new places,
+        // until the chart is zoomed or touched; then the labels are chosen afresh and fade in and out as usual (see [LabelHold])
         val labelHold = remember(sorted) { LabelHold(bandAngle) }
-        if (labelHold.angle != bandAngle) {
-            // A jump (the axis switch) keeps the labels as they were through the pivot; a small move (the angle slider)
-            // lays them out afresh at every angle, so they do not pile up as the stations regroup
-            val jump = abs(bandAngle - labelHold.angle) >= AXIS_PIVOT_JUMP_DEGREES
-            labelHold.angle = bandAngle
-            labelHold.ids = if (jump) labelHold.lastPlaced else null
-            labelHold.zoom = zoom
-            labelHold.touch = touchedAt[0]
-        }
+        var tagsFollowView by remember { mutableStateOf(TAGS_FOLLOW_VIEW) }  // the switch in the key bar changes it
+        if (labelHold.angle != bandAngle) labelHold.angleChanged(bandAngle, zoom, touchedAt[0], followView = tagsFollowView)
         // Ended by a pinch, a drag or any change of zoom, but not by the chart easing itself over (the pivot re-centres it)
         if (labelHold.ids != null && (zoom != labelHold.zoom || touchedAt[0] != labelHold.touch)) labelHold.ids = null
         val held = labelHold.ids
@@ -566,7 +559,9 @@ internal fun ElevationProfileCanvas(
             onToggleLayers = onToggleLayers,
             notice = notice,
             widthDp = widthDp,
-            layersButtonTop = layersButtonTop
+            layersButtonTop = layersButtonTop,
+            tagsFollowView = tagsFollowView,
+            onToggleTags = { tagsFollowView = !tagsFollowView; labelHold.ids = null }
         )
 
         // Floating zoom slider on the right edge, where the Topography map has it

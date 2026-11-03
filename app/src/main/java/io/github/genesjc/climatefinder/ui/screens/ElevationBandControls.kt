@@ -40,8 +40,13 @@ internal fun BoxScope.ElevationBandControls(
     onToggleLayers: () -> Unit,
     notice: String?,
     widthDp: Dp,
-    layersButtonTop: Dp
+    layersButtonTop: Dp,
+    /** How the tags behave while the dial turns (see [TAGS_FOLLOW_VIEW]), and how to switch it; the switch is the key bar's first segment. */
+    tagsFollowView: Boolean,
+    onToggleTags: () -> Unit
 ) {
+    val tagsToast = rememberTagsToast()
+    TagsToast(tagsToast)
     LayerLegend(
         angle = angleShown,
         showReading = layersOn,
@@ -49,7 +54,8 @@ internal fun BoxScope.ElevationBandControls(
         hasStations = hasStations,
         alpha = 1f,
         onPick = onPick,
-        modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp)
+        modifier = Modifier.align(Alignment.BottomEnd).padding(end = LEGEND_MARGIN_DP.dp, bottom = LEGEND_MARGIN_DP.dp),
+        leading = { TagsSwitch(tagsFollowView, tagsToast, onToggleTags) }
     )
     if (layersOn) {
         BandCompass(
