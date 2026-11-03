@@ -71,7 +71,7 @@ internal fun ElevationSkyBadge(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = currentStation?.name?.let { if (it.length > 26) it.take(25) + "\u2026" else it } ?: "",
+                        text = currentStation?.displayName?.let { if (it.length > 26) it.take(25) + "\u2026" else it } ?: "",
                         fontSize = ms(9f),
                         fontWeight = FontWeight.Medium,
                         color = Color.White.copy(alpha = 0.9f),

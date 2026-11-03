@@ -13,7 +13,8 @@ fun testStation(
     reportsTemp: Boolean? = null,
     isFeatured: Boolean = false,
     latitude: Double = 38.5,
-    longitude: Double = -121.5
+    longitude: Double = -121.5,
+    town: String? = null
 ) = MicroclimateStation(
     id = id,
     name = name,
@@ -31,7 +32,8 @@ fun testStation(
     ),
     microclimateNote = "Test",
     reportsTemp = reportsTemp,
-    isFeatured = isFeatured
+    isFeatured = isFeatured,
+    town = town
 )
 
 /** Live readings over a fake source (every fetch answers Failed and is recorded) and a clock that stands still. */

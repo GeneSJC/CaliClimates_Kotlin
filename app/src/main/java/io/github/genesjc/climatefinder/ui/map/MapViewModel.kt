@@ -73,6 +73,6 @@ open class MapViewModel : AppBaseViewModel() {
     /** The station's live reading for its card, null while it is being checked. Ask once per card shown. */
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 
-    /** The name a station goes by on the maps' labels. */
+    /** The name a station goes by on the maps' labels: its town when the state has one on record, else its own name cleaned up. */
     fun cityName(station: MicroclimateStation): String = towns.cleanCityName(station.id, station.name)
 }

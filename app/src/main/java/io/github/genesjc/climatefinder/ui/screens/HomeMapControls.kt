@@ -184,11 +184,11 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, landmarkIds: L
     var open by remember { mutableStateOf(false) }
     val ink = Color(0xFF334155)
     val landmarks = remember(stations, landmarkIds) { landmarkIds.mapNotNull { id -> stations.firstOrNull { it.id == id } } }
-    val rest = remember(stations, landmarks) { stations.filter { it !in landmarks }.sortedBy { it.name.lowercase() } }
+    val rest = remember(stations, landmarks) { stations.filter { it !in landmarks }.sortedBy { it.displayName.lowercase() } }
     var query by remember { mutableStateOf("") }
     val q = query.trim()
-    val landmarkMatches = remember(landmarks, query) { if (q.isEmpty()) landmarks else landmarks.filter { it.name.contains(q, ignoreCase = true) } }
-    val restMatches = remember(rest, query) { if (q.isEmpty()) rest else rest.filter { it.name.contains(q, ignoreCase = true) } }
+    val landmarkMatches = remember(landmarks, query) { if (q.isEmpty()) landmarks else landmarks.filter { it.displayName.contains(q, ignoreCase = true) } }
+    val restMatches = remember(rest, query) { if (q.isEmpty()) rest else rest.filter { it.displayName.contains(q, ignoreCase = true) } }
     val matches = landmarkMatches + restMatches
     Box {
         // The same type as the Topography / Elevation buttons
@@ -291,7 +291,7 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, landmarkIds: L
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = station.name,
+                                text = station.displayName,
                                 fontSize = ms(9f),
                                 fontWeight = if (current) FontWeight.Bold else FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
