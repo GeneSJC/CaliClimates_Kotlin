@@ -49,11 +49,7 @@ class MainActivity : ComponentActivity() {
                             // dark on light and light on dark
                             contentColor = MaterialTheme.colorScheme.onBackground
                         ) {
-                            AppNavigation(
-                                darkMode = darkMode,
-                                onDarkModeChange = appRoot::setDarkMode,
-                                homeViewModel = homeViewModel
-                            )
+                            AppNavigation(homeViewModel = homeViewModel)
                         }
                     }
                     if (showIntro) {

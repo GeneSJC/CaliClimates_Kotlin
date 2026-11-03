@@ -8,7 +8,6 @@ import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
@@ -124,8 +123,6 @@ fun LandingScreen(
     readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>,
     /** The stations known to have no reading right now, for the legend's ring count. */
     noReadingIds: Set<String> = emptySet(),
-    darkMode: Boolean,
-    onDarkModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val stateUsa = LocalStateUsa.current

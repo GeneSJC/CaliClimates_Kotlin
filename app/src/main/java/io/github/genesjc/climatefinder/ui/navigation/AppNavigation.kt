@@ -24,8 +24,6 @@ import androidx.compose.runtime.getValue
 
 @Composable
 fun AppNavigation(
-    darkMode: Boolean,
-    onDarkModeChange: (Boolean) -> Unit,
     homeViewModel: HomeViewModel,
     navigation: NavigationViewModel = viewModel()
 ) {
@@ -105,8 +103,6 @@ fun AppNavigation(
                 stationsForRegion = homeViewModel::stations,
                 readingFor = homeViewModel::reading,
                 noReadingIds = noReadingIds,
-                darkMode = darkMode,
-                onDarkModeChange = onDarkModeChange
             )
         }
         AppScreen.STATION_LIST -> {
