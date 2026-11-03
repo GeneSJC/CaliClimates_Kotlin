@@ -22,7 +22,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -103,6 +102,11 @@ fun LandingScreen(
     onNavigateTo: (AppScreen) -> Unit,
     infoOpen: Boolean,
     onInfoOpenChange: (Boolean) -> Unit,
+    /** Whether the Region Info sheet's "More" card and its Terrain Legend are open, kept by the caller so the sheet opens as it was left. */
+    regionDetailsOpen: Boolean,
+    onRegionDetailsOpenChange: (Boolean) -> Unit,
+    legendOpen: Boolean,
+    onLegendOpenChange: (Boolean) -> Unit,
     homeTab: Int,
     onHomeTabChange: (Int) -> Unit,
     selectedStationId: String?,
@@ -118,6 +122,8 @@ fun LandingScreen(
     stationsForRegion: (String) -> List<MicroclimateStation>,
     /** The live reading of a station, for its tile and card; null while it is being checked. */
     readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>,
+    /** The stations known to have no reading right now, for the legend's ring count. */
+    noReadingIds: Set<String> = emptySet(),
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
@@ -144,13 +150,10 @@ fun LandingScreen(
     var mapTopPx by remember { mutableStateOf(0f) }
     // The Topography / Elevation buttons' height (it follows the text size), measured
     val mapDensity = LocalDensity.current
-    // On the Elevation view the map grows out into the page margins (west, east and south; never up), so the water
-    // reaches the screen edges; eased both ways when switching views
-    val expandT by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (homeTab == 1) 1f else 0f,
-        animationSpec = tween(380, easing = FastOutSlowInEasing),
-        label = "mapExpand"
-    )
+    // Both views fill the screen: the map grows out into the page margins (west, east and south) and has no outline or rounded
+    // corners. The views use the same value for the geometry the expanded Elevation view always had; it is no longer eased
+    // when switching views because there is nothing to ease
+    val expandT = 1f
     // Reported by the Topography map: is the selected station out of view; and a counter the locate button bumps
     var selectedOffscreen by remember { mutableStateOf(false) }
     var recenterTick by remember { mutableStateOf(0) }
@@ -184,12 +187,13 @@ fun LandingScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(start = 5.dp, end = 5.dp, top = 14.dp),
+                .padding(start = 5.dp, end = 5.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             // The region name bar is parked for now (the station tile takes the top); the region picker is in the station row
             // A region with no station data has no map or tile, so the bar stays there: it is the only way to change region
             if (SHOW_REGION_BAR || dataset == null) {
+                Spacer(modifier = Modifier.height(14.dp))
                 HomeRegionBar(region = region, regionOptions = regionOptions, selectedRegionId = selectedRegionId, pickerState = pickerState, onSelectRegion = onSelectRegion)
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -331,21 +335,30 @@ fun LandingScreen(
                         var folderTabHeight by remember { mutableStateOf(0f) }
                         // The folder is the green the map shows beyond its terrain, so the header and the map under it read as one
                         // piece of paper with a tab; the space right of the tab is left open
-                        val folderFill = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background
-                        val folderBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+                        // The folder fades down: sharper at the tab (FOLDER_OPACITY_TOP) and more see-through toward the bottom
+                        // (FOLDER_OPACITY_BOTTOM), so the terrain shows more below; the outline fades the same way, to nothing at the
+                        // bottom, so the folder has no bottom edge
+                        val folderBase = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background
+                        val folderFillTop = folderBase.copy(alpha = FOLDER_OPACITY_TOP)
+                        val folderFillBottom = folderBase.copy(alpha = FOLDER_OPACITY_BOTTOM)
+                        val folderBorderTop = MaterialTheme.colorScheme.primary.copy(alpha = FOLDER_OUTLINE_TOP)
+                        val folderBorderBottom = MaterialTheme.colorScheme.primary.copy(alpha = FOLDER_OUTLINE_BOTTOM)
                         // The selected station as a tile across the top of the map (it grows into the full card)
                         Row(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .fillMaxWidth()
-                                .padding(start = 6.dp, end = 6.dp, top = 5.dp)
+                                // More room round the folder now that the map reaches the screen edges: 16dp at the sides (11 here and 5 from the page margin), 12dp above
+                                .padding(start = 11.dp, end = 11.dp, top = 12.dp)
                                 // The header is drawn as a folder: the region's name on the tab at the top left, the station tile and
                                 // the picker in the body, and the space right of the tab open to the map (the Map and Profile buttons
                                 // sit there). A draw, not a clip, so the card that opens from the tile is never cut off
                                 .drawBehind {
                                     drawFolderTab(
-                                        fill = folderFill,
-                                        border = folderBorder,
+                                        fillTop = folderFillTop,
+                                        fillBottom = folderFillBottom,
+                                        borderTop = folderBorderTop,
+                                        borderBottom = folderBorderBottom,
                                         tabWidth = folderTabWidth,
                                         tabHeight = folderTabHeight,
                                         radius = 10.dp.toPx(),
@@ -355,8 +368,8 @@ fun LandingScreen(
                                 }
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
-                                // 4dp at the sides, a little under the tile (5dp: 70 percent less than before); the room above is the first line's
-                                .padding(start = 4.dp, top = 0.dp, end = 4.dp, bottom = 5.dp)
+                                // 10dp at the sides (more room for the station tile and the picker), a little under the tile (5dp); the room above is the first line's
+                                .padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 5.dp)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
@@ -455,6 +468,11 @@ fun LandingScreen(
 
         InfoSideSheet(reveal = infoReveal, topPx = sheetTopPx, onOpen = openInfo, onClose = closeInfo) {
             RegionInfoContent(
+                regionDetailsOpen = regionDetailsOpen,
+                onRegionDetailsOpenChange = onRegionDetailsOpenChange,
+                legendOpen = legendOpen,
+                onLegendOpenChange = onLegendOpenChange,
+                noReadingIds = noReadingIds,
                 region = region,
                 hasStationData = hasStationData,
                 stations = snapshotStations,
@@ -507,3 +525,11 @@ fun LandingScreen(
         AboutDialog(appName = appName, buildLabel = buildLabel, onClose = { showAboutDialog = false })
     }
 }
+
+/** How opaque the folder header is at its top (the tab) and its bottom: 1 is solid, lower lets the terrain behind show. */
+private const val FOLDER_OPACITY_TOP = 0.94f
+private const val FOLDER_OPACITY_BOTTOM = 0.55f
+
+/** How strong the folder's outline is at its top and its bottom (0 is none); set the top to 0 for no outline at all. */
+private const val FOLDER_OUTLINE_TOP = 0.5f
+private const val FOLDER_OUTLINE_BOTTOM = 0f

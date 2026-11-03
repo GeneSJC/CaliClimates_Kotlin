@@ -20,6 +20,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /**
+ * Whether the backdrop shows the relief picture laid over its gradient (light mode). Off for now: the maps fill the screen,
+ * so the backdrop shows only around them. The feature is kept; true brings it back (the picture is only loaded when it is on).
+ */
+const val SHOW_RELIEF_TEXTURE = false
+
+/**
  * The backdrop behind every screen: a soft gradient with a faint glow and a light dot grid, so the
  * page is not one flat colour. Deep slate with an indigo glow in dark mode; in light mode a warm coral-yellow-coral wash: coral in the bottom left and top right corners, yellow across the middle.
  */
@@ -73,7 +79,7 @@ fun AppBackground(
                 val dotColor = (if (darkTheme) Color.White else Color(0xFF475569)).copy(alpha = if (darkTheme) 0.06f else 0.10f)
                 val step = 18.dp.toPx()
                 val dot = 1.1.dp.toPx()
-                val tex = if (darkTheme) null else texture
+                val tex = if (darkTheme || !SHOW_RELIEF_TEXTURE) null else texture
                 onDrawBehind {
                     drawRect(base)
                     drawRect(glowA)

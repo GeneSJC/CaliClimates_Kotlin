@@ -80,6 +80,8 @@ fun TerrainLegend(
     stations: List<MicroclimateStation>,
     modifier: Modifier = Modifier,
     extra: (@Composable () -> Unit)? = null,
+    /** The stations known to have no reading right now; with the ones the data says cannot report, they are the ring's count. */
+    noReadingIds: Set<String> = emptySet(),
     headerFontSize: TextUnit = 17.6.sp,
     /** When set, the panel grows to this width (Home gives it the full row); else to the header's width. */
     expandedWidthPx: Int = 0,
@@ -182,7 +184,7 @@ fun TerrainLegend(
                             )
                         }
                         Column(modifier = Modifier.graphicsLayer { alpha = ((p - 0.25f) / 0.5f).coerceIn(0f, 1f) }) {
-                            LegendBody(stations, extra)
+                            LegendBody(stations, extra, noReadingIds = noReadingIds)
                         }
                     }
                     }
@@ -195,7 +197,17 @@ fun TerrainLegend(
 /** The colour key: the terrain types the region has with counts, the rule for "ridge / highland", and [extra]. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LegendBody(stations: List<MicroclimateStation>, extra: (@Composable () -> Unit)?, dotScale: Float? = null) {
+private fun LegendBody(
+    stations: List<MicroclimateStation>,
+    extra: (@Composable () -> Unit)?,
+    dotScale: Float? = null,
+    noReadingIds: Set<String> = emptySet()
+) {
+    // The dots drawn as rings: stations with no reading right now, and stations the data says cannot report
+    val ringCount = stations.count { !it.canHaveLiveReading || it.id in noReadingIds }
+    val ringLabel = stringResource(R.string.legend_no_reading).let { words ->
+        if (ringCount > 0) stringResource(R.string.legend_item_count, words, ringCount) else words
+    }
     Column {
         FlowRow(
             modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
@@ -210,6 +222,14 @@ private fun LegendBody(stations: List<MicroclimateStation>, extra: (@Composable 
                         // With the Dot size setting in play, the dot gets a fixed slot (the biggest dot, 2.5x) so the text stays put
                         dotSlot = if (dotScale != null) 8.dp * 2.5f else 8.dp)
                 }
+            // A ring on the map: the station has no reading right now (any terrain colour)
+            LegendItem(
+                color = legendColor(TerrainType.URBAN_CANYON),
+                label = ringLabel,
+                dotScale = dotScale ?: 1f,
+                dotSlot = if (dotScale != null) 8.dp * 2.5f else 8.dp,
+                ring = true
+            )
         }
         Text(
             text = stringResource(R.string.legend_ridge_rule),
@@ -229,14 +249,18 @@ fun TerrainLegendCard(
     modifier: Modifier = Modifier,
     /** The Dot size setting; the legend's dots grow with it. */
     dotScale: Float = 1f,
-    extra: (@Composable () -> Unit)? = null
+    extra: (@Composable () -> Unit)? = null,
+    /** The stations known to have no reading right now (see [TerrainLegend]). */
+    noReadingIds: Set<String> = emptySet(),
+    /** Whether the card is open, and how to change that: held by the caller, so it can be kept when the card leaves the screen. */
+    open: Boolean,
+    onOpenChange: (Boolean) -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = containerColor,
         modifier = modifier.fillMaxWidth()
     ) {
-        var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
         Column(
             modifier = Modifier
                 .animateContentSize()
@@ -249,7 +273,7 @@ fun TerrainLegendCard(
                     .clickable(
                         onClickLabel = stringResource(if (open) R.string.legend_fold else R.string.legend_open),
                         role = androidx.compose.ui.semantics.Role.Button
-                    ) { open = !open },
+                    ) { onOpenChange(!open) },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -268,7 +292,7 @@ fun TerrainLegendCard(
             }
             if (open) {
                 Spacer(modifier = Modifier.height(4.dp))
-                LegendBody(stations, extra, dotScale)
+                LegendBody(stations, extra, dotScale, noReadingIds)
             }
         }
     }

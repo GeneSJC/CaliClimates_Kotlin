@@ -49,6 +49,7 @@
     <!-- Terrain legend -->
     <string name="legend_title">Terrain Legend</string>
     <string name="legend_item_count">%1$s %2$d</string>
+    <string name="legend_no_reading">Ring: no reading right now</string>
 
     <!-- Stations dropdown -->
     <string name="stations_title">Stations</string>

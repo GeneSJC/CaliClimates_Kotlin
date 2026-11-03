@@ -36,4 +36,11 @@ class ReadingCache(private val now: () -> Long = { System.currentTimeMillis() })
     /** A station's result as an observable value: null until one is stored, then each change. */
     fun changes(stationId: String): Flow<ObservationResult?> =
         entries.map { it[stationId]?.result }.distinctUntilChanged()
+
+    /**
+     * The ids of the stations whose latest result is [ObservationResult.NoReading] (it answered, with nothing usable), as an
+     * observable set. A failed request is not one: it is temporary, and the station may well have a reading next time.
+     */
+    fun idsWithNoReading(): Flow<Set<String>> =
+        entries.map { all -> all.filterValues { it.result is ObservationResult.NoReading }.keys.toSet() }.distinctUntilChanged()
 }

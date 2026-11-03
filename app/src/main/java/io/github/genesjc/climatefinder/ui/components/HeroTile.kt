@@ -62,16 +62,20 @@ fun HeroTile(
     passThrough: Boolean = false,
     /** True: the panel folds if open and the tile does not open it (something above it is showing). */
     forceClosed: Boolean = false,
+    /** Whether the panel is open when the tile first shows (or its [resetKey] changes): for a caller that keeps the state. */
+    initialOpen: Boolean = false,
+    /** Told when the panel opens and when it has folded back, so the caller can keep the state. */
+    onOpenChange: ((Boolean) -> Unit)? = null,
     /** The collapsed tile's corner radius; the open panel rounds out to 16dp as it grows. */
     tileCornerRadius: androidx.compose.ui.unit.Dp = 16.dp,
     tile: @Composable () -> Unit,
     /** The open panel's content; it is given a way to fold the panel back. */
     panel: @Composable (close: () -> Unit) -> Unit
 ) {
-    var open by remember(resetKey) { mutableStateOf(false) }
+    var open by remember(resetKey) { mutableStateOf(initialOpen) }
     var cardWidthPx by remember { mutableStateOf(0) }
     var cardHeightPx by remember { mutableStateOf(0) }
-    val reveal = remember { Animatable(0f) }
+    val reveal = remember(resetKey) { Animatable(if (initialOpen) 1f else 0f) }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val shape = RoundedCornerShape(tileCornerRadius)
@@ -79,12 +83,14 @@ fun HeroTile(
     fun openPanel() {
         if (forceClosed) return
         open = true
+        onOpenChange?.invoke(true)
         scope.launch { reveal.animateTo(1f, tween(HERO_OPEN_MS, easing = FastOutSlowInEasing)) }
     }
     fun closePanel() {
         scope.launch {
             reveal.animateTo(0f, tween(HERO_CLOSE_MS, easing = FastOutSlowInEasing))
             open = false
+            onOpenChange?.invoke(false)
         }
     }
 

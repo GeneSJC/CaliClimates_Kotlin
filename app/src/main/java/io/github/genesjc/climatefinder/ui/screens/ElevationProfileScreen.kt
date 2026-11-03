@@ -98,6 +98,8 @@ fun ElevationProfileScreen(
 
     // The region's terrain picture (the one the Topography map draws), used as a faint texture in the ground
     val terrain by remember(dataset.regionId) { viewModel.terrain(dataset.regionId) }.collectAsStateWithLifecycle()
+    // Stations known to have no reading, for the legend's ring count
+    val noReadingIds by viewModel.noReadingIds.collectAsStateWithLifecycle()
 
     // The region's real skylines, for the distant ranges
     val skyline by remember(dataset.regionId) { viewModel.skyline(dataset.regionId) }.collectAsStateWithLifecycle()
@@ -201,12 +203,12 @@ fun ElevationProfileScreen(
         // Elevation chart, with its Expand / Shrink toggle
         Box(modifier = Modifier.fillMaxWidth().height(chartHeight)) {
             Surface(
-                // The bottom corners square off as the chart grows out to the screen edges
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp * (1f - expandT), bottomEnd = 16.dp * (1f - expandT)),
+                // All four corners square off, and the outline goes, as the chart grows out to the screen edges
+                shape = RoundedCornerShape(topStart = 16.dp * (1f - expandT), topEnd = 16.dp * (1f - expandT), bottomStart = 16.dp * (1f - expandT), bottomEnd = 16.dp * (1f - expandT)),
                 // An opaque base (the old tint, laid over the page colour) so the backdrop's relief does not show through the chart
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f).compositeOver(MaterialTheme.colorScheme.background),
                 // A 1dp outline, for a crisper edge
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                border = if (expandT >= 1f) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.fillMaxSize()
             ) {
                 ElevationProfileCanvas(
@@ -258,7 +260,7 @@ fun ElevationProfileScreen(
 
         // Terrain legend: one line until opened, then this region's terrain types with counts.
         // Embedded, Home shows it beside the Region Info link.
-        if (!embedded) TerrainLegend(stations = stations)
+        if (!embedded) TerrainLegend(stations = stations, noReadingIds = noReadingIds)
 
         // The selected station card; embedded, Home shows it above the tabs
         if (!embedded) {

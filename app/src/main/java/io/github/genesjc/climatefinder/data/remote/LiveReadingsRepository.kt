@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -46,6 +47,9 @@ class LiveReadingsRepository(
     private val gate = Semaphore(CONCURRENT_REQUESTS)
     private val flows = ConcurrentHashMap<String, StateFlow<ObservationResult?>>()
     private var visit: Job? = null
+
+    /** The stations that answered with no usable reading, as an observable set (see [ReadingCache.idsWithNoReading]). */
+    fun noReadingIds(): Flow<Set<String>> = cache.idsWithNoReading()
 
     /** Latest known result for a station without fetching; null if never fetched. */
     fun peek(stationId: String): ObservationResult? = cache.peek(stationId)

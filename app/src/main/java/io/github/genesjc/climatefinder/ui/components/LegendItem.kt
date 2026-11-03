@@ -22,14 +22,16 @@ import androidx.compose.ui.unit.sp
  * (Sacramento Topographical Map, Elevation Profile).
  */
 @Composable
-fun LegendItem(color: Color, label: String, dotScale: Float = 1f, dotSlot: Dp = 8.dp) {
+fun LegendItem(color: Color, label: String, dotScale: Float = 1f, dotSlot: Dp = 8.dp, ring: Boolean = false) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         // The dot follows the Dot size setting, so the legend shows what the slider does to the map's dots. It sits
         // centred in a fixed slot (as big as the biggest dot), so the label never moves as the dot grows
         Box(modifier = Modifier.size(dotSlot), contentAlignment = Alignment.Center) {
             Surface(
                 shape = CircleShape,
-                color = color,
+                // A ring (no reading) is a white centre with the colour round it, like the map's hollow dots
+                color = if (ring) Color.White else color,
+                border = if (ring) androidx.compose.foundation.BorderStroke(2.dp, color) else null,
                 modifier = Modifier.size(8.dp * dotScale)
             ) {}
         }

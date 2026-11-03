@@ -11,7 +11,9 @@ import io.github.genesjc.climatefinder.domain.model.ObservationResult
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.ui.common.AppBaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
 
@@ -58,6 +60,14 @@ open class MapViewModel : AppBaseViewModel() {
             terrainFlows[regionId] = flow
             viewModelScope.launch { flow.value = terrains.terrain(regionId) }
         }
+    }
+
+    /**
+     * The stations known to have no reading right now (they answered with nothing usable), for the maps' dots. It is kept
+     * from the readings the app already fetches, so watching it asks for nothing more.
+     */
+    val noReadingIds: StateFlow<Set<String>> by lazy {
+        readings.noReadingIds().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
     }
 
     /** The station's live reading for its card, null while it is being checked. Ask once per card shown. */

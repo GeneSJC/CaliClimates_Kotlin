@@ -1,6 +1,7 @@
 package io.github.genesjc.climatefinder.ui.components
 
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -32,10 +33,15 @@ fun folderTabPath(size: Size, tabWidth: Float, tabHeight: Float, radius: Float, 
     }
 }
 
-/** Fills and outlines [folderTabPath] over the whole of the draw area. */
+/**
+ * Fills and outlines [folderTabPath] over the whole of the draw area, each fading from its top colour to its bottom colour
+ * down the folder: the colours carry the opacity, so a lower alpha at the bottom lets more of what is behind show.
+ */
 fun DrawScope.drawFolderTab(
-    fill: Color,
-    border: Color,
+    fillTop: Color,
+    fillBottom: Color,
+    borderTop: Color,
+    borderBottom: Color,
     tabWidth: Float,
     tabHeight: Float,
     radius: Float,
@@ -43,6 +49,10 @@ fun DrawScope.drawFolderTab(
     borderWidth: Float
 ) {
     val path = folderTabPath(size, tabWidth, tabHeight, radius, join)
-    drawPath(path, color = fill)
-    drawPath(path, color = border, style = Stroke(width = borderWidth))
+    drawPath(path, brush = Brush.verticalGradient(listOf(fillTop, fillBottom), startY = 0f, endY = size.height))
+    drawPath(
+        path,
+        brush = Brush.verticalGradient(listOf(borderTop, borderBottom), startY = 0f, endY = size.height),
+        style = Stroke(width = borderWidth)
+    )
 }

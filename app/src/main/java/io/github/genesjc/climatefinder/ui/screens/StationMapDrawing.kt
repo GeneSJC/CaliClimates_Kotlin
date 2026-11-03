@@ -36,8 +36,11 @@ internal fun pinColor(terrain: TerrainType): Color = when (terrain) {
     TerrainType.URBAN_CANYON -> Color(0xFF475569)
 }
 
-/** One station dot; the selected one gets a halo and a ring, and is slightly larger. */
-internal fun DrawScope.drawStationPin(x: Float, y: Float, color: Color, dotScale: Float, selected: Boolean) {
+/**
+ * One station dot; the selected one gets a halo and a ring, and is slightly larger. A station with no reading
+ * ([hasReading] false) is a hollow ring in the terrain colour instead of a solid dot, so it shows before it is tapped.
+ */
+internal fun DrawScope.drawStationPin(x: Float, y: Float, color: Color, dotScale: Float, selected: Boolean, hasReading: Boolean = true) {
     if (selected) {
         drawCircle(color = color.copy(alpha = 0.35f), radius = 20f * dotScale, center = Offset(x, y))
         drawCircle(
@@ -48,7 +51,13 @@ internal fun DrawScope.drawStationPin(x: Float, y: Float, color: Color, dotScale
         )
     }
     drawCircle(color = Color.White, radius = if (selected) 9f * dotScale else 7f * dotScale, center = Offset(x, y))
-    drawCircle(color = color, radius = if (selected) 7f * dotScale else 5.5f * dotScale, center = Offset(x, y))
+    val inner = if (selected) 7f else 5.5f
+    if (hasReading) {
+        drawCircle(color = color, radius = inner * dotScale, center = Offset(x, y))
+    } else {
+        // The ring: the dot's colour around the white centre, about a third as thick as the dot is wide
+        drawCircle(color = color, radius = (inner - 1f) * dotScale, center = Offset(x, y), style = Stroke(width = 2f * dotScale))
+    }
 }
 
 // Maximum number of place labels drawn on the neutral base map

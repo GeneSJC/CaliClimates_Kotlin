@@ -117,7 +117,7 @@ private fun terrainShortNameRes(type: TerrainType): Int = when (type) {
  * full-width panel floating over the page, so nothing on the page moves.
  */
 @Composable
-private fun RegionDetailsCard(region: StateUsaRegion, fullWidthPx: Int, folded: Boolean) {
+private fun RegionDetailsCard(region: StateUsaRegion, fullWidthPx: Int, folded: Boolean, open: Boolean, onOpenChange: (Boolean) -> Unit) {
     val cardColor = sheetCardColor()
     HeroTile(
         fullWidthPx = fullWidthPx,
@@ -126,6 +126,8 @@ private fun RegionDetailsCard(region: StateUsaRegion, fullWidthPx: Int, folded: 
         openLabel = stringResource(R.string.region_show_more, stringResource(region.nameRes)),
         closeLabel = stringResource(R.string.region_show_less, stringResource(region.nameRes)),
         resetKey = region.id,
+        initialOpen = open,
+        onOpenChange = onOpenChange,
         forceClosed = folded,
         tile = { RegionDetailsTile(region) },
         panel = { RegionDetailsBody(region, expanded = true) }
@@ -238,7 +240,14 @@ internal fun RegionInfoContent(
     onOpenAbout: () -> Unit,
     menuOpen: Boolean,
     dotScale: Float = 1f,
-    legendExtra: (@Composable () -> Unit)? = null
+    legendExtra: (@Composable () -> Unit)? = null,
+    /** The stations known to have no reading right now, for the legend's ring count. */
+    noReadingIds: Set<String> = emptySet(),
+    /** Whether the "More" card and the Terrain Legend are open, and how to change that: held outside the sheet, which is dropped from the screen when it closes. */
+    regionDetailsOpen: Boolean,
+    onRegionDetailsOpenChange: (Boolean) -> Unit,
+    legendOpen: Boolean,
+    onLegendOpenChange: (Boolean) -> Unit
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
     Column {
@@ -313,7 +322,7 @@ internal fun RegionInfoContent(
         Column(modifier = Modifier.padding(16.dp)) {
         // The region tile, the full width of the sheet
         Box(modifier = Modifier.fillMaxWidth().onSizeChanged { topRowWidthPx = it.width }) {
-            RegionDetailsCard(region, fullWidthPx = topRowWidthPx, folded = menuOpen)
+            RegionDetailsCard(region, fullWidthPx = topRowWidthPx, folded = menuOpen, open = regionDetailsOpen, onOpenChange = onRegionDetailsOpenChange)
         }
         if (stations.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -323,7 +332,7 @@ internal fun RegionInfoContent(
             }
             // The Terrain Legend, at the bottom, folded until opened
             Spacer(modifier = Modifier.height(12.dp))
-            TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), dotScale = dotScale, extra = legendExtra)
+            TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), dotScale = dotScale, extra = legendExtra, noReadingIds = noReadingIds, open = legendOpen, onOpenChange = onLegendOpenChange)
         }
         }
         }

@@ -35,6 +35,7 @@ fun AppNavigation(
     val regionsReturnScreen by navigation.regionsReturn.collectAsStateWithLifecycle()
     // Home's state (region, map view, selected station, dot size, slider, info sheet) lives in the ViewModel
     val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    val noReadingIds by homeViewModel.noReadingIds.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val selectedRegionId = homeState.selectedRegionId
     // A click when the region changes (not when the app first opens), so the change is felt as well as seen
@@ -91,6 +92,10 @@ fun AppNavigation(
                 },
                 infoOpen = homeState.infoOpen,
                 onInfoOpenChange = homeViewModel::setInfoOpen,
+                regionDetailsOpen = homeState.regionDetailsOpen,
+                onRegionDetailsOpenChange = homeViewModel::setRegionDetailsOpen,
+                legendOpen = homeState.legendOpen,
+                onLegendOpenChange = homeViewModel::setLegendOpen,
                 homeTab = homeState.tab,
                 onHomeTabChange = homeViewModel::setTab,
                 selectedStationId = homeState.selectedStationId,
@@ -103,6 +108,7 @@ fun AppNavigation(
                 onMapZoomChange = homeViewModel::setMapZoom,
                 stationsForRegion = homeViewModel::stations,
                 readingFor = homeViewModel::reading,
+                noReadingIds = noReadingIds,
                 darkMode = darkMode,
                 onDarkModeChange = onDarkModeChange
             )

@@ -96,6 +96,8 @@ internal fun SpatialMapCanvas(
     recenterTick: Int = 0,
     sliderShownShared: Boolean? = null,
     onSliderShownChange: ((Boolean) -> Unit)? = null,
+    // The stations known to have no reading right now: their dots are rings (stations the data says cannot report are too)
+    noReadingIds: Set<String> = emptySet(),
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     val outline = LocalStateUsa.current.outline
@@ -322,7 +324,7 @@ internal fun SpatialMapCanvas(
                 val y = mapY(station.latitude)
                 // The selected station is drawn last, above the labels, by the overlay below
                 if (station.id == selectedStationId) return@forEach
-                drawStationPin(x, y, pinColor(station.terrain), dotScale, selected = false)
+                drawStationPin(x, y, pinColor(station.terrain), dotScale, selected = false, hasReading = station.canHaveLiveReading && station.id !in noReadingIds)
             }
         }
 
@@ -411,7 +413,10 @@ internal fun SpatialMapCanvas(
         // canvas takes no touches; taps fall through to the map below.
         stations.firstOrNull { it.id == selectedStationId }?.let { station ->
             Canvas(modifier = Modifier.fillMaxSize()) {
-                drawStationPin(mapX(station.longitude), mapY(station.latitude), pinColor(station.terrain), pinScale * zoomDotGrowth(zoom), selected = true)
+                drawStationPin(
+                    mapX(station.longitude), mapY(station.latitude), pinColor(station.terrain), pinScale * zoomDotGrowth(zoom), selected = true,
+                    hasReading = station.canHaveLiveReading && station.id !in noReadingIds
+                )
             }
         }
 
