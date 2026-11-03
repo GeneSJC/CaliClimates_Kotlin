@@ -3,7 +3,6 @@ package io.github.genesjc.climatefinder.ui.screens
 import androidx.annotation.StringRes
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.PICKER_BUTTON_HEIGHT
-import io.github.genesjc.climatefinder.ui.components.regionPickerColors
 import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -32,7 +31,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -59,7 +57,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -334,7 +331,7 @@ fun LandingScreen(
                                 .align(Alignment.TopStart)
                                 .fillMaxWidth()
                                 .padding(start = 6.dp, end = 6.dp, top = 5.dp)
-                                // A solid strip behind the row, in the green the map shows beyond its terrain, so they read over any map
+                                // A solid strip behind the rows, in the green the map shows beyond its terrain, so they read over any map
                                 // (a shaped background, not a clip, so the card that opens from the tile is never cut off)
                                 .background(
                                     if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background,
@@ -343,50 +340,38 @@ fun LandingScreen(
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
-                                // No margin above the row, 4dp at the sides, and 18dp under it
+                                // No margin above the rows, 4dp at the sides, and 18dp under the tile
                                 .padding(start = 4.dp, top = 0.dp, end = 4.dp, bottom = 18.dp)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
                         ) {
-                            // One row: the station tile at the left, taking all the width the region's bar leaves, and the region's bar at
-                            // the right. The tile fills the height it is given, so the row is held to its content's height (without
-                            // this the tile fills the whole map)
-                            Row(
-                                modifier = Modifier.weight(1f).height(IntrinsicSize.Min),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
-                                }
-                                // The region's bar, tinted with the region's colour: its name (two lines when it needs them) aligned
-                                // to the right, and the region picker
-                                val regionColor = regionPickerColors()[region.id] ?: MaterialTheme.colorScheme.primary
-                                val barShape = RoundedCornerShape(10.dp)
+                            Column(modifier = Modifier.weight(1f)) {
+                                // The region's name: one line, centred at the top
+                                Text(
+                                    text = stringResource(region.nameRes),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth().padding(top = 5.dp, bottom = 3.dp)
+                                )
+                                // Under it, one row: the station tile at the left, taking all the width the picker leaves, and the
+                                // region picker at the right. The tile fills the height it is given, so the row is held to its
+                                // content's height (without this the tile fills the whole map)
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .background(regionColor.copy(alpha = 0.35f).compositeOver(MaterialTheme.colorScheme.surface), barShape)
-                                        .border(1.dp, regionColor.copy(alpha = 0.7f), barShape)
-                                        .padding(start = 10.dp, end = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Text(
-                                        text = stringResource(region.nameRes),
-                                        fontSize = 15.sp,
-                                        lineHeight = 18.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.widthIn(max = 92.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                                        if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
+                                    }
                                     RegionPickerChip(
                                         state = pickerState,
                                         selectedRegionId = selectedRegionId,
-                                        modifier = Modifier.height(PICKER_BUTTON_HEIGHT)
+                                        modifier = Modifier.align(Alignment.CenterVertically).height(PICKER_BUTTON_HEIGHT)
                                     )
                                 }
                             }
