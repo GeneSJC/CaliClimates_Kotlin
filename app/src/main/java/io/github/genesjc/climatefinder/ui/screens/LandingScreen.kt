@@ -331,7 +331,9 @@ fun LandingScreen(
                         var folderTabHeight by remember { mutableStateOf(0f) }
                         // The folder is the green the map shows beyond its terrain, so the header and the map under it read as one
                         // piece of paper with a tab; the space right of the tab is left open
-                        val folderFill = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background
+                        // A little see-through (88 percent opaque, just under the buttons' 90 percent), so terrain shows faintly through
+                        val folderFill = (if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background)
+                            .copy(alpha = FOLDER_OPACITY)
                         val folderBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
                         // The selected station as a tile across the top of the map (it grows into the full card)
                         Row(
@@ -507,3 +509,6 @@ fun LandingScreen(
         AboutDialog(appName = appName, buildLabel = buildLabel, onClose = { showAboutDialog = false })
     }
 }
+
+/** How opaque the folder header is: 1 is solid; a little less lets the terrain behind it show faintly. */
+private const val FOLDER_OPACITY = 0.88f
