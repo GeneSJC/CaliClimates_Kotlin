@@ -333,7 +333,8 @@ fun LandingScreen(
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
-                                .padding(4.dp)
+                                // More room under the tile than around it (4dp at the sides and top, 7dp under: 75 percent more)
+                                .padding(start = 4.dp, top = 4.dp, end = 4.dp, bottom = 7.dp)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
@@ -342,12 +343,13 @@ fun LandingScreen(
                                 // The region's name, a static line above the station tile (it is not part of the tile)
                                 Text(
                                     text = stringResource(region.nameRes),
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, bottom = 2.dp)
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
                                 )
                                 // The tile fills the height it is given, so it is held to its own content's height (without this
                                 // it fills the whole map)
