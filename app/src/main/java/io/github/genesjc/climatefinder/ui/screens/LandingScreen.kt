@@ -399,6 +399,8 @@ fun LandingScreen(
                                         MapViewButton(label = stringResource(R.string.tab_elevation), index = 1, selected = homeTab, onSelect = onHomeTabChange)
                                     }
                                 }
+                                // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
+                                Spacer(modifier = Modifier.height(6.dp))
                                 // Under it, one row: the station tile at the left, taking all the width the picker leaves, and the
                                 // region picker at the right. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
