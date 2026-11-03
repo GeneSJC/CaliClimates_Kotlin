@@ -187,6 +187,14 @@ class HomeViewModel : AppBaseViewModel() {
 
     fun totalRegionCount(): Int = datasets.totalRegionCount()
 
+    /**
+     * The stations known to have no reading right now (they answered with nothing usable), for the Region Info legend's
+     * ring count. It is kept from the readings the app already fetches, so watching it asks for nothing more.
+     */
+    val noReadingIds: StateFlow<Set<String>> by lazy {
+        readings.noReadingIds().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+    }
+
     /** The station's live reading for its tile and card, null while it is being checked. Ask once per station shown. */
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 

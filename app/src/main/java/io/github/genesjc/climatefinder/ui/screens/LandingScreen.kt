@@ -117,6 +117,8 @@ fun LandingScreen(
     stationsForRegion: (String) -> List<MicroclimateStation>,
     /** The live reading of a station, for its tile and card; null while it is being checked. */
     readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>,
+    /** The stations known to have no reading right now, for the legend's ring count. */
+    noReadingIds: Set<String> = emptySet(),
     darkMode: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
@@ -461,6 +463,7 @@ fun LandingScreen(
 
         InfoSideSheet(reveal = infoReveal, topPx = sheetTopPx, onOpen = openInfo, onClose = closeInfo) {
             RegionInfoContent(
+                noReadingIds = noReadingIds,
                 region = region,
                 hasStationData = hasStationData,
                 stations = snapshotStations,
