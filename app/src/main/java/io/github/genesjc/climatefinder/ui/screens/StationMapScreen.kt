@@ -172,7 +172,6 @@ fun StationMapScreen(
                 station = selectedStation,
                 isSelected = true,
                 onSelect = { /* Already selected */ },
-                compact = true,
                 reading = reading
             )
         } else {

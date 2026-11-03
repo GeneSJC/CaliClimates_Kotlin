@@ -26,14 +26,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,6 +41,7 @@ import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
 import io.github.genesjc.climatefinder.ui.components.RegionPickerButton
 import io.github.genesjc.climatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.climatefinder.ui.components.rememberRegionPickerState
+import io.github.genesjc.climatefinder.ui.components.LocalCardScale
 import io.github.genesjc.climatefinder.ui.components.StationCard
 import io.github.genesjc.climatefinder.ui.stationlist.StationListViewModel
 
@@ -160,6 +160,13 @@ fun StationListScreen(
             val listState = androidx.compose.foundation.lazy.rememberLazyListState(
                 initialFirstVisibleItemIndex = state.initialIndex
             )
+            // The lowest and highest heights of the region's stations, for each card's height spectrum
+            val regionRange = remember(state.stations) {
+                if (state.stations.isEmpty()) null
+                else state.stations.minOf { it.elevationMeters } to state.stations.maxOf { it.elevationMeters }
+            }
+            // The cards are laid out as Home's, at the Station List's own text size (not the map's, which is larger)
+            CompositionLocalProvider(LocalCardScale provides LIST_CARD_SCALE) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
@@ -174,9 +181,11 @@ fun StationListScreen(
                         isSelected = station.id == state.activeStationId,
                         // Tapping a card makes it the selected station for both map views; Back returns to the map
                         onSelect = { onStationSelected(station.id) },
-                        selectedLabel = state.selectedLabel
+                        selectedLabel = state.selectedLabel,
+                        regionRangeMeters = regionRange
                     )
                 }
+            }
             }
         }
     }
@@ -187,3 +196,6 @@ fun StationListScreen(
     )
     }
 }
+
+/** The text scale of the Station List's cards: smaller than the map's, so more than one card shows at a time. */
+private const val LIST_CARD_SCALE = 1.25f

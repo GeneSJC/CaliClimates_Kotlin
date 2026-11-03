@@ -4,7 +4,6 @@ import androidx.compose.ui.res.stringResource
 import io.github.genesjc.climatefinder.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
-import androidx.compose.foundation.background
 import io.github.genesjc.climatefinder.ui.components.StationCard
 import io.github.genesjc.climatefinder.ui.components.StationSummaryTile
 import io.github.genesjc.climatefinder.ui.components.HeroTile
@@ -19,8 +18,6 @@ import io.github.genesjc.climatefinder.ui.text.elevationNoteText
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 
 /** The selected station as a half-width tile that grows into the full compact station card. */
@@ -58,7 +55,6 @@ internal fun StationHeroTile(
                 reading = reading,
                 // Tapping the card folds it back, like Less
                 onSelect = close,
-                compact = true,
                 elevationNote = elevationNoteText(station.elevationMeters, regionId),
                 // The region's lowest and highest heights, for the elevation spectrum
                 regionRangeMeters = if (regionStations.isNotEmpty()) {

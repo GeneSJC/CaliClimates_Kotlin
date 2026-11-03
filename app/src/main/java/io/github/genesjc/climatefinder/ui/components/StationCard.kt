@@ -1,9 +1,6 @@
 package io.github.genesjc.climatefinder.ui.components
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,34 +9,23 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -54,7 +40,6 @@ import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.domain.model.TerrainType
 import io.github.genesjc.climatefinder.domain.Elevation
 import io.github.genesjc.climatefinder.domain.Units
-import io.github.genesjc.climatefinder.ui.text.elevationDescribeText
 import io.github.genesjc.climatefinder.ui.text.labelRes
 import io.github.genesjc.climatefinder.ui.text.terrainDescriptionText
 
@@ -66,17 +51,15 @@ fun StationCard(
     modifier: Modifier = Modifier,
     // Demos pass true to keep the built-in sample numbers; the real app shows live NWS readings.
     useMockReadings: Boolean = false,
-    // A tighter layout for the Station Inspector under the maps: no description, one-line metrics
-    compact: Boolean = false,
-    // Compact only: the lowest and highest station heights of the region, in metres, for the elevation spectrum
+    // The lowest and highest station heights of the region, in metres, for the elevation spectrum
     regionRangeMeters: Pair<Int, Int>? = null,
-    // Compact only: what the card's Less control does; no control is shown when it is null
+    // What the card's Less control does (the open card on Home); no control is shown when it is null
     onLess: (() -> Unit)? = null,
-    // Compact only: the region's name, as a small line under the station's name
+    // The region's name, as a small line under the station's name
     regionName: String? = null,
-    // Compact only: a sentence about the height, shown under the terrain row
+    // A sentence about the height, in the note; without one the station's own note, or a line about its terrain, is shown
     elevationNote: String? = null,
-    // Full card: a short mark next to the terrain badge while the card is the selected one (the Station List)
+    // A short mark at the right of the top row while the card is the selected one (the Station List), when there is no Less control
     selectedLabel: String? = null,
     // The station's live reading, from its ViewModel; null while it is being checked
     reading: ObservationResult? = null
@@ -106,117 +89,16 @@ fun StationCard(
         // The card is the plain surface colour, selected or not (white in the light look); the selection shows in the border
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        if (compact) CompactStationBody(station, terrainBadgeColor, display, regionRangeMeters, onLess, elevationNote, regionName) else Column(modifier = Modifier.padding(16.dp)) {
-            // Header row: the badge (and the selected mark) at the left take the room they need; the elevation text takes
-            // what is left and aligns to the right, wrapping inside its own space, so the two never overlap
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = terrainBadgeColor.copy(alpha = 0.14f)
-                    ) {
-                        Text(
-                            text = stringResource(station.terrain.labelRes),
-                            color = terrainBadgeColor,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                    if (isSelected && selectedLabel != null) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "\u2713 $selectedLabel",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1
-                        )
-                    }
-                }
-
-                Text(
-                    text = elevationDescribeText(station.elevationMeters),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                    modifier = Modifier.weight(1f).padding(start = 8.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Station Title & Dual Temperature Readings
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = station.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = station.microclimateNote ?: terrainDescriptionText(station.terrain, station.elevationMeters),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2
-                    )
-                }
-
-                Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "—",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = display.tempC?.let { stringResource(R.string.reading_temp_c, it) }
-                            ?: display.status?.fullText().orEmpty(),
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Microclimate Metric Pills (Humidity, Wind, Solar in demos / Pressure for live readings)
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    MetricPill(label = stringResource(R.string.metric_humidity), value = display.humidityText())
-                    MetricPill(label = stringResource(R.string.metric_wind), value = display.windText())
-                    MetricPill(label = stringResource(display.thirdLabelRes), value = display.thirdText())
-                    // The age of the reading, as a fourth column (its value wraps if it must)
-                    if (display.tempC != null && display.status is CardStatus.Updated) {
-                        MetricPill(
-                            label = stringResource(R.string.metric_updated),
-                            value = display.status.ageText(),
-                            modifier = Modifier.widthIn(max = 76.dp)
-                        )
-                    }
-                }
-            }
-        }
+        StationCardBody(
+            station = station,
+            badgeColor = terrainBadgeColor,
+            display = display,
+            regionRangeMeters = regionRangeMeters,
+            onLess = onLess,
+            elevationNote = elevationNote,
+            regionName = regionName,
+            selectedMark = if (isSelected && selectedLabel != null) "\u2713 $selectedLabel" else null
+        )
     }
 }
 
@@ -226,21 +108,23 @@ fun StationCard(
  * readings as tiles, where the station stands in the region's heights, and a note about the height.
  */
 @Composable
-private fun CompactStationBody(
+private fun StationCardBody(
     station: MicroclimateStation,
     badgeColor: Color,
     display: CardDisplay,
     regionRangeMeters: Pair<Int, Int>? = null,
     onLess: (() -> Unit)? = null,
     elevationNote: String? = null,
-    regionName: String? = null
+    regionName: String? = null,
+    selectedMark: String? = null
 ) {
     // Which sections are open: the readings are, the height and the note start folded, so more of the map shows
     var readingsOpen by rememberSaveable { mutableStateOf(true) }
     var spectrumOpen by rememberSaveable { mutableStateOf(false) }
     var noteOpen by rememberSaveable { mutableStateOf(false) }
-    Column(modifier = Modifier.padding(start = 14.dp, end = 8.dp, top = 2.dp, bottom = 12.dp)) {
-        // Row 1: the badges at the left, and the card's fold control (Less) at the right
+    // The Less control brings its own 48dp of height at the top; without it the card needs a little room above the badge
+    Column(modifier = Modifier.padding(start = 14.dp, end = 8.dp, top = if (onLess != null) 2.dp else 10.dp, bottom = 12.dp)) {
+        // Row 1: the badges at the left, and at the right the card's fold control (Less) or the selected mark
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             TerrainBadge(text = stringResource(station.terrain.labelRes), color = badgeColor)
             Spacer(modifier = Modifier.width(8.dp))
@@ -257,6 +141,16 @@ private fun CompactStationBody(
                     label = stringResource(R.string.action_less),
                     onClickLabel = stringResource(R.string.station_card_hide),
                     onClick = onLess
+                )
+            } else if (selectedMark != null) {
+                // Where Less would be: the mark of the selected card (the Station List)
+                Text(
+                    text = selectedMark,
+                    fontSize = cs(11f),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    modifier = Modifier.padding(end = 6.dp)
                 )
             } else {
                 Spacer(modifier = Modifier.height(32.dp))
@@ -344,12 +238,14 @@ private fun CompactStationBody(
             }
         }
         // Row 6: the terrain's name and a sentence about the height; the name folds the sentence
-        if (elevationNote != null) {
+        // The note: the sentence given, else the station's own note, else a line about its terrain
+        val note = elevationNote ?: station.microclimateNote ?: terrainDescriptionText(station.terrain, station.elevationMeters)
+        run {
             Box(modifier = Modifier.padding(top = 6.dp, end = 6.dp)) {
                 MicroclimateCallout(
                     terrainName = stringResource(station.terrain.labelRes),
                     color = badgeColor,
-                    note = elevationNote,
+                    note = note,
                     open = noteOpen,
                     onToggle = { noteOpen = !noteOpen }
                 )
@@ -511,24 +407,5 @@ private fun CardStatus.Updated.ageText(): String {
         m == null -> stringResource(R.string.reading_age_unknown)
         m < 90 -> pluralStringResource(R.plurals.reading_age_minutes, m.toInt(), m.toInt())
         else -> pluralStringResource(R.plurals.reading_age_hours, (m / 60).toInt(), (m / 60).toInt())
-    }
-}
-
-@Composable
-private fun MetricPill(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = label,
-            fontSize = 10.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Medium
-        )
-        Text(
-            text = value,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurface
-        )
     }
 }
