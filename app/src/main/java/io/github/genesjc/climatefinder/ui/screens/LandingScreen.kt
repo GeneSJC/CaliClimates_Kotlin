@@ -3,7 +3,6 @@ package io.github.genesjc.climatefinder.ui.screens
 import androidx.annotation.StringRes
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.PICKER_BUTTON_HEIGHT
-import io.github.genesjc.climatefinder.ui.components.PICKER_ROW_HEIGHT
 import io.github.genesjc.climatefinder.ui.components.regionPickerColors
 import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
 import androidx.compose.animation.core.Animatable
@@ -28,10 +27,12 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -333,7 +334,7 @@ fun LandingScreen(
                                 .align(Alignment.TopStart)
                                 .fillMaxWidth()
                                 .padding(start = 6.dp, end = 6.dp, top = 5.dp)
-                                // A solid strip behind both rows, in the green the map shows beyond its terrain, so they read over any map
+                                // A solid strip behind the row, in the green the map shows beyond its terrain, so they read over any map
                                 // (a shaped background, not a clip, so the card that opens from the tile is never cut off)
                                 .background(
                                     if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background,
@@ -342,53 +343,61 @@ fun LandingScreen(
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
-                                // No margin above the rows, 4dp at the sides, and 18dp under the tile
+                                // No margin above the row, 4dp at the sides, and 18dp under it
                                 .padding(start = 4.dp, top = 0.dp, end = 4.dp, bottom = 18.dp)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                // The region's row, in its own bar tinted with the region's colour: the Region Info button at the left
-                                // (Topography only), the region's name at the right, and the region picker at the far right
+                            // One row: the station tile at the left, taking all the width the region's bar leaves, and the region's bar at
+                            // the right. The tile fills the height it is given, so the row is held to its content's height (without
+                            // this the tile fills the whole map)
+                            Row(
+                                modifier = Modifier.weight(1f).height(IntrinsicSize.Min),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
+                                }
+                                // The region's bar, tinted with the region's colour: its name (two lines when it needs them) aligned
+                                // to the right, and the region picker
                                 val regionColor = regionPickerColors()[region.id] ?: MaterialTheme.colorScheme.primary
                                 val barShape = RoundedCornerShape(10.dp)
                                 Row(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(PICKER_ROW_HEIGHT)
+                                        .fillMaxHeight()
                                         .background(regionColor.copy(alpha = 0.35f).compositeOver(MaterialTheme.colorScheme.surface), barShape)
                                         .border(1.dp, regionColor.copy(alpha = 0.7f), barShape)
-                                        .padding(horizontal = 4.dp),
+                                        .padding(start = 10.dp, end = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    if (homeTab == 0) {
-                                        InfoControlButton(open = infoOpen, onClick = { if (infoOpen) closeInfo() else openInfo() })
-                                    }
                                     Text(
                                         text = stringResource(region.nameRes),
-                                        fontSize = 18.sp,
+                                        fontSize = 15.sp,
+                                        lineHeight = 18.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                                        maxLines = 1,
+                                        maxLines = 2,
                                         overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f).padding(horizontal = 10.dp)
+                                        modifier = Modifier.widthIn(max = 92.dp)
                                     )
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     RegionPickerChip(
                                         state = pickerState,
                                         selectedRegionId = selectedRegionId,
                                         modifier = Modifier.height(PICKER_BUTTON_HEIGHT)
                                     )
                                 }
-                                // A gap between the two rows
-                                Spacer(modifier = Modifier.height(6.dp))
-                                // The tile fills the height it is given, so it is held to its own content's height (without this
-                                // it fills the whole map)
-                                Box(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-                                    if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
-                                }
                             }
+                        }
+                        // The Region Info button, under the north indicator at the left (Topography only: Elevation has no Region Info)
+                        if (homeTab == 0) {
+                            InfoControlButton(
+                                open = infoOpen,
+                                onClick = { if (infoOpen) closeInfo() else openInfo() },
+                                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + 40.dp)
+                            )
                         }
                         // Below the tile, at the left: the menu, the north indicator and the About button
                         MapControlRow(

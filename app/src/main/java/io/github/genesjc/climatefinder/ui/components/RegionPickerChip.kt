@@ -24,10 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import io.github.genesjc.climatefinder.R
 
-/** The header's top row (the region's name and the picker); tunable here. */
-val PICKER_ROW_HEIGHT = 40.dp
-
-/** The picker button's height: a little less than the row, so there is a margin above and below it. */
+/** The picker button's height, in the region's bar at the right of the header; tunable here. */
 val PICKER_BUTTON_HEIGHT = 32.dp
 
 /**
