@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,20 +20,19 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import io.github.genesjc.climatefinder.R
 
-/** The picker button's height, in the top row of the header; tunable here. */
-val PICKER_BUTTON_HEIGHT = 40.dp
+/** The header's top row (the region's name and the picker); tunable here. */
+val PICKER_ROW_HEIGHT = 40.dp
+
+/** The picker button's height: a little less than the row, so there is a margin above and below it. */
+val PICKER_BUTTON_HEIGHT = 32.dp
 
 /**
- * The region picker as an outlined button, as tall as its [modifier] makes it: a chevron, so it reads as a choice, and
- * the state's silhouette with the current region at full strength. The chevron is on the left of the silhouette so that
- * it does not sit above the station tile's chevron at the right edge. Tapping anywhere on it opens the graphical
- * picker, which grows out of the silhouette.
+ * The region picker as an outlined button, as tall as its [modifier] makes it: the state's silhouette with the current
+ * region at full strength. Tapping anywhere on it opens the graphical picker, which grows out of the silhouette.
  */
 @Composable
 fun RegionPickerChip(state: RegionPickerState, selectedRegionId: String, modifier: Modifier = Modifier) {
@@ -52,15 +50,6 @@ fun RegionPickerChip(state: RegionPickerState, selectedRegionId: String, modifie
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // The station tile's chevron (a solid triangle, in the same colour), a little smaller
-        Text(
-            text = "\u25BC",
-            style = MaterialTheme.typography.labelMedium,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(end = 6.dp)
-        )
         StateUsaOutlineIcon(
             fill = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.18f),
             stroke = MaterialTheme.colorScheme.onPrimaryContainer,

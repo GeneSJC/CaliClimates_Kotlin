@@ -3,6 +3,7 @@ package io.github.genesjc.climatefinder.ui.screens
 import androidx.annotation.StringRes
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.PICKER_BUTTON_HEIGHT
+import io.github.genesjc.climatefinder.ui.components.PICKER_ROW_HEIGHT
 import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -344,7 +345,7 @@ fun LandingScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 // The top row: the region's name, a static line centred above the station tile (it is not part
                                 // of the tile), and the region picker at the right
-                                Box(modifier = Modifier.fillMaxWidth().height(PICKER_BUTTON_HEIGHT)) {
+                                Box(modifier = Modifier.fillMaxWidth().height(PICKER_ROW_HEIGHT)) {
                                     Text(
                                         text = stringResource(region.nameRes),
                                         fontSize = 18.sp,
@@ -354,7 +355,7 @@ fun LandingScreen(
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         // Room each side for the picker, so a long name gives way before it reaches the button
-                                        modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 76.dp)
+                                        modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 56.dp)
                                     )
                                     RegionPickerChip(
                                         state = pickerState,
