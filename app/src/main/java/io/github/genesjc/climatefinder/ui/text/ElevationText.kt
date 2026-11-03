@@ -17,11 +17,6 @@ fun elevationFeetText(meters: Int): String = stringResource(R.string.elevation_f
 fun elevationDescribeText(meters: Int): String =
     stringResource(R.string.elevation_described, elevationFeetText(meters), stringResource(Elevation.band(meters).labelRes))
 
-/** "66–9,678 ft" */
-@Composable
-fun elevationRangeText(minMeters: Int, maxMeters: Int): String =
-    stringResource(R.string.elevation_range, Elevation.feet(minMeters), Elevation.feet(maxMeters))
-
 /**
  * A sentence about the height: a landmark comparison, when there is one, and the rule-of-thumb cooling. The facts
  * come from [Elevation.note]; the wording is the string resources.

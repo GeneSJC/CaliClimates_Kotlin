@@ -42,8 +42,6 @@
     <string name="zoom_font_caption">FONT</string>
 
     <!-- Menu -->
-    <string name="menu_demos">Demos &amp; Previews</string>
-    <string name="menu_dark_mode">Dark mode</string>
     <string name="menu_about">About</string>
 
     <!-- Terrain legend -->
@@ -71,7 +69,6 @@
     <string name="tab_topography">Map</string>
     <string name="limited_data_title">Limited station data</string>
     <string name="no_data_title">No station data loaded</string>
-    <string name="region_info_link">« Info</string>
 
     <!-- Station map -->
     <string name="map_dot_size">Dot size</string>
