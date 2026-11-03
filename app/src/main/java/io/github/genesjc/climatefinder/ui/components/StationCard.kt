@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -357,12 +358,18 @@ private fun CompactStationBody(
     }
 }
 
-/** The summary tile's temperature colour: a warm tone, so it stands apart from the station's name. */
-private val TEMPERATURE_COLOR = Color(0xFFC2410C)
+/** The summary tile's temperature colour: a dark forest green, so it stands apart from the station's name. */
+private val TEMPERATURE_COLOR = Color(0xFF166534)
+
+/**
+ * How far the tile's temperature sits above the name's baseline: about half the height of the name's capital letters
+ * (17sp type, capitals about 12sp tall), so the temperature's bottom is level with the middle of the first capital.
+ */
+private val TEMPERATURE_RAISE = 6.dp
 
 /**
  * The summary of a station for the Home row, on one line: the temperature in °F (smaller, in its own colour, on the
- * name's baseline), the station's name and a chevron at the right. The age of the reading is in the
+ * raised beside the name), the station's name and a chevron at the right. The age of the reading is in the
  * full card that the chevron opens. When there is no reading, a dash shows where the temperature would be. The name
  * gives way (with an ellipsis) only when it really cannot fit; the temperature always shows.
  */
@@ -371,7 +378,7 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
     val display = liveDisplay(reading)
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            // The temperature, smaller and in its own colour, sits on the same baseline as the name, close beside it
+            // The temperature, smaller and in its own colour, sits close beside the name, raised so it reads as a top-left corner mark
             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "\u2014",
@@ -379,7 +386,7 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
                     fontWeight = FontWeight.ExtraBold,
                     color = TEMPERATURE_COLOR,
                     maxLines = 1,
-                    modifier = Modifier.alignByBaseline()
+                    modifier = Modifier.alignByBaseline().offset(y = -TEMPERATURE_RAISE)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
