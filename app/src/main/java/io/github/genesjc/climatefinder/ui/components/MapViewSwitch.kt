@@ -34,8 +34,7 @@ fun MapViewButton(label: String, index: Int, selected: Int, onSelect: (Int) -> U
             fontSize = ms(9f),
             fontWeight = FontWeight.Bold,
             color = if (on) Color.White else Color(0xFF334155),
-            // Snug at the sides (4dp), so the two buttons take less of the header
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 5.dp)
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
         )
     }
 }
