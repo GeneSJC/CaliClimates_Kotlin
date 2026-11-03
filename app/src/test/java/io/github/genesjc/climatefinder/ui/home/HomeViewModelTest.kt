@@ -222,10 +222,15 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun answersForTheDatasetsOfRegions() = runBlocking {
+    fun theDefaultDatasetIsAnEmptyStandInWhileEveryRegionHasData() {
         val vm = viewModel()
-        assertEquals("default", vm.defaultDataset().regionId)
-        assertEquals("empty", vm.emptyDefaultDataset().regionId)
+        assertEquals("empty", vm.uiState.value.defaultDataset.regionId)
+    }
+
+    @Test
+    fun theDefaultDatasetIsReadOnceARegionTurnsOutToHaveNoData() {
+        val vm = viewModel(NoDataDatasets())
+        assertEquals("default", vm.uiState.value.defaultDataset.regionId)
     }
 
     @Test
