@@ -337,7 +337,8 @@ fun LandingScreen(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .fillMaxWidth()
-                                .padding(start = 6.dp, end = 6.dp, top = 5.dp)
+                                // More room round the folder now that the map reaches the screen edges: 16dp at the sides (11 here and 5 from the page margin), 12dp above
+                                .padding(start = 11.dp, end = 11.dp, top = 12.dp)
                                 // The header is drawn as a folder: the region's name on the tab at the top left, the station tile and
                                 // the picker in the body, and the space right of the tab open to the map (the Map and Profile buttons
                                 // sit there). A draw, not a clip, so the card that opens from the tile is never cut off
