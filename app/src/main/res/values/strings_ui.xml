@@ -63,8 +63,8 @@
     <string name="station_list_button">Station List ›</string>
 
     <!-- Home -->
-    <string name="tab_elevation">Elevation</string>
-    <string name="tab_topography">Topography</string>
+    <string name="tab_elevation">Profile</string>
+    <string name="tab_topography">Map</string>
     <string name="limited_data_title">Limited station data</string>
     <string name="no_data_title">No station data loaded</string>
     <string name="region_info_link">« Info</string>
