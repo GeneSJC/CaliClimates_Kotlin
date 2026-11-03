@@ -35,9 +35,20 @@ class StationCsvFormatTest {
     }
 
     @Test
-    fun aStationInTheTownListShowsTheTownAndItsOwnName() {
+    fun aStationInTheTownListKeepsItsOwnNameAndGainsItsTown() {
         val s = parse("id,display_name,elevation_meters\nMTZC1,Mount Zion,903\n").single()
-        assertEquals("Jackson (Mount Zion)", s.name)
+        assertEquals("Mount Zion", s.name)
+        assertEquals("Jackson", s.town)
+        // the screens show them together
+        assertEquals("Jackson (Mount Zion)", s.displayName)
+    }
+
+    @Test
+    fun aStationOutsideTheTownListHasNoTown() {
+        val s = parse("id,display_name,elevation_meters\nRSPC1,Rose Peak,1000\n").single()
+        assertEquals("Rose Peak", s.name)
+        assertNull(s.town)
+        assertEquals("Rose Peak", s.displayName)
     }
 
     @Test
