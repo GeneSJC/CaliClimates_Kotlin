@@ -15,7 +15,7 @@
 <br>
 
 **An Android app that shows how California's weather changes from the coast to the mountains to the desert.**<br>
-Live National Weather Service readings from 339 stations in six regions, on shaded-relief maps and an elevation chart.
+Live National Weather Service readings from 336 stations in six regions, on shaded-relief maps and an elevation chart.
 
 <br>
 
@@ -64,7 +64,7 @@ each, and how the numbers change as the ground climbs.
   <tr>
     <td width="33%" valign="top">
       <h4>🌡️ Live readings</h4>
-      Temperature, humidity, wind and pressure from 339 National Weather Service stations, fetched on demand and kept for a few minutes so the app stays quick and polite.
+      Temperature, humidity, wind and pressure from 336 National Weather Service stations, fetched on demand and kept for a few minutes so the app stays quick and polite.
     </td>
     <td width="33%" valign="top">
       <h4>🗺️ Six regions</h4>

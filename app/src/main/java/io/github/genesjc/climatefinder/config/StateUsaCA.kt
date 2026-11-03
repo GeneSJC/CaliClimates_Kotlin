@@ -239,6 +239,9 @@ object StateUsaCA : StateUsaDefinition {
         "KLHM" to "Lincoln",
         "KAUN" to "Auburn",
         "181PG" to "Marysville",
+        "KSJC" to "San Jose",
+        "KHWD" to "Hayward",
+        "C1792" to "Saratoga",
         "KSCK" to "Stockton",
         "KPAO" to "Palo Alto",
         "KHAF" to "Half Moon Bay",
@@ -314,7 +317,7 @@ object StateUsaCA : StateUsaDefinition {
         "northern_california" to listOf(
             "KRDD", // Redding
             "KCIC", // Chico
-            "KACV", // Eureka and Arcata (the Arcata / Eureka airport)
+            "C7137", // Eureka
             "KTRK", // Truckee and Tahoe
             "KMHS", // Mount Shasta
             "KUKI", // Ukiah
@@ -330,7 +333,7 @@ object StateUsaCA : StateUsaDefinition {
             "KPRB"  // Paso Robles
         ),
         "central_valley" to listOf(
-            "KFAT", // Fresno
+            "459PG", // Fresno
             "KBFL", // Bakersfield
             "KVIS", // Visalia
             "KMCE", // Merced
