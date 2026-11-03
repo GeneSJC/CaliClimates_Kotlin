@@ -246,7 +246,7 @@ private fun CompactStationBody(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(Elevation.band(station.elevationMeters).labelRes),
-                fontSize = ms(11f),
+                fontSize = cs(11f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -266,7 +266,7 @@ private fun CompactStationBody(
         Text(
             text = station.name,
             style = MaterialTheme.typography.titleMedium,
-            fontSize = ms(17f),
+            fontSize = cs(17f),
             fontWeight = FontWeight.Bold,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -276,7 +276,7 @@ private fun CompactStationBody(
         if (regionName != null) {
             Text(
                 text = regionName,
-                fontSize = ms(12f),
+                fontSize = cs(12f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -290,7 +290,7 @@ private fun CompactStationBody(
         ) {
             Text(
                 text = display.tempC?.let { stringResource(R.string.reading_temp_f, Units.fahrenheit(it)) } ?: "\u2014",
-                fontSize = ms(24f),
+                fontSize = cs(24f),
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -298,7 +298,7 @@ private fun CompactStationBody(
             Text(
                 text = display.tempC?.let { stringResource(R.string.reading_temp_c, it) }
                     ?: display.status?.fullText().orEmpty(),
-                fontSize = ms(12f),
+                fontSize = cs(12f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
@@ -306,7 +306,7 @@ private fun CompactStationBody(
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
                     text = display.status.fullText(),
-                    fontSize = ms(10f),
+                    fontSize = cs(10f),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     modifier = Modifier.padding(bottom = 4.dp, start = 8.dp)

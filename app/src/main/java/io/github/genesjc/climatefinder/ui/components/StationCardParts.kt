@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
@@ -41,8 +43,18 @@ import androidx.compose.ui.res.stringResource
 
 /*
  * The shared pieces of the refined station card: the same shapes, spacing and weights wherever a station is
- * shown. Sizes pass through ms() so they follow the map's one text scale.
+ * shown. Sizes pass through cs() so they follow the map's one text scale.
  */
+
+/**
+ * A card's text scale when it is not the map's: the Station List sets one, so its cards are not as large as Home's. When it
+ * is null the card follows the map's text scale ([MapText.scale]), like the rest of Home.
+ */
+val LocalCardScale = compositionLocalOf<Float?> { null }
+
+/** A base text size in sp, times the card's text scale ([LocalCardScale], or else the map's). */
+@Composable
+internal fun cs(base: Float): TextUnit = ((LocalCardScale.current ?: MapText.scale) * base).sp
 
 /** The small rounded badge: the terrain name, in the terrain's colour. */
 @Composable
@@ -51,7 +63,7 @@ internal fun TerrainBadge(text: String, color: Color) {
         Text(
             text = text,
             color = color,
-            fontSize = ms(10f),
+            fontSize = cs(10f),
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -73,7 +85,7 @@ internal fun CardToggle(label: String, onClickLabel: String, onClick: () -> Unit
     ) {
         Text(
             text = label,
-            fontSize = ms(11f),
+            fontSize = cs(11f),
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
             maxLines = 1
@@ -98,7 +110,7 @@ internal fun SectionToggleRow(open: Boolean, onToggle: () -> Unit, modifier: Mod
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = if (open) "\u25B4" else "\u25BE",
-            fontSize = ms(11f),
+            fontSize = cs(11f),
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.width(4.dp))
@@ -113,7 +125,7 @@ internal fun ReadingsSection(summary: String, open: Boolean, onToggle: () -> Uni
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = stringResource(R.string.card_readings),
-                    fontSize = ms(11f),
+                    fontSize = cs(11f),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
@@ -121,7 +133,7 @@ internal fun ReadingsSection(summary: String, open: Boolean, onToggle: () -> Uni
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = summary,
-                        fontSize = ms(11f),
+                        fontSize = cs(11f),
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
@@ -155,7 +167,7 @@ internal fun MetricTile(label: String, value: String, accent: Color, modifier: M
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = label,
-                fontSize = ms(10f),
+                fontSize = cs(10f),
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -164,7 +176,7 @@ internal fun MetricTile(label: String, value: String, accent: Color, modifier: M
         }
         Text(
             text = number,
-            fontSize = ms(15f),
+            fontSize = cs(15f),
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
@@ -173,7 +185,7 @@ internal fun MetricTile(label: String, value: String, accent: Color, modifier: M
         if (unit.isNotEmpty()) {
             Text(
                 text = unit,
-                fontSize = ms(9f),
+                fontSize = cs(9f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1
             )
@@ -199,7 +211,7 @@ internal fun ElevationSpectrum(stationMeters: Int, minMeters: Int, maxMeters: In
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = stringResource(R.string.card_station_elevation),
-                    fontSize = ms(11f),
+                    fontSize = cs(11f),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -208,7 +220,7 @@ internal fun ElevationSpectrum(stationMeters: Int, minMeters: Int, maxMeters: In
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = elevationFeetText(stationMeters),
-                    fontSize = ms(13f),
+                    fontSize = cs(13f),
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
@@ -243,13 +255,13 @@ internal fun ElevationSpectrum(stationMeters: Int, minMeters: Int, maxMeters: In
                 ) {
                     Text(
                         text = elevationFeetText(minMeters),
-                        fontSize = ms(9f),
+                        fontSize = cs(9f),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
                     Text(
                         text = elevationFeetText(maxMeters),
-                        fontSize = ms(9f),
+                        fontSize = cs(9f),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
@@ -274,7 +286,7 @@ internal fun MicroclimateCallout(terrainName: String, color: Color, note: String
         SectionToggleRow(open = open, onToggle = onToggle, modifier = Modifier.heightIn(min = 32.dp)) {
             Text(
                 text = stringResource(R.string.card_microclimate, terrainName),
-                fontSize = ms(11f),
+                fontSize = cs(11f),
                 fontWeight = FontWeight.Bold,
                 color = color,
                 maxLines = 1,
@@ -284,8 +296,8 @@ internal fun MicroclimateCallout(terrainName: String, color: Color, note: String
         AnimatedVisibility(visible = open) {
             Text(
                 text = note,
-                fontSize = ms(11f),
-                lineHeight = ms(14f),
+                fontSize = cs(11f),
+                lineHeight = cs(14f),
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 2.dp)
             )
