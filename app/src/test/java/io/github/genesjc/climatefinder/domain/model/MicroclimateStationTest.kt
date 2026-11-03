@@ -19,4 +19,19 @@ class MicroclimateStationTest {
         val reading = testStation().currentReading
         assertEquals(68.0, reading.temperatureFahrenheit, 1e-9)
     }
+
+    @Test
+    fun theDisplayNameIsTheTownAndTheStationsOwnNameWhereTheyDiffer() {
+        assertEquals("Jackson (Mount Zion)", testStation(name = "Mount Zion", town = "Jackson").displayName)
+    }
+
+    @Test
+    fun aNameThatAlreadySaysItsTownIsKept() {
+        assertEquals("Sacramento Executive Airport", testStation(name = "Sacramento Executive Airport", town = "Sacramento").displayName)
+    }
+
+    @Test
+    fun withoutATownTheDisplayNameIsTheName() {
+        assertEquals("Rose Peak", testStation(name = "Rose Peak").displayName)
+    }
 }

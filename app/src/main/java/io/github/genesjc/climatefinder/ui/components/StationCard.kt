@@ -158,7 +158,7 @@ fun StationCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = station.name,
+                        text = station.displayName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -264,7 +264,7 @@ private fun CompactStationBody(
         }
         // Row 2: the name, whole
         Text(
-            text = station.name,
+            text = station.displayName,
             style = MaterialTheme.typography.titleMedium,
             fontSize = ms(17f),
             fontWeight = FontWeight.Bold,
@@ -390,7 +390,7 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = station.name,
+                    text = station.displayName,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
