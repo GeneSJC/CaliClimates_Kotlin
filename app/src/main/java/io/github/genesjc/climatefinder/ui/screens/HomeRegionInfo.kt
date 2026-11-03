@@ -238,7 +238,9 @@ internal fun RegionInfoContent(
     onOpenAbout: () -> Unit,
     menuOpen: Boolean,
     dotScale: Float = 1f,
-    legendExtra: (@Composable () -> Unit)? = null
+    legendExtra: (@Composable () -> Unit)? = null,
+    /** The stations known to have no reading right now, for the legend's ring count. */
+    noReadingIds: Set<String> = emptySet()
 ) {
     var topRowWidthPx by remember { mutableStateOf(0) }
     Column {
@@ -323,7 +325,7 @@ internal fun RegionInfoContent(
             }
             // The Terrain Legend, at the bottom, folded until opened
             Spacer(modifier = Modifier.height(12.dp))
-            TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), dotScale = dotScale, extra = legendExtra)
+            TerrainLegendCard(stations = stations, containerColor = sheetCardColor(), dotScale = dotScale, extra = legendExtra, noReadingIds = noReadingIds)
         }
         }
         }
