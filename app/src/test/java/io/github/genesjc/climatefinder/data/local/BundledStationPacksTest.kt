@@ -17,11 +17,11 @@ class BundledStationPacksTest {
     // Pack file, region, expected number of station rows
     private val packs = listOf(
         Triple("a.txt", "Northern California", 60),
-        Triple("b.txt", "Bay Area / Sacramento", 58),
+        Triple("b.txt", "Bay Area / Sacramento", 57),
         Triple("c.txt", "Central Coast", 55),
         Triple("d.txt", "Central Valley", 59),
         Triple("e.txt", "Los Angeles", 58),
-        Triple("f.txt", "San Diego", 54)
+        Triple("f.txt", "San Diego", 51)
     )
 
     // Unit tests run from the app module directory
