@@ -339,8 +339,8 @@ fun LandingScreen(
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
-                                // No margin above the rows, 4dp at the sides, and 18dp under the tile
-                                .padding(start = 4.dp, top = 0.dp, end = 4.dp, bottom = 18.dp)
+                                // 4dp at the sides, a little under the tile (5dp: 70 percent less than before); the room above is the first line's
+                                .padding(start = 4.dp, top = 0.dp, end = 4.dp, bottom = 5.dp)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
@@ -349,7 +349,7 @@ fun LandingScreen(
                                 // The first line: the region's name at the left (one line), and the Topography and Elevation buttons
                                 // at the right
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 2.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
