@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.genesjc.climatefinder.data.local.AppearanceSettings
 import io.github.genesjc.climatefinder.data.local.TerrainRepository
 import io.github.genesjc.climatefinder.ui.common.AppBaseViewModel
+import io.github.genesjc.climatefinder.ui.theme.SHOW_RELIEF_TEXTURE
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,7 +31,7 @@ class AppRootViewModel : AppBaseViewModel() {
     val backdropTexture: StateFlow<Bitmap?> = _backdropTexture.asStateFlow()
 
     init {
-        viewModelScope.launch { _backdropTexture.value = terrains.backdropRelief() }
+        if (SHOW_RELIEF_TEXTURE) viewModelScope.launch { _backdropTexture.value = terrains.backdropRelief() }
     }
 
     /** Switches the look and remembers the choice. */
