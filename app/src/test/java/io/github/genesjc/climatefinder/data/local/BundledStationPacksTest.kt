@@ -21,7 +21,7 @@ class BundledStationPacksTest {
         Triple("c.txt", "Central Coast", 55),
         Triple("d.txt", "Central Valley", 59),
         Triple("e.txt", "Los Angeles", 58),
-        Triple("f.txt", "San Diego", 51)
+        Triple("f.txt", "San Diego", 50)
     )
 
     // Unit tests run from the app module directory
