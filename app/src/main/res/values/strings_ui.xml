@@ -47,6 +47,9 @@
     <string name="menu_about">About</string>
 
     <!-- Terrain legend -->
+    <string name="tags_toggle_label">Tags</string>
+    <string name="tags_follow_on">Tags stay put while the dial turns</string>
+    <string name="tags_follow_off">Tags are picked again as the dial turns</string>
     <string name="legend_title">Terrain Legend</string>
     <string name="legend_item_count">%1$s %2$d</string>
     <string name="legend_no_reading">Ring: no reading right now</string>
