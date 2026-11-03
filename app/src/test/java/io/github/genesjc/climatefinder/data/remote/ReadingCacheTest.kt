@@ -73,4 +73,20 @@ class ReadingCacheTest {
         assertFalse(ReadingFreshness.isFresh(ObservationResult.NoReading, ReadingFreshness.NEGATIVE_MS))
         assertEquals(15 * minute, ReadingFreshness.READING_MS)
     }
+
+    @Test
+    fun onlyStationsThatAnsweredWithNoReadingAreListed() = runBlocking {
+        cache.put("KONE", reading)
+        cache.put("KTWO", ObservationResult.NoReading)
+        cache.put("KTHREE", ObservationResult.Failed)
+        assertEquals(setOf("KTWO"), cache.idsWithNoReading().first())
+    }
+
+    @Test
+    fun aStationLeavesTheNoReadingListWhenItGetsAReading() = runBlocking {
+        cache.put("KTWO", ObservationResult.NoReading)
+        assertEquals(setOf("KTWO"), cache.idsWithNoReading().first())
+        cache.put("KTWO", reading)
+        assertEquals(emptySet<String>(), cache.idsWithNoReading().first())
+    }
 }
