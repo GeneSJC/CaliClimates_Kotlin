@@ -238,6 +238,8 @@ internal fun RegionInfoContent(
     onOpenStationList: () -> Unit,
     /** Opens the About dialog over the sheet; its button sits in the title band. */
     onOpenAbout: () -> Unit,
+    /** The build label, shown under the word About on its button. */
+    buildLabel: String,
     menuOpen: Boolean,
     dotScale: Float = 1f,
     legendExtra: (@Composable () -> Unit)? = null,
@@ -284,12 +286,20 @@ internal fun RegionInfoContent(
                         ) {
                             InfoMark(color = Color(0xFF0D9488), modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.menu_about),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            // "About" with the build under it, so the version shows without opening the dialog
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.menu_about),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = stringResource(R.string.build_label, buildLabel),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }

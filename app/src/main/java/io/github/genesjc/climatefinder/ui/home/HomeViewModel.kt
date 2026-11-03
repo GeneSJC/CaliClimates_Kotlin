@@ -53,7 +53,15 @@ data class HomeUiState(
     /** The station dataset of [selectedRegionId]; null when the region has no data (Home then shows its limited-data banner). */
     val regionDataset: StationDatasetInfo? = null,
     /** True while the first region's stations are being read at start-up; Home shows a loading view until they are in. */
-    val loading: Boolean = true
+    val loading: Boolean = true,
+    /** How many of the state's regions have station data in this build, and how many regions there are: facts that do not change in a run. */
+    val fullDataRegions: Int = 0,
+    val totalRegions: Int = 0,
+    /**
+     * The default region's dataset, for the Station List when a region has none. An empty stand-in until a region turns out to
+     * have no data; then the view model reads the real one (off the main thread) and puts it here.
+     */
+    val defaultDataset: StationDatasetInfo
 )
 
 /** Something Home's screen does once, in answer to a change. */
@@ -88,7 +96,14 @@ class HomeViewModel : AppBaseViewModel() {
 
     private val _uiState = MutableStateFlow(
         settings.selectedRegionId().let { regionId ->
-            HomeUiState(selectedRegionId = regionId, tab = settings.homeTab(), selectedStationId = settings.selectedStationId(regionId))
+            HomeUiState(
+                selectedRegionId = regionId,
+                tab = settings.homeTab(),
+                selectedStationId = settings.selectedStationId(regionId),
+                fullDataRegions = datasets.fullDataRegionCount(),
+                totalRegions = datasets.totalRegionCount(),
+                defaultDataset = datasets.emptyDefaultDataset()
+            )
         }
     )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -116,6 +131,9 @@ class HomeViewModel : AppBaseViewModel() {
     /** The region being read (at start-up, or after a choice); a newer choice replaces it. */
     private var regionLoad: Job? = null
 
+    /** The read of the default region's dataset, started once the first region with no data shows up. */
+    private var defaultDatasetLoad: Job? = null
+
     init {
         viewModelScope.launch {
             zoomChanges.debounce(ZOOM_SAVE_DELAY_MS).collect { settings.saveMapZoom(uiState.value.selectedRegionId, it) }
@@ -130,6 +148,7 @@ class HomeViewModel : AppBaseViewModel() {
             val regionId = _uiState.value.selectedRegionId
             val dataset = readRegion(regionId)
             _uiState.update { it.copy(regionDataset = dataset, loading = false) }
+            readDefaultDatasetIfNeeded(dataset)
         }
         // Once the first region is on its way, read the other regions' stations in the background, so changing
         // region later finds them already parsed instead of unzipping a pack on the main thread mid-transition
@@ -170,6 +189,7 @@ class HomeViewModel : AppBaseViewModel() {
         mapZoom = 1f
         settings.saveMapZoom(regionId, 1f)
         _uiState.update { it.copy(selectedRegionId = regionId, selectedStationId = null, regionDataset = dataset, loading = false) }
+        readDefaultDatasetIfNeeded(dataset)
         if (changed) _events.trySend(HomeEvent.RegionChanged)
     }
 
@@ -181,15 +201,17 @@ class HomeViewModel : AppBaseViewModel() {
     fun stations(regionId: String): List<MicroclimateStation> =
         datasets.cachedDatasetFor(regionId)?.let { stationRepository.peek(it) } ?: emptyList()
 
-    /** The default region's dataset, for the Station List when a region has none; read (off the main thread) only when asked. */
-    suspend fun defaultDataset(): StationDatasetInfo = datasets.defaultDataset()
-
-    /** An empty stand-in for the default dataset, for while [defaultDataset] is being read. */
-    fun emptyDefaultDataset(): StationDatasetInfo = datasets.emptyDefaultDataset()
-
-    fun fullDataRegionCount(): Int = datasets.fullDataRegionCount()
-
-    fun totalRegionCount(): Int = datasets.totalRegionCount()
+    /**
+     * A region with no data needs the default region's dataset (the Station List then shows it): it is read once, the first time
+     * a region turns out to have none, off the main thread, and put in [HomeUiState.defaultDataset].
+     */
+    private fun readDefaultDatasetIfNeeded(regionDataset: StationDatasetInfo?) {
+        if (regionDataset != null || defaultDatasetLoad != null) return
+        defaultDatasetLoad = viewModelScope.launch {
+            val dataset = datasets.defaultDataset()
+            _uiState.update { it.copy(defaultDataset = dataset) }
+        }
+    }
 
     /**
      * The stations known to have no reading right now (they answered with nothing usable), for the Region Info legend's

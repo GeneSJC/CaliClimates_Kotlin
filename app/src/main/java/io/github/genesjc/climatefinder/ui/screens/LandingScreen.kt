@@ -468,6 +468,7 @@ fun LandingScreen(
 
         InfoSideSheet(reveal = infoReveal, topPx = sheetTopPx, onOpen = openInfo, onClose = closeInfo) {
             RegionInfoContent(
+                buildLabel = buildLabel,
                 regionDetailsOpen = regionDetailsOpen,
                 onRegionDetailsOpenChange = onRegionDetailsOpenChange,
                 legendOpen = legendOpen,

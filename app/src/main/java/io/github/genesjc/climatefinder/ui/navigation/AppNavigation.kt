@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,14 +48,11 @@ fun AppNavigation(
 
     // Station data per region: a CSV override in assets, else the region's bundled pack. HomeViewModel reads the
     // region's pack off the main thread (homeState.loading is true until it is in) and keeps its dataset in the state
-    val fullDataRegions = remember { homeViewModel.fullDataRegionCount() }
+    val fullDataRegions = homeState.fullDataRegions
     val regionDataset = homeState.regionDataset
-    // The Bay Area fallback dataset is only needed by the Station List when a region has none, and by the demos, so it
-    // is read (off the main thread) only once a region turns out to have no data; an empty stand-in until then
-    val needsDefaultDataset = !homeState.loading && regionDataset == null
-    val defaultDataset by produceState(homeViewModel.emptyDefaultDataset(), needsDefaultDataset) {
-        if (needsDefaultDataset) value = homeViewModel.defaultDataset()
-    }
+    // The Bay Area fallback dataset is only needed by the Station List when a region has none, and by the demos; the view
+    // model reads it (off the main thread) once a region turns out to have no data, and keeps an empty stand-in until then
+    val defaultDataset = homeState.defaultDataset
     // Changes the app-wide region and remembers it (Home, Topo Map and Station Feed pickers use this)
     fun pickRegion(regionId: String) = homeViewModel.selectRegion(regionId)
     // Rows for the quick region list on Home: names only (reading every region's stations just for a count slowed the
@@ -82,7 +78,7 @@ fun AppNavigation(
                 selectedRegionId = selectedRegionId,
                 dataset = regionDataset,
                 fullDataRegions = fullDataRegions,
-                totalRegions = homeViewModel.totalRegionCount(),
+                totalRegions = homeState.totalRegions,
                 buildLabel = homeViewModel.buildLabel,
                 regionOptions = regionOptions,
                 onSelectRegion = { pickRegion(it) },
