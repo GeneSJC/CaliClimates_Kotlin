@@ -203,7 +203,7 @@ fun LandingScreen(
             // Read here, because the locate button's click handler is not composable
             val centeringMessage = stringResource(
                 R.string.map_centering_on,
-                shown?.name ?: stringResource(R.string.map_selected_station)
+                shown?.displayName ?: stringResource(R.string.map_selected_station)
             )
             run {
                 Column {
