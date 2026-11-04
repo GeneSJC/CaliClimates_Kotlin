@@ -125,6 +125,22 @@ internal fun HomeViewLabel(selected: Int, modifier: Modifier = Modifier) {
     }
 }
 
+/** The line naming the view, on a small white chip under the toggle (VIEW_LABEL_UNDER_TOGGLE): dark ink on white reads against any background. */
+@Composable
+private fun HomeViewLabelChip(selected: Int) {
+    Surface(shape = RoundedCornerShape(6.dp), color = Color.White.copy(alpha = 0.90f)) {
+        Text(
+            text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
+            fontSize = 12.3.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = Color(0xFF334155),
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+        )
+    }
+}
+
 /** What a flip of the toggle does: choose the view, and show the toast naming the view just entered. */
 @Composable
 private fun rememberViewFlip(onSelect: (Int) -> Unit, toast: TagsToastState): (Int) -> Unit {
