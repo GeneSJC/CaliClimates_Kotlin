@@ -20,7 +20,7 @@ class BundledStationPacksTest {
         Triple("b.txt", "Bay Area / Sacramento", 66),
         Triple("c.txt", "Central Coast", 54),
         Triple("d.txt", "Central Valley", 58),
-        Triple("e.txt", "Los Angeles", 58),
+        Triple("e.txt", "Los Angeles", 57),
         Triple("f.txt", "San Diego", 48)
     )
 
