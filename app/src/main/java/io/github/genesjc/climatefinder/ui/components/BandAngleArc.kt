@@ -54,16 +54,12 @@ private const val HANDLE_RADIUS_DP = 13f
  */
 private const val HANDLE_AS_PILL = true
 
-/** The pill's colour: solid tangerine (it was white; at 40 percent opacity the track showed through it, so it is solid; Gene, 2026-11-04). */
-private val HANDLE_PILL_COLOR = Color(0xFFF28500)
+/** The pill's colour: tangerine at 80 percent, so the dial's track still shows faintly through it (40 percent let too much through; solid let none). */
+private val HANDLE_PILL_COLOR = Color(0xFFF28500).copy(alpha = 0.8f)
 
-/** How far the pill's pointer sticks out past the band's outer edge (dp), and half the pointer's width at its base (dp). */
-private const val HANDLE_POINTER_OUT_DP = 7f
-private const val HANDLE_POINTER_HALF_WIDTH_DP = 8f
-
-/** The pill's thickness across the band (the band less 8dp of margin each side) and its whole length along it (dp). */
-private const val HANDLE_PILL_THICKNESS_DP = BAND_WIDTH_DP - 16f
-private const val HANDLE_PILL_LENGTH_DP = 52f
+/** The pill's thickness across the band (the band plus 2dp each side, so it overhangs the swoop's edges; it was the band less 8dp each side) and its whole length along it (dp). */
+private const val HANDLE_PILL_THICKNESS_DP = BAND_WIDTH_DP + 4f
+private const val HANDLE_PILL_LENGTH_DP = 80f
 
 /**
  * The control that turns the viewing angle: a quarter of a ring in the bottom corner, a curved band from north (straight up from
@@ -171,7 +167,7 @@ fun BandAngleArc(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier = 
             drawText(layout, topLeft = Offset(at.x - layout.size.width / 2f, at.y - layout.size.height / 2f))
         }
         if (HANDLE_AS_PILL) {
-            // The handle: a wide white pill along the band, round at both ends, as if cut from the band
+            // The handle: a wide tangerine pill along the band, round at both ends, a little bigger than the band so it overhangs its edges
             val thickness = HANDLE_PILL_THICKNESS_DP.dp.toPx()
             // The arc between the centres of the two round ends: the whole length less the two end caps
             val sweep = Math.toDegrees(((HANDLE_PILL_LENGTH_DP.dp.toPx() - thickness) / centreRadius).toDouble()).toFloat()
@@ -180,22 +176,6 @@ fun BandAngleArc(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier = 
             drawArc(HANDLE_PILL_COLOR, startAngle = start, sweepAngle = sweep, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = thickness, cap = StrokeCap.Round))
             val rad = Math.toRadians(angle.toDouble())
             val middle = Offset(pivot.x - sin(rad).toFloat() * centreRadius, pivot.y - cos(rad).toFloat() * centreRadius)
-            // A pointer that sticks out from the pill over the band's outer edge, the way the view looks (the same direction as the
-            // black triangle in the middle), in the pill's colour
-            run {
-                val dir = Offset(-sin(rad).toFloat(), -cos(rad).toFloat())
-                val across = Offset(-dir.y, dir.x)
-                val baseCentre = pivot + dir * (centreRadius + thickness / 2f - 2.dp.toPx())
-                val tip = pivot + dir * (outer + HANDLE_POINTER_OUT_DP.dp.toPx())
-                val half = HANDLE_POINTER_HALF_WIDTH_DP.dp.toPx()
-                val pointer = Path().apply {
-                    moveTo(tip.x, tip.y)
-                    lineTo(baseCentre.x + across.x * half, baseCentre.y + across.y * half)
-                    lineTo(baseCentre.x - across.x * half, baseCentre.y - across.y * half)
-                    close()
-                }
-                drawPath(pointer, HANDLE_PILL_COLOR)
-            }
             // A solid black triangle in the middle of the pill, its tip pointing the way the view looks: straight out from the
             // dial's corner, which is the heading (up at north, left at west)
             val ahead = Offset(-sin(rad).toFloat(), -cos(rad).toFloat())
