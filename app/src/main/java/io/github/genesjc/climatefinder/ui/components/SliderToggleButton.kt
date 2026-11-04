@@ -26,7 +26,8 @@ import io.github.genesjc.climatefinder.R
 fun SliderToggleButton(shown: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = Color.White.copy(alpha = 0.90f),
+        // The zoom slider's own lavender, at its see-through level, so the button and the slider read as one control
+        color = ZOOM_SLIDER_TINT.copy(alpha = 0.78f),
         border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier
             .size(32.dp)

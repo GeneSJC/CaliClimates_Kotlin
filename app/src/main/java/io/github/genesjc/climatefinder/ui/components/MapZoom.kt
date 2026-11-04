@@ -336,4 +336,4 @@ fun ZoomSlider(
 }
 
 /** The zoom slider's background: a very pale lavender, so it does not blend with the map's green where there is no terrain. */
-private val ZOOM_SLIDER_TINT = Color(0xFFE9E3F7)
+internal val ZOOM_SLIDER_TINT = Color(0xFFE9E3F7)
