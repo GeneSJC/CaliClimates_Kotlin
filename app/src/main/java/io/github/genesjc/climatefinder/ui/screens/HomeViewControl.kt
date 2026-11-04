@@ -13,6 +13,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.alpha
 import androidx.compose.runtime.getValue
@@ -100,6 +105,19 @@ internal val VIEW_TOP_CHIP_HEIGHT = 17.dp
 
 /** The chip's height on the folder tab, where it shares the tab's second line. */
 internal val VIEW_TAB_CHIP_HEIGHT = 22.dp
+
+/**
+ * Whether a toast in the middle of the screen names the view just switched into (Gene, 2026-11-04). Off: the chip on the folder tab
+ * already names the view, so it glows for a moment when the view changes and says it itself (see [VIEW_CHIP_GLOW_ON_CHANGE]). Turn it
+ * on to get the toast back.
+ */
+internal const val VIEW_CHANGE_TOAST = false
+
+/** Whether the tab chip gives a brief warm glow and a small pop when the view changes (the toast's job, see [VIEW_CHANGE_TOAST]). */
+internal const val VIEW_CHIP_GLOW_ON_CHANGE = true
+
+/** The glow's colour: a warm gold that shows on every region's tint. */
+private val VIEW_CHIP_GLOW = Color(0xFFFFC857)
 
 /** The room between the header and the controls under it (the view chip first): the controls start this far lower. */
 internal val CONTROLS_GAP = 20.dp
@@ -227,8 +245,8 @@ private fun rememberViewFlip(onSelect: (Int) -> Unit, toast: TagsToastState): (I
     val profileWords = stringResource(R.string.view_toast_profile)
     return { index ->
         onSelect(index)
-        // The view it is going into
-        toast.show(if (index == 1) profileWords else mapWords)
+        // The view it is going into (the chip's glow now says it; the toast is off, see VIEW_CHANGE_TOAST)
+        if (VIEW_CHANGE_TOAST) toast.show(if (index == 1) profileWords else mapWords)
     }
 }
 
@@ -304,11 +322,41 @@ internal fun HomeViewTabChip(selected: Int, modifier: Modifier = Modifier, heigh
         animationSpec = androidx.compose.animation.core.tween(180),
         label = "tabChipWords"
     )
+    // A pulse that runs from 0 up to 1 and back to 0 each time the view changes (not on the first look): it drives the glow and the pop
+    val pulse = remember { androidx.compose.animation.core.Animatable(0f) }
+    var armed by remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(selected) {
+        if (!armed) {
+            armed = true
+            return@LaunchedEffect
+        }
+        if (!VIEW_CHIP_GLOW_ON_CHANGE) return@LaunchedEffect
+        pulse.snapTo(0f)
+        pulse.animateTo(1f, androidx.compose.animation.core.tween(220))
+        pulse.animateTo(0f, androidx.compose.animation.core.tween(650))
+    }
     Surface(
         shape = RoundedCornerShape(6.dp),
         color = VIEW_CHIP_COLOR,
-        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-        modifier = modifier.height(height)
+        border = BorderStroke(1.dp, androidx.compose.ui.graphics.lerp(Color(0xFFCBD5E1), VIEW_CHIP_GLOW, pulse.value)),
+        modifier = modifier
+            .height(height)
+            // The glow: soft gold rings round the chip, widening and fading with the pulse, drawn behind it
+            .drawBehind {
+                val p = pulse.value
+                if (p > 0f) {
+                    for (i in 1..5) {
+                        val grow = i * 2.2.dp.toPx() * p
+                        drawRoundRect(
+                            color = VIEW_CHIP_GLOW.copy(alpha = 0.34f * p / i),
+                            topLeft = Offset(-grow, -grow),
+                            size = androidx.compose.ui.geometry.Size(size.width + grow * 2f, size.height + grow * 2f),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx() + grow)
+                        )
+                    }
+                }
+            }
+            .graphicsLayer { val pop = 1f + 0.08f * pulse.value; scaleX = pop; scaleY = pop }
     ) {
         Box(modifier = Modifier.padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
             TabChipWord(R.string.view_label_map, 1f - elevationShown)
