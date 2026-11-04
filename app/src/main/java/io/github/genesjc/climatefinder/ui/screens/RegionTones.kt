@@ -27,7 +27,7 @@ internal fun regionInk(colorHex: String): Color {
 }
 
 /** The brightness of the view chip's fill (a deeper, richer shade than the ink's would be on its own, since white text sits on it). */
-private const val CHIP_FILL_VALUE = 0.55f
+private const val CHIP_FILL_VALUE = 0.66f
 
 /** How much the saturation is multiplied for the chip's fill. */
 private const val CHIP_FILL_SATURATION_BOOST = 1.7f
