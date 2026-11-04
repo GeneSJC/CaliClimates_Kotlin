@@ -91,14 +91,14 @@ internal val HEADER_HEIGHT = 42.dp
 private val FOLDER_MARGIN = 20.dp
 
 /** The region picker button on the folder's tab: a little taller than PICKER_BUTTON_HEIGHT, which the other screens use. */
-private val HEADER_PICKER_HEIGHT = 40.dp
+internal val HEADER_PICKER_HEIGHT = 40.dp
 
 /**
  * How much shorter the folder's tab is than it was (the body's top edge, right of the tab and under the toggle, is this much
  * higher), with the gap under the tab made this much taller, so the station tile stays where it was and its margin from the
  * body's edge grows by this much.
  */
-private val FOLDER_TAB_TRIM = 6.dp
+internal val FOLDER_TAB_TRIM = 6.dp
 
 data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
@@ -411,48 +411,7 @@ fun LandingScreen(
                                             .align(Alignment.Top)
                                             .onSizeChanged { folderTabWidth = it.width.toFloat() }
                                     ) {
-                                        // The Profile view's chip on the tab's second line at the right; the Map view shows none
-                                        if (VIEW_CHIP_IN_TAB) {
-                                            androidx.compose.animation.AnimatedVisibility(
-                                                visible = homeTab == 1,
-                                                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp).offset(y = 3.dp)
-                                            ) { HomeViewChip(1, height = VIEW_TAB_CHIP_HEIGHT) }
-                                        }
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            // The end padding is the room the tab's slope needs
-                                            // No start padding: the icon lines up with the left edge of the station tile (both FOLDER_MARGIN in). 2dp above the icon on top of the row's 6dp: half the room that was above it when the content was centred
-                                            // With the row's own 2dp this leaves 8.4dp under the icon (14dp, then 10.5dp, now 20 percent less again)
-                                            modifier = Modifier.padding(start = 0.dp, end = 28.dp, top = 2.dp, bottom = 8.4.dp - 2.dp - FOLDER_TAB_TRIM / 2)
-                                        ) {
-                                            // A little bigger than the other picker buttons (40dp), with more room inside its outline
-                                            RegionPickerChip(
-                                                state = pickerState,
-                                                selectedRegionId = selectedRegionId,
-                                                modifier = Modifier.height(HEADER_PICKER_HEIGHT),
-                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                                            )
-                                            // The gap between the picker icon and the name: 12dp (it was 8dp, 50 percent more)
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            // The region's name with the view's name in a small line under it; the picker icon beside
-                                            // them is as tall as the two lines
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                // The view's name above the region's name, or below it (VIEW_LABEL_ABOVE_NAME)
-                                                if (VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab, modifier = Modifier.align(Alignment.End))
-                                                Text(
-                                                    text = stringResource(region.nameRes),
-                                                    // A little bigger than before (15sp)
-                                                    fontSize = 18.sp,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    lineHeight = 21.sp,
-                                                    // Two lines unless the view's name is under the region's name, where one line (ellipsis) keeps the tab's height
-                                                    maxLines = if (VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE || HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME) 2 else 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                if (!VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab, modifier = Modifier.align(Alignment.End))
-                                            }
-                                        }
+                                        HomeFolderTabContent(region, pickerState, selectedRegionId, homeTab)
                                     }
                                     // The view control at the right of the first line, level with the tab's middle; in the compact header its room is
                                     // left empty here (the combined card is drawn over it, from the Box below)
