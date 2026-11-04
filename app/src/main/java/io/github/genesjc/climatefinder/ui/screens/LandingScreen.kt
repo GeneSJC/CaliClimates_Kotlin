@@ -319,8 +319,8 @@ fun LandingScreen(
                             sliderShownShared = sliderShown,
                             onSliderShownChange = onSliderShownChange,
                             // The slider's arrow button sits at the top right of the map, level with the control row at the left
-                            // The slider's arrow button: at the top right, or with the chip among the controls at the left under the north row
-                            sliderToggleTop = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP + 38.dp else 0.dp),
+                            // The slider's arrow button: at the top right, or with the chip among the controls at the left, on the top row as on the Profile view
+                            sliderToggleTop = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP else 0.dp),
                             expandT = expandT,
                             onSelectedOffscreenChange = { selectedOffscreen = it },
                             recenterTick = recenterTick
