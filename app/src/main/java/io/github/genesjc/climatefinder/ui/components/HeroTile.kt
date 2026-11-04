@@ -108,6 +108,9 @@ fun HeroTile(
             border = tileBorder,
             modifier = Modifier
                 .fillMaxSize()
+                // While the panel is open the collapsed tile is hidden (it keeps its place and size), so its words do not show through a
+                // see-through panel as a ghost
+                .graphicsLayer { alpha = if (open) 0f else 1f }
                 .onSizeChanged {
                     cardWidthPx = it.width
                     cardHeightPx = it.height

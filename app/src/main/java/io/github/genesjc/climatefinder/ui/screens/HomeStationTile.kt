@@ -84,5 +84,5 @@ internal fun StationHeroTile(
     )
 }
 
-/** How solid the Home station tile and its open card are: 0.9, a tenth see-through, so the map shows faintly through them (Gene, 2026-11-04). */
-private const val STATION_TILE_OPACITY = 0.9f
+/** How solid the Home station tile and its open card are: 0.95, five percent see-through (0.9 let the map's dots show too clearly through the card). */
+private const val STATION_TILE_OPACITY = 0.95f
