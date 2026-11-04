@@ -100,6 +100,9 @@ internal val HEADER_PICKER_HEIGHT = 44.dp
  */
 internal val FOLDER_TAB_TRIM = 6.dp
 
+/** How far the region's colour is taken toward white for the folder's fill (0 is the full colour, 1 white); its opacity is unchanged. */
+private const val FOLDER_TINT_TOWARD_WHITE = 0.6f
+
 data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
 
@@ -356,7 +359,14 @@ fun LandingScreen(
                         // The folder fades down: sharper at the tab (FOLDER_OPACITY_TOP) and more see-through toward the bottom
                         // (FOLDER_OPACITY_BOTTOM), so the terrain shows more below; the outline fades the same way, to nothing at the
                         // bottom, so the folder has no bottom edge
-                        val folderBase = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background
+                        // The folder takes the region's tone (its picker colour, most of the way to white so it stays light for the dark text),
+                        // easing to the new tone over the same time as the page behind it when the region changes
+                        val regionTint by androidx.compose.animation.animateColorAsState(
+                            targetValue = androidx.compose.ui.graphics.lerp(Color(android.graphics.Color.parseColor(region.colorHex)), Color.White, FOLDER_TINT_TOWARD_WHITE),
+                            animationSpec = androidx.compose.animation.core.tween(1500),
+                            label = "folderTint"
+                        )
+                        val folderBase = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) regionTint else MaterialTheme.colorScheme.background
                         val folderFillTop = folderBase.copy(alpha = FOLDER_OPACITY_TOP)
                         val folderFillBottom = folderBase.copy(alpha = FOLDER_OPACITY_BOTTOM)
                         val folderBorderTop = MaterialTheme.colorScheme.primary.copy(alpha = FOLDER_OUTLINE_TOP)
