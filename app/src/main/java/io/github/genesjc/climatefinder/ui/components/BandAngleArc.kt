@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -60,7 +61,7 @@ private const val HANDLE_PILL_LENGTH_DP = 52f
 /**
  * The control that turns the viewing angle: a quarter of a ring in the bottom corner, a curved band from north (straight up from
  * the middle of the corner) round to west (straight along the bottom to the left), with round ends, a hole in the middle so the
- * chart shows through, and a handle (a wide pill, or a round knob: see [HANDLE_AS_PILL]) on a track that shows where the view is. Drag the handle, or touch the band, to turn
+ * chart shows through, and a handle (a wide pill with a pointer triangle in it, or a round knob: see [HANDLE_AS_PILL]) on a track that shows where the view is. Drag the handle, or touch the band, to turn
  * the view; it snaps onto 0, 45 and 90 and ticks as the slider does (see [BandAngle.snap] and [BandAngle.tickBetween]). It only
  * sets the angle: the compass that shows where the view points is a separate display ([BandCompass]). It takes the angle and
  * reports changes and nothing else, so another widget can take its place.
@@ -172,7 +173,19 @@ fun BandAngleArc(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier = 
             drawArc(Color.White, startAngle = start, sweepAngle = sweep, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = thickness, cap = StrokeCap.Round))
             val rad = Math.toRadians(angle.toDouble())
             val middle = Offset(pivot.x - sin(rad).toFloat() * centreRadius, pivot.y - cos(rad).toFloat() * centreRadius)
-            drawCircle(Color(0xFF1E293B), radius = 3.dp.toPx(), center = middle)
+            // A solid black triangle in the middle of the pill, its tip pointing the way the view looks: straight out from the
+            // dial's corner, which is the heading (up at north, left at west)
+            val ahead = Offset(-sin(rad).toFloat(), -cos(rad).toFloat())
+            val side = Offset(-ahead.y, ahead.x)
+            val tip = middle + ahead * 6.dp.toPx()
+            val baseCentre = middle - ahead * 4.5.dp.toPx()
+            val arrow = Path().apply {
+                moveTo(tip.x, tip.y)
+                lineTo(baseCentre.x + side.x * 4.5.dp.toPx(), baseCentre.y + side.y * 4.5.dp.toPx())
+                lineTo(baseCentre.x - side.x * 4.5.dp.toPx(), baseCentre.y - side.y * 4.5.dp.toPx())
+                close()
+            }
+            drawPath(arrow, Color.Black)
             return@Canvas
         }
         // The handle: a round knob on the track, with a ring so it reads as something to take hold of
