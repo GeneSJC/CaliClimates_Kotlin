@@ -128,11 +128,9 @@ private const val VIEW_CHANGE_HAPTIC = true
 /** How long the shimmer takes to cross the chip (milliseconds): it was 700 and read as too fast, so it is drawn out. */
 private const val VIEW_SHIMMER_MS = 1600
 
-/**
- * When the chip's word changes, counted from the toggle (milliseconds): the shimmer first slides over the old word for this long, and
- * then the new word fades in. Just before the shimmer's end (VIEW_SHIMMER_MS), so the two overlap a little and it does not feel late.
- */
-private const val VIEW_WORD_SWAP_MS = 1250
+/** The share of the shimmer's sweep over which the old word fades out (it is gone by then), and where the new word's fade-in starts. */
+private const val VIEW_WORD_OUT_END = 0.7f
+private const val VIEW_WORD_IN_START = 0.82f
 
 /** The shimmer band's width as a share of the chip's width (it was 0.55), and its strongest opacity (it was 0.6): a bigger, bolder sweep. */
 private const val VIEW_SHIMMER_BAND = 0.8f
@@ -344,16 +342,12 @@ internal fun HomeViewTabChip(
     modifier: Modifier = Modifier,
     height: androidx.compose.ui.unit.Dp = VIEW_TAB_CHIP_HEIGHT
 ) {
-    // The word on the chip is the one for [wordView], which follows [selected] only after the shimmer has crossed the old word (so the
-    // shimmer slides over "Map" first and then "Elevation" appears, and the other way round)
-    var wordView by remember { androidx.compose.runtime.mutableIntStateOf(selected) }
+    // The chip's words follow the shimmer: the old word ([fromView]) fades out as the shimmer slides over it, the chip is blank for a
+    // beat, and then the new word ([toView]) fades in once the shimmer has finished (and the other way round going back)
+    var fromView by remember { androidx.compose.runtime.mutableIntStateOf(selected) }
+    var toView by remember { androidx.compose.runtime.mutableIntStateOf(selected) }
     // Which way the shimmer travels: left to right when going to Elevation (as the toggle's thumb moves), right to left going back
     var sweepRight by remember { androidx.compose.runtime.mutableStateOf(true) }
-    val elevationShown by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (wordView == 1) 1f else 0f,
-        animationSpec = androidx.compose.animation.core.tween(180),
-        label = "tabChipWords"
-    )
     // A pulse (0 to 1 and back to 0) drives the pop, and a sweep (0 to 1) drives the shimmer; both run each time the view changes
     // (not on the first look), with a click from the phone's vibrator
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -367,19 +361,18 @@ internal fun HomeViewTabChip(
         }
         if (VIEW_CHANGE_HAPTIC) RegionHaptics.tick(context)
         if (!VIEW_CHIP_GLOW_ON_CHANGE) {
-            wordView = selected
+            fromView = selected
+            toView = selected
             return@LaunchedEffect
         }
         sweepRight = selected == 1
+        // The word that was showing is the one being replaced (a flip in mid-shimmer starts again from the newer word)
+        fromView = toView
+        toView = selected
         pulse.snapTo(0f)
         sweep.snapTo(0f)
         // The shimmer crosses the chip while it pops and settles
         launch { sweep.animateTo(1f, androidx.compose.animation.core.tween(VIEW_SHIMMER_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
-        // The new word fades in once the shimmer has nearly crossed the chip
-        launch {
-            kotlinx.coroutines.delay(VIEW_WORD_SWAP_MS.toLong())
-            wordView = selected
-        }
         pulse.animateTo(1f, androidx.compose.animation.core.tween(180))
         pulse.animateTo(0f, androidx.compose.animation.core.tween(420))
     }
@@ -414,10 +407,23 @@ internal fun HomeViewTabChip(
                 .padding(horizontal = 10.dp),
             contentAlignment = Alignment.Center
         ) {
-            TabChipWord(R.string.view_label_map, 1f - elevationShown)
-            TabChipWord(R.string.view_label_profile, elevationShown)
+            TabChipWord(R.string.view_label_map, chipWordAlpha(0, fromView, toView, sweep.value))
+            TabChipWord(R.string.view_label_profile, chipWordAlpha(1, fromView, toView, sweep.value))
         }
     }
+}
+
+/**
+ * How much of a view's word shows while the shimmer is at [t] (0 to 1, the whole sweep): the word being replaced fades out over the first
+ * [VIEW_WORD_OUT_END] of the sweep, with the shimmer sliding over it; the new word fades in over the last part, from
+ * [VIEW_WORD_IN_START]; between the two the chip is blank. At the end only the new word shows.
+ */
+private fun chipWordAlpha(view: Int, from: Int, to: Int, t: Float): Float = when {
+    t >= 1f -> if (view == to) 1f else 0f
+    view == to && view != from -> ((t - VIEW_WORD_IN_START) / (1f - VIEW_WORD_IN_START)).coerceIn(0f, 1f)
+    view == from && view != to -> (1f - t / VIEW_WORD_OUT_END).coerceIn(0f, 1f)
+    view == to -> 1f
+    else -> 0f
 }
 
 /** One of the tab chip's two words, at [alpha]; a word that is not showing is also hidden from screen readers. */
