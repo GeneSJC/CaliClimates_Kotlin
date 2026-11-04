@@ -64,7 +64,8 @@ private fun MapControlButton(
 ) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = Color.White.copy(alpha = 0.90f),
+        // White at 72 percent (it was 90), so the map shows through and the white is softer
+        color = Color.White.copy(alpha = 0.72f),
         border = BorderStroke(1.dp, outline),
         modifier = modifier
             .height(32.dp)
@@ -192,7 +193,8 @@ private fun NorthTile() {
     Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {
         Surface(
             shape = RoundedCornerShape(6.dp),
-            color = Color.White.copy(alpha = 0.90f),
+            // White at 72 percent (it was 90), like the buttons beside it
+            color = Color.White.copy(alpha = 0.72f),
             modifier = Modifier.fillMaxSize()
         ) {
             Box(contentAlignment = Alignment.Center) {

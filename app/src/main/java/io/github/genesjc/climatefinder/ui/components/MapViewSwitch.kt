@@ -123,9 +123,11 @@ fun MapViewToggleSwitch(
     // With a wash, the track is the wash with the dark colour fading in over it (from transparent dark, so the fade stays dark-toned)
     val track by animateColorAsState(if (on) SWITCH_INK else if (offTrackBrush != null) SWITCH_INK.copy(alpha = 0f) else offTrackColor, tween(150), label = "viewToggleTrack")
     // The thumb is dark on the Map view and, on the Elevation view, the same wash as the Map view's track (the dark fades out over it)
-    val thumb by animateColorAsState(if (on) SWITCH_INK.copy(alpha = 0f) else SWITCH_INK, tween(150), label = "viewToggleThumb")
+    val thumb by animateColorAsState(if (on) SWITCH_INK.copy(alpha = 0f) else SWITCH_INK.copy(alpha = 0.9f), tween(150), label = "viewToggleThumb")
     Box(
         modifier = modifier
+            // The whole switch 20 percent see-through, so the header and the map show through it
+            .alpha(TOGGLE_OPACITY)
             .semantics { contentDescription = description }
             .toggleable(value = on, role = Role.Switch, onValueChange = { onSelect(if (it) 1 else 0) })
             .size(width = if (vertical) TOGGLE_HEIGHT else length, height = if (vertical) length else TOGGLE_HEIGHT)
@@ -144,6 +146,9 @@ fun MapViewToggleSwitch(
         )
     }
 }
+
+/** How solid the whole view toggle is: 0.8, so what is behind it shows a little through the track and the thumb. */
+private const val TOGGLE_OPACITY = 0.8f
 
 /** The toggle's size: 70dp wide and 34dp tall (it was 27.2dp, made taller to be easier to grab), the thumb inset 3dp all round. */
 private val TOGGLE_WIDTH = 70.dp
