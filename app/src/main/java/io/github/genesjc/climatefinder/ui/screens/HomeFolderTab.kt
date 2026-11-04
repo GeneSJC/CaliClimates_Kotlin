@@ -42,14 +42,10 @@ internal fun BoxScope.HomeFolderTabContent(
     selectedRegionId: String,
     homeTab: Int
 ) {
-    // The view's chip on the tab's second line at the right, on both views ("Map" or "Elevation"), fading from one word to the other.
-    // The offset is a draw offset, so the layout does not change
+    // The view's chip on the tab's second line at the right, on both views: one chip of one size and place, the word in it fading
+    // between "Map" and "Elevation". The offset is a draw offset, so the layout does not change
     if (VIEW_CHIP_IN_TAB) {
-        androidx.compose.animation.Crossfade(
-            targetState = homeTab,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp).offset(y = 3.dp),
-            label = "tabViewChip"
-        ) { view -> HomeViewChip(view, height = VIEW_TAB_CHIP_HEIGHT) }
+        HomeViewTabChip(homeTab, Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp).offset(y = 3.dp))
     }
     // How many lines the name takes: one line is lifted to the top of the icon's height while the chip is showing
     var nameLines by remember(region.id) { mutableIntStateOf(1) }

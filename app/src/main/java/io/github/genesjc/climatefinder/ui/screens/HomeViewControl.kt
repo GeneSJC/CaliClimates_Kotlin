@@ -13,6 +13,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.draw.alpha
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -287,4 +290,44 @@ internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier, height: 
             )
         }
     }
+}
+
+/**
+ * The chip on the folder tab: ONE chip, as wide as the longer word ("Elevation"), with "Map" and "Elevation" laid in the same
+ * space and centred, one fading into the other. The chip never changes size or place when the view changes, so only the word
+ * fades; "Map" has more room on each side than it needs, which keeps the two views looking alike.
+ */
+@Composable
+internal fun HomeViewTabChip(selected: Int, modifier: Modifier = Modifier, height: androidx.compose.ui.unit.Dp = VIEW_TAB_CHIP_HEIGHT) {
+    val elevationShown by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (selected == 1) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(180),
+        label = "tabChipWords"
+    )
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = VIEW_CHIP_COLOR,
+        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        modifier = modifier.height(height)
+    ) {
+        Box(modifier = Modifier.padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
+            TabChipWord(R.string.view_label_map, 1f - elevationShown)
+            TabChipWord(R.string.view_label_profile, elevationShown)
+        }
+    }
+}
+
+/** One of the tab chip's two words, at [alpha]; a word that is not showing is also hidden from screen readers. */
+@Composable
+private fun TabChipWord(@androidx.annotation.StringRes res: Int, alpha: Float) {
+    Text(
+        text = stringResource(res),
+        fontSize = ms(9f),
+        fontWeight = FontWeight.Normal,
+        maxLines = 1,
+        color = VIEW_CHIP_INK,
+        modifier = Modifier
+            .alpha(alpha)
+            .then(if (alpha < 0.5f) Modifier.clearAndSetSemantics { } else Modifier)
+    )
 }
