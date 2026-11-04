@@ -82,7 +82,11 @@ internal fun StateUsaClassicMapCanvas(
     onSelectRegion: (String) -> Unit,
     sizeModifier: Modifier = Modifier.height(430.dp),
     // Stretches the map vertically (1 = true shape); the picker uses a little, to be taller
-    verticalStretch: Float = 1f
+    verticalStretch: Float = 1f,
+    // The frame around the map: its corner radius and line (the picker rounds it by the panel's radius less its padding)
+    cornerRadius: androidx.compose.ui.unit.Dp = 16.dp,
+    frameColor: Color = Color(0xFFC9A66B),
+    frameWidth: androidx.compose.ui.unit.Dp = 1.5.dp
 ) {
     val stateUsa = LocalStateUsa.current
     val art = stateUsa.pickerMap
