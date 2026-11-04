@@ -92,9 +92,6 @@ internal const val VIEW_CHIP_IN_TAB = false
  */
 internal const val VIEW_CHIP_ABOVE_TOGGLE = true
 
-/** Whether the chip sits at the right under the header on both views: the older of the chip's places. */
-internal const val VIEW_CHIP_UNDER_HEADER = VIEW_CHIP_IN_CONTROLS && !VIEW_CHIP_IN_TAB && !VIEW_CHIP_ABOVE_TOGGLE
-
 /** The chip's height above the toggle, small enough that chip and toggle together fit the first row without making it taller. */
 internal val VIEW_TOP_CHIP_HEIGHT = 17.dp
 
@@ -123,6 +120,9 @@ private val VIEW_CHIP_INK = Color(0xFF1F2937)
  * button. The toggle then floats alone at the right of the header. Takes the place of VIEW_LABEL_OVER_TOGGLE when on.
  */
 internal const val VIEW_CHIP_IN_CONTROLS = true
+
+/** Whether the chip sits at the right under the header on both views: the older of the chip's places. */
+internal const val VIEW_CHIP_UNDER_HEADER = VIEW_CHIP_IN_CONTROLS && !VIEW_CHIP_IN_TAB && !VIEW_CHIP_ABOVE_TOGGLE
 
 /** Whether the compact header is in use: the toggle variation and the combined card. */
 internal const val HEADER_COMPACT = VIEW_SWITCH_AS_TOGGLE && VIEW_WIDGET_COMBINED
