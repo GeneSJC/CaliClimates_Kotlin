@@ -115,7 +115,7 @@ internal fun ElevationProfileCanvas(
     val setSliderShown: (Boolean) -> Unit = { localSliderShown = it; onSliderShownChange?.invoke(it) }
     val sliderCollapsible = embedded
     // The slider starts lower on Home, to leave room for that button
-    val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) VIEW_CHIP_HEIGHT + CONTROLS_GAP else 32.dp) else 0.dp)
+    val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP - 6.dp else 32.dp) else 0.dp)
     // The layers button sits at the right, under Home's view buttons (or level with the expand toggle)
     val layersButtonTop = if (embedded) HOME_TILE_BAND + 62.dp else 56.dp
 

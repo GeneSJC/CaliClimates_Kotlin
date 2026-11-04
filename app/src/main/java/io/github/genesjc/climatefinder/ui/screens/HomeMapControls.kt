@@ -131,26 +131,17 @@ internal fun MapControlRow(
     landmarkIds: List<String> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
-    /** The view you are in (0 Map, 1 Profile), for the chip that names it when VIEW_CHIP_IN_CONTROLS is on. */
-    selectedView: Int = 0,
     /** Topography only: a button to put right after the north indicator (Home puts the Region Info button there). */
     afterNorth: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    // With the chip in the controls, both views have a column under the header: the chip first, then the view's own items. On the
-    // Map view those are the north indicator row; on the Profile view the Stations drop-down, after the room the slider's arrow
-    // button takes at its left (32dp and a 6dp gap), which is drawn with the chart's controls
-    if (VIEW_CHIP_IN_CONTROLS) {
-        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            HomeViewChip(selectedView)
-            if (onElevation) {
-                Row(modifier = Modifier.padding(start = 38.dp)) { StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation) }
-            } else {
-                MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, afterNorth, Modifier)
-            }
-        }
+    // With the chip among the controls it sits at the right under the header (Home draws it), so the left column starts with the
+    // view's own items: on the Map view the north indicator row; on the Profile view the Stations drop-down, after the room the
+    // slider's arrow button takes at its left (32dp and a 6dp gap), which is drawn with the chart's controls
+    if (VIEW_CHIP_IN_CONTROLS && onElevation) {
+        Row(modifier = modifier.padding(start = 38.dp)) { StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation) }
     } else {
-        MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, afterNorth, modifier)
+        MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, afterNorth, modifier)
     }
 }
 
@@ -164,7 +155,6 @@ private fun MapControlRowItems(
     landmarkIds: List<String>,
     selectedStationId: String?,
     onPickStation: (String) -> Unit,
-    selectedView: Int,
     afterNorth: (@Composable () -> Unit)?,
     modifier: Modifier
 ) {
