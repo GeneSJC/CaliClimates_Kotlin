@@ -109,27 +109,29 @@ fun MapViewToggleSwitch(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
     // The track while off (the Map view); a light slate when the switch sits on a white card, where white would vanish
-    offTrackColor: Color = Color.White.copy(alpha = 0.90f)
+    offTrackColor: Color = Color.White.copy(alpha = 0.90f),
+    // Stood on end: Map at the top (off), Profile at the bottom (on)
+    vertical: Boolean = false
 ) {
     val on = selected == 1
     val description = stringResource(R.string.view_switch_toggle)
-    val thumbX by animateDpAsState(if (on) TOGGLE_WIDTH - TOGGLE_THUMB_WIDTH - TOGGLE_INSET else TOGGLE_INSET, tween(150), label = "viewToggleThumb")
+    val length = if (vertical) TOGGLE_VERTICAL_LENGTH else TOGGLE_WIDTH
+    val thumbLength = if (vertical) TOGGLE_VERTICAL_THUMB_LENGTH else TOGGLE_THUMB_WIDTH
+    val thumbAt by animateDpAsState(if (on) length - thumbLength - TOGGLE_INSET else TOGGLE_INSET, tween(150), label = "viewToggleThumb")
     val track by animateColorAsState(if (on) SWITCH_INK else offTrackColor, tween(150), label = "viewToggleTrack")
     val thumb by animateColorAsState(if (on) Color.White else SWITCH_INK, tween(150), label = "viewToggleThumb")
     Box(
         modifier = modifier
             .semantics { contentDescription = description }
             .toggleable(value = on, role = Role.Switch, onValueChange = { onSelect(if (it) 1 else 0) })
-            .size(width = TOGGLE_WIDTH, height = TOGGLE_HEIGHT)
+            .size(width = if (vertical) TOGGLE_HEIGHT else length, height = if (vertical) length else TOGGLE_HEIGHT)
             .clip(CircleShape)
             .background(track)
             .border(1.dp, if (on) SWITCH_INK else SWITCH_LINE, CircleShape)
     ) {
         Box(
-            modifier = Modifier
-                .offset(x = thumbX)
-                .align(Alignment.CenterStart)
-                .size(width = TOGGLE_THUMB_WIDTH, height = TOGGLE_THUMB)
+            modifier = (if (vertical) Modifier.offset(y = thumbAt).align(Alignment.TopCenter) else Modifier.offset(x = thumbAt).align(Alignment.CenterStart))
+                .size(width = if (vertical) TOGGLE_THUMB else thumbLength, height = if (vertical) thumbLength else TOGGLE_THUMB)
                 .clip(CircleShape)
                 .background(thumb)
         )
@@ -144,3 +146,7 @@ private val TOGGLE_THUMB = TOGGLE_HEIGHT - TOGGLE_INSET * 2
 
 /** The thumb is a wide pill (the newer desktop-switch look), not a circle; set this equal to the thumb's height (21.2dp) to go back to a circle. */
 private val TOGGLE_THUMB_WIDTH = 30.dp
+
+/** Stood on end (the compact header's card): the track is 27.2dp wide and 52dp tall, the pill thumb 21.2dp wide and 30dp tall. */
+private val TOGGLE_VERTICAL_LENGTH = 52.dp
+private val TOGGLE_VERTICAL_THUMB_LENGTH = 30.dp

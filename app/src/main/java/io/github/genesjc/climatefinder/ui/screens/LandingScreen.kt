@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -446,10 +447,10 @@ fun LandingScreen(
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
                                 Spacer(modifier = Modifier.height(if (HEADER_COMPACT) 6.dp else 12.dp))
-                                // Under it, one row: the station tile, across the full width (in the compact header, up to the combined card). The tile fills the height it is given, so the row is held to its
+                                // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(end = if (HEADER_COMPACT) VIEW_WIDGET_WIDTH + 8.dp else FOLDER_MARGIN / 2).height(IntrinsicSize.Min),
+                                    modifier = Modifier.fillMaxWidth().padding(end = FOLDER_MARGIN / 2).height(IntrinsicSize.Min),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -458,8 +459,8 @@ fun LandingScreen(
                                 }
                             }
                             if (HEADER_COMPACT) {
-                                // One white card with the toggle and the view's name, over the folder's outline at the top right
-                                HomeViewWidget(selected = homeTab, onSelect = onHomeTabChange, toast = viewToast, modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp))
+                                // One white card with the view's name and the toggle on end, at the top right, lifted 6dp over the folder's top edge
+                                HomeViewWidget(selected = homeTab, onSelect = onHomeTabChange, toast = viewToast, modifier = Modifier.align(Alignment.TopEnd).offset(y = (-6).dp))
                             }
                         }
                         // The Region Info button, under the north indicator at the left (Topography only: Elevation has no Region Info)

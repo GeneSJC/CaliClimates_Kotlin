@@ -1,6 +1,7 @@
 package io.github.genesjc.climatefinder.ui.screens
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,8 +63,8 @@ internal const val VIEW_WIDGET_COMBINED = true
 /** Whether the compact header is in use: the toggle variation and the combined card. */
 internal const val HEADER_COMPACT = VIEW_SWITCH_AS_TOGGLE && VIEW_WIDGET_COMBINED
 
-/** The combined card's width: wide enough for "Profile view", and what the tab and the tile row leave room for. */
-internal val VIEW_WIDGET_WIDTH = 96.dp
+/** The combined card's width: the name on the left (two short lines), the switch stood on end at the right; the tab leaves room for it. */
+internal val VIEW_WIDGET_WIDTH = 108.dp
 
 /** The view control at the right of the header's first line, in the variation [VIEW_SWITCH_AS_TOGGLE] picks. */
 @Composable
@@ -141,8 +143,9 @@ private fun rememberViewFlip(onSelect: (Int) -> Unit, toast: TagsToastState): (I
 }
 
 /**
- * The compact header's one white card: the toggle on top and the name of the view you are in under it, both on the same white,
- * so the words read against whatever the map shows behind. It sits at the top right over the folder's outline.
+ * The compact header's one white card: the name of the view you are in at the left and the toggle, stood on end, at the right,
+ * both on the same white so the words read against whatever the map shows behind. It sits at the top right, lifted a little over
+ * the folder's top edge, and is no taller than the tab, so the station tile under it has the whole width.
  */
 @Composable
 internal fun HomeViewWidget(selected: Int, onSelect: (Int) -> Unit, toast: TagsToastState, modifier: Modifier = Modifier) {
@@ -153,17 +156,21 @@ internal fun HomeViewWidget(selected: Int, onSelect: (Int) -> Unit, toast: TagsT
         shadowElevation = 3.dp,
         modifier = modifier.width(VIEW_WIDGET_WIDTH)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-            MapViewToggleSwitch(selected = selected, onSelect = flip, offTrackColor = Color(0xFFE2E8F0))
-            Spacer(modifier = Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 5.dp, bottom = 5.dp)) {
+            // The name of the view you are in, to the left of the switch (two short lines when it needs them)
             Text(
                 text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
                 fontSize = 12.3.sp,
+                lineHeight = 14.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = Color(0xFF334155)
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                color = Color(0xFF334155),
+                modifier = Modifier.weight(1f)
             )
+            Spacer(modifier = Modifier.width(8.dp))
+            // The switch stood on end: Map at the top, Profile at the bottom
+            MapViewToggleSwitch(selected = selected, onSelect = flip, offTrackColor = Color(0xFFE2E8F0), vertical = true)
         }
     }
 }
