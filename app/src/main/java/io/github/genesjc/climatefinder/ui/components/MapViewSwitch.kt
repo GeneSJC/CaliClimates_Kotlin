@@ -122,7 +122,8 @@ fun MapViewToggleSwitch(
     val thumbAt by animateDpAsState(if (on) length - thumbLength - TOGGLE_INSET else TOGGLE_INSET, tween(150), label = "viewToggleThumb")
     // With a wash, the track is the wash with the dark colour fading in over it (from transparent dark, so the fade stays dark-toned)
     val track by animateColorAsState(if (on) SWITCH_INK else if (offTrackBrush != null) SWITCH_INK.copy(alpha = 0f) else offTrackColor, tween(150), label = "viewToggleTrack")
-    val thumb by animateColorAsState(if (on) Color.White else SWITCH_INK, tween(150), label = "viewToggleThumb")
+    // The thumb is dark on the Map view and, on the Elevation view, the same wash as the Map view's track (the dark fades out over it)
+    val thumb by animateColorAsState(if (on) SWITCH_INK.copy(alpha = 0f) else SWITCH_INK, tween(150), label = "viewToggleThumb")
     Box(
         modifier = modifier
             .semantics { contentDescription = description }
@@ -137,6 +138,7 @@ fun MapViewToggleSwitch(
             modifier = (if (vertical) Modifier.offset(y = thumbAt).align(Alignment.TopCenter) else Modifier.offset(x = thumbAt).align(Alignment.CenterStart))
                 .size(width = if (vertical) TOGGLE_THUMB else thumbLength, height = if (vertical) thumbLength else TOGGLE_THUMB)
                 .clip(CircleShape)
+                .background(BlueGreenWash)
                 .background(thumb)
         )
     }

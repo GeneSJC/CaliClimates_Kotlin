@@ -2,7 +2,6 @@ package io.github.genesjc.climatefinder.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -27,7 +26,7 @@ import io.github.genesjc.climatefinder.R
 fun SliderToggleButton(shown: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = Color.Transparent,
+        color = Color.White.copy(alpha = 0.90f),
         border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier
             .size(32.dp)
@@ -37,7 +36,7 @@ fun SliderToggleButton(shown: Boolean, onToggle: () -> Unit, modifier: Modifier 
                 onClick = onToggle
             )
     ) {
-        Canvas(modifier = Modifier.fillMaxSize().background(BlueGreenWash).padding(horizontal = 9.dp, vertical = 11.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 11.dp)) {
             val stroke = 2.2.dp.toPx()
             val w = size.width
             val h = size.height
