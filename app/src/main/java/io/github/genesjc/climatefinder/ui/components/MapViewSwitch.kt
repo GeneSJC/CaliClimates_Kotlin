@@ -104,11 +104,17 @@ private fun ViewButtonArrow(glyph: String, modifier: Modifier) {
  * of the screen naming the view just switched into.
  */
 @Composable
-fun MapViewToggleSwitch(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun MapViewToggleSwitch(
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    // The track while off (the Map view); a light slate when the switch sits on a white card, where white would vanish
+    offTrackColor: Color = Color.White.copy(alpha = 0.90f)
+) {
     val on = selected == 1
     val description = stringResource(R.string.view_switch_toggle)
     val thumbX by animateDpAsState(if (on) TOGGLE_WIDTH - TOGGLE_THUMB_WIDTH - TOGGLE_INSET else TOGGLE_INSET, tween(150), label = "viewToggleThumb")
-    val track by animateColorAsState(if (on) SWITCH_INK else Color.White.copy(alpha = 0.90f), tween(150), label = "viewToggleTrack")
+    val track by animateColorAsState(if (on) SWITCH_INK else offTrackColor, tween(150), label = "viewToggleTrack")
     val thumb by animateColorAsState(if (on) Color.White else SWITCH_INK, tween(150), label = "viewToggleThumb")
     Box(
         modifier = modifier

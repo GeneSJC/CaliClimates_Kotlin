@@ -351,7 +351,7 @@ fun LandingScreen(
                         val folderBorderTop = MaterialTheme.colorScheme.primary.copy(alpha = FOLDER_OUTLINE_TOP)
                         val folderBorderBottom = MaterialTheme.colorScheme.primary.copy(alpha = FOLDER_OUTLINE_BOTTOM)
                         // The selected station as a tile across the top of the map (it grows into the full card)
-                        Row(
+                        Box(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 // The folder and its tile at the back: the buttons and controls below it go in front
@@ -381,11 +381,9 @@ fun LandingScreen(
                                 // 10dp at the sides (more room for the station tile and the picker), a little under the tile (5dp); the room above is the first line's
                                 // The right margin is half of the left one, for the Map | Profile switch on the first line; the tile row adds the other half back
                                 .padding(start = FOLDER_MARGIN, top = 0.dp, end = FOLDER_MARGIN / 2, bottom = 10.dp)
-                                .onSizeChanged { rowWidthPx = it.width },
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.Top
+                                .onSizeChanged { rowWidthPx = it.width }
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
                                 // The first line: the folder's tab with the region picker's icon and the region's name (two lines at most)
                                 Row(
                                     modifier = Modifier
@@ -428,16 +426,17 @@ fun LandingScreen(
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = MaterialTheme.colorScheme.onSurface,
                                                     lineHeight = 18.sp,
-                                                    // Two lines when the label is under the toggle; with the label under the name, one line (ellipsis) so the tab keeps its height
-                                                    maxLines = if (VIEW_LABEL_UNDER_TOGGLE) 2 else 1,
+                                                    // Two lines unless the view's name is under the region's name, where one line (ellipsis) keeps the tab's height
+                                                    maxLines = if (VIEW_LABEL_UNDER_TOGGLE || HEADER_COMPACT) 2 else 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                                 HomeViewLabel(selected = homeTab)
                                             }
                                         }
                                     }
-                                    // The view button at the right of the first line, level with the tab's middle: it names the other view
-                                    HomeViewControl(
+                                    // The view control at the right of the first line, level with the tab's middle; in the compact header its room is
+                                    // left empty here (the combined card is drawn over it, from the Box below)
+                                    if (HEADER_COMPACT) Spacer(modifier = Modifier.width(VIEW_WIDGET_WIDTH + 14.dp)) else HomeViewControl(
                                         selected = homeTab,
                                         onSelect = onHomeTabChange,
                                         toast = viewToast,
@@ -446,17 +445,21 @@ fun LandingScreen(
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
-                                Spacer(modifier = Modifier.height(12.dp))
-                                // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
+                                Spacer(modifier = Modifier.height(if (HEADER_COMPACT) 6.dp else 12.dp))
+                                // Under it, one row: the station tile, across the full width (in the compact header, up to the combined card). The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(end = FOLDER_MARGIN / 2).height(IntrinsicSize.Min),
+                                    modifier = Modifier.fillMaxWidth().padding(end = if (HEADER_COMPACT) VIEW_WIDGET_WIDTH + 8.dp else FOLDER_MARGIN / 2).height(IntrinsicSize.Min),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                                         if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx - with(mapDensity) { (FOLDER_MARGIN / 2).roundToPx() }, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
                                     }
                                 }
+                            }
+                            if (HEADER_COMPACT) {
+                                // One white card with the toggle and the view's name, over the folder's outline at the top right
+                                HomeViewWidget(selected = homeTab, onSelect = onHomeTabChange, toast = viewToast, modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp))
                             }
                         }
                         // The Region Info button, under the north indicator at the left (Topography only: Elevation has no Region Info)
