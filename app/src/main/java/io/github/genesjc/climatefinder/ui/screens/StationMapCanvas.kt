@@ -352,7 +352,7 @@ internal fun SpatialMapCanvas(
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
             if (embedded) listOf(if (sliderAtLeft) 0f else widthDp.value - 46f, sliderToggleTop.value, if (sliderAtLeft) 46f else widthDp.value, sliderToggleTop.value + 32f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
             if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(if (sliderAtLeft) 0f else widthDp.value - 46f, sliderTop.value, if (sliderAtLeft) 46f else widthDp.value, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) 0.8f else 1f)),  // zoom slider
-            if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f else 0f), widthDp.value, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + VIEW_CHIP_HEIGHT.value else 56f)) else listOf(0f, 0f, 0f, 0f),  // Home's view chip (or buttons), at the right
+            if (embedded && !(VIEW_CHIP_IN_CONTROLS && VIEW_CHIP_IN_TAB)) listOf(widthDp.value - 170f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f else 0f), widthDp.value, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + VIEW_CHIP_HEIGHT.value else 56f)) else listOf(0f, 0f, 0f, 0f),  // Home's view chip (or buttons), at the right
             listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f)  // expand / shrink toggle
         )
 

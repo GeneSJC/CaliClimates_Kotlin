@@ -59,7 +59,7 @@ internal fun planElevationLabels(
         if (embedded) listOf(0f, HOME_TILE_BAND.value, if (VIEW_CHIP_IN_CONTROLS) 200f else 140f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + 32f else 50f)) else listOf(0f, 0f, 0f, 0f),  // Home's controls: the arrow button and the Stations row
         if (embedded && !VIEW_CHIP_IN_CONTROLS) listOf(0f, HOME_TILE_BAND.value + 50f, 46f, HOME_TILE_BAND.value + 82f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button (on the control row with the chip)
         if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) ELEVATION_SLIDER_FRACTION else 1f)), // zoom slider (at the left)
-        if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f else 0f), widthDp.value, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + VIEW_CHIP_HEIGHT.value else 56f)) else listOf(0f, 0f, 0f, 0f),  // Home's view chip (or buttons)
+        if (embedded && !(VIEW_CHIP_IN_CONTROLS && VIEW_CHIP_IN_TAB)) listOf(widthDp.value - 170f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f else 0f), widthDp.value, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + VIEW_CHIP_HEIGHT.value else 56f)) else listOf(0f, 0f, 0f, 0f),  // Home's view chip (or buttons)
         listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f),  // expand toggle
         if (layersOn && VIEW_CHIP_IN_CONTROLS) {
             // The compass sits left of the dial, level with it, above the key

@@ -411,6 +411,13 @@ fun LandingScreen(
                                             .align(Alignment.Top)
                                             .onSizeChanged { folderTabWidth = it.width.toFloat() }
                                     ) {
+                                        // The Profile view's chip on the tab's second line at the right; the Map view shows none
+                                        if (VIEW_CHIP_IN_TAB) {
+                                            androidx.compose.animation.AnimatedVisibility(
+                                                visible = homeTab == 1,
+                                                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = 2.dp)
+                                            ) { HomeViewChip(1, height = VIEW_TAB_CHIP_HEIGHT) }
+                                        }
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             // The end padding is the room the tab's slope needs
@@ -485,7 +492,7 @@ fun LandingScreen(
                             )
                         }
                         // The view chip at the right under the header, the same place on both views
-                        if (VIEW_CHIP_IN_CONTROLS) {
+                        if (VIEW_CHIP_IN_CONTROLS && !VIEW_CHIP_IN_TAB) {
                             HomeViewChip(homeTab, Modifier.align(Alignment.TopEnd).zIndex(1f).padding(end = 12.dp, top = 12.dp + HOME_TILE_BAND + CONTROLS_GAP))
                         }
                         // The Region Info button, as a slot of the control row when the chip is among the controls

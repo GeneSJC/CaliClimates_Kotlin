@@ -78,6 +78,16 @@ internal const val VIEW_LABEL_ABOVE_NAME = true
  */
 internal const val VIEW_LABEL_OVER_TOGGLE = true
 
+/**
+ * Where the view chip is (Gene, 2026-11-04), with VIEW_CHIP_IN_CONTROLS on: true puts it on the folder tab, on the tab's second
+ * line at the right, and only while the Profile view is showing (the Map view describes itself, so no chip there); false keeps
+ * it at the right under the header on both views.
+ */
+internal const val VIEW_CHIP_IN_TAB = true
+
+/** The chip's height on the folder tab, where it shares the tab's second line. */
+internal val VIEW_TAB_CHIP_HEIGHT = 22.dp
+
 /** The room between the header and the controls under it (the view chip first): the controls start this far lower. */
 internal val CONTROLS_GAP = 20.dp
 
@@ -235,13 +245,13 @@ internal fun HomeViewWidget(selected: Int, onSelect: (Int) -> Unit, toast: TagsT
  * the same place when the view changes. [VIEW_CHIP_HEIGHT] tall.
  */
 @Composable
-internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier) {
+internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier, height: androidx.compose.ui.unit.Dp = VIEW_CHIP_HEIGHT) {
     Surface(
         // The shape, padding and type of the Stations button, so the chip reads as one of the family
         shape = RoundedCornerShape(6.dp),
         color = VIEW_CHIP_COLOR,
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
-        modifier = modifier.height(VIEW_CHIP_HEIGHT)
+        modifier = modifier.height(height)
     ) {
         Box(modifier = Modifier.padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
             Text(
