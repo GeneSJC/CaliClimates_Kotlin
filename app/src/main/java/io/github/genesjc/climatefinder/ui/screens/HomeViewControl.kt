@@ -125,6 +125,13 @@ internal const val VIEW_CHIP_GLOW_ON_CHANGE = true
 /** Whether the phone gives a short click when the view changes, together with the chip's pop and shimmer. */
 private const val VIEW_CHANGE_HAPTIC = true
 
+/** How long the shimmer takes to cross the chip (milliseconds): it was 700 and read as too fast, so it is drawn out. */
+private const val VIEW_SHIMMER_MS = 1600
+
+/** The shimmer band's width as a share of the chip's width (it was 0.55), and its strongest opacity (it was 0.6): a bigger, bolder sweep. */
+private const val VIEW_SHIMMER_BAND = 0.8f
+private const val VIEW_SHIMMER_STRENGTH = 0.8f
+
 /** The shimmer's colour: a pale silver-blue sweep, visible on the chip's white (a white sheen would not show on it). */
 private val VIEW_CHIP_SHIMMER = Color(0xFF8FA8D6)
 
@@ -347,7 +354,7 @@ internal fun HomeViewTabChip(selected: Int, modifier: Modifier = Modifier, heigh
         pulse.snapTo(0f)
         sweep.snapTo(0f)
         // The shimmer crosses the chip while it pops and settles
-        launch { sweep.animateTo(1f, androidx.compose.animation.core.tween(700)) }
+        launch { sweep.animateTo(1f, androidx.compose.animation.core.tween(VIEW_SHIMMER_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
         pulse.animateTo(1f, androidx.compose.animation.core.tween(180))
         pulse.animateTo(0f, androidx.compose.animation.core.tween(420))
     }
@@ -366,11 +373,11 @@ internal fun HomeViewTabChip(selected: Int, modifier: Modifier = Modifier, heigh
                     drawContent()
                     val t = sweep.value
                     if (t < 1f) {
-                        val band = size.width * 0.55f
+                        val band = size.width * VIEW_SHIMMER_BAND
                         val x = -band + (size.width + band * 2f) * t
                         drawRect(
                             brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                                colors = listOf(Color.Transparent, VIEW_CHIP_SHIMMER.copy(alpha = 0.6f), Color.Transparent),
+                                colors = listOf(Color.Transparent, VIEW_CHIP_SHIMMER.copy(alpha = VIEW_SHIMMER_STRENGTH), Color.Transparent),
                                 start = Offset(x, 0f),
                                 end = Offset(x + band, size.height)
                             )
