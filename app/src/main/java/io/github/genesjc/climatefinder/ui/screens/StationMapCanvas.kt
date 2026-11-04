@@ -348,7 +348,7 @@ internal fun SpatialMapCanvas(
         // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
             if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
-            if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + 32f + 6f + 32f else 50f)) else listOf(0f, 0f, 58f, 40f),  // Home's controls (the arrow button and Info, then north), or the compass
+            if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + 32f + 6f + 32f + 6f + 32f else 50f)) else listOf(0f, 0f, 58f, 40f),  // Home's controls (the arrow button and Info, then north), or the compass
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
             if (embedded) listOf(if (sliderAtLeft) 0f else widthDp.value - 46f, sliderToggleTop.value, if (sliderAtLeft) 46f else widthDp.value, sliderToggleTop.value + 32f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
             if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(if (sliderAtLeft) 0f else widthDp.value - 46f, sliderTop.value, if (sliderAtLeft) 46f else widthDp.value, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) ELEVATION_SLIDER_FRACTION else 1f)),  // zoom slider

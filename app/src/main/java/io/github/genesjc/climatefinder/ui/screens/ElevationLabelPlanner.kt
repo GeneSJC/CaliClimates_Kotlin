@@ -56,7 +56,7 @@ internal fun planElevationLabels(
     val budget = labelBudget(LANDMARK_COUNT, zoom, 5f).toInt()
     val taken = mutableListOf(
         if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
-        if (embedded) listOf(0f, HOME_TILE_BAND.value, if (VIEW_CHIP_IN_CONTROLS) 200f else 140f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + 32f else 50f)) else listOf(0f, 0f, 0f, 0f),  // Home's controls: the arrow button and the Stations row
+        if (embedded) listOf(0f, HOME_TILE_BAND.value, if (VIEW_CHIP_IN_CONTROLS) 200f else 140f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + 32f + 6f + 32f else 50f)) else listOf(0f, 0f, 0f, 0f),  // Home's controls: the arrow button, the Stations row and the locate button
         if (embedded && !VIEW_CHIP_IN_CONTROLS) listOf(0f, HOME_TILE_BAND.value + 50f, 46f, HOME_TILE_BAND.value + 82f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button (on the control row with the chip)
         if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(0f, sliderTop.value, 46f, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) ELEVATION_SLIDER_FRACTION else 1f)), // zoom slider (at the left)
         if (embedded && (VIEW_CHIP_UNDER_HEADER || !VIEW_CHIP_IN_CONTROLS)) listOf(widthDp.value - 170f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f else 0f), widthDp.value, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + VIEW_CHIP_HEIGHT.value else 56f)) else listOf(0f, 0f, 0f, 0f),  // Home's view chip (or buttons)

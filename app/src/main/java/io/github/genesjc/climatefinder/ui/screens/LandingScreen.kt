@@ -338,7 +338,9 @@ fun LandingScreen(
                             onSliderShownChange = onSliderShownChange,
                             expandT = expandT,
                             onNotice = { message -> notice = (notice?.first ?: 0) + 1 to message },
-                            notice = notice?.second
+                            notice = notice?.second,
+                            onSelectedOffscreenChange = { selectedOffscreen = it },
+                            recenterTick = recenterTick
                         )
                     }
                     // The tile and the buttons keep their place on the screen while the map grows out underneath them
@@ -463,7 +465,7 @@ fun LandingScreen(
                             landmarkIds = stateUsa.landmarkStations[region.id] ?: emptyList(),
                             selectedStationId = selectedStationId,
                             onPickStation = onStationSelected,
-                            showLocate = selectedOffscreen && homeTab == 0,
+                            showLocate = selectedOffscreen,
                             onLocate = {
                                 recenterTick++
                                 // A short note at the bottom says what the button just did, so its meaning is learned in use

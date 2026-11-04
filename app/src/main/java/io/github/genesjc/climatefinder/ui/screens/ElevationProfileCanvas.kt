@@ -77,6 +77,8 @@ internal fun ElevationProfileCanvas(
     onZoomChange: ((Float) -> Unit)? = null,
     sliderShownShared: Boolean? = null,
     onSliderShownChange: ((Boolean) -> Unit)? = null,
+    onSelectedOffscreenChange: ((Boolean) -> Unit)? = null,
+    recenterTick: Int = 0,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
@@ -329,17 +331,13 @@ internal fun ElevationProfileCanvas(
             easePanTo(pan, centringPan(bx, by), LAYERS_FADE_MS, touchedAt) { pan = it }
         }
 
-        // When the selected station changes (from the Stations list, the tile or the other view) and it is not in
-        // view at this zoom and pan, ease the chart over so it is
-        androidx.compose.runtime.LaunchedEffect(selectedStationId, sorted) {
-            val idx = sorted.indexOfFirst { it.id == selectedStationId }
-            if (idx < 0) return@LaunchedEffect
-            val bx = pinBaseX(idx)
-            val by = pinBaseY(idx)
-            if (inComfortableView(bx, by)) return@LaunchedEffect
-            zoomJob?.cancel()
-            easePanTo(pan, centringPan(bx, by), BRING_INTO_VIEW_MS, touchedAt) { pan = it }
-        }
+        // Keeps the selected station in view and serves Home's Locate button (see ElevationLocateEffects)
+        ElevationLocateEffects(
+            selectedStationId, sorted, recenterTick, onSelectedOffscreenChange,
+            comfortable = { i -> inComfortableView(pinBaseX(i), pinBaseY(i)) },
+            visible = { i -> viewX(pinBaseX(i)) in 0f..canvasW && viewY(pinBaseY(i)) in with(density) { (if (embedded) HOME_TILE_BAND else 0.dp).toPx() }..canvasH },
+            centre = { i -> zoomJob?.cancel(); easePanTo(pan, centringPan(pinBaseX(i), pinBaseY(i)), BRING_INTO_VIEW_MS, touchedAt) { pan = it } }
+        )
 
         // When the viewing angle changes, the labels that were showing can stay showing, now at their stations' new places,
         // until the chart is zoomed or touched; then the labels are chosen afresh and fade in and out as usual (see [LabelHold])

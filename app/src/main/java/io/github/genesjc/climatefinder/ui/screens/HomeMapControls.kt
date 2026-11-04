@@ -139,7 +139,11 @@ internal fun MapControlRow(
     // view's own items: on the Map view the north indicator row; on the Profile view the Stations drop-down, after the room the
     // slider's arrow button takes at its left (32dp and a 6dp gap), which is drawn with the chart's controls
     if (VIEW_CHIP_IN_CONTROLS && onElevation) {
-        Row(modifier = modifier.padding(start = 38.dp)) { StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation) }
+        // The Locate button under the Stations drop-down, there only while the selected station is out of view
+        Column(modifier = modifier.padding(start = 38.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation)
+            LocateButton(showLocate, onLocate)
+        }
     } else {
         MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, beforeNorth, if (VIEW_CHIP_IN_CONTROLS) modifier.padding(start = 38.dp) else modifier)
     }
@@ -160,14 +164,13 @@ private fun MapControlRowItems(
 ) {
     if (!onElevation && VIEW_CHIP_IN_CONTROLS) {
         // The Map view with the chip among the controls: the slider's arrow button is at the left of the top row (drawn with the
-        // map's controls), as on the Profile view, with Region Info right of it and the north indicator under Info (and the locate
-        // button beside the north indicator), so the arrow and the slider sit in the same place on both views
+        // map's controls), as on the Profile view, with Region Info right of it, the north indicator under Info and the locate button
+        // under that, so the arrow and the slider sit in the same place on both views
         Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             beforeNorth?.invoke()
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                NorthTile()
-                LocateButton(showLocate, onLocate)
-            }
+            NorthTile()
+            // The Locate button under the north indicator
+            LocateButton(showLocate, onLocate)
         }
         return
     }
