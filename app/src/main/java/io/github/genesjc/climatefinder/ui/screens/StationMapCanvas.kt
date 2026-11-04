@@ -351,7 +351,7 @@ internal fun SpatialMapCanvas(
             if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + 32f + 6f + 32f else 50f)) else listOf(0f, 0f, 58f, 40f),  // Home's controls (the arrow button and Info, then north), or the compass
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
             if (embedded) listOf(if (sliderAtLeft) 0f else widthDp.value - 46f, sliderToggleTop.value, if (sliderAtLeft) 46f else widthDp.value, sliderToggleTop.value + 32f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
-            if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(if (sliderAtLeft) 0f else widthDp.value - 46f, sliderTop.value, if (sliderAtLeft) 46f else widthDp.value, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) 0.8f else 1f)),  // zoom slider
+            if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(if (sliderAtLeft) 0f else widthDp.value - 46f, sliderTop.value, if (sliderAtLeft) 46f else widthDp.value, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) ELEVATION_SLIDER_FRACTION else 1f)),  // zoom slider
             if (embedded && (VIEW_CHIP_UNDER_HEADER || !VIEW_CHIP_IN_CONTROLS)) listOf(widthDp.value - 170f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f else 0f), widthDp.value, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + VIEW_CHIP_HEIGHT.value else 56f)) else listOf(0f, 0f, 0f, 0f),  // Home's view chip (or buttons), at the right
             listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f)  // expand / shrink toggle
         )
@@ -514,8 +514,8 @@ internal fun SpatialMapCanvas(
                     .align(if (sliderAtLeft) Alignment.TopStart else Alignment.TopEnd)
                     .padding(top = sliderTop, start = if (sliderAtLeft) 4.dp + 5.dp * expandT else 0.dp, end = if (sliderAtLeft) 0.dp else 4.dp + 5.dp * expandT, bottom = 4.dp)
                     .width(40.dp)
-                    // 20% shorter from the bottom on Home; the top stays under the arrow button
-                .fillMaxHeight(if (embedded) 0.8f else 1f)
+                    // On Home the same height as the Elevation view's slider (ELEVATION_SLIDER_FRACTION); the top stays under the arrow button
+                .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)
             )
         } else ZoomSlider(
             value = zoom,
@@ -530,8 +530,8 @@ internal fun SpatialMapCanvas(
                 .align(if (sliderAtLeft) Alignment.TopStart else Alignment.TopEnd)
                 .padding(top = sliderTop, start = if (sliderAtLeft) 4.dp + 5.dp * expandT else 0.dp, end = if (sliderAtLeft) 0.dp else 4.dp + 5.dp * expandT, bottom = 4.dp)
                 .width(40.dp)
-                // 20% shorter from the bottom on Home; the top stays under the arrow button
-                .fillMaxHeight(if (embedded) 0.8f else 1f)
+                // On Home the same height as the Elevation view's slider (ELEVATION_SLIDER_FRACTION); the top stays under the arrow button
+                .fillMaxHeight(if (embedded) ELEVATION_SLIDER_FRACTION else 1f)
         )
     }
 }
