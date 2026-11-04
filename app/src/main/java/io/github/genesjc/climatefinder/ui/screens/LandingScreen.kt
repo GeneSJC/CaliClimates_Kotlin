@@ -471,8 +471,8 @@ fun LandingScreen(
                             InfoControlButton(
                                 open = infoOpen,
                                 onClick = { if (infoOpen) closeInfo() else openInfo() },
-                                // Under the chip and the north indicator, in the column at the left (chip 24dp, 6dp, north 32dp, 6dp)
-                                modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) 68.dp else 40.dp))
+                                // Under the chip and the north indicator, in the column at the left (the gap, chip 24dp, 6dp, north 32dp, 6dp)
+                                modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP + 68.dp else 40.dp))
                             )
                         }
                         // Below the tile, at the left: the menu, the north indicator and the About button
@@ -495,8 +495,8 @@ fun LandingScreen(
                                 }
                             },
                             selectedView = homeTab,
-                            // On the Profile view the row starts after the slider's arrow button (32dp and a 6dp gap), which is on the same row
-                            modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp + (if (homeTab == 1 && VIEW_CHIP_IN_CONTROLS) 38.dp else 0.dp), top = 12.dp + HOME_TILE_BAND)
+                            // The controls start CONTROLS_GAP under the header when the chip is among them
+                            modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP else 0.dp))
                         )
                     }
                 }

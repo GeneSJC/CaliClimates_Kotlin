@@ -135,11 +135,17 @@ internal fun MapControlRow(
     selectedView: Int = 0,
     modifier: Modifier = Modifier
 ) {
-    // On the Map view the chip is the first item of a column (then the north indicator row); the Profile view's row has it last
-    if (VIEW_CHIP_IN_CONTROLS && !onElevation) {
+    // With the chip in the controls, both views have a column under the header: the chip first, then the view's own items. On the
+    // Map view those are the north indicator row; on the Profile view the Stations drop-down, after the room the slider's arrow
+    // button takes at its left (32dp and a 6dp gap), which is drawn with the chart's controls
+    if (VIEW_CHIP_IN_CONTROLS) {
         Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             HomeViewChip(selectedView)
-            MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, Modifier)
+            if (onElevation) {
+                Row(modifier = Modifier.padding(start = 38.dp)) { StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation) }
+            } else {
+                MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, Modifier)
+            }
         }
     } else {
         MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, modifier)
@@ -163,7 +169,6 @@ private fun MapControlRowItems(
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         if (onElevation) {
             StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation)
-            if (VIEW_CHIP_IN_CONTROLS) HomeViewChip(selectedView)
         } else {
             // The north indicator, as a button-sized tile (not a button: it does nothing)
             Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {

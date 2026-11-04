@@ -77,6 +77,9 @@ internal const val VIEW_LABEL_ABOVE_NAME = true
  */
 internal const val VIEW_LABEL_OVER_TOGGLE = true
 
+/** The room between the header and the controls under it (the view chip first): the controls start this far lower. */
+internal val CONTROLS_GAP = 8.dp
+
 /** The green of the folder tab, for the view chip and for the floating toggle's off track; the same colour in both. */
 internal val VIEW_FOLDER_GREEN = Color(0xFFE4EBDA)
 
