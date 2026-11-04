@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.genesjc.climatefinder.data.local.StateUsaTerrain
 import io.github.genesjc.climatefinder.data.local.TerrainImage
 import io.github.genesjc.climatefinder.ui.components.MapProjection
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
@@ -84,6 +85,8 @@ internal data class StationLabelPlan(
 internal fun SpatialMapCanvas(
     stations: List<MicroclimateStation>,
     terrain: TerrainImage?,
+    // The statewide pictures, drawn under the region's own so that past its edges there is more terrain and not a flat colour
+    stateTerrain: StateUsaTerrain? = null,
     cityName: (MicroclimateStation) -> String,
     embedded: Boolean,
     selectedStationId: String?,
@@ -104,6 +107,9 @@ internal fun SpatialMapCanvas(
     if (stations.isEmpty()) return
     // The terrain picture as a Compose image, made once per picture (the data layer hands over a plain bitmap)
     val terrainPicture = remember(terrain) { terrain?.bitmap?.asImageBitmap() }
+    val underState = remember(stateTerrain) { stateTerrain?.state?.asImageBitmap() }
+    val underSurround = remember(stateTerrain) { stateTerrain?.surround?.asImageBitmap() }
+    val stateBounds = LocalStateUsa.current.stateBounds
 
     // The selected station; when none is selected yet (or the id is not in this region) Home shows the first one, so this does too
     val selectedStation = stations.firstOrNull { it.id == selectedStationId } ?: stations.firstOrNull()
@@ -286,12 +292,21 @@ internal fun SpatialMapCanvas(
                 // Land colour first (the picture may not reach every edge), then the terrain, then a light grid. On Home the
                 // colour starts a little above the bottom of the header's band (it tucks under the header's folder) and not
                 // above that, so what is behind the map shows through the open space beside the folder's tab
-                val landTop = if (embedded) (topHidden - 8.dp.toPx()).coerceAtLeast(0f) else 0f
+                val landTop = if (embedded && underState == null) (topHidden - 8.dp.toPx()).coerceAtLeast(0f) else 0f
                 drawRect(
                     color = Color(0xFFE4EBDA),
                     topLeft = Offset(0f, landTop),
                     size = androidx.compose.ui.geometry.Size(size.width, size.height - landTop)
                 )
+                // The statewide terrain under the region's own picture, over the whole canvas, so a pan to the edge shows more land
+                if (underState != null && underSurround != null) {
+                    val sl = mapX(stateBounds.minLon)
+                    val st = mapY(stateBounds.maxLat)
+                    val dstOffset = IntOffset(sl.roundToInt(), st.roundToInt())
+                    val dstSize = IntSize((mapX(stateBounds.maxLon) - sl).roundToInt(), (mapY(stateBounds.minLat) - st).roundToInt())
+                    drawImage(image = underSurround, dstOffset = dstOffset, dstSize = dstSize, filterQuality = FilterQuality.Medium)
+                    drawImage(image = underState, dstOffset = dstOffset, dstSize = dstSize, filterQuality = FilterQuality.Medium)
+                }
                 val b = terrain.bounds
                 val left = mapX(b.minLon)
                 val top = mapY(b.maxLat)
