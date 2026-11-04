@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.ui.components.MapViewChevronButton
+import io.github.genesjc.climatefinder.ui.components.ms
 import io.github.genesjc.climatefinder.ui.components.MapViewToggleSwitch
 
 /**
@@ -80,8 +81,8 @@ internal const val VIEW_LABEL_OVER_TOGGLE = true
 /** The room between the header and the controls under it (the view chip first): the controls start this far lower. */
 internal val CONTROLS_GAP = 20.dp
 
-/** The view chip's height, which the controls under it count on. */
-internal val VIEW_CHIP_HEIGHT = 30.dp
+/** The view chip's height: 32dp like the Stations button and the other map controls it lines up with. */
+internal val VIEW_CHIP_HEIGHT = 32.dp
 
 /** The chip's background: dark slate, a little see-through (the dial's and the key bar's colour), the same on both views. */
 private val VIEW_CHIP_COLOR = Color(0xFF1E293B).copy(alpha = 0.74f)
@@ -236,16 +237,18 @@ internal fun HomeViewWidget(selected: Int, onSelect: (Int) -> Unit, toast: TagsT
 @Composable
 internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier) {
     Surface(
-        shape = RoundedCornerShape(7.dp),
+        // The shape, padding and type of the Stations button, so the chip reads as one of the family
+        shape = RoundedCornerShape(6.dp),
         color = VIEW_CHIP_COLOR,
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
         modifier = modifier.height(VIEW_CHIP_HEIGHT)
     ) {
-        Box(modifier = Modifier.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
-                fontSize = 16.6.sp,
-                fontWeight = FontWeight.Bold,
+                // The Stations button's size (9, through the shared text scale), in a regular weight; bring bold back if it is too faint
+                fontSize = ms(9f),
+                fontWeight = FontWeight.Normal,
                 maxLines = 1,
                 color = Color.White
             )
