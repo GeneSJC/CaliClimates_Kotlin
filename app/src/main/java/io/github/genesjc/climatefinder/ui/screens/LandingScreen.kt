@@ -404,7 +404,8 @@ fun LandingScreen(
                                                 selectedRegionId = selectedRegionId,
                                                 modifier = Modifier.height(PICKER_BUTTON_HEIGHT)
                                             )
-                                            Spacer(modifier = Modifier.width(8.dp))
+                                            // The gap between the picker icon and the name: 12dp (it was 8dp, 50 percent more)
+                                            Spacer(modifier = Modifier.width(12.dp))
                                             Text(
                                                 text = stringResource(region.nameRes),
                                                 fontSize = 15.sp,
