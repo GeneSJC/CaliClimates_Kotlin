@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.ui.components.MapViewChevronButton
@@ -63,9 +64,11 @@ internal fun HomeViewLabel(selected: Int) {
     if (!VIEW_SWITCH_AS_TOGGLE) return
     Text(
         text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
-        // 60 percent bigger than the first try (11sp)
-        fontSize = 17.6.sp,
-        fontWeight = FontWeight.SemiBold,
+        // 30 percent smaller than the last try (17.6sp), bold, on one line
+        fontSize = 12.3.sp,
+        fontWeight = FontWeight.Bold,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }

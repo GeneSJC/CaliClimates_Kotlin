@@ -406,9 +406,9 @@ fun LandingScreen(
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             // The end padding is the room the tab's slope needs
-                                            // 2dp above the icon on top of the row's 6dp: half the room that was above it when the content was centred
+                                            // No start padding: the icon lines up with the left edge of the station tile (both FOLDER_MARGIN in). 2dp above the icon on top of the row's 6dp: half the room that was above it when the content was centred
                                             // With the row's own 2dp this leaves 8.4dp under the icon (14dp, then 10.5dp, now 20 percent less again)
-                                            modifier = Modifier.padding(start = 8.dp, end = 28.dp, top = 2.dp, bottom = 8.4.dp - 2.dp)
+                                            modifier = Modifier.padding(start = 0.dp, end = 28.dp, top = 2.dp, bottom = 8.4.dp - 2.dp)
                                         ) {
                                             // A little bigger than the other picker buttons (40dp), with more room inside its outline
                                             RegionPickerChip(
@@ -428,7 +428,8 @@ fun LandingScreen(
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = MaterialTheme.colorScheme.onSurface,
                                                     lineHeight = 18.sp,
-                                                    maxLines = 2,
+                                                    // One line, ellipsis when it is long, so the tab keeps its height
+                                                    maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                                 HomeViewLabel(selected = homeTab)
