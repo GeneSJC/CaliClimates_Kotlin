@@ -132,8 +132,8 @@ private const val VIEW_SHIMMER_MS = 1600
 private const val VIEW_SHIMMER_BAND = 0.8f
 private const val VIEW_SHIMMER_STRENGTH = 0.8f
 
-/** The shimmer's colour: a pale silver-blue sweep, visible on the chip's white (a white sheen would not show on it). */
-private val VIEW_CHIP_SHIMMER = Color(0xFF8FA8D6)
+/** The shimmer's colour: a white sheen, which shows on the chip's deep fill. */
+private val VIEW_CHIP_SHIMMER = Color.White
 
 /** The room between the header and the controls under it (the view chip first): the controls start this far lower. */
 internal val CONTROLS_GAP = 20.dp
@@ -332,7 +332,12 @@ internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier, height: 
  * fades; "Map" has more room on each side than it needs, which keeps the two views looking alike.
  */
 @Composable
-internal fun HomeViewTabChip(selected: Int, modifier: Modifier = Modifier, height: androidx.compose.ui.unit.Dp = VIEW_TAB_CHIP_HEIGHT) {
+internal fun HomeViewTabChip(
+    selected: Int,
+    regionColorHex: String,
+    modifier: Modifier = Modifier,
+    height: androidx.compose.ui.unit.Dp = VIEW_TAB_CHIP_HEIGHT
+) {
     val elevationShown by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (selected == 1) 1f else 0f,
         animationSpec = androidx.compose.animation.core.tween(180),
@@ -358,10 +363,10 @@ internal fun HomeViewTabChip(selected: Int, modifier: Modifier = Modifier, heigh
         pulse.animateTo(1f, androidx.compose.animation.core.tween(180))
         pulse.animateTo(0f, androidx.compose.animation.core.tween(420))
     }
+    // The README-style pill: a deep, saturated shade of the region's colour with white bold letters, no outline
     Surface(
-        shape = RoundedCornerShape(6.dp),
-        color = VIEW_CHIP_COLOR,
-        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(percent = 50),
+        color = regionChipFill(regionColorHex),
         modifier = modifier
             .height(height)
             .graphicsLayer { val pop = 1f + 0.08f * pulse.value; scaleX = pop; scaleY = pop }
@@ -384,7 +389,7 @@ internal fun HomeViewTabChip(selected: Int, modifier: Modifier = Modifier, heigh
                         )
                     }
                 }
-                .padding(horizontal = 7.dp),
+                .padding(horizontal = 10.dp),
             contentAlignment = Alignment.Center
         ) {
             TabChipWord(R.string.view_label_map, 1f - elevationShown)
@@ -399,9 +404,9 @@ private fun TabChipWord(@androidx.annotation.StringRes res: Int, alpha: Float) {
     Text(
         text = stringResource(res),
         fontSize = ms(9f),
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Bold,
         maxLines = 1,
-        color = VIEW_CHIP_INK,
+        color = Color.White,
         modifier = Modifier
             .alpha(alpha)
             .then(if (alpha < 0.5f) Modifier.clearAndSetSemantics { } else Modifier)
