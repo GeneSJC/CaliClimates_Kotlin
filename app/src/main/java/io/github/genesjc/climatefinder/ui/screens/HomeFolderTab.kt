@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +51,10 @@ internal fun BoxScope.HomeFolderTabContent(
     if (VIEW_CHIP_IN_TAB) {
         HomeViewTabChip(homeTab, Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp).offset(y = 3.dp))
     }
+    // The name's ink: the region's picker colour taken most of the way to black, so it is a dark shade of the tab's own hue; in the dark
+    // look the theme's own text colour
+    val lightLook = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val inkColor = if (lightLook) androidx.compose.ui.graphics.lerp(Color(android.graphics.Color.parseColor(region.colorHex)), Color.Black, TAB_INK_TOWARD_BLACK) else MaterialTheme.colorScheme.onSurface
     // How many lines the name takes: one line is lifted to the top of the icon's height while the chip is showing
     var nameLines by remember(region.id) { mutableIntStateOf(1) }
     val lift by animateDpAsState(
@@ -79,14 +84,18 @@ internal fun BoxScope.HomeFolderTabContent(
                 // The region's shorter header name where it has one (the tab has little room), else its name
                 text = stringResource(if (region.headerNameRes != 0) region.headerNameRes else region.nameRes),
                 fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                // The ink is a deep shade of the region's own colour (see TAB_INK_TOWARD_BLACK), so it blends with the tint and stands out
+                color = inkColor,
                 lineHeight = 21.sp,
                 // Two lines unless the view's name is under the region's name, where one line (ellipsis) keeps the tab's height
                 maxLines = if (VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE || HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
-                // A soft white glow round the letters (no offset, only blur), so the dark text keeps its edge on any tint
-                style = if (TAB_TEXT_GLOW) androidx.compose.ui.text.TextStyle(shadow = Shadow(color = Color.White.copy(alpha = 0.9f), offset = Offset.Zero, blurRadius = 10f)) else androidx.compose.ui.text.TextStyle.Default,
+                // A tight white glow round the letters (no offset, only blur), so the deep ink keeps its edge on any tint
+                style = if (TAB_TEXT_GLOW) androidx.compose.ui.text.TextStyle(
+                    letterSpacing = 0.2.sp,
+                    shadow = Shadow(color = Color.White.copy(alpha = 0.9f), offset = Offset.Zero, blurRadius = 6f)
+                ) else androidx.compose.ui.text.TextStyle.Default,
                 onTextLayout = { nameLines = it.lineCount }
             )
             if (!VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab, modifier = Modifier.align(Alignment.End))
@@ -95,10 +104,14 @@ internal fun BoxScope.HomeFolderTabContent(
 }
 
 /**
- * Whether the region's name on the folder tab has a soft white glow behind its letters (Gene, 2026-11-04, to try): true is on; false
- * is the plain text. The glow is a blurred white shadow with no offset, so it lifts the dark letters off whatever tint is behind them.
+ * Whether the region's name on the folder tab has a tight white glow behind its letters (Gene, 2026-11-04): true is on; false is
+ * the plain text. The glow is a blurred white shadow with no offset (6px, tighter than the first try's 10), so it lifts the deep ink
+ * off whatever tint is behind it.
  */
 private const val TAB_TEXT_GLOW = true
+
+/** How far the region's colour is taken toward black for the name's ink (0 is the colour itself, 1 black); higher is darker. */
+private const val TAB_INK_TOWARD_BLACK = 0.72f
 
 /** How far a one-line name moves up (half of the icon's 44dp less the line's 21dp) to sit at the top of the icon's height. */
 private val NAME_LIFT = (-11.5).dp
