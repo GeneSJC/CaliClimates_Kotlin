@@ -66,6 +66,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
@@ -84,6 +85,9 @@ private const val SHOW_REGION_BAR = false
 
 /** The height of the region name bar, when it shows. */
 internal val HEADER_HEIGHT = 42.dp
+
+/** The green margin round the station tile inside the folder, at the sides (it was 10dp, doubled to 20dp); below the tile it is half this, and above it 12dp. */
+private val FOLDER_MARGIN = 20.dp
 
 data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
@@ -344,6 +348,8 @@ fun LandingScreen(
                         Row(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
+                                // The folder and its tile at the back: the buttons and controls below it go in front
+                                .zIndex(0f)
                                 .fillMaxWidth()
                                 // More room round the folder now that the map reaches the screen edges: 16dp at the sides (11 here and 5 from the page margin), 12dp above
                                 .padding(start = 11.dp, end = 11.dp, top = 12.dp)
@@ -356,7 +362,8 @@ fun LandingScreen(
                                         fillBottom = folderFillBottom,
                                         borderTop = folderBorderTop,
                                         borderBottom = folderBorderBottom,
-                                        tabWidth = folderTabWidth,
+                                        // The tab's content now starts FOLDER_MARGIN in from the edge (it was 10dp), so the shape is that much wider
+                                        tabWidth = folderTabWidth + (FOLDER_MARGIN - 10.dp).toPx(),
                                         tabHeight = folderTabHeight,
                                         radius = 10.dp.toPx(),
                                         join = 12.dp.toPx(),
@@ -366,7 +373,7 @@ fun LandingScreen(
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
                                 // 10dp at the sides (more room for the station tile and the picker), a little under the tile (5dp); the room above is the first line's
-                                .padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 5.dp)
+                                .padding(start = FOLDER_MARGIN, top = 0.dp, end = FOLDER_MARGIN, bottom = 10.dp)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
@@ -416,11 +423,12 @@ fun LandingScreen(
                                         mapLabel = stringResource(R.string.tab_topography),
                                         profileLabel = stringResource(R.string.tab_elevation),
                                         onSelect = onHomeTabChange,
-                                        modifier = Modifier.align(Alignment.CenterVertically)
+                                        // More room from the tab's edge and from the folder's top edge below it
+                                        modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = 6.dp)
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
                                 // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(
@@ -438,7 +446,7 @@ fun LandingScreen(
                             InfoControlButton(
                                 open = infoOpen,
                                 onClick = { if (infoOpen) closeInfo() else openInfo() },
-                                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + 40.dp)
+                                modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + 40.dp)
                             )
                         }
                         // Below the tile, at the left: the menu, the north indicator and the About button
@@ -460,7 +468,7 @@ fun LandingScreen(
                                     )
                                 }
                             },
-                            modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
+                            modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
                         )
                     }
                 }

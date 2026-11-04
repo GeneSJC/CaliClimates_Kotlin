@@ -60,12 +60,13 @@ private fun MapViewSwitchSegment(label: String, on: Boolean, onClick: () -> Unit
             .background(fill, RoundedCornerShape(7.dp))
             .selectable(selected = on, role = Role.Tab, onClick = onClick)
             .widthIn(min = 52.dp)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 4.8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
-            fontSize = ms(11.25f),
+            // 10 percent smaller than before (11.25 to 10.125)
+            fontSize = ms(10.125f),
             letterSpacing = 0.4.sp,
             fontWeight = FontWeight.Bold,
             color = ink
