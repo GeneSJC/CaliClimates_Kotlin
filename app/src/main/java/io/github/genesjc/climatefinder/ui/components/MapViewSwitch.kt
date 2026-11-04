@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,13 +32,14 @@ private val SWITCH_INK = Color(0xFF334155)
 private val SWITCH_LINE = Color(0xFFCBD5E1)
 
 /**
- * The view button at the right of Home's first line: one button that names the view a tap goes to. On the Map view
+ * Variation "chevron button" of the view control at the right of Home's first line (the other is [MapViewToggleSwitch]; Home
+ * picks one with VIEW_SWITCH_AS_TOGGLE): one button that names the view a tap goes to. On the Map view
  * (index 0) it reads "Profile" with a solid arrowhead to its right; on the Profile view (index 1) it reads "Map" with
  * the arrowhead to its left. Both labels are laid out in the same space (the one not showing is invisible), so the
  * button never changes size when it flips and the folder tab beside it stays still.
  */
 @Composable
-fun MapViewSwitch(
+fun MapViewChevronButton(
     selected: Int,
     mapLabel: String,
     profileLabel: String,
@@ -83,4 +88,28 @@ private fun ViewButtonLabel(label: String, arrowAfter: Boolean, shown: Float) {
 @Composable
 private fun ViewButtonArrow(glyph: String, modifier: Modifier) {
     Text(text = glyph, fontSize = ms(12f), color = SWITCH_INK, modifier = modifier)
+}
+
+/**
+ * Variation "toggle switch" of the view control at the right of Home's first line (the other is [MapViewChevronButton]; Home
+ * picks one with VIEW_SWITCH_AS_TOGGLE): a plain toggle switch with no label. The two options it toggles: off is the Map view
+ * (index 0), on is the Profile view (index 1). A label may be added beside it later; for now Home shows a toast in the middle
+ * of the screen naming the view just switched into.
+ */
+@Composable
+fun MapViewToggleSwitch(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val description = stringResource(R.string.view_switch_toggle)
+    Switch(
+        checked = selected == 1,
+        onCheckedChange = { onSelect(if (it) 1 else 0) },
+        colors = SwitchDefaults.colors(
+            checkedThumbColor = Color.White,
+            checkedTrackColor = SWITCH_INK,
+            checkedBorderColor = SWITCH_INK,
+            uncheckedThumbColor = SWITCH_INK,
+            uncheckedTrackColor = Color.White.copy(alpha = 0.90f),
+            uncheckedBorderColor = SWITCH_LINE
+        ),
+        modifier = modifier.semantics { contentDescription = description }
+    )
 }

@@ -11,7 +11,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
-import io.github.genesjc.climatefinder.ui.components.MapViewSwitch
 import io.github.genesjc.climatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.climatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
@@ -331,6 +330,9 @@ fun LandingScreen(
                     }
                     // The tile and the buttons keep their place on the screen while the map grows out underneath them
                     Box(modifier = Modifier.matchParentSize().padding(horizontal = 5.dp * expandT)) {
+                        // The toast naming the view just switched into (the toggle variation of the view control), in the middle
+                        val viewToast = rememberTagsToast()
+                        TagsToast(viewToast)
                         // The folder's tab (the region's name) and the first line's height, measured, so the shape fits them
                         var folderTabWidth by remember { mutableStateOf(0f) }
                         var folderTabHeight by remember { mutableStateOf(0f) }
@@ -422,11 +424,10 @@ fun LandingScreen(
                                         }
                                     }
                                     // The view button at the right of the first line, level with the tab's middle: it names the other view
-                                    MapViewSwitch(
+                                    HomeViewControl(
                                         selected = homeTab,
-                                        mapLabel = stringResource(R.string.tab_topography),
-                                        profileLabel = stringResource(R.string.tab_elevation),
                                         onSelect = onHomeTabChange,
+                                        toast = viewToast,
                                         // More room from the tab's edge and from the folder's top edge below it
                                         modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = 6.dp)
                                     )
