@@ -108,7 +108,7 @@ internal fun BoxScope.HomeFolderTabContent(
  * the plain text. The glow is a blurred white shadow with no offset (6px, tighter than the first try's 10), so it lifts the deep ink
  * off whatever tint is behind it.
  */
-private const val TAB_TEXT_GLOW = true
+private const val TAB_TEXT_GLOW = false
 
 /** The brightness of the name's ink (0 is black, 1 full): low, so it is dark and reads on the tint. */
 private const val TAB_INK_VALUE = 0.44f

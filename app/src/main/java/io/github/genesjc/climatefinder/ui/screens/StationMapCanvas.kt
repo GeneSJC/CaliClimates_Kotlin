@@ -41,6 +41,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.platform.LocalDensity
@@ -306,6 +307,14 @@ internal fun SpatialMapCanvas(
                     val st = mapY(stateBounds.maxLat)
                     val dstOffset = IntOffset(sl.roundToInt(), st.roundToInt())
                     val dstSize = IntSize((mapX(stateBounds.maxLon) - sl).roundToInt(), (mapY(stateBounds.minLat) - st).roundToInt())
+                    // North of the state's top edge there is no picture (Northern California's view reaches past it), so the pictures are
+                    // mirrored upward over that strip: the terrain carries on instead of ending in a flat colour
+                    if (st > 0f) {
+                        withTransform({ scale(1f, -1f, pivot = Offset(sl, st)) }) {
+                            drawImage(image = underSurround, dstOffset = dstOffset, dstSize = dstSize, filterQuality = FilterQuality.Medium)
+                            drawImage(image = underState, dstOffset = dstOffset, dstSize = dstSize, filterQuality = FilterQuality.Medium)
+                        }
+                    }
                     drawImage(image = underSurround, dstOffset = dstOffset, dstSize = dstSize, filterQuality = FilterQuality.Medium)
                     drawImage(image = underState, dstOffset = dstOffset, dstSize = dstSize, filterQuality = FilterQuality.Medium)
                 }
