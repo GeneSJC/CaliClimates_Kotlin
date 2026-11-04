@@ -67,6 +67,12 @@
     <!-- Home -->
     <string name="tab_elevation">Profile</string>
     <string name="tab_topography">Map</string>
+    <!-- The toast in the middle of the screen when the view toggle switch flips -->
+    <string name="view_toast_map">Map</string>
+    <string name="view_toast_profile">Elevation</string>
+    <!-- The small line under the header's first line naming the view you are in (the words may change) -->
+    <string name="view_label_map">Map</string>
+    <string name="view_label_profile">Elevation</string>
     <string name="limited_data_title">Limited station data</string>
     <string name="no_data_title">No station data loaded</string>
 
@@ -74,7 +80,7 @@
     <string name="map_dot_size">Dot size</string>
 
     <!-- Regions screen -->
-    <string name="region_picker_title">Pick a region</string>
+    <string name="region_picker_title">Pick a Region</string>
     <string name="regions_screen_subtitle">Macro Climatic Constraints &amp; Regional Boundaries</string>
     <string name="regions_map_hint">Tap region to inspect</string>
     <string name="region_planned_badge">PLANNED</string>

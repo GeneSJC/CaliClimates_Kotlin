@@ -7,6 +7,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import io.github.genesjc.climatefinder.ui.components.StationCard
 import io.github.genesjc.climatefinder.ui.components.StationSummaryTile
+import io.github.genesjc.climatefinder.ui.components.SkyLine
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import io.github.genesjc.climatefinder.ui.components.HeroTile
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import androidx.compose.foundation.layout.width
@@ -35,6 +38,7 @@ internal fun StationHeroTile(
     readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>
 ) {
     val reading by remember(station.id) { readingFor(station) }.collectAsStateWithLifecycle()
+    val skyTemp = (reading as? ObservationResult.Reading)?.observation?.temperatureFahrenheit
     HeroTile(
         fullWidthPx = fullWidthPx,
         // The same colour as the open card: the plain surface, white in the light look
@@ -67,7 +71,12 @@ internal fun StationHeroTile(
                 // Less folds the card back, at the right of its top row
                 onLess = close,
                 // The region's name stays at the top when the card is open
-                regionName = regionName
+                regionName = regionName,
+                // The first line of the open card: the sky's icon and wording, darkened to read on white; none without a reading
+                skyLine = skyTemp?.let { t ->
+                    val sky = skyThemeFor(t)
+                    SkyLine(sky.icon, stringResource(sky.conditionRes), lerp(sky.accent, Color.Black, 0.4f))
+                }
             )
         }
     )

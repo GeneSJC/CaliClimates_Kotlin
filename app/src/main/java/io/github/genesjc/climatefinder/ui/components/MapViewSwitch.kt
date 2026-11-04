@@ -1,42 +1,152 @@
 package io.github.genesjc.climatefinder.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
 
+private val SWITCH_INK = Color(0xFF334155)
+private val SWITCH_LINE = Color(0xFFCBD5E1)
+
 /**
- * One of the two view buttons on the map (Topography is index 0, Elevation is index 1). The selected one is dark,
- * the other white. Home puts them side by side at the right of the header's first line.
+ * Variation "chevron button" of the view control at the right of Home's first line (the other is [MapViewToggleSwitch]; Home
+ * picks one with VIEW_SWITCH_AS_TOGGLE): one button that names the view a tap goes to. On the Map view
+ * (index 0) it reads "Profile" with a solid arrowhead to its right; on the Profile view (index 1) it reads "Map" with
+ * the arrowhead to its left. Both labels are laid out in the same space (the one not showing is invisible), so the
+ * button never changes size when it flips and the folder tab beside it stays still.
  */
 @Composable
-fun MapViewButton(label: String, index: Int, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
-    val on = index == selected
+fun MapViewChevronButton(
+    selected: Int,
+    mapLabel: String,
+    profileLabel: String,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val toProfile = selected == 0
+    val profileShown by animateFloatAsState(if (toProfile) 1f else 0f, tween(150), label = "viewButtonProfile")
+    val targetLabel = if (toProfile) profileLabel else mapLabel
     Surface(
-        shape = RoundedCornerShape(6.dp),
-        color = if (on) Color(0xFF334155) else Color.White.copy(alpha = 0.90f),
-        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-        modifier = modifier.clickable(onClickLabel = stringResource(R.string.map_view_show, label), role = Role.Tab) { onSelect(index) }
+        shape = RoundedCornerShape(8.dp),
+        color = Color.White.copy(alpha = 0.90f),
+        border = BorderStroke(1.dp, SWITCH_LINE),
+        modifier = modifier.clickable(
+            onClickLabel = stringResource(R.string.map_view_show, targetLabel),
+            role = Role.Button
+        ) { onSelect(if (toProfile) 1 else 0) }
     ) {
+        Box(modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.8.dp), contentAlignment = Alignment.Center) {
+            ViewButtonLabel(profileLabel, arrowAfter = true, shown = profileShown)
+            ViewButtonLabel(mapLabel, arrowAfter = false, shown = 1f - profileShown)
+        }
+    }
+}
+
+/** A label with its solid arrowhead; at [shown] below half it is also hidden from screen readers. */
+@Composable
+private fun ViewButtonLabel(label: String, arrowAfter: Boolean, shown: Float) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.alpha(shown).then(if (shown < 0.5f) Modifier.clearAndSetSemantics { } else Modifier)
+    ) {
+        if (!arrowAfter) ViewButtonArrow("\u25C2", Modifier.padding(end = 4.dp))
         Text(
             text = label,
-            // 25 percent larger than before (9 to 11.25), with a little room between letters so short words do not blur
-            fontSize = ms(11.25f),
+            fontSize = ms(10.125f),
             letterSpacing = 0.4.sp,
             fontWeight = FontWeight.Bold,
-            color = if (on) Color.White else Color(0xFF334155),
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
+            color = SWITCH_INK
+        )
+        if (arrowAfter) ViewButtonArrow("\u25B8", Modifier.padding(start = 4.dp))
+    }
+}
+
+/** The solid arrowhead beside the label: filled, like the drop-down arrows elsewhere in the header. */
+@Composable
+private fun ViewButtonArrow(glyph: String, modifier: Modifier) {
+    Text(text = glyph, fontSize = ms(12f), color = SWITCH_INK, modifier = modifier)
+}
+
+/**
+ * Variation "toggle switch" of the view control at the right of Home's first line (the other is [MapViewChevronButton]; Home
+ * picks one with VIEW_SWITCH_AS_TOGGLE): a plain toggle switch with no label. The two options it toggles: off is the Map view
+ * (index 0), on is the Profile view (index 1). A label may be added beside it later; for now Home shows a toast in the middle
+ * of the screen naming the view just switched into.
+ */
+@Composable
+fun MapViewToggleSwitch(
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    // The track while off (the Map view); a light slate when the switch sits on a white card, where white would vanish
+    offTrackColor: Color = Color.White.copy(alpha = 0.90f),
+    // Stood on end: Map at the top (off), Profile at the bottom (on)
+    vertical: Boolean = false
+) {
+    val on = selected == 1
+    val description = stringResource(R.string.view_switch_toggle)
+    val length = if (vertical) TOGGLE_VERTICAL_LENGTH else TOGGLE_WIDTH
+    val thumbLength = if (vertical) TOGGLE_VERTICAL_THUMB_LENGTH else TOGGLE_THUMB_WIDTH
+    val thumbAt by animateDpAsState(if (on) length - thumbLength - TOGGLE_INSET else TOGGLE_INSET, tween(150), label = "viewToggleThumb")
+    val track by animateColorAsState(if (on) SWITCH_INK else offTrackColor, tween(150), label = "viewToggleTrack")
+    val thumb by animateColorAsState(if (on) Color.White else SWITCH_INK, tween(150), label = "viewToggleThumb")
+    Box(
+        modifier = modifier
+            .semantics { contentDescription = description }
+            .toggleable(value = on, role = Role.Switch, onValueChange = { onSelect(if (it) 1 else 0) })
+            .size(width = if (vertical) TOGGLE_HEIGHT else length, height = if (vertical) length else TOGGLE_HEIGHT)
+            .clip(CircleShape)
+            .background(track)
+            .border(1.dp, if (on) SWITCH_INK else SWITCH_LINE, CircleShape)
+    ) {
+        Box(
+            modifier = (if (vertical) Modifier.offset(y = thumbAt).align(Alignment.TopCenter) else Modifier.offset(x = thumbAt).align(Alignment.CenterStart))
+                .size(width = if (vertical) TOGGLE_THUMB else thumbLength, height = if (vertical) thumbLength else TOGGLE_THUMB)
+                .clip(CircleShape)
+                .background(thumb)
         )
     }
 }
+
+/** The toggle's size: 35 percent wider than the standard switch (52dp to 70dp) and 15 percent less tall (32dp to 27.2dp), the thumb inset 3dp all round. */
+private val TOGGLE_WIDTH = 70.dp
+private val TOGGLE_HEIGHT = 27.2.dp
+private val TOGGLE_INSET = 3.dp
+private val TOGGLE_THUMB = TOGGLE_HEIGHT - TOGGLE_INSET * 2
+
+/** The thumb is a wide pill (the newer desktop-switch look), not a circle; set this equal to the thumb's height (21.2dp) to go back to a circle. */
+private val TOGGLE_THUMB_WIDTH = 30.dp
+
+/** Stood on end (the compact header's card): the track is 27.2dp wide and 52dp tall, the pill thumb 21.2dp wide and 30dp tall. */
+private val TOGGLE_VERTICAL_LENGTH = 52.dp
+private val TOGGLE_VERTICAL_THUMB_LENGTH = 30.dp

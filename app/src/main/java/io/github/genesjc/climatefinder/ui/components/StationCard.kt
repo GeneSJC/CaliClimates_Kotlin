@@ -41,6 +41,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,7 +81,9 @@ fun StationCard(
     // Full card: a short mark next to the terrain badge while the card is the selected one (the Station List)
     selectedLabel: String? = null,
     // The station's live reading, from its ViewModel; null while it is being checked
-    reading: ObservationResult? = null
+    reading: ObservationResult? = null,
+    // Compact only: the sky's icon and wording ("Crisp Sub-Alpine"), as the card's first line; none when null
+    skyLine: SkyLine? = null
 ) {
 
     val display = if (useMockReadings) mockDisplay(station) else liveDisplay(reading)
@@ -106,7 +110,7 @@ fun StationCard(
         // The card is the plain surface colour, selected or not (white in the light look); the selection shows in the border
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        if (compact) CompactStationBody(station, terrainBadgeColor, display, regionRangeMeters, onLess, elevationNote, regionName) else Column(modifier = Modifier.padding(16.dp)) {
+        if (compact) CompactStationBody(station, terrainBadgeColor, display, regionRangeMeters, onLess, elevationNote, regionName, skyLine) else Column(modifier = Modifier.padding(16.dp)) {
             // Header row: the badge (and the selected mark) at the left take the room they need; the elevation text takes
             // what is left and aligns to the right, wrapping inside its own space, so the two never overlap
             Row(
@@ -233,28 +237,28 @@ private fun CompactStationBody(
     regionRangeMeters: Pair<Int, Int>? = null,
     onLess: (() -> Unit)? = null,
     elevationNote: String? = null,
-    regionName: String? = null
+    regionName: String? = null,
+    skyLine: SkyLine? = null
 ) {
     // Which sections are open: the readings are, the height and the note start folded, so more of the map shows
     var readingsOpen by rememberSaveable { mutableStateOf(true) }
     var spectrumOpen by rememberSaveable { mutableStateOf(false) }
     var noteOpen by rememberSaveable { mutableStateOf(false) }
     Column(modifier = Modifier.padding(start = 14.dp, end = 8.dp, top = 2.dp, bottom = 12.dp)) {
-        // Row 1: the badges at the left, and the card's fold control (Less) at the right
+        // Row 1: the station's name, whole, and the card's fold arrow at the right (no word, so the name has the room)
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            TerrainBadge(text = stringResource(station.terrain.labelRes), color = badgeColor)
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = stringResource(Elevation.band(station.elevationMeters).labelRes),
-                fontSize = ms(11f),
-                maxLines = 1,
+                text = station.displayName,
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = ms(17f),
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).padding(end = 6.dp)
             )
             if (onLess != null) {
                 CardToggle(
-                    label = stringResource(R.string.action_less),
+                    label = "\u25B2",
                     onClickLabel = stringResource(R.string.station_card_hide),
                     onClick = onLess
                 )
@@ -262,16 +266,6 @@ private fun CompactStationBody(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
-        // Row 2: the name, whole
-        Text(
-            text = station.displayName,
-            style = MaterialTheme.typography.titleMedium,
-            fontSize = ms(17f),
-            fontWeight = FontWeight.Bold,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(end = 6.dp)
-        )
         // The region the station is in, as a small line under its name
         if (regionName != null) {
             Text(
@@ -281,6 +275,19 @@ private fun CompactStationBody(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(end = 6.dp)
+            )
+        }
+        // Row 2: the terrain badge and the height band
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            TerrainBadge(text = stringResource(station.terrain.labelRes), color = badgeColor)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(Elevation.band(station.elevationMeters).labelRes),
+                fontSize = ms(11f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
             )
         }
         // Row 3: the temperature in °F, with °C beside it, and the reading's age at the right
@@ -311,6 +318,16 @@ private fun CompactStationBody(
                     maxLines = 1,
                     modifier = Modifier.padding(bottom = 4.dp, start = 8.dp)
                 )
+            }
+        }
+        // Under the temperature: the sky's icon and wording (what the Profile view's badge used to say), small, in the sky's colour
+        if (skyLine != null) {
+            Row(modifier = Modifier.padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                skyLine.icon?.let {
+                    Text(text = it, fontSize = ms(12f), maxLines = 1)
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+                Text(text = skyLine.text, fontSize = ms(11f), fontWeight = FontWeight.SemiBold, color = skyLine.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         // Row 4: Humidity, Wind and Pressure, three tiles of one height; folds to one line of values

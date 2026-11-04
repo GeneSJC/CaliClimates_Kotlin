@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.genesjc.climatefinder.ui.map.MapViewModel
+import io.github.genesjc.climatefinder.ui.regionpicker.RegionPickerViewModel
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -80,12 +81,16 @@ fun StationMapScreen(
     /** Home: bumped to ask the map to bring the selected station back to the middle of the view. */
     recenterTick: Int = 0,
     viewModel: MapViewModel = viewModel(),
+    // The same picker ViewModel Home already made: its statewide terrain pictures also fill the map past its region's own picture
+    pickerViewModel: RegionPickerViewModel = viewModel(),
 ) {
     val stations by remember(dataset) { viewModel.stations(dataset) }.collectAsStateWithLifecycle()
 
     // The selected station can be shared with another screen (Home keeps it across its two tabs)
     // The region's terrain picture, loaded off the main thread; the map shows a plain base until it arrives
     val terrain by remember(dataset.regionId) { viewModel.terrain(dataset.regionId) }.collectAsStateWithLifecycle()
+    // The statewide terrain, under the region's own picture; null until it has loaded
+    val stateTerrain by pickerViewModel.stateTerrain.collectAsStateWithLifecycle()
     // Stations known to have no reading, drawn as rings
     val noReadingIds by viewModel.noReadingIds.collectAsStateWithLifecycle()
     // Keyed to the data, so a region change starts from that region's first station and not the old region's id
@@ -228,6 +233,7 @@ fun StationMapScreen(
                 SpatialMapCanvas(
                     stations = stations,
                     terrain = terrain,
+                    stateTerrain = stateTerrain,
                     cityName = viewModel::cityName,
                     embedded = embedded,
                     selectedStationId = selectedStationId,

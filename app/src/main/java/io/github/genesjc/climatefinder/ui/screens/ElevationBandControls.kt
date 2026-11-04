@@ -15,6 +15,7 @@ import io.github.genesjc.climatefinder.ui.components.LAYERS_BUTTON_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BAND_ARC_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BandAngleArc
 import io.github.genesjc.climatefinder.ui.components.BandsNotice
+import io.github.genesjc.climatefinder.ui.components.BAND_COMPASS_SIZE_DP
 import io.github.genesjc.climatefinder.ui.components.BandCompass
 import io.github.genesjc.climatefinder.ui.components.LAYER_LEGEND_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.components.LayerLegend
@@ -58,9 +59,15 @@ internal fun BoxScope.ElevationBandControls(
         leading = { TagsSwitch(tagsFollowView, tagsToast, onToggleTags) }
     )
     if (layersOn) {
+        // The compass left of the dial, level with it above the key, so the view's heading and the dial read together (with the
+        // chip among the controls); else at the top right
         BandCompass(
             angle = bandAngle,
-            modifier = Modifier.align(Alignment.TopEnd).padding(end = 6.dp, top = layersButtonTop)
+            modifier = if (VIEW_CHIP_IN_CONTROLS) {
+                Modifier.align(Alignment.BottomEnd).padding(end = (LEGEND_MARGIN_DP + BAND_ARC_SIZE_DP + 10f).dp, bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp)
+            } else {
+                Modifier.align(Alignment.TopEnd).padding(end = 6.dp, top = layersButtonTop)
+            }
         )
         BandAngleArc(
             angle = bandAngle,
@@ -76,10 +83,11 @@ internal fun BoxScope.ElevationBandControls(
         modifier = Modifier
             .align(Alignment.BottomEnd)
             .padding(
-                end = (LEGEND_MARGIN_DP + BAND_ARC_SIZE_DP + 8f).dp,
+                // Left of the compass too, when it sits beside the dial
+                end = (LEGEND_MARGIN_DP + BAND_ARC_SIZE_DP + 8f + (if (layersOn && VIEW_CHIP_IN_CONTROLS) BAND_COMPASS_SIZE_DP + 10f else 0f)).dp,
                 bottom = (LEGEND_MARGIN_DP + LAYER_LEGEND_HEIGHT_DP + BAND_ARC_GAP_DP).dp
             )
-            .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_SIZE_DP - 8f - 10f).dp)
+            .widthIn(max = (widthDp.value - LEGEND_MARGIN_DP - BAND_ARC_SIZE_DP - 8f - 10f - (if (layersOn && VIEW_CHIP_IN_CONTROLS) BAND_COMPASS_SIZE_DP + 10f else 0f)).dp)
     )
     // The bands button sits in the hole of the dial, above the key; with the bands off it stays there on its own
     LayersToggleButton(

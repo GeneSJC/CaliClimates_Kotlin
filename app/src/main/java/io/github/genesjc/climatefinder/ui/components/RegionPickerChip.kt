@@ -3,6 +3,7 @@ package io.github.genesjc.climatefinder.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -32,7 +33,13 @@ val PICKER_BUTTON_HEIGHT = 32.dp
  * region at full strength. Tapping anywhere on it opens the graphical picker, which grows out of the silhouette.
  */
 @Composable
-fun RegionPickerChip(state: RegionPickerState, selectedRegionId: String, modifier: Modifier = Modifier) {
+fun RegionPickerChip(
+    state: RegionPickerState,
+    selectedRegionId: String,
+    modifier: Modifier = Modifier,
+    // The room between the button's outline and the icon
+    contentPadding: PaddingValues = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+) {
     val shape = RoundedCornerShape(8.dp)
     Row(
         modifier = modifier
@@ -44,7 +51,7 @@ fun RegionPickerChip(state: RegionPickerState, selectedRegionId: String, modifie
                 onClickLabel = stringResource(R.string.region_picker_change),
                 role = Role.Button
             ) { state.open(selectedRegionId) }
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(contentPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
         StateUsaOutlineIcon(

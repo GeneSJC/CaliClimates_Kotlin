@@ -29,6 +29,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.genesjc.climatefinder.config.StateUsaMapLabel
 import io.github.genesjc.climatefinder.domain.model.GeoBounds
 import io.github.genesjc.climatefinder.ui.theme.LocalStateUsa
 import androidx.compose.ui.graphics.asImageBitmap
@@ -81,7 +82,11 @@ internal fun StateUsaClassicMapCanvas(
     onSelectRegion: (String) -> Unit,
     sizeModifier: Modifier = Modifier.height(430.dp),
     // Stretches the map vertically (1 = true shape); the picker uses a little, to be taller
-    verticalStretch: Float = 1f
+    verticalStretch: Float = 1f,
+    // The frame around the map: its corner radius and line (the picker rounds it by the panel's radius less its padding)
+    cornerRadius: androidx.compose.ui.unit.Dp = 16.dp,
+    frameColor: Color = Color(0xFFC9A66B),
+    frameWidth: androidx.compose.ui.unit.Dp = 1.5.dp
 ) {
     val stateUsa = LocalStateUsa.current
     val art = stateUsa.pickerMap
@@ -97,15 +102,15 @@ internal fun StateUsaClassicMapCanvas(
         modifier = Modifier
             .fillMaxWidth()
             .then(sizeModifier)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(cornerRadius))
             .background(
                 Brush.radialGradient(
                     colors = listOf(Color(0xFFFFFBEB), Color(0xFFF3E1B8), Color(0xFFE6CD98)),
                     radius = 900f
                 ),
-                RoundedCornerShape(16.dp)
+                RoundedCornerShape(cornerRadius)
             )
-            .border(1.5.dp, Color(0xFFC9A66B), RoundedCornerShape(16.dp))
+            .border(frameWidth, frameColor, RoundedCornerShape(cornerRadius))
             .pointerInput(stateUsa, verticalStretch) {
                 detectTapGestures { offset ->
                     val proj = PickerProjection(art.view, size.width.toFloat(), size.height.toFloat(), verticalStretch)
@@ -275,35 +280,69 @@ internal fun StateUsaClassicMapCanvas(
                     topLeft = Offset(px(lon) - layout.size.width / 2f, py(lat) - layout.size.height / 2f)
                 )
             }
-            // Each region's name sits on a beige pill with dark letters, so it never blends into the terrain
+            // Each region's name sits on a light chip with a dot in the region's own colour, so it never blends into
+            // the terrain and reads as part of its region. The chosen region's chip has a stronger outline
             val regionStyle = androidx.compose.ui.text.TextStyle(
-                color = Color(0xFF1A1208),
+                color = Color(0xFF2A1D12),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold
             )
-            fun regionLabel(text: String, lon: Float, lat: Float) {
-                val layout = textMeasurer.measure(text, regionStyle)
-                val pad = 4.dp.toPx()
-                val pillW = layout.size.width + pad * 2f
-                val pillH = layout.size.height + pad * 2f
-                val left = px(lon) - pillW / 2f
-                val top = py(lat) - pillH / 2f
-                drawRoundRect(
-                    color = Color(0xFFF5EAD2).copy(alpha = 0.96f),
-                    topLeft = Offset(left, top),
-                    size = androidx.compose.ui.geometry.Size(pillW, pillH),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(pillH / 2f)
-                )
-                drawRoundRect(
-                    color = Color(0xFF8B6F3E).copy(alpha = 0.55f),
-                    topLeft = Offset(left, top),
-                    size = androidx.compose.ui.geometry.Size(pillW, pillH),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(pillH / 2f),
-                    style = Stroke(width = 1.dp.toPx())
-                )
-                drawText(layout, topLeft = Offset(left + pad, top + pad))
+            val regionStyleSelected = regionStyle.copy(fontWeight = FontWeight.Bold)
+            val shapePoints = stateUsa.regionShapes.mapValues { (_, shape) -> shape.map(proj::point) }
+            /** The region whose polygon holds the point, with the polygon, or null. */
+            fun regionAt(x: Float, y: Float) = shapePoints.entries.firstOrNull { inPoly(Offset(x, y), it.value) }
+            /** The leftmost x where the polygon is crossed by the horizontal line at [y]. */
+            fun leftEdgeAt(poly: List<Offset>, y: Float): Float? {
+                var left: Float? = null
+                var j = poly.size - 1
+                for (i in poly.indices) {
+                    val a = poly[i]
+                    val b = poly[j]
+                    if ((a.y > y) != (b.y > y)) {
+                        val x = (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x
+                        if (left == null || x < left) left = x
+                    }
+                    j = i
+                }
+                return left
             }
-            art.regionLabels.forEachIndexed { i, l -> regionLabel(regionLabelTexts[i], l.lon, l.lat) }
+            fun regionLabel(text: String, label: StateUsaMapLabel) {
+                val owner = regionAt(px(label.lon), py(label.lat))
+                val region = owner?.let { stateUsa.region(it.key) }
+                val dotColor = region?.let { Color(android.graphics.Color.parseColor(it.colorHex)) } ?: Color(0xFF8B6F3E)
+                val isSelected = region != null && region.id == selectedRegionId
+                val layout = textMeasurer.measure(text, if (isSelected) regionStyleSelected else regionStyle)
+                val dot = 7.dp.toPx()
+                val padStart = 8.dp.toPx()
+                val padEnd = 10.dp.toPx()
+                val gap = 6.dp.toPx()
+                val chipW = padStart + dot + gap + layout.size.width + padEnd
+                val chipH = layout.size.height + 10.dp.toPx()
+                val top = py(label.lat) - chipH / 2f
+                // Starts just inside the region's own left border, or sits centred on its point
+                val left = if (label.startInside && owner != null) {
+                    (leftEdgeAt(owner.value, py(label.lat)) ?: (px(label.lon) - chipW / 2f)) + 3.dp.toPx()
+                } else {
+                    px(label.lon) - chipW / 2f
+                }
+                val corner = androidx.compose.ui.geometry.CornerRadius(8.dp.toPx())
+                val chipSize = androidx.compose.ui.geometry.Size(chipW, chipH)
+                // A soft shadow, then the chip and its outline
+                drawRoundRect(Color(0xFF281908).copy(alpha = 0.18f), Offset(left, top + 1.5.dp.toPx()), chipSize, corner)
+                drawRoundRect(Color(0xFFFFFDF7).copy(alpha = 0.96f), Offset(left, top), chipSize, corner)
+                drawRoundRect(
+                    color = if (isSelected) dotColor else Color(0xFF3C2814).copy(alpha = 0.18f),
+                    topLeft = Offset(left, top),
+                    size = chipSize,
+                    cornerRadius = corner,
+                    style = Stroke(width = if (isSelected) 2.dp.toPx() else 1.dp.toPx())
+                )
+                val cy = top + chipH / 2f
+                drawCircle(Color.White, radius = dot / 2f + 1.dp.toPx(), center = Offset(left + padStart + dot / 2f, cy))
+                drawCircle(dotColor, radius = dot / 2f, center = Offset(left + padStart + dot / 2f, cy))
+                drawText(layout, topLeft = Offset(left + padStart + dot + gap, cy - layout.size.height / 2f))
+            }
+            art.regionLabels.forEachIndexed { i, l -> regionLabel(regionLabelTexts[i], l) }
             // The neighbours, quietly; the one that matters most a little bigger
             val neighbourStyle = androidx.compose.ui.text.TextStyle(
                 color = Color(0xFF6B5636).copy(alpha = 0.75f),

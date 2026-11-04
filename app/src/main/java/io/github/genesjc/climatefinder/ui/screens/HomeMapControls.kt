@@ -131,45 +131,100 @@ internal fun MapControlRow(
     landmarkIds: List<String> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
+    /** Topography only: a button to put right before the north indicator (Home puts the Region Info button there, above the slider's arrow). */
+    beforeNorth: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val blue = Color(0xFF0284C7)
+    // With the chip among the controls it sits at the right under the header (Home draws it), so the left column starts with the
+    // view's own items: on the Map view the north indicator row; on the Profile view the Stations drop-down, after the room the
+    // slider's arrow button takes at its left (32dp and a 6dp gap), which is drawn with the chart's controls
+    if (VIEW_CHIP_IN_CONTROLS && onElevation) {
+        // The Locate button under the Stations drop-down, there only while the selected station is out of view
+        Column(modifier = modifier.padding(start = 38.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation)
+            LocateButton(showLocate, onLocate)
+        }
+    } else {
+        MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, beforeNorth, if (VIEW_CHIP_IN_CONTROLS) modifier.padding(start = 38.dp) else modifier)
+    }
+}
+
+/** The items of the control row itself (see [MapControlRow]). */
+@Composable
+private fun MapControlRowItems(
+    onElevation: Boolean,
+    showLocate: Boolean,
+    onLocate: () -> Unit,
+    stations: List<MicroclimateStation>,
+    landmarkIds: List<String>,
+    selectedStationId: String?,
+    onPickStation: (String) -> Unit,
+    beforeNorth: (@Composable () -> Unit)?,
+    modifier: Modifier
+) {
+    if (!onElevation && VIEW_CHIP_IN_CONTROLS) {
+        // The Map view with the chip among the controls: the slider's arrow button is at the left of the top row (drawn with the
+        // map's controls), as on the Profile view, with Region Info right of it, the north indicator under Info and the locate button
+        // under that, so the arrow and the slider sit in the same place on both views
+        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            beforeNorth?.invoke()
+            NorthTile()
+            // The Locate button under the north indicator
+            LocateButton(showLocate, onLocate)
+        }
+        return
+    }
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         if (onElevation) {
             StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation)
         } else {
-            // The north indicator, as a button-sized tile (not a button: it does nothing)
-            Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = Color.White.copy(alpha = 0.90f),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(text = "\u25B2 N", fontSize = ms(8f), fontWeight = FontWeight.ExtraBold, color = blue)
-                    }
-                }
+            beforeNorth?.invoke()
+            NorthTile()
+            LocateButton(showLocate, onLocate)
+        }
+    }
+}
+
+/** The north indicator, as a button-sized tile (not a button: it does nothing). */
+@Composable
+private fun NorthTile() {
+    val blue = Color(0xFF0284C7)
+    Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {
+        Surface(
+            shape = RoundedCornerShape(6.dp),
+            color = Color.White.copy(alpha = 0.90f),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(text = "\u25B2 N", fontSize = ms(8f), fontWeight = FontWeight.ExtraBold, color = blue)
             }
-            // The empty box (four corner brackets): brings the selected station back into view. It is only there while
-            // the selected station is out of the visible map (panned away, or zoomed in past it)
-            androidx.compose.animation.AnimatedVisibility(
-                visible = showLocate,
-                enter = androidx.compose.animation.fadeIn(),
-                exit = androidx.compose.animation.fadeOut()
-            ) {
-                MapControlButton(stringResource(R.string.map_locate_selected), onLocate) {
-                    Canvas(modifier = Modifier.size(16.dp)) {
-                        val stroke = 2.dp.toPx()
-                        val arm = size.width * 0.38f
-                        val w = size.width
-                        val h = size.height
-                        fun line(a: Offset, b: Offset) = drawLine(blue, a, b, strokeWidth = stroke, cap = StrokeCap.Round)
-                        line(Offset(0f, 0f), Offset(arm, 0f)); line(Offset(0f, 0f), Offset(0f, arm))
-                        line(Offset(w, 0f), Offset(w - arm, 0f)); line(Offset(w, 0f), Offset(w, arm))
-                        line(Offset(0f, h), Offset(arm, h)); line(Offset(0f, h), Offset(0f, h - arm))
-                        line(Offset(w, h), Offset(w - arm, h)); line(Offset(w, h), Offset(w, h - arm))
-                    }
-                }
+        }
+    }
+}
+
+/**
+ * The empty box (four corner brackets): brings the selected station back into view. It is only there while the selected station is
+ * out of the visible map (panned away, or zoomed in past it).
+ */
+@Composable
+private fun LocateButton(showLocate: Boolean, onLocate: () -> Unit) {
+    val blue = Color(0xFF0284C7)
+    androidx.compose.animation.AnimatedVisibility(
+        visible = showLocate,
+        enter = androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.fadeOut()
+    ) {
+        MapControlButton(stringResource(R.string.map_locate_selected), onLocate) {
+            Canvas(modifier = Modifier.size(16.dp)) {
+                val stroke = 2.dp.toPx()
+                val arm = size.width * 0.38f
+                val w = size.width
+                val h = size.height
+                fun line(a: Offset, b: Offset) = drawLine(blue, a, b, strokeWidth = stroke, cap = StrokeCap.Round)
+                line(Offset(0f, 0f), Offset(arm, 0f)); line(Offset(0f, 0f), Offset(0f, arm))
+                line(Offset(w, 0f), Offset(w - arm, 0f)); line(Offset(w, 0f), Offset(w, arm))
+                line(Offset(0f, h), Offset(arm, h)); line(Offset(0f, h), Offset(0f, h - arm))
+                line(Offset(w, h), Offset(w - arm, h)); line(Offset(w, h), Offset(w, h - arm))
             }
         }
     }

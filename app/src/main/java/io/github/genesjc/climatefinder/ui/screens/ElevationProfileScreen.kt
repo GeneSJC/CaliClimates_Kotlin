@@ -92,6 +92,9 @@ fun ElevationProfileScreen(
     onNotice: ((String) -> Unit)? = null,
     /** The note to show now, if any (the caller times it); the chart shows it beside the bands controls. */
     notice: String? = null,
+    /** Home: told whether the selected station is out of the chart's view (for the Locate button), and bumped to bring it back to the middle. */
+    onSelectedOffscreenChange: ((Boolean) -> Unit)? = null,
+    recenterTick: Int = 0,
     viewModel: ElevationViewModel = viewModel(),
 ) {
     val stations by remember(dataset) { viewModel.stations(dataset) }.collectAsStateWithLifecycle()
@@ -237,6 +240,8 @@ fun ElevationProfileScreen(
                     onZoomChange = onZoomChange,
                     sliderShownShared = sliderShownShared,
                     onSliderShownChange = onSliderShownChange,
+                    onSelectedOffscreenChange = onSelectedOffscreenChange,
+                    recenterTick = recenterTick,
                     onSelectStation = {
                         localSelectedId = it.id
                         onStationSelected?.invoke(it.id)
