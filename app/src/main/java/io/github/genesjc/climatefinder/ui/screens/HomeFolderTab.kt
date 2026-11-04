@@ -76,7 +76,8 @@ internal fun BoxScope.HomeFolderTabContent(
             // The view's name above the region's name, or below it (VIEW_LABEL_ABOVE_NAME)
             if (VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab, modifier = Modifier.align(Alignment.End))
             Text(
-                text = stringResource(region.nameRes),
+                // The region's shorter header name where it has one (the tab has little room), else its name
+                text = stringResource(if (region.headerNameRes != 0) region.headerNameRes else region.nameRes),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,

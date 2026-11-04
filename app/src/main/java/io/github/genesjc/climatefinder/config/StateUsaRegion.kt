@@ -25,6 +25,8 @@ data class StateUsaRegion(
     @StringRes val descriptionRes: Int,
     val status: RegionStatus,
     val activeStationCount: Int = 0,
-    val colorHex: String
+    val colorHex: String,
+    /** A shorter name for the Home header's folder tab, where it has little room; 0 means use [nameRes]. */
+    @StringRes val headerNameRes: Int = 0
 )
 

@@ -151,7 +151,8 @@ object StateUsaCA : StateUsaDefinition {
         descriptionRes = R.string.ca_bay_area_sacramento_description,
         status = RegionStatus.ACTIVE_TRANSECT,
         activeStationCount = 36,
-        colorHex = "#5F8F7C"
+        colorHex = "#5F8F7C",
+        headerNameRes = R.string.ca_bay_area_sacramento_header_name
     )
 
     val NORTHERN_CALIFORNIA = StateUsaRegion(

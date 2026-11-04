@@ -44,6 +44,8 @@
 
     <!-- Region bay_area_sacramento -->
     <string name="ca_bay_area_sacramento_name">Bay Area / Sacramento</string>
+    <!-- The shorter name on the Home header's folder tab, where a long name collided with the view chip -->
+    <string name="ca_bay_area_sacramento_header_name">SF Bay Area</string>
     <string name="ca_bay_area_sacramento_title">Bay Area &amp; Sacramento</string>
     <string name="ca_bay_area_sacramento_subtitle">Golden Gate Gap to Sierra Foothills (Active Transect)</string>
     <string name="ca_bay_area_sacramento_description">The primary baseline transect: fully unified draggable and zoomable coordinate space covering stations from Pacific tidepools to alpine ridge tops.</string>
