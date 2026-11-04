@@ -111,20 +111,20 @@ internal fun BoxScope.HomeFolderTabContent(
 private const val TAB_TEXT_GLOW = true
 
 /** The brightness of the name's ink (0 is black, 1 full): low, so it is dark and reads on the tint. */
-private const val TAB_INK_VALUE = 0.30f
+private const val TAB_INK_VALUE = 0.44f
 
 /** How much the colour's saturation is multiplied for the name's ink, so a muted region colour does not go grey when it is darkened. */
-private const val TAB_INK_SATURATION_BOOST = 1.8f
+private const val TAB_INK_SATURATION_BOOST = 2.0f
 
 /**
  * The name's ink for a region colour: the same hue, darkened to [TAB_INK_VALUE] with its saturation lifted by [TAB_INK_SATURATION_BOOST]
- * (capped at 0.85), so Los Angeles gets a deep navy and the Bay Area a deep green. Fading the colour toward black instead (the first
+ * (capped at 0.9), so Los Angeles gets a deep navy and the Bay Area a deep green. Fading the colour toward black instead (the first
  * try, build 149.62) kept it so desaturated that it looked plain black.
  */
 private fun regionInk(colorHex: String): Color {
     val hsv = FloatArray(3)
     android.graphics.Color.colorToHSV(android.graphics.Color.parseColor(colorHex), hsv)
-    hsv[1] = (hsv[1] * TAB_INK_SATURATION_BOOST).coerceAtMost(0.85f)
+    hsv[1] = (hsv[1] * TAB_INK_SATURATION_BOOST).coerceAtMost(0.9f)
     hsv[2] = TAB_INK_VALUE
     return Color(android.graphics.Color.HSVToColor(hsv))
 }
