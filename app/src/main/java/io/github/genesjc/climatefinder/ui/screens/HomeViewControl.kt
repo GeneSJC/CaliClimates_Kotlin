@@ -1,5 +1,7 @@
 package io.github.genesjc.climatefinder.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -75,11 +77,19 @@ internal const val VIEW_LABEL_ABOVE_NAME = true
  */
 internal const val VIEW_LABEL_OVER_TOGGLE = true
 
-/** A gentle pastel (soft peach) for the view chip and for the floating toggle's off track; the same colour in both. */
-internal val VIEW_PASTEL = Color(0xFFFFE3C2)
+/** The green of the folder tab, for the view chip and for the floating toggle's off track; the same colour in both. */
+internal val VIEW_FOLDER_GREEN = Color(0xFFE4EBDA)
 
-/** The chip's letters: a warm dark brown that goes with the pastel. */
-private val VIEW_CHIP_INK = Color(0xFF4A3520)
+/** The chip's letters: a dark slate on the green. */
+private val VIEW_CHIP_INK = Color(0xFF1F2937)
+
+/**
+ * Where the view's name chip goes with the toggle switch (Gene, 2026-11-04): true puts it with the map's controls under the
+ * header, so it stays put as the view changes: on the Map view it is the first item of the column under the station tile (then
+ * the north indicator, then Info); on the Profile view it comes after the Stations drop-down, on the row with the slider's arrow
+ * button. The toggle then floats alone at the right of the header. Takes the place of VIEW_LABEL_OVER_TOGGLE when on.
+ */
+internal const val VIEW_CHIP_IN_CONTROLS = true
 
 /** Whether the compact header is in use: the toggle variation and the combined card. */
 internal const val HEADER_COMPACT = VIEW_SWITCH_AS_TOGGLE && VIEW_WIDGET_COMBINED
@@ -97,21 +107,24 @@ internal fun HomeViewControl(
 ) {
     if (VIEW_SWITCH_AS_TOGGLE) {
         val flip = rememberViewFlip(onSelect, toast)
-        if (VIEW_LABEL_OVER_TOGGLE) {
+        if (VIEW_CHIP_IN_CONTROLS) {
+            // The chip is with the map's controls: the toggle floats alone
+            MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier, offTrackColor = VIEW_FOLDER_GREEN)
+        } else if (VIEW_LABEL_OVER_TOGGLE) {
             // The chip above the switch, a margin between them
             Column(modifier = modifier, horizontalAlignment = Alignment.End) {
                 HomeViewLabelChip(selected)
                 Spacer(modifier = Modifier.height(5.dp))
-                MapViewToggleSwitch(selected = selected, onSelect = flip, offTrackColor = VIEW_PASTEL)
+                MapViewToggleSwitch(selected = selected, onSelect = flip, offTrackColor = VIEW_FOLDER_GREEN)
             }
         } else if (VIEW_LABEL_UNDER_TOGGLE) {
             Column(modifier = modifier, horizontalAlignment = Alignment.End) {
-                MapViewToggleSwitch(selected = selected, onSelect = flip, offTrackColor = VIEW_PASTEL)
+                MapViewToggleSwitch(selected = selected, onSelect = flip, offTrackColor = VIEW_FOLDER_GREEN)
                 Spacer(modifier = Modifier.height(3.dp))
                 HomeViewLabelChip(selected)
             }
         } else {
-            MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier, offTrackColor = VIEW_PASTEL)
+            MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier, offTrackColor = VIEW_FOLDER_GREEN)
         }
     } else {
         MapViewChevronButton(
@@ -131,8 +144,8 @@ internal fun HomeViewControl(
  */
 @Composable
 internal fun HomeViewLabel(selected: Int, modifier: Modifier = Modifier) {
-    if (!VIEW_SWITCH_AS_TOGGLE || VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE || HEADER_COMPACT) return
-    Surface(shape = RoundedCornerShape(6.dp), color = VIEW_PASTEL, modifier = modifier) {
+    if (!VIEW_SWITCH_AS_TOGGLE || VIEW_CHIP_IN_CONTROLS || VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE || HEADER_COMPACT) return
+    Surface(shape = RoundedCornerShape(6.dp), color = VIEW_FOLDER_GREEN, modifier = modifier) {
         Text(
             text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
             fontSize = 12.3.sp,
@@ -148,7 +161,7 @@ internal fun HomeViewLabel(selected: Int, modifier: Modifier = Modifier) {
 /** The line naming the view, on a small white chip under the toggle (VIEW_LABEL_UNDER_TOGGLE): dark ink on white reads against any background. */
 @Composable
 private fun HomeViewLabelChip(selected: Int) {
-    Surface(shape = RoundedCornerShape(6.dp), color = VIEW_PASTEL) {
+    Surface(shape = RoundedCornerShape(6.dp), color = VIEW_FOLDER_GREEN) {
         Text(
             text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
             fontSize = 12.3.sp,
@@ -202,6 +215,30 @@ internal fun HomeViewWidget(selected: Int, onSelect: (Int) -> Unit, toast: TagsT
             Spacer(modifier = Modifier.width(8.dp))
             // The switch stood on end: Map at the top, Profile at the bottom
             MapViewToggleSwitch(selected = selected, onSelect = flip, offTrackColor = Color(0xFFE2E8F0), vertical = true)
+        }
+    }
+}
+
+/**
+ * The chip naming the view you are in, with the map's controls (VIEW_CHIP_IN_CONTROLS): the folder tab's green with a fine outline
+ * like the folder's, 24dp tall, centred letters. It stays in the same place when the view changes.
+ */
+@Composable
+internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = VIEW_FOLDER_GREEN.copy(alpha = 0.96f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+        modifier = modifier.height(24.dp)
+    ) {
+        Box(modifier = Modifier.padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+            Text(
+                text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
+                fontSize = 12.3.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                color = VIEW_CHIP_INK
+            )
         }
     }
 }

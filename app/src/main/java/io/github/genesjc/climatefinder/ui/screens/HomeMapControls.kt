@@ -131,12 +131,39 @@ internal fun MapControlRow(
     landmarkIds: List<String> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
+    /** The view you are in (0 Map, 1 Profile), for the chip that names it when VIEW_CHIP_IN_CONTROLS is on. */
+    selectedView: Int = 0,
     modifier: Modifier = Modifier
+) {
+    // On the Map view the chip is the first item of a column (then the north indicator row); the Profile view's row has it last
+    if (VIEW_CHIP_IN_CONTROLS && !onElevation) {
+        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            HomeViewChip(selectedView)
+            MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, Modifier)
+        }
+    } else {
+        MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, modifier)
+    }
+}
+
+/** The items of the control row itself (see [MapControlRow]). */
+@Composable
+private fun MapControlRowItems(
+    onElevation: Boolean,
+    showLocate: Boolean,
+    onLocate: () -> Unit,
+    stations: List<MicroclimateStation>,
+    landmarkIds: List<String>,
+    selectedStationId: String?,
+    onPickStation: (String) -> Unit,
+    selectedView: Int,
+    modifier: Modifier
 ) {
     val blue = Color(0xFF0284C7)
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         if (onElevation) {
             StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation)
+            if (VIEW_CHIP_IN_CONTROLS) HomeViewChip(selectedView)
         } else {
             // The north indicator, as a button-sized tile (not a button: it does nothing)
             Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {
