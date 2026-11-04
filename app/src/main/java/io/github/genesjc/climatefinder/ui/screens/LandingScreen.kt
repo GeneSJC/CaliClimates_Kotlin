@@ -93,6 +93,13 @@ private val FOLDER_MARGIN = 20.dp
 /** The region picker button on the folder's tab: a little taller than PICKER_BUTTON_HEIGHT, which the other screens use. */
 private val HEADER_PICKER_HEIGHT = 40.dp
 
+/**
+ * How much shorter the folder's tab is than it was (the body's top edge, right of the tab and under the toggle, is this much
+ * higher), with the gap under the tab made this much taller, so the station tile stays where it was and its margin from the
+ * body's edge grows by this much.
+ */
+private val FOLDER_TAB_TRIM = 6.dp
+
 data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
 
@@ -390,7 +397,8 @@ fun LandingScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .onSizeChanged { folderTabHeight = it.height.toFloat() }
-                                        .padding(top = 6.dp, bottom = 2.dp),
+                                        // Half the trim off the top and half off the tab's bottom: the whole tab is FOLDER_TAB_TRIM shorter
+                                        .padding(top = 6.dp - FOLDER_TAB_TRIM / 2, bottom = 2.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.Top
                                 ) {
@@ -407,7 +415,7 @@ fun LandingScreen(
                                             // The end padding is the room the tab's slope needs
                                             // No start padding: the icon lines up with the left edge of the station tile (both FOLDER_MARGIN in). 2dp above the icon on top of the row's 6dp: half the room that was above it when the content was centred
                                             // With the row's own 2dp this leaves 8.4dp under the icon (14dp, then 10.5dp, now 20 percent less again)
-                                            modifier = Modifier.padding(start = 0.dp, end = 28.dp, top = 2.dp, bottom = 8.4.dp - 2.dp)
+                                            modifier = Modifier.padding(start = 0.dp, end = 28.dp, top = 2.dp, bottom = 8.4.dp - 2.dp - FOLDER_TAB_TRIM / 2)
                                         ) {
                                             // A little bigger than the other picker buttons (40dp), with more room inside its outline
                                             RegionPickerChip(
@@ -449,7 +457,7 @@ fun LandingScreen(
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
-                                Spacer(modifier = Modifier.height(if (HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME || VIEW_LABEL_OVER_TOGGLE) 6.dp else 12.dp))
+                                Spacer(modifier = Modifier.height(if (HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME || VIEW_LABEL_OVER_TOGGLE) 6.dp + FOLDER_TAB_TRIM else 12.dp))
                                 // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(
