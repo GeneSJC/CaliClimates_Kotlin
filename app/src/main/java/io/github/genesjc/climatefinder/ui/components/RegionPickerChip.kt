@@ -16,7 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.stringResource
@@ -24,6 +26,14 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import io.github.genesjc.climatefinder.R
+
+/** Whether the picker button has the blue-to-green wash (Gene, 2026-11-04) or the plain translucent white it had. */
+private const val PICKER_CHIP_GRADIENT = true
+
+/** The wash, from the button's top-left corner to its bottom-right: pale sea blue, a near-white band, pale land green. */
+private val PICKER_CHIP_BRUSH = Brush.linearGradient(
+    colors = listOf(Color(0xFFC6E2F7), Color(0xFFEDF7EF), Color(0xFFCFEFD6))
+)
 
 /** The picker button's height, in the region's bar at the right of the header; tunable here. */
 val PICKER_BUTTON_HEIGHT = 32.dp
@@ -44,7 +54,9 @@ fun RegionPickerChip(
     Row(
         modifier = modifier
             .clip(shape)
-            .background(Color.White.copy(alpha = 0.9f))
+            // A soft diagonal wash, pale blue at the top left through a near-white middle to pale green at the bottom right (the sea and
+            // the land), in place of plain white; the state's outline on it is unchanged (see PICKER_CHIP_GRADIENT)
+            .background(if (PICKER_CHIP_GRADIENT) PICKER_CHIP_BRUSH else SolidColor(Color.White.copy(alpha = 0.9f)))
             .border(1.dp, MaterialTheme.colorScheme.primary, shape)
             .clickable(
                 enabled = !state.visible,
