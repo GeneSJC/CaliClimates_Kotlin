@@ -461,7 +461,7 @@ fun LandingScreen(
                                         onSelect = onHomeTabChange,
                                         toast = viewToast,
                                         // More room from the tab's edge; 8.1dp below keeps the switch's distance from the folder's edge as the tab gets shorter
-                                        modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = if (VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE) 0.dp else 8.1.dp)
+                                        modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = if (VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE || VIEW_CHIP_ABOVE_TOGGLE) 0.dp else 8.1.dp)
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
@@ -492,7 +492,7 @@ fun LandingScreen(
                             )
                         }
                         // The view chip at the right under the header, the same place on both views
-                        if (VIEW_CHIP_IN_CONTROLS && !VIEW_CHIP_IN_TAB) {
+                        if (VIEW_CHIP_UNDER_HEADER) {
                             HomeViewChip(homeTab, Modifier.align(Alignment.TopEnd).zIndex(1f).padding(end = 12.dp, top = 12.dp + HOME_TILE_BAND + CONTROLS_GAP))
                         }
                         // The Region Info button, as a slot of the control row when the chip is among the controls

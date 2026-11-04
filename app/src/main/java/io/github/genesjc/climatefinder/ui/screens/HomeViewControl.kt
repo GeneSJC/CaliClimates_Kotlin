@@ -83,7 +83,20 @@ internal const val VIEW_LABEL_OVER_TOGGLE = true
  * line at the right, and only while the Profile view is showing (the Map view describes itself, so no chip there); false keeps
  * it at the right under the header on both views.
  */
-internal const val VIEW_CHIP_IN_TAB = true
+internal const val VIEW_CHIP_IN_TAB = false
+
+/**
+ * With VIEW_CHIP_IN_CONTROLS on and VIEW_CHIP_IN_TAB off (Gene, 2026-11-04): true puts the chip ABOVE the toggle at the right of the
+ * header, only while the Elevation view is showing, and the toggle sits lower to make room without making the header any taller
+ * (the room is held on the Map view too, so the toggle does not jump). false puts the chip at the right under the header.
+ */
+internal const val VIEW_CHIP_ABOVE_TOGGLE = true
+
+/** Whether the chip sits at the right under the header on both views: the older of the chip's places. */
+internal const val VIEW_CHIP_UNDER_HEADER = VIEW_CHIP_IN_CONTROLS && !VIEW_CHIP_IN_TAB && !VIEW_CHIP_ABOVE_TOGGLE
+
+/** The chip's height above the toggle, small enough that chip and toggle together fit the first row without making it taller. */
+internal val VIEW_TOP_CHIP_HEIGHT = 17.dp
 
 /** The chip's height on the folder tab, where it shares the tab's second line. */
 internal val VIEW_TAB_CHIP_HEIGHT = 22.dp
@@ -94,8 +107,8 @@ internal val CONTROLS_GAP = 20.dp
 /** The view chip's height: 32dp like the Stations button and the other map controls it lines up with. */
 internal val VIEW_CHIP_HEIGHT = 32.dp
 
-/** The chip's background: dark slate, a little see-through (the dial's and the key bar's colour), the same on both views. */
-private val VIEW_CHIP_COLOR = Color(0xFF1E293B).copy(alpha = 0.74f)
+/** The chip's background: white, a little see-through (the toggle's own light colour), gentle on both views' backgrounds. */
+private val VIEW_CHIP_COLOR = Color.White.copy(alpha = 0.85f)
 
 /** The green of the folder tab, for the view chip and for the floating toggle's off track; the same colour in both. */
 internal val VIEW_FOLDER_GREEN = Color(0xFFE4EBDA)
@@ -128,8 +141,18 @@ internal fun HomeViewControl(
     if (VIEW_SWITCH_AS_TOGGLE) {
         val flip = rememberViewFlip(onSelect, toast)
         if (VIEW_CHIP_IN_CONTROLS) {
-            // The chip is with the map's controls: the toggle floats alone
-            MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier)
+            if (VIEW_CHIP_ABOVE_TOGGLE) {
+                // The chip above the toggle on the Elevation view; its room is held on the Map view too, so the toggle stays put
+                Column(modifier = modifier, horizontalAlignment = Alignment.End) {
+                    Box(modifier = Modifier.height(VIEW_TOP_CHIP_HEIGHT)) {
+                        androidx.compose.animation.AnimatedVisibility(visible = selected == 1) { HomeViewChip(1, height = VIEW_TOP_CHIP_HEIGHT) }
+                    }
+                    MapViewToggleSwitch(selected = selected, onSelect = flip)
+                }
+            } else {
+                // The chip is with the map's controls: the toggle floats alone
+                MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier)
+            }
         } else if (VIEW_LABEL_OVER_TOGGLE) {
             // The chip above the switch, a margin between them
             Column(modifier = modifier, horizontalAlignment = Alignment.End) {
@@ -250,17 +273,17 @@ internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier, height: 
         // The shape, padding and type of the Stations button, so the chip reads as one of the family
         shape = RoundedCornerShape(6.dp),
         color = VIEW_CHIP_COLOR,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier.height(height)
     ) {
-        Box(modifier = Modifier.padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
                 // The Stations button's size (9, through the shared text scale), in a regular weight; bring bold back if it is too faint
                 fontSize = ms(9f),
                 fontWeight = FontWeight.Normal,
                 maxLines = 1,
-                color = Color.White
+                color = VIEW_CHIP_INK
             )
         }
     }
