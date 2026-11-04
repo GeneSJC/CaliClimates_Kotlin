@@ -51,10 +51,10 @@ internal fun BoxScope.HomeFolderTabContent(
     if (VIEW_CHIP_IN_TAB) {
         HomeViewTabChip(homeTab, Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp).offset(y = 3.dp))
     }
-    // The name's ink: the region's picker colour taken most of the way to black, so it is a dark shade of the tab's own hue; in the dark
+    // The name's ink: a deep, still-coloured shade of the region's picker colour (see regionInk), so it is dark but not black; in the dark
     // look the theme's own text colour
     val lightLook = MaterialTheme.colorScheme.background.luminance() > 0.5f
-    val inkColor = if (lightLook) androidx.compose.ui.graphics.lerp(Color(android.graphics.Color.parseColor(region.colorHex)), Color.Black, TAB_INK_TOWARD_BLACK) else MaterialTheme.colorScheme.onSurface
+    val inkColor = if (lightLook) regionInk(region.colorHex) else MaterialTheme.colorScheme.onSurface
     // How many lines the name takes: one line is lifted to the top of the icon's height while the chip is showing
     var nameLines by remember(region.id) { mutableIntStateOf(1) }
     val lift by animateDpAsState(
@@ -110,8 +110,24 @@ internal fun BoxScope.HomeFolderTabContent(
  */
 private const val TAB_TEXT_GLOW = true
 
-/** How far the region's colour is taken toward black for the name's ink (0 is the colour itself, 1 black); higher is darker. */
-private const val TAB_INK_TOWARD_BLACK = 0.72f
+/** The brightness of the name's ink (0 is black, 1 full): low, so it is dark and reads on the tint. */
+private const val TAB_INK_VALUE = 0.30f
+
+/** How much the colour's saturation is multiplied for the name's ink, so a muted region colour does not go grey when it is darkened. */
+private const val TAB_INK_SATURATION_BOOST = 1.8f
+
+/**
+ * The name's ink for a region colour: the same hue, darkened to [TAB_INK_VALUE] with its saturation lifted by [TAB_INK_SATURATION_BOOST]
+ * (capped at 0.85), so Los Angeles gets a deep navy and the Bay Area a deep green. Fading the colour toward black instead (the first
+ * try, build 149.62) kept it so desaturated that it looked plain black.
+ */
+private fun regionInk(colorHex: String): Color {
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(android.graphics.Color.parseColor(colorHex), hsv)
+    hsv[1] = (hsv[1] * TAB_INK_SATURATION_BOOST).coerceAtMost(0.85f)
+    hsv[2] = TAB_INK_VALUE
+    return Color(android.graphics.Color.HSVToColor(hsv))
+}
 
 /** How far a one-line name moves up (half of the icon's 44dp less the line's 21dp) to sit at the top of the icon's height. */
 private val NAME_LIFT = (-11.5).dp
