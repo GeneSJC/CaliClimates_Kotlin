@@ -102,9 +102,9 @@ internal val FOLDER_TAB_TRIM = 6.dp
 
 /**
  * How far the region's colour is taken toward white for the folder's fill (0 is the full colour, 1 white); its opacity is unchanged.
- * 0.26 is the page backdrop's own tint (see AppBackground), the colour the map's top band showed before the terrain went full screen.
+ * The page backdrop (see AppBackground) uses 0.26, the tone the map's top band showed before the terrain went full screen; the folder uses 0.45, lighter, so the dark text on it keeps its contrast.
  */
-private const val FOLDER_TINT_TOWARD_WHITE = 0.26f
+private const val FOLDER_TINT_TOWARD_WHITE = 0.45f
 
 data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
