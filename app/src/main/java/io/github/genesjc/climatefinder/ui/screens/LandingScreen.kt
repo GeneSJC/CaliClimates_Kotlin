@@ -431,7 +431,7 @@ fun LandingScreen(
                                                     color = MaterialTheme.colorScheme.onSurface,
                                                     lineHeight = 21.sp,
                                                     // Two lines unless the view's name is under the region's name, where one line (ellipsis) keeps the tab's height
-                                                    maxLines = if (VIEW_LABEL_UNDER_TOGGLE || HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME) 2 else 1,
+                                                    maxLines = if (VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE || HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME) 2 else 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                                 if (!VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab, modifier = Modifier.align(Alignment.End))
@@ -445,11 +445,11 @@ fun LandingScreen(
                                         onSelect = onHomeTabChange,
                                         toast = viewToast,
                                         // More room from the tab's edge; 8.1dp below keeps the switch's distance from the folder's edge as the tab gets shorter
-                                        modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = if (VIEW_LABEL_UNDER_TOGGLE) 0.dp else 8.1.dp)
+                                        modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = if (VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE) 0.dp else 8.1.dp)
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
-                                Spacer(modifier = Modifier.height(if (HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME) 6.dp else 12.dp))
+                                Spacer(modifier = Modifier.height(if (HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME || VIEW_LABEL_OVER_TOGGLE) 6.dp else 12.dp))
                                 // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(

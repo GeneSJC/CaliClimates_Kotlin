@@ -68,6 +68,19 @@ internal const val VIEW_WIDGET_COMBINED = false
  */
 internal const val VIEW_LABEL_ABOVE_NAME = true
 
+/**
+ * Where the view's name goes when the toggle floats alone and VIEW_WIDGET_COMBINED is off (Gene, 2026-11-04): true puts it on a
+ * small pastel chip stacked ABOVE the toggle at the right of the first line, with a margin between them (not joined), so the
+ * region's name has the tab to itself and sits centred in it. Takes the place of VIEW_LABEL_ABOVE_NAME when on.
+ */
+internal const val VIEW_LABEL_OVER_TOGGLE = true
+
+/** A gentle pastel (soft peach) for the view chip and for the floating toggle's off track; the same colour in both. */
+internal val VIEW_PASTEL = Color(0xFFFFE3C2)
+
+/** The chip's letters: a warm dark brown that goes with the pastel. */
+private val VIEW_CHIP_INK = Color(0xFF4A3520)
+
 /** Whether the compact header is in use: the toggle variation and the combined card. */
 internal const val HEADER_COMPACT = VIEW_SWITCH_AS_TOGGLE && VIEW_WIDGET_COMBINED
 
@@ -84,14 +97,21 @@ internal fun HomeViewControl(
 ) {
     if (VIEW_SWITCH_AS_TOGGLE) {
         val flip = rememberViewFlip(onSelect, toast)
-        if (VIEW_LABEL_UNDER_TOGGLE) {
+        if (VIEW_LABEL_OVER_TOGGLE) {
+            // The chip above the switch, a margin between them
             Column(modifier = modifier, horizontalAlignment = Alignment.End) {
-                MapViewToggleSwitch(selected = selected, onSelect = flip)
+                HomeViewLabelChip(selected)
+                Spacer(modifier = Modifier.height(5.dp))
+                MapViewToggleSwitch(selected = selected, onSelect = flip, offTrackColor = VIEW_PASTEL)
+            }
+        } else if (VIEW_LABEL_UNDER_TOGGLE) {
+            Column(modifier = modifier, horizontalAlignment = Alignment.End) {
+                MapViewToggleSwitch(selected = selected, onSelect = flip, offTrackColor = VIEW_PASTEL)
                 Spacer(modifier = Modifier.height(3.dp))
                 HomeViewLabelChip(selected)
             }
         } else {
-            MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier)
+            MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier, offTrackColor = VIEW_PASTEL)
         }
     } else {
         MapViewChevronButton(
@@ -111,15 +131,15 @@ internal fun HomeViewControl(
  */
 @Composable
 internal fun HomeViewLabel(selected: Int, modifier: Modifier = Modifier) {
-    if (!VIEW_SWITCH_AS_TOGGLE || VIEW_LABEL_UNDER_TOGGLE || HEADER_COMPACT) return
-    Surface(shape = RoundedCornerShape(6.dp), color = Color.White.copy(alpha = 0.90f), modifier = modifier) {
+    if (!VIEW_SWITCH_AS_TOGGLE || VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE || HEADER_COMPACT) return
+    Surface(shape = RoundedCornerShape(6.dp), color = VIEW_PASTEL, modifier = modifier) {
         Text(
             text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
             fontSize = 12.3.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            color = Color(0xFF334155),
+            color = VIEW_CHIP_INK,
             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
         )
     }
@@ -128,14 +148,14 @@ internal fun HomeViewLabel(selected: Int, modifier: Modifier = Modifier) {
 /** The line naming the view, on a small white chip under the toggle (VIEW_LABEL_UNDER_TOGGLE): dark ink on white reads against any background. */
 @Composable
 private fun HomeViewLabelChip(selected: Int) {
-    Surface(shape = RoundedCornerShape(6.dp), color = Color.White.copy(alpha = 0.90f)) {
+    Surface(shape = RoundedCornerShape(6.dp), color = VIEW_PASTEL) {
         Text(
             text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
             fontSize = 12.3.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            color = Color(0xFF334155),
+            color = VIEW_CHIP_INK,
             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
         )
     }

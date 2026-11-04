@@ -29,10 +29,9 @@ object MapText {
 
 /**
  * On Home the station tile floats over the top of the map, so the map's own controls (maximize, compass, view
- * buttons, slider) and its drawing start this far below the map's top edge. 24dp more than before (102dp) for the tile's
- * second line, the sky's icon and wording (build 149.25).
+ * buttons, slider) and its drawing start this far below the map's top edge.
  */
-val HOME_TILE_BAND: Dp = 126.dp
+val HOME_TILE_BAND: Dp = 102.dp
 
 /** A base text size in sp, multiplied by the shared [MapText.scale]. */
 fun ms(base: Float): TextUnit = (base * MapText.scale).sp
