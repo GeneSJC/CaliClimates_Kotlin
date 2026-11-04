@@ -424,7 +424,7 @@ fun LandingScreen(
                                     MapViewSwitch(
                                         selected = homeTab,
                                         mapLabel = stringResource(R.string.tab_topography),
-                                        profileLabel = stringResource(R.string.view_switch_profile),
+                                        profileLabel = stringResource(R.string.tab_elevation),
                                         onSelect = onHomeTabChange,
                                         // More room from the tab's edge and from the folder's top edge below it
                                         modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = 6.dp)
