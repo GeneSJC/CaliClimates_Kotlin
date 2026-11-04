@@ -407,7 +407,8 @@ fun LandingScreen(
                                             verticalAlignment = Alignment.CenterVertically,
                                             // The end padding is the room the tab's slope needs
                                             // 2dp above the icon on top of the row's 6dp: half the room that was above it when the content was centred
-                                            modifier = Modifier.padding(start = 8.dp, end = 28.dp, top = 2.dp)
+                                            // With the row's own 2dp this leaves 10.5dp under the icon (it was 14dp: 25 percent less)
+                                            modifier = Modifier.padding(start = 8.dp, end = 28.dp, top = 2.dp, bottom = 10.5.dp - 2.dp)
                                         ) {
                                             // A little bigger than the other picker buttons (40dp), with more room inside its outline
                                             RegionPickerChip(

@@ -63,7 +63,8 @@ internal fun HomeViewLabel(selected: Int) {
     if (!VIEW_SWITCH_AS_TOGGLE) return
     Text(
         text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
-        fontSize = 11.sp,
+        // 60 percent bigger than the first try (11sp)
+        fontSize = 17.6.sp,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )

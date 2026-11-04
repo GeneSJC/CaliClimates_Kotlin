@@ -1,22 +1,29 @@
 package io.github.genesjc.climatefinder.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -98,18 +105,33 @@ private fun ViewButtonArrow(glyph: String, modifier: Modifier) {
  */
 @Composable
 fun MapViewToggleSwitch(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val on = selected == 1
     val description = stringResource(R.string.view_switch_toggle)
-    Switch(
-        checked = selected == 1,
-        onCheckedChange = { onSelect(if (it) 1 else 0) },
-        colors = SwitchDefaults.colors(
-            checkedThumbColor = Color.White,
-            checkedTrackColor = SWITCH_INK,
-            checkedBorderColor = SWITCH_INK,
-            uncheckedThumbColor = SWITCH_INK,
-            uncheckedTrackColor = Color.White.copy(alpha = 0.90f),
-            uncheckedBorderColor = SWITCH_LINE
-        ),
-        modifier = modifier.semantics { contentDescription = description }
-    )
+    val thumbX by animateDpAsState(if (on) TOGGLE_WIDTH - TOGGLE_THUMB - TOGGLE_INSET else TOGGLE_INSET, tween(150), label = "viewToggleThumb")
+    val track by animateColorAsState(if (on) SWITCH_INK else Color.White.copy(alpha = 0.90f), tween(150), label = "viewToggleTrack")
+    val thumb by animateColorAsState(if (on) Color.White else SWITCH_INK, tween(150), label = "viewToggleThumb")
+    Box(
+        modifier = modifier
+            .semantics { contentDescription = description }
+            .toggleable(value = on, role = Role.Switch, onValueChange = { onSelect(if (it) 1 else 0) })
+            .size(width = TOGGLE_WIDTH, height = TOGGLE_HEIGHT)
+            .clip(CircleShape)
+            .background(track)
+            .border(1.dp, if (on) SWITCH_INK else SWITCH_LINE, CircleShape)
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(x = thumbX)
+                .align(Alignment.CenterStart)
+                .size(TOGGLE_THUMB)
+                .clip(CircleShape)
+                .background(thumb)
+        )
+    }
 }
+
+/** The toggle's size: as wide as the standard switch (52dp) but 15 percent less tall (32dp to 27.2dp), the thumb inset 3dp all round. */
+private val TOGGLE_WIDTH = 52.dp
+private val TOGGLE_HEIGHT = 27.2.dp
+private val TOGGLE_INSET = 3.dp
+private val TOGGLE_THUMB = TOGGLE_HEIGHT - TOGGLE_INSET * 2
