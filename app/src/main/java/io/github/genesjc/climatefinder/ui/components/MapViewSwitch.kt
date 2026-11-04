@@ -142,15 +142,15 @@ fun MapViewToggleSwitch(
     }
 }
 
-/** The toggle's size: 35 percent wider than the standard switch (52dp to 70dp) and 15 percent less tall (32dp to 27.2dp), the thumb inset 3dp all round. */
+/** The toggle's size: 70dp wide and 34dp tall (it was 27.2dp, made taller to be easier to grab), the thumb inset 3dp all round. */
 private val TOGGLE_WIDTH = 70.dp
-private val TOGGLE_HEIGHT = 27.2.dp
+private val TOGGLE_HEIGHT = 34.dp
 private val TOGGLE_INSET = 3.dp
 private val TOGGLE_THUMB = TOGGLE_HEIGHT - TOGGLE_INSET * 2
 
 /** The thumb is a wide pill (the newer desktop-switch look), not a circle; set this equal to the thumb's height (21.2dp) to go back to a circle. */
 private val TOGGLE_THUMB_WIDTH = 30.dp
 
-/** Stood on end (the compact header's card): the track is 27.2dp wide and 52dp tall, the pill thumb 21.2dp wide and 30dp tall. */
+/** Stood on end (the compact header's card): the track is as wide as the toggle is tall and 52dp long, the pill thumb 30dp long. */
 private val TOGGLE_VERTICAL_LENGTH = 52.dp
 private val TOGGLE_VERTICAL_THUMB_LENGTH = 30.dp

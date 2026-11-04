@@ -3,6 +3,7 @@ package io.github.genesjc.climatefinder.ui.screens
 import androidx.compose.ui.res.stringResource
 import io.github.genesjc.climatefinder.R
 import androidx.compose.animation.AnimatedVisibility
+import io.github.genesjc.climatefinder.ui.components.BlueGreenWash
 import io.github.genesjc.climatefinder.ui.components.ms
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -64,13 +65,14 @@ private fun MapControlButton(
 ) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = Color.White.copy(alpha = 0.90f),
+        color = Color.Transparent,
         border = BorderStroke(1.dp, outline),
         modifier = modifier
             .height(32.dp)
             .clickable(onClickLabel = label, role = Role.Button, onClick = onClick)
     ) {
-        Box(modifier = Modifier.padding(horizontal = 9.dp), contentAlignment = Alignment.Center) { content() }
+        // The blue-to-green wash (the picker button's), in place of white
+        Box(modifier = Modifier.background(BlueGreenWash).padding(horizontal = 9.dp), contentAlignment = Alignment.Center) { content() }
     }
 }
 
@@ -192,10 +194,10 @@ private fun NorthTile() {
     Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {
         Surface(
             shape = RoundedCornerShape(6.dp),
-            color = Color.White.copy(alpha = 0.90f),
+            color = Color.Transparent,
             modifier = Modifier.fillMaxSize()
         ) {
-            Box(contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.background(BlueGreenWash), contentAlignment = Alignment.Center) {
                 Text(text = "\u25B2 N", fontSize = ms(8f), fontWeight = FontWeight.ExtraBold, color = blue)
             }
         }
