@@ -407,8 +407,8 @@ fun LandingScreen(
                                             verticalAlignment = Alignment.CenterVertically,
                                             // The end padding is the room the tab's slope needs
                                             // 2dp above the icon on top of the row's 6dp: half the room that was above it when the content was centred
-                                            // With the row's own 2dp this leaves 10.5dp under the icon (it was 14dp: 25 percent less)
-                                            modifier = Modifier.padding(start = 8.dp, end = 28.dp, top = 2.dp, bottom = 10.5.dp - 2.dp)
+                                            // With the row's own 2dp this leaves 8.4dp under the icon (14dp, then 10.5dp, now 20 percent less again)
+                                            modifier = Modifier.padding(start = 8.dp, end = 28.dp, top = 2.dp, bottom = 8.4.dp - 2.dp)
                                         ) {
                                             // A little bigger than the other picker buttons (40dp), with more room inside its outline
                                             RegionPickerChip(
@@ -440,8 +440,8 @@ fun LandingScreen(
                                         selected = homeTab,
                                         onSelect = onHomeTabChange,
                                         toast = viewToast,
-                                        // More room from the tab's edge and from the folder's top edge below it
-                                        modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = 6.dp)
+                                        // More room from the tab's edge; 8.1dp below keeps the switch's distance from the folder's edge as the tab gets shorter
+                                        modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = 8.1.dp)
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline

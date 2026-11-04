@@ -130,8 +130,8 @@ fun MapViewToggleSwitch(selected: Int, onSelect: (Int) -> Unit, modifier: Modifi
     }
 }
 
-/** The toggle's size: as wide as the standard switch (52dp) but 15 percent less tall (32dp to 27.2dp), the thumb inset 3dp all round. */
-private val TOGGLE_WIDTH = 52.dp
+/** The toggle's size: 35 percent wider than the standard switch (52dp to 70dp) and 15 percent less tall (32dp to 27.2dp), the thumb inset 3dp all round. */
+private val TOGGLE_WIDTH = 70.dp
 private val TOGGLE_HEIGHT = 27.2.dp
 private val TOGGLE_INSET = 3.dp
 private val TOGGLE_THUMB = TOGGLE_HEIGHT - TOGGLE_INSET * 2
