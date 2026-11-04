@@ -475,8 +475,8 @@ fun LandingScreen(
                                     )
                                 }
                             },
-                            // On the Map view the Region Info button sits right of the north indicator
-                            afterNorth = if (homeTab == 0 && VIEW_CHIP_IN_CONTROLS) infoButton else null,
+                            // On the Map view the Region Info button sits left of the north indicator, above the slider's arrow
+                            beforeNorth = if (homeTab == 0 && VIEW_CHIP_IN_CONTROLS) infoButton else null,
                             // The controls start CONTROLS_GAP under the header when the chip is among them
                             modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP else 0.dp))
                         )

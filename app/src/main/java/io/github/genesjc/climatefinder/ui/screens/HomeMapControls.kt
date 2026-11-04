@@ -131,8 +131,8 @@ internal fun MapControlRow(
     landmarkIds: List<String> = emptyList(),
     selectedStationId: String? = null,
     onPickStation: (String) -> Unit = {},
-    /** Topography only: a button to put right after the north indicator (Home puts the Region Info button there). */
-    afterNorth: (@Composable () -> Unit)? = null,
+    /** Topography only: a button to put right before the north indicator (Home puts the Region Info button there, above the slider's arrow). */
+    beforeNorth: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // With the chip among the controls it sits at the right under the header (Home draws it), so the left column starts with the
@@ -141,7 +141,7 @@ internal fun MapControlRow(
     if (VIEW_CHIP_IN_CONTROLS && onElevation) {
         Row(modifier = modifier.padding(start = 38.dp)) { StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation) }
     } else {
-        MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, afterNorth, modifier)
+        MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, beforeNorth, modifier)
     }
 }
 
@@ -155,7 +155,7 @@ private fun MapControlRowItems(
     landmarkIds: List<String>,
     selectedStationId: String?,
     onPickStation: (String) -> Unit,
-    afterNorth: (@Composable () -> Unit)?,
+    beforeNorth: (@Composable () -> Unit)?,
     modifier: Modifier
 ) {
     val blue = Color(0xFF0284C7)
@@ -163,6 +163,8 @@ private fun MapControlRowItems(
         if (onElevation) {
             StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation)
         } else {
+            // The Region Info button first, so it sits above the slider's arrow button and its X shows while the drawer is open
+            beforeNorth?.invoke()
             // The north indicator, as a button-sized tile (not a button: it does nothing)
             Box(modifier = Modifier.width(44.dp).height(32.dp), contentAlignment = Alignment.Center) {
                 Surface(
@@ -175,8 +177,6 @@ private fun MapControlRowItems(
                     }
                 }
             }
-            // The Region Info button, right of the north indicator
-            afterNorth?.invoke()
             // The empty box (four corner brackets): brings the selected station back into view. It is only there while
             // the selected station is out of the visible map (panned away, or zoomed in past it)
             androidx.compose.animation.AnimatedVisibility(
