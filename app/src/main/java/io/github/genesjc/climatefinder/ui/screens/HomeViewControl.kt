@@ -83,6 +83,9 @@ internal val CONTROLS_GAP = 20.dp
 /** The view chip's height, which the controls under it count on. */
 internal val VIEW_CHIP_HEIGHT = 30.dp
 
+/** How solid the chip's colour and the toggle's off-track colour are: 0.5 is half see-through (it was fully solid). */
+private const val VIEW_COLOR_OPACITY = 0.5f
+
 /** The chip's background on the Map view (a light orange), and the same colour for the toggle's off track. */
 private val VIEW_MAP_COLOR = Color(0xFFFFE3C2)
 
@@ -121,7 +124,7 @@ internal fun HomeViewControl(
         val flip = rememberViewFlip(onSelect, toast)
         if (VIEW_CHIP_IN_CONTROLS) {
             // The chip is with the map's controls: the toggle floats alone
-            MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier, offTrackColor = VIEW_MAP_COLOR)
+            MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier, offTrackColor = VIEW_MAP_COLOR.copy(alpha = VIEW_COLOR_OPACITY))
         } else if (VIEW_LABEL_OVER_TOGGLE) {
             // The chip above the switch, a margin between them
             Column(modifier = modifier, horizontalAlignment = Alignment.End) {
@@ -240,7 +243,8 @@ internal fun HomeViewWidget(selected: Int, onSelect: (Int) -> Unit, toast: TagsT
 internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(7.dp),
-        color = if (selected == 0) VIEW_MAP_COLOR else VIEW_PROFILE_COLOR,
+        // Half see-through, so the colour is gentler on the eyes
+        color = (if (selected == 0) VIEW_MAP_COLOR else VIEW_PROFILE_COLOR).copy(alpha = VIEW_COLOR_OPACITY),
         border = BorderStroke(1.dp, VIEW_CHIP_INK.copy(alpha = 0.25f)),
         modifier = modifier.height(VIEW_CHIP_HEIGHT)
     ) {
@@ -248,7 +252,8 @@ internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier) {
             Text(
                 text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
                 fontSize = 16.6.sp,
-                fontWeight = FontWeight.Bold,
+                // Regular weight (it was bold), softer than before
+                fontWeight = FontWeight.Normal,
                 maxLines = 1,
                 color = VIEW_CHIP_INK
             )
