@@ -43,7 +43,7 @@ internal fun BoxScope.ElevationZoomControls(
         SliderToggleButton(
             shown = sliderShown,
             onToggle = { onSliderShownChange(!sliderShown) },
-            modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp + 5.dp * expandT, top = 50.dp + HOME_TILE_BAND)
+            modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp + 5.dp * expandT, top = (if (embedded && VIEW_CHIP_IN_CONTROLS) 12.dp + CONTROLS_GAP else 50.dp) + HOME_TILE_BAND)
         )
     }
     // For now the slider sets the type size instead of the zoom (see MapText)

@@ -77,6 +77,8 @@ internal fun ElevationProfileCanvas(
     onZoomChange: ((Float) -> Unit)? = null,
     sliderShownShared: Boolean? = null,
     onSliderShownChange: ((Boolean) -> Unit)? = null,
+    onSelectedOffscreenChange: ((Boolean) -> Unit)? = null,
+    recenterTick: Int = 0,
     onSelectStation: (MicroclimateStation) -> Unit
 ) {
     if (stations.isEmpty()) return
@@ -115,7 +117,7 @@ internal fun ElevationProfileCanvas(
     val setSliderShown: (Boolean) -> Unit = { localSliderShown = it; onSliderShownChange?.invoke(it) }
     val sliderCollapsible = embedded
     // The slider starts lower on Home, to leave room for that button
-    val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + 32.dp else 0.dp)
+    val sliderTop = 56.dp + (if (embedded) HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP - 6.dp else 32.dp) else 0.dp)
     // The layers button sits at the right, under Home's view buttons (or level with the expand toggle)
     val layersButtonTop = if (embedded) HOME_TILE_BAND + 62.dp else 56.dp
 
@@ -329,17 +331,13 @@ internal fun ElevationProfileCanvas(
             easePanTo(pan, centringPan(bx, by), LAYERS_FADE_MS, touchedAt) { pan = it }
         }
 
-        // When the selected station changes (from the Stations list, the tile or the other view) and it is not in
-        // view at this zoom and pan, ease the chart over so it is
-        androidx.compose.runtime.LaunchedEffect(selectedStationId, sorted) {
-            val idx = sorted.indexOfFirst { it.id == selectedStationId }
-            if (idx < 0) return@LaunchedEffect
-            val bx = pinBaseX(idx)
-            val by = pinBaseY(idx)
-            if (inComfortableView(bx, by)) return@LaunchedEffect
-            zoomJob?.cancel()
-            easePanTo(pan, centringPan(bx, by), BRING_INTO_VIEW_MS, touchedAt) { pan = it }
-        }
+        // Keeps the selected station in view and serves Home's Locate button (see ElevationLocateEffects)
+        ElevationLocateEffects(
+            selectedStationId, sorted, recenterTick, onSelectedOffscreenChange,
+            comfortable = { i -> inComfortableView(pinBaseX(i), pinBaseY(i)) },
+            visible = { i -> viewX(pinBaseX(i)) in 0f..canvasW && viewY(pinBaseY(i)) in with(density) { (if (embedded) HOME_TILE_BAND else 0.dp).toPx() }..canvasH },
+            centre = { i -> zoomJob?.cancel(); easePanTo(pan, centringPan(pinBaseX(i), pinBaseY(i)), BRING_INTO_VIEW_MS, touchedAt) { pan = it } }
+        )
 
         // When the viewing angle changes, the labels that were showing can stay showing, now at their stations' new places,
         // until the chart is zoomed or touched; then the labels are chosen afresh and fade in and out as usual (see [LabelHold])
@@ -494,7 +492,7 @@ internal fun ElevationProfileCanvas(
         // The hint, in the ocean: fades away after a few seconds or at the first tap on the line
         ElevationHint(hintAlpha = { hintAlpha.value }, heightDp = heightDp)
 
-        ElevationSkyBadge(skyTheme, tempF, currentStation, cycleIds, sorted, expandT, embedded, onSelectStation)
+        if (SHOW_SKY_BADGE) ElevationSkyBadge(skyTheme, tempF, currentStation, cycleIds, sorted, expandT, embedded, onSelectStation)
 
         // Overlay Interactive City Landmark Labels along the curve. They are drawn back to front: the selected station's
         // label on top, then the labels of the active band, then the other bands from the front backwards, so the

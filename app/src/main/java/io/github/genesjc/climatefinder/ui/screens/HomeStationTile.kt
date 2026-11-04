@@ -7,6 +7,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import io.github.genesjc.climatefinder.ui.components.StationCard
 import io.github.genesjc.climatefinder.ui.components.StationSummaryTile
+import io.github.genesjc.climatefinder.ui.components.SkyLine
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import io.github.genesjc.climatefinder.ui.components.HeroTile
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import androidx.compose.foundation.layout.width
@@ -35,13 +38,15 @@ internal fun StationHeroTile(
     readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>
 ) {
     val reading by remember(station.id) { readingFor(station) }.collectAsStateWithLifecycle()
+    val skyTemp = (reading as? ObservationResult.Reading)?.observation?.temperatureFahrenheit
     HeroTile(
         fullWidthPx = fullWidthPx,
-        // The same colour as the open card: the plain surface, white in the light look
-        tileColor = MaterialTheme.colorScheme.surface,
+        // The same colour as the open card: the plain surface, white in the light look, a tenth see-through (STATION_TILE_OPACITY)
+        tileColor = MaterialTheme.colorScheme.surface.copy(alpha = STATION_TILE_OPACITY),
         tileBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-        // The card draws its own border; this backs it so nothing shows through
-        panelColor = MaterialTheme.colorScheme.surface,
+        // The card draws its own border and its own background (at the same opacity), so nothing is stacked behind it: a second
+        // layer under it would make the two add up to nearly solid
+        panelColor = Color.Transparent,
         openLabel = stringResource(R.string.station_card_show),
         closeLabel = stringResource(R.string.station_card_hide),
         // Stays open when another station is picked from the map, and the map stays tappable behind it
@@ -67,8 +72,17 @@ internal fun StationHeroTile(
                 // Less folds the card back, at the right of its top row
                 onLess = close,
                 // The region's name stays at the top when the card is open
-                regionName = regionName
+                regionName = regionName,
+                containerAlpha = STATION_TILE_OPACITY,
+                // The first line of the open card: the sky's icon and wording, darkened to read on white; none without a reading
+                skyLine = skyTemp?.let { t ->
+                    val sky = skyThemeFor(t)
+                    SkyLine(sky.icon, stringResource(sky.conditionRes), lerp(sky.accent, Color.Black, 0.4f))
+                }
             )
         }
     )
 }
+
+/** How solid the Home station tile and its open card are: 0.95, five percent see-through (0.9 let the map's dots show too clearly through the card). */
+private const val STATION_TILE_OPACITY = 0.95f

@@ -27,6 +27,13 @@ import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import io.github.genesjc.climatefinder.ui.components.HOME_TILE_BAND
 import io.github.genesjc.climatefinder.ui.components.ms
 
+/**
+ * Whether the Profile view shows the sky badge at the left of the chart (Gene, 2026-11-04). Off: its snowflake and its condition
+ * line ("Crisp Sub-Alpine") now sit in the collapsed station tile in the header, which already has the temperature and the name.
+ * The badge also cycled to the next landmark station when tapped; turn this on to get both back.
+ */
+internal const val SHOW_SKY_BADGE = false
+
 /** The sky badge at the left of the chart: the temperature, the station and the sky; a tap cycles to the next landmark station. */
 @Composable
 internal fun ElevationSkyBadge(

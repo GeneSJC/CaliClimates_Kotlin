@@ -47,6 +47,7 @@ class StateUsaDefinitionContractTest {
         assertTrue("${d.code} tagline", d.taglineRes != 0)
         assertTrue("${d.code} screen title", d.regionsScreenTitleRes != 0)
         assertTrue("${d.code} map title", d.regionsMapTitleRes != 0)
+        assertTrue("${d.code} picker subtitle", d.regionPickerSubtitleRes != 0)
     }
 
     @Test

@@ -46,7 +46,8 @@ private const val HERO_CLOSE_MS = 500
  * A half-width tile that grows, in width and height, into a full-width [panel] floating over the
  * page, so nothing on the page moves. Tapping the panel, tapping outside, or pressing Back folds it
  * back. [fullWidthPx] is the width the panel grows to (the row the tile sits in). [tileColor] fills
- * the tile; [panelColor] is the panel's backing, which must be opaque.
+ * the tile; [panelColor] is the panel's backing (opaque unless the panel's content draws its own background at the opacity wanted,
+ * as Home's station card does: then it is transparent, so two layers do not stack).
  */
 @Composable
 fun HeroTile(
@@ -107,6 +108,9 @@ fun HeroTile(
             border = tileBorder,
             modifier = Modifier
                 .fillMaxSize()
+                // While the panel is open the collapsed tile is hidden (it keeps its place and size), so its words do not show through a
+                // see-through panel as a ghost
+                .graphicsLayer { alpha = if (open) 0f else 1f }
                 .onSizeChanged {
                     cardWidthPx = it.width
                     cardHeightPx = it.height

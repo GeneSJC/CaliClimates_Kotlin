@@ -8,5 +8,7 @@ data class StateUsaMapLabel(
     val lon: Float,
     val lat: Float,
     /** A bigger, heavier name (for the neighbour that matters most). */
-    val emphasis: Boolean = false
+    val emphasis: Boolean = false,
+    /** For a region's name: the chip starts just inside the region's left border at this latitude (the longitude is then not used), instead of being centred on the point. */
+    val startInside: Boolean = false
 )

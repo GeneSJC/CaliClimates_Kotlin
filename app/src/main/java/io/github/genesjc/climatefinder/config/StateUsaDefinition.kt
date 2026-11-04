@@ -33,6 +33,10 @@ interface StateUsaDefinition {
     @get:StringRes
     val regionsMapTitleRes: Int
 
+    /** The quiet line under the region picker's title (for example how many regions the state has). */
+    @get:StringRes
+    val regionPickerSubtitleRes: Int
+
     val outline: StateUsaOutline
 
     /** The ground each region's terrain picture covers (the images are generated to these bounds). */

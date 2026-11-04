@@ -11,7 +11,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
-import io.github.genesjc.climatefinder.ui.components.MapViewButton
 import io.github.genesjc.climatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.climatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
@@ -22,12 +21,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -66,6 +67,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.domain.model.StationDatasetInfo
@@ -84,6 +86,25 @@ private const val SHOW_REGION_BAR = false
 
 /** The height of the region name bar, when it shows. */
 internal val HEADER_HEIGHT = 42.dp
+
+/** The green margin round the station tile inside the folder, at the sides (it was 10dp, doubled to 20dp); below the tile it is half this, and above it 12dp. */
+private val FOLDER_MARGIN = 20.dp
+
+/** The region picker button on the folder's tab: bigger than PICKER_BUTTON_HEIGHT, which the other screens use (it was 40dp, now 44dp). */
+internal val HEADER_PICKER_HEIGHT = 44.dp
+
+/**
+ * How much shorter the folder's tab is than it was (the body's top edge, right of the tab and under the toggle, is this much
+ * higher), with the gap under the tab made this much taller, so the station tile stays where it was and its margin from the
+ * body's edge grows by this much.
+ */
+internal val FOLDER_TAB_TRIM = 6.dp
+
+/**
+ * How far the region's colour is taken toward white for the folder's fill (0 is the full colour, 1 white); its opacity is unchanged.
+ * The page backdrop (see AppBackground) uses 0.26, the tone the map's top band showed before the terrain went full screen; the folder uses 0.58, lighter, so the dark text on it keeps its contrast.
+ */
+private const val FOLDER_TINT_TOWARD_WHITE = 0.58f
 
 data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
@@ -304,7 +325,8 @@ fun LandingScreen(
                             sliderShownShared = sliderShown,
                             onSliderShownChange = onSliderShownChange,
                             // The slider's arrow button sits at the top right of the map, level with the control row at the left
-                            sliderToggleTop = 12.dp + HOME_TILE_BAND,
+                            // The slider's arrow button: at the top right, or with the chip among the controls at the left, on the top row as on the Profile view
+                            sliderToggleTop = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP else 0.dp),
                             expandT = expandT,
                             onSelectedOffscreenChange = { selectedOffscreen = it },
                             recenterTick = recenterTick
@@ -322,11 +344,16 @@ fun LandingScreen(
                             onSliderShownChange = onSliderShownChange,
                             expandT = expandT,
                             onNotice = { message -> notice = (notice?.first ?: 0) + 1 to message },
-                            notice = notice?.second
+                            notice = notice?.second,
+                            onSelectedOffscreenChange = { selectedOffscreen = it },
+                            recenterTick = recenterTick
                         )
                     }
                     // The tile and the buttons keep their place on the screen while the map grows out underneath them
                     Box(modifier = Modifier.matchParentSize().padding(horizontal = 5.dp * expandT)) {
+                        // The toast naming the view just switched into (the toggle variation of the view control), in the middle
+                        val viewToast = rememberTagsToast()
+                        TagsToast(viewToast)
                         // The folder's tab (the region's name) and the first line's height, measured, so the shape fits them
                         var folderTabWidth by remember { mutableStateOf(0f) }
                         var folderTabHeight by remember { mutableStateOf(0f) }
@@ -335,15 +362,24 @@ fun LandingScreen(
                         // The folder fades down: sharper at the tab (FOLDER_OPACITY_TOP) and more see-through toward the bottom
                         // (FOLDER_OPACITY_BOTTOM), so the terrain shows more below; the outline fades the same way, to nothing at the
                         // bottom, so the folder has no bottom edge
-                        val folderBase = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) Color(0xFFE4EBDA) else MaterialTheme.colorScheme.background
+                        // The folder takes the region's tone, the same tint the page backdrop used (the colour that was behind the map's top band),
+                        // easing to the new tone over the same time as the page behind it when the region changes
+                        val regionTint by androidx.compose.animation.animateColorAsState(
+                            targetValue = androidx.compose.ui.graphics.lerp(Color(android.graphics.Color.parseColor(region.colorHex)), Color.White, FOLDER_TINT_TOWARD_WHITE),
+                            animationSpec = androidx.compose.animation.core.tween(1500),
+                            label = "folderTint"
+                        )
+                        val folderBase = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) regionTint else MaterialTheme.colorScheme.background
                         val folderFillTop = folderBase.copy(alpha = FOLDER_OPACITY_TOP)
                         val folderFillBottom = folderBase.copy(alpha = FOLDER_OPACITY_BOTTOM)
                         val folderBorderTop = MaterialTheme.colorScheme.primary.copy(alpha = FOLDER_OUTLINE_TOP)
                         val folderBorderBottom = MaterialTheme.colorScheme.primary.copy(alpha = FOLDER_OUTLINE_BOTTOM)
                         // The selected station as a tile across the top of the map (it grows into the full card)
-                        Row(
+                        Box(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
+                                // The folder and its tile at the back: the buttons and controls below it go in front
+                                .zIndex(0f)
                                 .fillMaxWidth()
                                 // More room round the folder now that the map reaches the screen edges: 16dp at the sides (11 here and 5 from the page margin), 12dp above
                                 .padding(start = 11.dp, end = 11.dp, top = 12.dp)
@@ -356,7 +392,8 @@ fun LandingScreen(
                                         fillBottom = folderFillBottom,
                                         borderTop = folderBorderTop,
                                         borderBottom = folderBorderBottom,
-                                        tabWidth = folderTabWidth,
+                                        // The tab's content now starts FOLDER_MARGIN in from the edge (it was 10dp), so the shape is that much wider
+                                        tabWidth = folderTabWidth + (FOLDER_MARGIN - 10.dp).toPx(),
                                         tabHeight = folderTabHeight,
                                         radius = 10.dp.toPx(),
                                         join = 12.dp.toPx(),
@@ -366,77 +403,74 @@ fun LandingScreen(
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
                                 // 10dp at the sides (more room for the station tile and the picker), a little under the tile (5dp); the room above is the first line's
-                                .padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 5.dp)
-                                .onSizeChanged { rowWidthPx = it.width },
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.Top
+                                // The right margin is half of the left one, for the Map | Profile switch on the first line; the tile row adds the other half back
+                                .padding(start = FOLDER_MARGIN, top = 0.dp, end = FOLDER_MARGIN / 2, bottom = 10.dp)
+                                .onSizeChanged { rowWidthPx = it.width }
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                // The first line: the folder's tab with the region's name (two lines at most) at the left, and the Map
-                                // and Profile buttons at the right, on the map
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                // The first line: the folder's tab with the region picker's icon and the region's name (two lines at most)
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .onSizeChanged { folderTabHeight = it.height.toFloat() }
-                                        .padding(top = 6.dp, bottom = 2.dp),
+                                        // Half the trim off the top and half off the tab's bottom: the whole tab is FOLDER_TAB_TRIM shorter
+                                        .padding(top = 6.dp - FOLDER_TAB_TRIM / 2, bottom = 2.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.Top
                                 ) {
-                                    // The tab's text is centred on the tab; the buttons sit at the top of the line
+                                    // The tab holds the region picker's icon and the name, up near the tab's top edge
                                     Box(
                                         modifier = Modifier
-                                            .weight(1f, fill = false)
-                                            .align(Alignment.CenterVertically)
+                                            // Fills all the room the one view button leaves, so the tab is as wide as it can be
+                                            .weight(1f)
+                                            .align(Alignment.Top)
                                             .onSizeChanged { folderTabWidth = it.width.toFloat() }
                                     ) {
-                                        Text(
-                                            text = stringResource(region.nameRes),
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            lineHeight = 18.sp,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.padding(start = 12.dp, end = 36.dp)
-                                        )
+                                        HomeFolderTabContent(region, pickerState, selectedRegionId, homeTab)
                                     }
-                                    Row(
-                                        modifier = Modifier.align(Alignment.Top).padding(start = 8.dp, end = 4.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.Top
-                                    ) {
-                                        MapViewButton(label = stringResource(R.string.tab_topography), index = 0, selected = homeTab, onSelect = onHomeTabChange)
-                                        MapViewButton(label = stringResource(R.string.tab_elevation), index = 1, selected = homeTab, onSelect = onHomeTabChange)
-                                    }
+                                    // The view control at the right of the first line, level with the tab's middle; in the compact header its room is
+                                    // left empty here (the combined card is drawn over it, from the Box below)
+                                    if (HEADER_COMPACT) Spacer(modifier = Modifier.width(VIEW_WIDGET_WIDTH + 14.dp)) else HomeViewControl(
+                                        selected = homeTab,
+                                        onSelect = onHomeTabChange,
+                                        toast = viewToast,
+                                        // More room from the tab's edge; 8.1dp below keeps the switch's distance from the folder's edge as the tab gets shorter
+                                        modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = if (VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE || VIEW_CHIP_ABOVE_TOGGLE) 0.dp else 8.1.dp)
+                                    )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
-                                Spacer(modifier = Modifier.height(6.dp))
-                                // Under it, one row: the station tile at the left, taking all the width the picker leaves, and the
-                                // region picker at the right. The tile fills the height it is given, so the row is held to its
+                                Spacer(modifier = Modifier.height(if (HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME || VIEW_LABEL_OVER_TOGGLE) 6.dp + FOLDER_TAB_TRIM - 2.dp else 12.dp))
+                                // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                                    modifier = Modifier.fillMaxWidth().padding(end = FOLDER_MARGIN / 2).height(IntrinsicSize.Min),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                        if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
+                                        if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx - with(mapDensity) { (FOLDER_MARGIN / 2).roundToPx() }, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
                                     }
-                                    RegionPickerChip(
-                                        state = pickerState,
-                                        selectedRegionId = selectedRegionId,
-                                        modifier = Modifier.align(Alignment.CenterVertically).height(PICKER_BUTTON_HEIGHT)
-                                    )
                                 }
+                            }
+                            if (HEADER_COMPACT) {
+                                // One white card with the view's name and the toggle on end, at the top right, lifted 6dp over the folder's top edge
+                                HomeViewWidget(selected = homeTab, onSelect = onHomeTabChange, toast = viewToast, modifier = Modifier.align(Alignment.TopEnd).offset(y = (-6).dp))
                             }
                         }
                         // The Region Info button, under the north indicator at the left (Topography only: Elevation has no Region Info)
-                        if (homeTab == 0) {
+                        if (homeTab == 0 && !VIEW_CHIP_IN_CONTROLS) {
                             InfoControlButton(
                                 open = infoOpen,
                                 onClick = { if (infoOpen) closeInfo() else openInfo() },
-                                modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + 40.dp)
+                                // Under the chip and the north indicator, in the column at the left (the gap, the chip, 6dp, north 32dp, 6dp)
+                                modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP + 44.dp else 40.dp))
                             )
                         }
+                        // The view chip at the right under the header, the same place on both views
+                        if (VIEW_CHIP_UNDER_HEADER) {
+                            HomeViewChip(homeTab, Modifier.align(Alignment.TopEnd).zIndex(1f).padding(end = 12.dp, top = 12.dp + HOME_TILE_BAND + CONTROLS_GAP))
+                        }
+                        // The Region Info button, as a slot of the control row when the chip is among the controls
+                        val infoButton: @Composable () -> Unit = { InfoControlButton(open = infoOpen, onClick = { if (infoOpen) closeInfo() else openInfo() }) }
                         // Below the tile, at the left: the menu, the north indicator and the About button
                         MapControlRow(
                             onElevation = homeTab == 1,
@@ -444,7 +478,7 @@ fun LandingScreen(
                             landmarkIds = stateUsa.landmarkStations[region.id] ?: emptyList(),
                             selectedStationId = selectedStationId,
                             onPickStation = onStationSelected,
-                            showLocate = selectedOffscreen && homeTab == 0,
+                            showLocate = selectedOffscreen,
                             onLocate = {
                                 recenterTick++
                                 // A short note at the bottom says what the button just did, so its meaning is learned in use
@@ -456,7 +490,10 @@ fun LandingScreen(
                                     )
                                 }
                             },
-                            modifier = Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND)
+                            // On the Map view the Region Info button sits left of the north indicator, above the slider's arrow
+                            beforeNorth = if (homeTab == 0 && VIEW_CHIP_IN_CONTROLS) infoButton else null,
+                            // The controls start CONTROLS_GAP under the header when the chip is among them
+                            modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP else 0.dp))
                         )
                     }
                 }
