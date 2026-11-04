@@ -415,7 +415,7 @@ fun LandingScreen(
                                         if (VIEW_CHIP_IN_TAB) {
                                             androidx.compose.animation.AnimatedVisibility(
                                                 visible = homeTab == 1,
-                                                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp)
+                                                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp).offset(y = 3.dp)
                                             ) { HomeViewChip(1, height = VIEW_TAB_CHIP_HEIGHT) }
                                         }
                                         Row(
