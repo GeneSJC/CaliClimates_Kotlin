@@ -13,6 +13,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.launch
+import io.github.genesjc.climatefinder.ui.components.RegionHaptics
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
@@ -113,11 +116,17 @@ internal val VIEW_TAB_CHIP_HEIGHT = 22.dp
  */
 internal const val VIEW_CHANGE_TOAST = false
 
-/** Whether the tab chip gives a brief warm glow and a small pop when the view changes (the toast's job, see [VIEW_CHANGE_TOAST]). */
+/**
+ * Whether the tab chip gives a small pop and a shimmer when the view changes (the toast's job, see [VIEW_CHANGE_TOAST]). The first try
+ * also had a gold glow and outline; it was not visible enough and was taken out (Gene, 2026-11-04).
+ */
 internal const val VIEW_CHIP_GLOW_ON_CHANGE = true
 
-/** The glow's colour: a warm gold that shows on every region's tint. */
-private val VIEW_CHIP_GLOW = Color(0xFFFFC857)
+/** Whether the phone gives a short click when the view changes, together with the chip's pop and shimmer. */
+private const val VIEW_CHANGE_HAPTIC = true
+
+/** The shimmer's colour: a pale silver-blue sweep, visible on the chip's white (a white sheen would not show on it). */
+private val VIEW_CHIP_SHIMMER = Color(0xFF8FA8D6)
 
 /** The room between the header and the controls under it (the view chip first): the controls start this far lower. */
 internal val CONTROLS_GAP = 20.dp
@@ -322,7 +331,10 @@ internal fun HomeViewTabChip(selected: Int, modifier: Modifier = Modifier, heigh
         animationSpec = androidx.compose.animation.core.tween(180),
         label = "tabChipWords"
     )
-    // A pulse that runs from 0 up to 1 and back to 0 each time the view changes (not on the first look): it drives the glow and the pop
+    // A pulse (0 to 1 and back to 0) drives the pop, and a sweep (0 to 1) drives the shimmer; both run each time the view changes
+    // (not on the first look), with a click from the phone's vibrator
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val sweep = remember { androidx.compose.animation.core.Animatable(1f) }
     val pulse = remember { androidx.compose.animation.core.Animatable(0f) }
     var armed by remember { androidx.compose.runtime.mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(selected) {
@@ -330,35 +342,44 @@ internal fun HomeViewTabChip(selected: Int, modifier: Modifier = Modifier, heigh
             armed = true
             return@LaunchedEffect
         }
+        if (VIEW_CHANGE_HAPTIC) RegionHaptics.tick(context)
         if (!VIEW_CHIP_GLOW_ON_CHANGE) return@LaunchedEffect
         pulse.snapTo(0f)
-        pulse.animateTo(1f, androidx.compose.animation.core.tween(220))
-        pulse.animateTo(0f, androidx.compose.animation.core.tween(650))
+        sweep.snapTo(0f)
+        // The shimmer crosses the chip while it pops and settles
+        launch { sweep.animateTo(1f, androidx.compose.animation.core.tween(700)) }
+        pulse.animateTo(1f, androidx.compose.animation.core.tween(180))
+        pulse.animateTo(0f, androidx.compose.animation.core.tween(420))
     }
     Surface(
         shape = RoundedCornerShape(6.dp),
         color = VIEW_CHIP_COLOR,
-        border = BorderStroke(1.dp, androidx.compose.ui.graphics.lerp(Color(0xFFCBD5E1), VIEW_CHIP_GLOW, pulse.value)),
+        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier
             .height(height)
-            // The glow: soft gold rings round the chip, widening and fading with the pulse, drawn behind it
-            .drawBehind {
-                val p = pulse.value
-                if (p > 0f) {
-                    for (i in 1..5) {
-                        val grow = i * 2.2.dp.toPx() * p
-                        drawRoundRect(
-                            color = VIEW_CHIP_GLOW.copy(alpha = 0.34f * p / i),
-                            topLeft = Offset(-grow, -grow),
-                            size = androidx.compose.ui.geometry.Size(size.width + grow * 2f, size.height + grow * 2f),
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx() + grow)
+            .graphicsLayer { val pop = 1f + 0.08f * pulse.value; scaleX = pop; scaleY = pop }
+    ) {
+        Box(
+            modifier = Modifier
+                // The shimmer: a soft diagonal band that crosses the chip from left to right (the Surface clips it to the chip's shape)
+                .drawWithContent {
+                    drawContent()
+                    val t = sweep.value
+                    if (t < 1f) {
+                        val band = size.width * 0.55f
+                        val x = -band + (size.width + band * 2f) * t
+                        drawRect(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                colors = listOf(Color.Transparent, VIEW_CHIP_SHIMMER.copy(alpha = 0.6f), Color.Transparent),
+                                start = Offset(x, 0f),
+                                end = Offset(x + band, size.height)
+                            )
                         )
                     }
                 }
-            }
-            .graphicsLayer { val pop = 1f + 0.08f * pulse.value; scaleX = pop; scaleY = pop }
-    ) {
-        Box(modifier = Modifier.padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
+                .padding(horizontal = 7.dp),
+            contentAlignment = Alignment.Center
+        ) {
             TabChipWord(R.string.view_label_map, 1f - elevationShown)
             TabChipWord(R.string.view_label_profile, elevationShown)
         }
