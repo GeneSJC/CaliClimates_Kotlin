@@ -2,6 +2,7 @@ package io.github.genesjc.climatefinder.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -12,16 +13,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
 
 /**
- * One of the two view buttons on the map (Topography is index 0, Elevation is index 1). The selected one is dark,
- * the other white. Home puts them side by side at the right of the header's first line.
+ * One of the two view buttons on the map (Map is index 0, Profile is index 1). The selected one is dark,
+ * the other white. Home stacks them at the right of the header's second line, in a column of one width.
  */
 @Composable
-fun MapViewButton(label: String, index: Int, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun MapViewButton(label: String, index: Int, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier, centered: Boolean = false) {
     val on = index == selected
     Surface(
         shape = RoundedCornerShape(6.dp),
@@ -36,7 +38,9 @@ fun MapViewButton(label: String, index: Int, selected: Int, onSelect: (Int) -> U
             letterSpacing = 0.4.sp,
             fontWeight = FontWeight.Bold,
             color = if (on) Color.White else Color(0xFF334155),
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
+            // In a stack of buttons of one width (centered), the word is centred in the button
+            textAlign = if (centered) TextAlign.Center else null,
+            modifier = (if (centered) Modifier.fillMaxWidth() else Modifier).padding(horizontal = 9.dp, vertical = if (centered) 3.dp else 6.dp)
         )
     }
 }

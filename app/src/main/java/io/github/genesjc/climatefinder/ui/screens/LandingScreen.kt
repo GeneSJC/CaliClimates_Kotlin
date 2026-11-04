@@ -372,8 +372,7 @@ fun LandingScreen(
                             verticalAlignment = Alignment.Top
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                // The first line: the folder's tab with the region's name (two lines at most) at the left, and the Map
-                                // and Profile buttons at the right, on the map
+                                // The first line: the folder's tab with the region picker's icon and the region's name (two lines at most)
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -382,31 +381,34 @@ fun LandingScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.Top
                                 ) {
-                                    // The tab's text is centred on the tab; the buttons sit at the top of the line
+                                    // The tab holds the region picker's icon and the name, centred on the tab
                                     Box(
                                         modifier = Modifier
                                             .weight(1f, fill = false)
                                             .align(Alignment.CenterVertically)
                                             .onSizeChanged { folderTabWidth = it.width.toFloat() }
                                     ) {
-                                        Text(
-                                            text = stringResource(region.nameRes),
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            lineHeight = 18.sp,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.padding(start = 12.dp, end = 36.dp)
-                                        )
-                                    }
-                                    Row(
-                                        modifier = Modifier.align(Alignment.Top).padding(start = 8.dp, end = 4.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.Top
-                                    ) {
-                                        MapViewButton(label = stringResource(R.string.tab_topography), index = 0, selected = homeTab, onSelect = onHomeTabChange)
-                                        MapViewButton(label = stringResource(R.string.tab_elevation), index = 1, selected = homeTab, onSelect = onHomeTabChange)
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(start = 8.dp, end = 28.dp)
+                                        ) {
+                                            RegionPickerChip(
+                                                state = pickerState,
+                                                selectedRegionId = selectedRegionId,
+                                                modifier = Modifier.height(PICKER_BUTTON_HEIGHT)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = stringResource(region.nameRes),
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                lineHeight = 18.sp,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f, fill = false)
+                                            )
+                                        }
                                     }
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
@@ -421,11 +423,14 @@ fun LandingScreen(
                                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                                         if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
                                     }
-                                    RegionPickerChip(
-                                        state = pickerState,
-                                        selectedRegionId = selectedRegionId,
-                                        modifier = Modifier.align(Alignment.CenterVertically).height(PICKER_BUTTON_HEIGHT)
-                                    )
+                                    // The Map and Profile buttons, stacked in a column of one width where the picker icon was
+                                    Column(
+                                        modifier = Modifier.align(Alignment.CenterVertically).width(IntrinsicSize.Max),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        MapViewButton(label = stringResource(R.string.tab_topography), index = 0, selected = homeTab, onSelect = onHomeTabChange, modifier = Modifier.fillMaxWidth(), centered = true)
+                                        MapViewButton(label = stringResource(R.string.tab_elevation), index = 1, selected = homeTab, onSelect = onHomeTabChange, modifier = Modifier.fillMaxWidth(), centered = true)
+                                    }
                                 }
                             }
                         }
