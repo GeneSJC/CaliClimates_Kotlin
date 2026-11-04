@@ -45,20 +45,28 @@ internal const val VIEW_SWITCH_AS_TOGGLE = true
  *
  * Set it to false to go back to the line under the name.
  */
-internal const val VIEW_LABEL_UNDER_TOGGLE = true
+internal const val VIEW_LABEL_UNDER_TOGGLE = false
 
 /**
  * The compact header (Gene, 2026-11-04): the toggle and the view's name are ONE white card at the top right, over the folder's
  * outline; the folder's tab holds only the region row, and the station tile sits right under it, in the card's lower row, beside the
  * card. Needs the toggle variation. Two variations, both kept:
  *
- *  - true: the compact header with the combined card ([HomeViewWidget]).
+ *  - true: the compact header with the combined card ([HomeViewWidget]), with the toggle stood on end. Tried in build 149.23 and
+ *    set aside (Gene, 2026-11-04); it is still here to look at.
  *  - false: the header as in build 149.21: the toggle (with its chip, see [VIEW_LABEL_UNDER_TOGGLE]) on the first line and the
  *    tile under the tab.
  *
  * Set it to false to go back.
  */
-internal const val VIEW_WIDGET_COMBINED = true
+internal const val VIEW_WIDGET_COMBINED = false
+
+/**
+ * Where the view's name goes on the folder tab when the toggle floats alone (that is, when neither VIEW_WIDGET_COMBINED nor
+ * VIEW_LABEL_UNDER_TOGGLE is on): true puts it ABOVE the region's name, false puts it BELOW it (Gene, 2026-11-04). The region's
+ * name has up to two lines and the toggle floats on the map without a card behind it.
+ */
+internal const val VIEW_LABEL_ABOVE_NAME = true
 
 /** Whether the compact header is in use: the toggle variation and the combined card. */
 internal const val HEADER_COMPACT = VIEW_SWITCH_AS_TOGGLE && VIEW_WIDGET_COMBINED

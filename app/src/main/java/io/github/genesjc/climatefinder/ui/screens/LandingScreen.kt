@@ -421,6 +421,8 @@ fun LandingScreen(
                                             // The region's name with the view's name in a small line under it; the picker icon beside
                                             // them is as tall as the two lines
                                             Column(modifier = Modifier.weight(1f, fill = false)) {
+                                                // The view's name above the region's name, or below it (VIEW_LABEL_ABOVE_NAME)
+                                                if (VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab)
                                                 Text(
                                                     text = stringResource(region.nameRes),
                                                     fontSize = 15.sp,
@@ -428,10 +430,10 @@ fun LandingScreen(
                                                     color = MaterialTheme.colorScheme.onSurface,
                                                     lineHeight = 18.sp,
                                                     // Two lines unless the view's name is under the region's name, where one line (ellipsis) keeps the tab's height
-                                                    maxLines = if (VIEW_LABEL_UNDER_TOGGLE || HEADER_COMPACT) 2 else 1,
+                                                    maxLines = if (VIEW_LABEL_UNDER_TOGGLE || HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME) 2 else 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
-                                                HomeViewLabel(selected = homeTab)
+                                                if (!VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab)
                                             }
                                         }
                                     }
@@ -446,7 +448,7 @@ fun LandingScreen(
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
-                                Spacer(modifier = Modifier.height(if (HEADER_COMPACT) 6.dp else 12.dp))
+                                Spacer(modifier = Modifier.height(if (HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME) 6.dp else 12.dp))
                                 // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(
