@@ -128,6 +128,12 @@ private const val VIEW_CHANGE_HAPTIC = true
 /** How long the shimmer takes to cross the chip (milliseconds): it was 700 and read as too fast, so it is drawn out. */
 private const val VIEW_SHIMMER_MS = 1600
 
+/**
+ * When the chip's word changes, counted from the toggle (milliseconds): the shimmer first slides over the old word for this long, and
+ * then the new word fades in. Just before the shimmer's end (VIEW_SHIMMER_MS), so the two overlap a little and it does not feel late.
+ */
+private const val VIEW_WORD_SWAP_MS = 1250
+
 /** The shimmer band's width as a share of the chip's width (it was 0.55), and its strongest opacity (it was 0.6): a bigger, bolder sweep. */
 private const val VIEW_SHIMMER_BAND = 0.8f
 private const val VIEW_SHIMMER_STRENGTH = 0.8f
@@ -338,8 +344,13 @@ internal fun HomeViewTabChip(
     modifier: Modifier = Modifier,
     height: androidx.compose.ui.unit.Dp = VIEW_TAB_CHIP_HEIGHT
 ) {
+    // The word on the chip is the one for [wordView], which follows [selected] only after the shimmer has crossed the old word (so the
+    // shimmer slides over "Map" first and then "Elevation" appears, and the other way round)
+    var wordView by remember { androidx.compose.runtime.mutableIntStateOf(selected) }
+    // Which way the shimmer travels: left to right when going to Elevation (as the toggle's thumb moves), right to left going back
+    var sweepRight by remember { androidx.compose.runtime.mutableStateOf(true) }
     val elevationShown by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (selected == 1) 1f else 0f,
+        targetValue = if (wordView == 1) 1f else 0f,
         animationSpec = androidx.compose.animation.core.tween(180),
         label = "tabChipWords"
     )
@@ -355,11 +366,20 @@ internal fun HomeViewTabChip(
             return@LaunchedEffect
         }
         if (VIEW_CHANGE_HAPTIC) RegionHaptics.tick(context)
-        if (!VIEW_CHIP_GLOW_ON_CHANGE) return@LaunchedEffect
+        if (!VIEW_CHIP_GLOW_ON_CHANGE) {
+            wordView = selected
+            return@LaunchedEffect
+        }
+        sweepRight = selected == 1
         pulse.snapTo(0f)
         sweep.snapTo(0f)
         // The shimmer crosses the chip while it pops and settles
         launch { sweep.animateTo(1f, androidx.compose.animation.core.tween(VIEW_SHIMMER_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+        // The new word fades in once the shimmer has nearly crossed the chip
+        launch {
+            kotlinx.coroutines.delay(VIEW_WORD_SWAP_MS.toLong())
+            wordView = selected
+        }
         pulse.animateTo(1f, androidx.compose.animation.core.tween(180))
         pulse.animateTo(0f, androidx.compose.animation.core.tween(420))
     }
@@ -379,12 +399,14 @@ internal fun HomeViewTabChip(
                     val t = sweep.value
                     if (t < 1f) {
                         val band = size.width * VIEW_SHIMMER_BAND
-                        val x = -band + (size.width + band * 2f) * t
+                        // Left to right: the band's lead edge runs from the chip's left to its right; right to left mirrors that
+                        val travelled = if (sweepRight) t else 1f - t
+                        val x = -band + (size.width + band * 2f) * travelled
                         drawRect(
                             brush = androidx.compose.ui.graphics.Brush.linearGradient(
                                 colors = listOf(Color.Transparent, VIEW_CHIP_SHIMMER.copy(alpha = VIEW_SHIMMER_STRENGTH), Color.Transparent),
-                                start = Offset(x, 0f),
-                                end = Offset(x + band, size.height)
+                                start = if (sweepRight) Offset(x, 0f) else Offset(x + band, 0f),
+                                end = if (sweepRight) Offset(x + band, size.height) else Offset(x, size.height)
                             )
                         )
                     }
