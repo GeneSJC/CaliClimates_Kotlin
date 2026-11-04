@@ -373,7 +373,8 @@ fun LandingScreen(
                                 // The Region Info sheet opens below this strip, so it never covers the tile
                                 .onGloballyPositioned { stationTileTopPx = it.positionInRoot().y + it.size.height + with(mapDensity) { 6.dp.toPx() } }
                                 // 10dp at the sides (more room for the station tile and the picker), a little under the tile (5dp); the room above is the first line's
-                                .padding(start = FOLDER_MARGIN, top = 0.dp, end = FOLDER_MARGIN, bottom = 10.dp)
+                                // The right margin is half of the left one, for the Map | Profile switch on the first line; the tile row adds the other half back
+                                .padding(start = FOLDER_MARGIN, top = 0.dp, end = FOLDER_MARGIN / 2, bottom = 10.dp)
                                 .onSizeChanged { rowWidthPx = it.width },
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Top
@@ -397,7 +398,8 @@ fun LandingScreen(
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(start = 8.dp, end = 28.dp)
+                                            // The end padding is the room the tab's slope needs (28dp) and the 10dp the switch's smaller right margin freed
+                                            modifier = Modifier.padding(start = 8.dp, end = 38.dp)
                                         ) {
                                             RegionPickerChip(
                                                 state = pickerState,
@@ -433,11 +435,11 @@ fun LandingScreen(
                                 // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                                    modifier = Modifier.fillMaxWidth().padding(end = FOLDER_MARGIN / 2).height(IntrinsicSize.Min),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                        if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
+                                        if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx - with(mapDensity) { (FOLDER_MARGIN / 2).roundToPx() }, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
                                     }
                                 }
                             }
