@@ -107,7 +107,7 @@ private fun ViewButtonArrow(glyph: String, modifier: Modifier) {
 fun MapViewToggleSwitch(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val on = selected == 1
     val description = stringResource(R.string.view_switch_toggle)
-    val thumbX by animateDpAsState(if (on) TOGGLE_WIDTH - TOGGLE_THUMB - TOGGLE_INSET else TOGGLE_INSET, tween(150), label = "viewToggleThumb")
+    val thumbX by animateDpAsState(if (on) TOGGLE_WIDTH - TOGGLE_THUMB_WIDTH - TOGGLE_INSET else TOGGLE_INSET, tween(150), label = "viewToggleThumb")
     val track by animateColorAsState(if (on) SWITCH_INK else Color.White.copy(alpha = 0.90f), tween(150), label = "viewToggleTrack")
     val thumb by animateColorAsState(if (on) Color.White else SWITCH_INK, tween(150), label = "viewToggleThumb")
     Box(
@@ -123,7 +123,7 @@ fun MapViewToggleSwitch(selected: Int, onSelect: (Int) -> Unit, modifier: Modifi
             modifier = Modifier
                 .offset(x = thumbX)
                 .align(Alignment.CenterStart)
-                .size(TOGGLE_THUMB)
+                .size(width = TOGGLE_THUMB_WIDTH, height = TOGGLE_THUMB)
                 .clip(CircleShape)
                 .background(thumb)
         )
@@ -135,3 +135,6 @@ private val TOGGLE_WIDTH = 52.dp
 private val TOGGLE_HEIGHT = 27.2.dp
 private val TOGGLE_INSET = 3.dp
 private val TOGGLE_THUMB = TOGGLE_HEIGHT - TOGGLE_INSET * 2
+
+/** The thumb is a wide pill (the newer desktop-switch look), not a circle; set this equal to the thumb's height (21.2dp) to go back to a circle. */
+private val TOGGLE_THUMB_WIDTH = 30.dp
