@@ -35,9 +35,9 @@ private const val PICKER_CHIP_GRADIENT = true
  * tinted, not near-white, so there is colour all the way across (the first try had a pale strip there). Used by the picker button and
  * the view toggle's off track.
  */
-internal val BlueGreenWash = Brush.linearGradient(
-    colors = listOf(Color(0xFFB9DAF3), Color(0xFFCDE9E6), Color(0xFFC1EBCB))
-)
+internal val BlueGreenWashColors = listOf(Color(0xFFB9DAF3), Color(0xFFCDE9E6), Color(0xFFC1EBCB))
+
+internal val BlueGreenWash = Brush.linearGradient(colors = BlueGreenWashColors)
 
 /** The picker button's height, in the region's bar at the right of the header; tunable here. */
 val PICKER_BUTTON_HEIGHT = 32.dp
