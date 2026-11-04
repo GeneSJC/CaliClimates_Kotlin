@@ -57,9 +57,9 @@ private const val HANDLE_AS_PILL = true
 /** The pill's colour: tangerine at 80 percent, so the dial's track still shows faintly through it (40 percent let too much through; solid let none). */
 private val HANDLE_PILL_COLOR = Color(0xFFF28500).copy(alpha = 0.8f)
 
-/** The pill's thickness across the band (the band plus 2dp each side, so it overhangs the swoop's edges; it was the band less 8dp each side) and its whole length along it (dp). */
+/** The pill's thickness across the band (the band plus 2dp each side, so it overhangs the swoop's edges; it was the band less 8dp each side), and its length along it, 70 (80 was a little wide) and its whole length along it (dp). */
 private const val HANDLE_PILL_THICKNESS_DP = BAND_WIDTH_DP + 4f
-private const val HANDLE_PILL_LENGTH_DP = 80f
+private const val HANDLE_PILL_LENGTH_DP = 70f
 
 /**
  * The control that turns the viewing angle: a quarter of a ring in the bottom corner, a curved band from north (straight up from
