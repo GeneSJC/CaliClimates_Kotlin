@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -87,6 +88,9 @@ internal val HEADER_HEIGHT = 42.dp
 
 /** The green margin round the station tile inside the folder, at the sides (it was 10dp, doubled to 20dp); below the tile it is half this, and above it 12dp. */
 private val FOLDER_MARGIN = 20.dp
+
+/** The region picker button on the folder's tab: a little taller than PICKER_BUTTON_HEIGHT, which the other screens use. */
+private val HEADER_PICKER_HEIGHT = 40.dp
 
 data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
@@ -391,23 +395,26 @@ fun LandingScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.Top
                                 ) {
-                                    // The tab holds the region picker's icon and the name, centred on the tab
+                                    // The tab holds the region picker's icon and the name, up near the tab's top edge
                                     Box(
                                         modifier = Modifier
                                             // Fills all the room the one view button leaves, so the tab is as wide as it can be
                                             .weight(1f)
-                                            .align(Alignment.CenterVertically)
+                                            .align(Alignment.Top)
                                             .onSizeChanged { folderTabWidth = it.width.toFloat() }
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             // The end padding is the room the tab's slope needs
-                                            modifier = Modifier.padding(start = 8.dp, end = 28.dp)
+                                            // 2dp above the icon on top of the row's 6dp: half the room that was above it when the content was centred
+                                            modifier = Modifier.padding(start = 8.dp, end = 28.dp, top = 2.dp)
                                         ) {
+                                            // A little bigger than the other picker buttons (40dp), with more room inside its outline
                                             RegionPickerChip(
                                                 state = pickerState,
                                                 selectedRegionId = selectedRegionId,
-                                                modifier = Modifier.height(PICKER_BUTTON_HEIGHT)
+                                                modifier = Modifier.height(HEADER_PICKER_HEIGHT),
+                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                                             )
                                             // The gap between the picker icon and the name: 12dp (it was 8dp, 50 percent more)
                                             Spacer(modifier = Modifier.width(12.dp))
@@ -433,7 +440,8 @@ fun LandingScreen(
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
-                                Spacer(modifier = Modifier.height(12.dp))
+                                // The gap above the tile (12dp); with the toggle switch it holds a small line naming the view
+                                HomeViewGap(selected = homeTab)
                                 // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(

@@ -1,8 +1,17 @@
 package io.github.genesjc.climatefinder.ui.screens
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.genesjc.climatefinder.R
 import io.github.genesjc.climatefinder.ui.components.MapViewChevronButton
 import io.github.genesjc.climatefinder.ui.components.MapViewToggleSwitch
@@ -47,5 +56,28 @@ internal fun HomeViewControl(
             onSelect = onSelect,
             modifier = modifier
         )
+    }
+}
+
+/**
+ * The gap between the header's first line and the station tile. It is 12dp as before; with the toggle switch the gap is shared
+ * around a small line (6dp, the line, 6dp) that names the view you are in, so the switch has words beside it for now.
+ */
+@Composable
+internal fun HomeViewGap(selected: Int) {
+    if (!VIEW_SWITCH_AS_TOGGLE) {
+        Spacer(modifier = Modifier.height(12.dp))
+        return
+    }
+    Column {
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
     }
 }
