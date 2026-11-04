@@ -7,6 +7,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import io.github.genesjc.climatefinder.ui.components.StationCard
 import io.github.genesjc.climatefinder.ui.components.StationSummaryTile
+import io.github.genesjc.climatefinder.ui.components.TileSkyLine
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import io.github.genesjc.climatefinder.ui.components.HeroTile
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
 import androidx.compose.foundation.layout.width
@@ -50,7 +53,14 @@ internal fun StationHeroTile(
         tileCornerRadius = 8.dp,
         // The Region Info sheet sits above this card: opening it folds the card
         forceClosed = folded,
-        tile = { StationSummaryTile(station, reading = reading) },
+        tile = {
+            // The sky's icon and wording from the reading (what the Profile view's badge used to say), darkened to read on white; a blank
+            // line holds the room while the reading is still on its way, so the tile does not change height when it arrives
+            val sky = skyThemeFor((reading as? ObservationResult.Reading)?.observation?.temperatureFahrenheit)
+            val line = if (reading == null) TileSkyLine(null, " ", Color.Transparent)
+            else TileSkyLine(sky.icon, stringResource(sky.conditionRes), lerp(sky.accent, Color.Black, 0.4f))
+            StationSummaryTile(station, reading = reading, skyLine = line)
+        },
         panel = { close ->
             StationCard(
                 station = station,

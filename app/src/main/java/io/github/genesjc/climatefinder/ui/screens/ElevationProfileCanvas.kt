@@ -494,7 +494,7 @@ internal fun ElevationProfileCanvas(
         // The hint, in the ocean: fades away after a few seconds or at the first tap on the line
         ElevationHint(hintAlpha = { hintAlpha.value }, heightDp = heightDp)
 
-        ElevationSkyBadge(skyTheme, tempF, currentStation, cycleIds, sorted, expandT, embedded, onSelectStation)
+        if (SHOW_SKY_BADGE) ElevationSkyBadge(skyTheme, tempF, currentStation, cycleIds, sorted, expandT, embedded, onSelectStation)
 
         // Overlay Interactive City Landmark Labels along the curve. They are drawn back to front: the selected station's
         // label on top, then the labels of the active band, then the other bands from the front backwards, so the

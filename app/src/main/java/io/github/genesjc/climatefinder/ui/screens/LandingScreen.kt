@@ -420,20 +420,21 @@ fun LandingScreen(
                                             Spacer(modifier = Modifier.width(12.dp))
                                             // The region's name with the view's name in a small line under it; the picker icon beside
                                             // them is as tall as the two lines
-                                            Column(modifier = Modifier.weight(1f, fill = false)) {
+                                            Column(modifier = Modifier.weight(1f)) {
                                                 // The view's name above the region's name, or below it (VIEW_LABEL_ABOVE_NAME)
-                                                if (VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab)
+                                                if (VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab, modifier = Modifier.align(Alignment.End))
                                                 Text(
                                                     text = stringResource(region.nameRes),
-                                                    fontSize = 15.sp,
+                                                    // A little bigger than before (15sp)
+                                                    fontSize = 18.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = MaterialTheme.colorScheme.onSurface,
-                                                    lineHeight = 18.sp,
+                                                    lineHeight = 21.sp,
                                                     // Two lines unless the view's name is under the region's name, where one line (ellipsis) keeps the tab's height
                                                     maxLines = if (VIEW_LABEL_UNDER_TOGGLE || HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME) 2 else 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
-                                                if (!VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab)
+                                                if (!VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab, modifier = Modifier.align(Alignment.End))
                                             }
                                         }
                                     }

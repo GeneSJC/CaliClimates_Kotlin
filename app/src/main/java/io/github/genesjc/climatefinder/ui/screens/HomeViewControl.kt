@@ -105,27 +105,14 @@ internal fun HomeViewControl(
 }
 
 /**
- * The small line under the region's name on the folder tab, naming the view you are in. Shown with the toggle switch, which has
- * no words of its own for now; the chevron button names the other view itself, so it shows nothing then.
+ * The small chip on the folder tab naming the view you are in, at the right of the tab (the caller aligns it) with a white chip
+ * and bold dark letters for contrast. Shown with the toggle switch, which has no words of its own for now, when it is not in the
+ * combined card or under the toggle; the chevron button names the other view itself, so it shows nothing then.
  */
 @Composable
-internal fun HomeViewLabel(selected: Int) {
+internal fun HomeViewLabel(selected: Int, modifier: Modifier = Modifier) {
     if (!VIEW_SWITCH_AS_TOGGLE || VIEW_LABEL_UNDER_TOGGLE || HEADER_COMPACT) return
-    Text(
-        text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
-        // 30 percent smaller than the last try (17.6sp), bold, on one line
-        fontSize = 12.3.sp,
-        fontWeight = FontWeight.Bold,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-}
-
-/** The line naming the view, on a small white chip under the toggle: dark ink on white reads against any background behind it. */
-@Composable
-private fun HomeViewLabelChip(selected: Int) {
-    Surface(shape = RoundedCornerShape(6.dp), color = Color.White.copy(alpha = 0.90f)) {
+    Surface(shape = RoundedCornerShape(6.dp), color = Color.White.copy(alpha = 0.90f), modifier = modifier) {
         Text(
             text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
             fontSize = 12.3.sp,

@@ -41,6 +41,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -374,8 +376,10 @@ private val TEMPERATURE_RAISE = 6.dp
  * gives way (with an ellipsis) only when it really cannot fit; the temperature always shows.
  */
 @Composable
-fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult? = null) {
+fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult? = null, skyLine: TileSkyLine? = null) {
     val display = liveDisplay(reading)
+    // The temperature's width, so the sky's icon on the second line sits under it and the wording under the station's name
+    var tempWidthPx by remember { mutableStateOf(0) }
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             // The temperature, smaller and in its own colour, sits close beside the name, raised so it reads as a top-left corner mark
@@ -386,7 +390,7 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
                     fontWeight = FontWeight.ExtraBold,
                     color = TEMPERATURE_COLOR,
                     maxLines = 1,
-                    modifier = Modifier.alignByBaseline().offset(y = -TEMPERATURE_RAISE)
+                    modifier = Modifier.alignByBaseline().offset(y = -TEMPERATURE_RAISE).onSizeChanged { tempWidthPx = it.width }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -407,6 +411,23 @@ fun StationSummaryTile(station: MicroclimateStation, reading: ObservationResult?
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1
             )
+        }
+        if (skyLine != null) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                // The sky's icon under the temperature, the wording under the station's name, at the name's size
+                Box(modifier = Modifier.width(with(LocalDensity.current) { tempWidthPx.toDp() }), contentAlignment = Alignment.Center) {
+                    skyLine.icon?.let { Text(text = it, fontSize = 15.sp, maxLines = 1) }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = skyLine.text,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = skyLine.color,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

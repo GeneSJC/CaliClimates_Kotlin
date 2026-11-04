@@ -68,11 +68,11 @@
     <string name="tab_elevation">Profile</string>
     <string name="tab_topography">Map</string>
     <!-- The toast in the middle of the screen when the view toggle switch flips -->
-    <string name="view_toast_map">Map view</string>
-    <string name="view_toast_profile">Profile view</string>
+    <string name="view_toast_map">Map View</string>
+    <string name="view_toast_profile">Profile View</string>
     <!-- The small line under the header's first line naming the view you are in (the words may change) -->
-    <string name="view_label_map">Map view</string>
-    <string name="view_label_profile">Profile view</string>
+    <string name="view_label_map">Map View</string>
+    <string name="view_label_profile">Profile View</string>
     <string name="limited_data_title">Limited station data</string>
     <string name="no_data_title">No station data loaded</string>
 
