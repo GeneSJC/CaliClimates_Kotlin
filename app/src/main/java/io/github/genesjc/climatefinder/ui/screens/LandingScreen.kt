@@ -11,7 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
-import io.github.genesjc.climatefinder.ui.components.MapViewButton
+import io.github.genesjc.climatefinder.ui.components.MapViewSwitch
 import io.github.genesjc.climatefinder.ui.components.RegionPickerOverlay
 import io.github.genesjc.climatefinder.ui.components.rememberRegionPickerState
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
@@ -84,9 +84,6 @@ private const val SHOW_REGION_BAR = false
 
 /** The height of the region name bar, when it shows. */
 internal val HEADER_HEIGHT = 42.dp
-
-/** The width of the Map and Profile buttons, one for both so they line up across the header's two lines. */
-private val VIEW_BUTTON_WIDTH = 76.dp
 
 data class RegionOption(val id: String, @StringRes val nameRes: Int, val stationCount: Int?)
 
@@ -413,20 +410,18 @@ fun LandingScreen(
                                             )
                                         }
                                     }
-                                    // Profile at the right of the first line, level with the tab's middle, in the width of the Map button below it
-                                    MapViewButton(
-                                        label = stringResource(R.string.tab_elevation),
-                                        index = 1,
+                                    // The view switch at the right of the first line, level with the tab's middle
+                                    MapViewSwitch(
                                         selected = homeTab,
+                                        mapLabel = stringResource(R.string.tab_topography),
+                                        profileLabel = stringResource(R.string.tab_elevation),
                                         onSelect = onHomeTabChange,
-                                        modifier = Modifier.align(Alignment.CenterVertically).width(VIEW_BUTTON_WIDTH),
-                                        centered = true
+                                        modifier = Modifier.align(Alignment.CenterVertically)
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
                                 Spacer(modifier = Modifier.height(6.dp))
-                                // Under it, one row: the station tile at the left, taking all the width the Map button leaves, and the
-                                // Map button at the right. The tile fills the height it is given, so the row is held to its
+                                // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(
                                     modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
@@ -435,15 +430,6 @@ fun LandingScreen(
                                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                                         if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
                                     }
-                                    // The Map button, where the picker icon was (Profile is above it, on the first line)
-                                    MapViewButton(
-                                        label = stringResource(R.string.tab_topography),
-                                        index = 0,
-                                        selected = homeTab,
-                                        onSelect = onHomeTabChange,
-                                        modifier = Modifier.align(Alignment.CenterVertically).width(VIEW_BUTTON_WIDTH),
-                                        centered = true
-                                    )
                                 }
                             }
                         }
