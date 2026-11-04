@@ -83,14 +83,14 @@ internal const val VIEW_LABEL_OVER_TOGGLE = true
  * line at the right, and only while the Profile view is showing (the Map view describes itself, so no chip there); false keeps
  * it at the right under the header on both views.
  */
-internal const val VIEW_CHIP_IN_TAB = false
+internal const val VIEW_CHIP_IN_TAB = true
 
 /**
  * With VIEW_CHIP_IN_CONTROLS on and VIEW_CHIP_IN_TAB off (Gene, 2026-11-04): true puts the chip ABOVE the toggle at the right of the
  * header, only while the Elevation view is showing, and the toggle sits lower to make room without making the header any taller
  * (the room is held on the Map view too, so the toggle does not jump). false puts the chip at the right under the header.
  */
-internal const val VIEW_CHIP_ABOVE_TOGGLE = true
+internal const val VIEW_CHIP_ABOVE_TOGGLE = false
 
 /** The chip's height above the toggle, small enough that chip and toggle together fit the first row without making it taller. */
 internal val VIEW_TOP_CHIP_HEIGHT = 17.dp
