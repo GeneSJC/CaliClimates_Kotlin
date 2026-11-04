@@ -74,7 +74,7 @@
     <string name="map_dot_size">Dot size</string>
 
     <!-- Regions screen -->
-    <string name="region_picker_title">Pick a region</string>
+    <string name="region_picker_title">Pick a Region</string>
     <string name="regions_screen_subtitle">Macro Climatic Constraints &amp; Regional Boundaries</string>
     <string name="regions_map_hint">Tap region to inspect</string>
     <string name="region_planned_badge">PLANNED</string>

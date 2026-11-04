@@ -49,6 +49,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,6 +59,9 @@ import io.github.genesjc.climatefinder.config.RegionStatus
 
 /** How much the picker's map is stretched vertically (1 = true shape). Taller, at the cost of some skew. */
 internal const val PICKER_VERTICAL_STRETCH = 1.35f
+
+/** Height of the picker's header row (title, its quiet line and the close button) in dp; the overlay sizes the panel from it. */
+internal const val PICKER_HEADER_HEIGHT_DP = 48f
 
 /**
  * Content of the region picker overlay on Home: a title, a close button and the regional map. A pick on
@@ -70,37 +75,57 @@ fun StateUsaRegionPickerPanel(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val stateUsa = LocalStateUsa.current
+    val lightLook = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val titleColor = if (lightLook) Color(0xFF2A1D12) else MaterialTheme.colorScheme.onSurface
+    val subtitleColor = if (lightLook) Color(0xFF8A7653) else MaterialTheme.colorScheme.onSurfaceVariant
+    // The close button in the panel's own warm tone (a cool grey circle clashed with the sand)
+    val closeFill = if (lightLook) Color(0xFFE9DCBE) else MaterialTheme.colorScheme.surfaceVariant
+    val closeLine = if (lightLook) Color(0xFFD8C7A0) else Color.White.copy(alpha = 0.2f)
+    val closeGlyph = if (lightLook) Color(0xFF5A4630) else MaterialTheme.colorScheme.onSurfaceVariant
     Column(modifier = modifier.padding(16.dp)) {
-        // The title, centred on the panel, and the close button at the right
-        Box(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp)
+        // The title and its quiet line at the left; the close button at the right on the same line
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = PICKER_HEADER_HEIGHT_DP.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(R.string.region_picker_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                modifier = Modifier.align(Alignment.Center)
-            )
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
+            Column(modifier = Modifier.weight(1f).padding(start = 2.dp)) {
+                Text(
+                    text = stringResource(R.string.region_picker_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = titleColor,
+                    maxLines = 1
+                )
+                Text(
+                    text = stringResource(stateUsa.regionPickerSubtitleRes),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = subtitleColor,
+                    maxLines = 1
+                )
+            }
+            // A 48dp tap area around the 32dp circle
+            Box(
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(32.dp)
-                    .clickable(onClickLabel = stringResource(R.string.action_close), onClick = onClose)
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .clickable(onClickLabel = stringResource(R.string.action_close), role = Role.Button, onClick = onClose),
+                contentAlignment = Alignment.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "\u2715",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Surface(
+                    shape = CircleShape,
+                    color = closeFill,
+                    border = BorderStroke(1.dp, closeLine),
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(text = "\u2715", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = closeGlyph)
+                    }
                 }
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         StateUsaClassicMapCanvas(
             selectedRegionId = pendingRegionId,
             terrain = terrain,
@@ -108,7 +133,11 @@ fun StateUsaRegionPickerPanel(
             // Tall: the map is stretched a little vertically and fills the panel's height (the panel is sized to
             // fit it, up to most of the screen; on a short screen the map just gets a little shorter)
             sizeModifier = Modifier.weight(1f),
-            verticalStretch = PICKER_VERTICAL_STRETCH
+            verticalStretch = PICKER_VERTICAL_STRETCH,
+            // Concentric corners: the panel's radius (24dp) less its padding (16dp), and a fine warm line
+            cornerRadius = 8.dp,
+            frameColor = Color(0xFF5A4630).copy(alpha = 0.22f),
+            frameWidth = 1.dp
         )
     }
 }

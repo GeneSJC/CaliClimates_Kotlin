@@ -2,6 +2,7 @@ package io.github.genesjc.climatefinder.ui.components
 
 import androidx.compose.ui.res.stringResource
 import io.github.genesjc.climatefinder.R
+import io.github.genesjc.climatefinder.ui.screens.PICKER_HEADER_HEIGHT_DP
 import io.github.genesjc.climatefinder.ui.screens.PICKER_VERTICAL_STRETCH
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.border
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.toSize
@@ -163,8 +165,8 @@ fun RegionPickerOverlay(
     val density = LocalDensity.current
     val noRipple = remember { MutableInteractionSource() }
     val lightLook = MaterialTheme.colorScheme.background.luminance() > 0.5f
-    val panelTint = if (lightLook) Color(0xFFF1E2C4) else MaterialTheme.colorScheme.surface
-    val panelOutline = if (lightLook) Color(0xFF3A2A1E).copy(alpha = 0.7f) else Color.White.copy(alpha = 0.25f)
+    val panelTint = if (lightLook) Color(0xFFF7EFDD) else MaterialTheme.colorScheme.surface
+    val panelOutline = if (lightLook) Color(0xFFE0D1B0) else Color.White.copy(alpha = 0.25f)
     var origin by remember { mutableStateOf(Offset.Zero) }
     var size by remember { mutableStateOf(IntSize.Zero) }
     val containerW = size.width.toFloat()
@@ -172,7 +174,7 @@ fun RegionPickerOverlay(
     val targetW = containerW * 0.92f
     // As tall as the picker's content needs (the map is 1.35 times as tall as it is wide), with a little
     // room under the map, and never more than 82% of the screen
-    val contentDp = 16f + 32f + 12f + (targetW / density.density - 32f) * 1.35f * PICKER_VERTICAL_STRETCH + 16f + 14f
+    val contentDp = 16f + PICKER_HEADER_HEIGHT_DP + 8f + (targetW / density.density - 32f) * 1.35f * PICKER_VERTICAL_STRETCH + 16f + 14f
     val targetH = minOf(containerH * 0.82f, contentDp * density.density)
     val targetX = (containerW - targetW) / 2f
     val targetY = (containerH - targetH) / 2f
@@ -201,17 +203,10 @@ fun RegionPickerOverlay(
                     width = with(density) { lerp(state.buttonBounds.width, targetW, t).toDp() },
                     height = with(density) { lerp(state.buttonBounds.height, targetH, t).toDp() }
                 )
+                // A soft shadow lifts the panel off the page, then the clip, a solid warm surface and a fine edge
+                .shadow(14.dp * t, RoundedCornerShape(lerp(10f, 24f, t).dp), clip = false)
                 .clip(RoundedCornerShape(lerp(10f, 24f, t).dp))
-                .background(
-                    // Solid through the title row, then fading to half see-through toward the bottom. In light
-                    // mode a warm sand, to sit with the map's parchment and pills; in dark mode the surface colour
-                    Brush.verticalGradient(
-                        0f to panelTint.copy(alpha = t),
-                        0.14f to panelTint.copy(alpha = t),
-                        1f to panelTint.copy(alpha = 0.5f * t)
-                    )
-                )
-                // A fine dark outline, so the panel reads against whatever is behind it
+                .background(panelTint.copy(alpha = t))
                 .border(1.dp, panelOutline.copy(alpha = panelOutline.alpha * t), RoundedCornerShape(lerp(10f, 24f, t).dp))
                 // Taps inside the panel must not reach the scrim
                 .clickable(interactionSource = noRipple, indication = null) { },
