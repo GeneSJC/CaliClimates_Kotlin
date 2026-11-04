@@ -125,8 +125,8 @@ fun LayerLegend(
     Surface(
         shape = RoundedCornerShape(12.dp),
         // Dark and a little see-through, like the weather badge and the notice, so the bar sits back in the chart
-        // 10 percent more see-through than before (0.90 to 0.81), so the fish and the sea show faintly behind it
-        color = Color(0xFF1E293B).copy(alpha = 0.81f),
+        // Another 10 percent more see-through (0.90 to 0.81 to 0.73), so the fish and the sea show behind it
+        color = Color(0xFF1E293B).copy(alpha = 0.73f),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
         shadowElevation = 2.dp,
         modifier = modifier.alpha(alpha)

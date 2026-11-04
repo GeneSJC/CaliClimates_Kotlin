@@ -138,7 +138,8 @@ fun MapViewToggleSwitch(
             modifier = (if (vertical) Modifier.offset(y = thumbAt).align(Alignment.TopCenter) else Modifier.offset(x = thumbAt).align(Alignment.CenterStart))
                 .size(width = if (vertical) TOGGLE_THUMB else thumbLength, height = if (vertical) thumbLength else TOGGLE_THUMB)
                 .clip(CircleShape)
-                .background(BlueGreenWash)
+                // The thumb's wash at 85 percent opacity (15 percent more see-through), so it is less bright on the dark track
+                .background(THUMB_WASH)
                 .background(thumb)
         )
     }
@@ -156,3 +157,6 @@ private val TOGGLE_THUMB_WIDTH = 30.dp
 /** Stood on end (the compact header's card): the track is as wide as the toggle is tall and 52dp long, the pill thumb 30dp long. */
 private val TOGGLE_VERTICAL_LENGTH = 52.dp
 private val TOGGLE_VERTICAL_THUMB_LENGTH = 30.dp
+
+/** The toggle thumb's wash on the Elevation view: the shared blue-to-green wash at 85 percent opacity. */
+private val THUMB_WASH = androidx.compose.ui.graphics.Brush.linearGradient(colors = BlueGreenWashColors.map { it.copy(alpha = 0.85f) })

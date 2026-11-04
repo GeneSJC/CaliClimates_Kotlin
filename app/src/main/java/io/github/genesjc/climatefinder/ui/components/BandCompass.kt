@@ -43,8 +43,8 @@ fun BandCompass(angle: Int, modifier: Modifier = Modifier) {
     )
     Surface(
         shape = CircleShape,
-        // 10 percent more see-through than before (0.90 to 0.81), so the scenery shows faintly behind it
-        color = Color(0xFF1E293B).copy(alpha = 0.81f),
+        // Another 10 percent more see-through (0.90 to 0.81 to 0.73), so the scenery shows behind it
+        color = Color(0xFF1E293B).copy(alpha = 0.73f),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
         shadowElevation = 2.dp,
         modifier = modifier.size(BAND_COMPASS_SIZE_DP.dp)

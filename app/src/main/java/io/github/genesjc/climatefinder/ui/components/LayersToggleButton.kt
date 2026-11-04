@@ -68,8 +68,8 @@ const val LAYERS_BUTTON_SIZE_DP = 36f
 fun LayersToggleButton(on: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        // 10 percent more see-through than before (white 0.90 to 0.81, dark 1.0 to 0.90)
-        color = if (on) BandsButtonDark.copy(alpha = 0.90f) else Color.White.copy(alpha = 0.81f),
+        // Another 10 percent more see-through (white 0.90 to 0.81 to 0.73, dark 1.0 to 0.90 to 0.81)
+        color = if (on) BandsButtonDark.copy(alpha = 0.81f) else Color.White.copy(alpha = 0.73f),
         border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier
             .size(LAYERS_BUTTON_SIZE_DP.dp)

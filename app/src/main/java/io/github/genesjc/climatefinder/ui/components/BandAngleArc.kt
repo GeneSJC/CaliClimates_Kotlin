@@ -57,8 +57,8 @@ private const val HANDLE_AS_PILL = true
 
 /** The pill is filled with the blue-to-green wash (the toggle's and the picker button's), drawn across the pill itself; it was white, then tangerine. */
 
-/** How solid the pill's wash is: 0.9, a tenth see-through (it was solid and looked a little bright). */
-private const val HANDLE_PILL_OPACITY = 0.9f
+/** How solid the pill's wash is: 0.81 (it was solid, then 0.9; another tenth see-through so it is less bright). */
+private const val HANDLE_PILL_OPACITY = 0.81f
 
 /** The pill's thickness across the band (the band less 8dp of margin each side) and its whole length along it (dp): the proportions that read as a clearly defined pill; the bigger tangerine one (54 by 70 and 80) looked amorphous. */
 private const val HANDLE_PILL_THICKNESS_DP = BAND_WIDTH_DP - 16f
@@ -141,7 +141,8 @@ fun BandAngleArc(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier = 
         val bandRect = Rect(center = pivot, radius = centreRadius)
         // The band: a quarter of a ring with round ends, dark and a little see-through like the key under it, outlined faintly
         drawArc(Color.White.copy(alpha = 0.18f), startAngle = 180f, sweepAngle = 90f, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = bandWidth + 2.dp.toPx(), cap = StrokeCap.Round))
-        drawArc(Color(0xE61E293B), startAngle = 180f, sweepAngle = 90f, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = bandWidth, cap = StrokeCap.Round))
+        // The band: dark slate at 81 percent (it was 90), so the chart shows a little through the swoop
+        drawArc(Color(0xFF1E293B).copy(alpha = 0.81f), startAngle = 180f, sweepAngle = 90f, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = bandWidth, cap = StrokeCap.Round))
         // Ticks every 15 degrees, longer at 0, 45 and 90, along the outer edge
         for (k in 0..6) {
             val degrees = k * BandAngle.TICK_EVERY
