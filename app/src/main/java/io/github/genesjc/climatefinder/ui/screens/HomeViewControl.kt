@@ -83,14 +83,8 @@ internal val CONTROLS_GAP = 20.dp
 /** The view chip's height, which the controls under it count on. */
 internal val VIEW_CHIP_HEIGHT = 30.dp
 
-/** How solid the chip's colour and the toggle's off-track colour are: 0.5 is half see-through (it was fully solid). */
-private const val VIEW_COLOR_OPACITY = 0.5f
-
-/** The chip's background on the Map view (a light orange), and the same colour for the toggle's off track. */
-private val VIEW_MAP_COLOR = Color(0xFFFFE3C2)
-
-/** The chip's background on the Profile view (a soft purple, the Profile view's sky). */
-private val VIEW_PROFILE_COLOR = Color(0xFFD8CCF7)
+/** The chip's background: dark slate, a little see-through (the dial's and the key bar's colour), the same on both views. */
+private val VIEW_CHIP_COLOR = Color(0xFF1E293B).copy(alpha = 0.74f)
 
 /** The green of the folder tab, for the view chip and for the floating toggle's off track; the same colour in both. */
 internal val VIEW_FOLDER_GREEN = Color(0xFFE4EBDA)
@@ -124,7 +118,7 @@ internal fun HomeViewControl(
         val flip = rememberViewFlip(onSelect, toast)
         if (VIEW_CHIP_IN_CONTROLS) {
             // The chip is with the map's controls: the toggle floats alone
-            MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier, offTrackColor = VIEW_MAP_COLOR.copy(alpha = VIEW_COLOR_OPACITY))
+            MapViewToggleSwitch(selected = selected, onSelect = flip, modifier = modifier)
         } else if (VIEW_LABEL_OVER_TOGGLE) {
             // The chip above the switch, a margin between them
             Column(modifier = modifier, horizontalAlignment = Alignment.End) {
@@ -235,27 +229,25 @@ internal fun HomeViewWidget(selected: Int, onSelect: (Int) -> Unit, toast: TagsT
 }
 
 /**
- * The chip naming the view you are in, with the map's controls (VIEW_CHIP_IN_CONTROLS): a light orange on the Map view and a
- * soft purple on the Profile view, [VIEW_CHIP_HEIGHT] tall, letters 35 percent bigger than the first try. It stays in the same
- * place when the view changes.
+ * The chip naming the view you are in, with the map's controls (VIEW_CHIP_IN_CONTROLS): dark slate, a little see-through, with
+ * white bold letters in the same type as the Stations button. It stands on its own against both views' backgrounds and stays in
+ * the same place when the view changes. [VIEW_CHIP_HEIGHT] tall.
  */
 @Composable
 internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(7.dp),
-        // Half see-through, so the colour is gentler on the eyes
-        color = (if (selected == 0) VIEW_MAP_COLOR else VIEW_PROFILE_COLOR).copy(alpha = VIEW_COLOR_OPACITY),
-        border = BorderStroke(1.dp, VIEW_CHIP_INK.copy(alpha = 0.25f)),
+        color = VIEW_CHIP_COLOR,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
         modifier = modifier.height(VIEW_CHIP_HEIGHT)
     ) {
         Box(modifier = Modifier.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(if (selected == 0) R.string.view_label_map else R.string.view_label_profile),
                 fontSize = 16.6.sp,
-                // Regular weight (it was bold), softer than before
-                fontWeight = FontWeight.Normal,
+                fontWeight = FontWeight.Bold,
                 maxLines = 1,
-                color = VIEW_CHIP_INK
+                color = Color.White
             )
         }
     }
