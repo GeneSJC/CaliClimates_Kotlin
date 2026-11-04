@@ -90,8 +90,8 @@ internal val HEADER_HEIGHT = 42.dp
 /** The green margin round the station tile inside the folder, at the sides (it was 10dp, doubled to 20dp); below the tile it is half this, and above it 12dp. */
 private val FOLDER_MARGIN = 20.dp
 
-/** The region picker button on the folder's tab: a little taller than PICKER_BUTTON_HEIGHT, which the other screens use. */
-internal val HEADER_PICKER_HEIGHT = 40.dp
+/** The region picker button on the folder's tab: bigger than PICKER_BUTTON_HEIGHT, which the other screens use (it was 40dp, now 44dp). */
+internal val HEADER_PICKER_HEIGHT = 44.dp
 
 /**
  * How much shorter the folder's tab is than it was (the body's top edge, right of the tab and under the toggle, is this much
@@ -424,7 +424,7 @@ fun LandingScreen(
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
-                                Spacer(modifier = Modifier.height(if (HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME || VIEW_LABEL_OVER_TOGGLE) 6.dp + FOLDER_TAB_TRIM else 12.dp))
+                                Spacer(modifier = Modifier.height(if (HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME || VIEW_LABEL_OVER_TOGGLE) 6.dp + FOLDER_TAB_TRIM - 2.dp else 12.dp))
                                 // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(

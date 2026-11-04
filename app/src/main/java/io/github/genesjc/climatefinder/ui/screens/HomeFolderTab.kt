@@ -61,7 +61,7 @@ internal fun BoxScope.HomeFolderTabContent(
         // The end padding is the room the tab's slope needs. No start padding: the icon lines up with the left edge of the station
         // tile (both FOLDER_MARGIN in). 2dp above the icon on top of the row's own; the bottom leaves 8.4dp under the icon less the
         // trim (FOLDER_TAB_TRIM) that made the tab shorter
-        modifier = Modifier.padding(start = 0.dp, end = 28.dp, top = 2.dp, bottom = 8.4.dp - 2.dp - FOLDER_TAB_TRIM / 2)
+        modifier = Modifier.padding(start = 0.dp, end = 28.dp, top = 1.dp, bottom = 8.4.dp - 2.dp - FOLDER_TAB_TRIM / 2 - 1.dp)
     ) {
         // A little bigger than the other picker buttons (40dp), with more room inside its outline
         RegionPickerChip(
@@ -92,5 +92,5 @@ internal fun BoxScope.HomeFolderTabContent(
     }
 }
 
-/** How far a one-line name moves up (half of the icon's 40dp less the line's 21dp) to sit at the top of the icon's height. */
-private val NAME_LIFT = (-9.5).dp
+/** How far a one-line name moves up (half of the icon's 44dp less the line's 21dp) to sit at the top of the icon's height. */
+private val NAME_LIFT = (-11.5).dp
