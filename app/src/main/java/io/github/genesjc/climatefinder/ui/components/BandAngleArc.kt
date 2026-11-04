@@ -57,7 +57,7 @@ private const val HANDLE_AS_PILL = true
 
 /** The pill is filled with the blue-to-green wash (the toggle's and the picker button's), drawn across the pill itself; it was white, then tangerine. */
 
-/** The pill's thickness across the band (the band less 8dp of margin each side) and its whole length along it (dp): the proportions that read as a clearly defined pill; the bigger tangerine one (54 by 70 and 80) looked amorphous and its whole length along it (dp). */
+/** The pill's thickness across the band (the band less 8dp of margin each side) and its whole length along it (dp): the proportions that read as a clearly defined pill; the bigger tangerine one (54 by 70 and 80) looked amorphous. */
 private const val HANDLE_PILL_THICKNESS_DP = BAND_WIDTH_DP - 16f
 private const val HANDLE_PILL_LENGTH_DP = 52f
 
