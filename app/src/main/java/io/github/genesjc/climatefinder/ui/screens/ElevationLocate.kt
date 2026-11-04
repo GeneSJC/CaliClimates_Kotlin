@@ -12,7 +12,8 @@ import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
  *  - a tap on the button ([recenterTick] goes up) eases the chart over so the station is in the middle ([centre]);
  *  - when the selected station changes (from the Stations list, the tile or the other view) and it is not comfortably in view
  *    ([comfortable]), the chart eases over so it is.
- * The three are given as functions of the station's place in [sorted], so this holds none of the chart's geometry.
+ * The three are given as functions of the station's place in [sorted], so this holds none of the chart's geometry. [centre] is a
+ * suspend function, because the chart's easing is: it runs inside the effects' coroutines.
  */
 @Composable
 internal fun ElevationLocateEffects(
@@ -22,7 +23,7 @@ internal fun ElevationLocateEffects(
     onSelectedOffscreenChange: ((Boolean) -> Unit)?,
     comfortable: (Int) -> Boolean,
     visible: (Int) -> Boolean,
-    centre: (Int) -> Unit
+    centre: suspend (Int) -> Unit
 ) {
     val idx = sorted.indexOfFirst { it.id == selectedStationId }
     val offscreen = idx >= 0 && !visible(idx)
