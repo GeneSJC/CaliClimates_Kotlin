@@ -66,6 +66,8 @@
 
     <!-- Home -->
     <string name="tab_elevation">Profile</string>
+    <!-- An experiment (build 149.10): the view switch's second half reads "N & W" instead of the Profile name -->
+    <string name="view_switch_profile">N &amp; W</string>
     <string name="tab_topography">Map</string>
     <string name="limited_data_title">Limited station data</string>
     <string name="no_data_title">No station data loaded</string>
