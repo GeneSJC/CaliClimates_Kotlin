@@ -66,6 +66,7 @@
     <string name="ca_tagline">Explore California\'s Climates</string>
     <string name="ca_regions_screen_title">California Regional Sections</string>
     <string name="ca_regions_map_title">Interactive California Section Map</string>
+    <string name="ca_region_picker_subtitle">Six regions of California</string>
 
     <!-- Names on the region picker map -->
     <string name="ca_map_label_northern_california">Northern California</string>

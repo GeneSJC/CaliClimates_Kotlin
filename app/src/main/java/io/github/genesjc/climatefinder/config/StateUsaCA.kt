@@ -22,6 +22,8 @@ object StateUsaCA : StateUsaDefinition {
 
     override val regionsMapTitleRes = R.string.ca_regions_map_title
 
+    override val regionPickerSubtitleRes = R.string.ca_region_picker_subtitle
+
     val SAN_DIEGO = StateUsaRegion(
         id = "san_diego",
         nameRes = R.string.ca_san_diego_name,
@@ -465,12 +467,12 @@ object StateUsaCA : StateUsaDefinition {
         // Oregon and Nevada share the 42°N line
         borderLine = StateUsaBorderLine(lat = 42.0f, fromLon = -120.0f),
         regionLabels = listOf(
-            StateUsaMapLabel(R.string.ca_map_label_northern_california, -122.2f, 40.9f),
+            StateUsaMapLabel(R.string.ca_map_label_northern_california, -122.2f, 40.9f, startInside = true),
             StateUsaMapLabel(R.string.ca_map_label_bay_area, -122.2f, 38.45f),
-            StateUsaMapLabel(R.string.ca_map_label_central_valley, -119.6f, 36.9f),
+            StateUsaMapLabel(R.string.ca_map_label_central_valley, -119.6f, 36.9f, startInside = true),
             StateUsaMapLabel(R.string.ca_map_label_central_coast, -121.2f, 35.4f),
-            StateUsaMapLabel(R.string.ca_map_label_los_angeles, -117.0f, 34.45f),
-            StateUsaMapLabel(R.string.ca_map_label_san_diego, -116.3f, 32.95f)
+            StateUsaMapLabel(R.string.ca_map_label_los_angeles, -117.0f, 34.45f, startInside = true),
+            StateUsaMapLabel(R.string.ca_map_label_san_diego, -116.3f, 32.95f, startInside = true)
         ),
         neighbourLabels = listOf(
             StateUsaMapLabel(R.string.ca_map_label_oregon, -121.9f, 42.55f),
