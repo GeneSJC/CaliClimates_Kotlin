@@ -1,33 +1,37 @@
 package io.github.genesjc.climatefinder.ui.components
 
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.genesjc.climatefinder.R
 
-private val SWITCH_DARK = Color(0xFF334155)
+private val SWITCH_INK = Color(0xFF334155)
 private val SWITCH_LINE = Color(0xFFCBD5E1)
 
 /**
- * The view switch at the right of Home's first line: one pill with both views in it (Map is index 0, Profile is
- * index 1), the one you are in dark and the other light, so nothing has to be remembered and a tap on the other
- * half switches. Home puts it level with the folder tab's name.
+ * The view button at the right of Home's first line: one button that names the view a tap goes to. On the Map view
+ * (index 0) it reads "Profile" with a solid arrowhead to its right; on the Profile view (index 1) it reads "Map" with
+ * the arrowhead to its left. Both labels are laid out in the same space (the one not showing is invisible), so the
+ * button never changes size when it flips and the folder tab beside it stays still.
  */
 @Composable
 fun MapViewSwitch(
@@ -37,39 +41,46 @@ fun MapViewSwitch(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(8.dp)
+    val toProfile = selected == 0
+    val profileShown by animateFloatAsState(if (toProfile) 1f else 0f, tween(150), label = "viewButtonProfile")
+    val targetLabel = if (toProfile) profileLabel else mapLabel
     Surface(
-        shape = shape,
+        shape = RoundedCornerShape(8.dp),
         color = Color.White.copy(alpha = 0.90f),
         border = BorderStroke(1.dp, SWITCH_LINE),
-        modifier = modifier
+        modifier = modifier.clickable(
+            onClickLabel = stringResource(R.string.map_view_show, targetLabel),
+            role = Role.Button
+        ) { onSelect(if (toProfile) 1 else 0) }
     ) {
-        Row {
-            MapViewSwitchSegment(label = mapLabel, on = selected == 0, onClick = { onSelect(0) })
-            MapViewSwitchSegment(label = profileLabel, on = selected == 1, onClick = { onSelect(1) })
+        Box(modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.8.dp), contentAlignment = Alignment.Center) {
+            ViewButtonLabel(profileLabel, arrowAfter = true, shown = profileShown)
+            ViewButtonLabel(mapLabel, arrowAfter = false, shown = 1f - profileShown)
         }
     }
 }
 
+/** A label with its solid arrowhead; at [shown] below half it is also hidden from screen readers. */
 @Composable
-private fun MapViewSwitchSegment(label: String, on: Boolean, onClick: () -> Unit) {
-    val fill = animateColorAsState(if (on) SWITCH_DARK else Color.Transparent, tween(180), label = "viewSwitchFill").value
-    val ink = animateColorAsState(if (on) Color.White else SWITCH_DARK, tween(180), label = "viewSwitchInk").value
-    Box(
-        modifier = Modifier
-            .background(fill, RoundedCornerShape(7.dp))
-            .selectable(selected = on, role = Role.Tab, onClick = onClick)
-            .widthIn(min = 52.dp)
-            .padding(horizontal = 8.dp, vertical = 4.8.dp),
-        contentAlignment = Alignment.Center
+private fun ViewButtonLabel(label: String, arrowAfter: Boolean, shown: Float) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.alpha(shown).then(if (shown < 0.5f) Modifier.clearAndSetSemantics { } else Modifier)
     ) {
+        if (!arrowAfter) ViewButtonArrow("\u25C2", Modifier.padding(end = 4.dp))
         Text(
             text = label,
-            // 10 percent smaller than before (11.25 to 10.125)
             fontSize = ms(10.125f),
             letterSpacing = 0.4.sp,
             fontWeight = FontWeight.Bold,
-            color = ink
+            color = SWITCH_INK
         )
+        if (arrowAfter) ViewButtonArrow("\u25B8", Modifier.padding(start = 4.dp))
     }
+}
+
+/** The solid arrowhead beside the label: filled, like the drop-down arrows elsewhere in the header. */
+@Composable
+private fun ViewButtonArrow(glyph: String, modifier: Modifier) {
+    Text(text = glyph, fontSize = ms(12f), color = SWITCH_INK, modifier = modifier)
 }

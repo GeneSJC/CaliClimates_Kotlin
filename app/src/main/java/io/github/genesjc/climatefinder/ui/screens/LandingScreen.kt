@@ -392,14 +392,15 @@ fun LandingScreen(
                                     // The tab holds the region picker's icon and the name, centred on the tab
                                     Box(
                                         modifier = Modifier
-                                            .weight(1f, fill = false)
+                                            // Fills all the room the one view button leaves, so the tab is as wide as it can be
+                                            .weight(1f)
                                             .align(Alignment.CenterVertically)
                                             .onSizeChanged { folderTabWidth = it.width.toFloat() }
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            // The end padding is the room the tab's slope needs (28dp) and the 10dp the switch's smaller right margin freed
-                                            modifier = Modifier.padding(start = 8.dp, end = 38.dp)
+                                            // The end padding is the room the tab's slope needs
+                                            modifier = Modifier.padding(start = 8.dp, end = 28.dp)
                                         ) {
                                             RegionPickerChip(
                                                 state = pickerState,
@@ -420,7 +421,7 @@ fun LandingScreen(
                                             )
                                         }
                                     }
-                                    // The view switch at the right of the first line, level with the tab's middle
+                                    // The view button at the right of the first line, level with the tab's middle: it names the other view
                                     MapViewSwitch(
                                         selected = homeTab,
                                         mapLabel = stringResource(R.string.tab_topography),
