@@ -29,11 +29,11 @@ import io.github.genesjc.climatefinder.ui.components.RegionPickerChip
 import io.github.genesjc.climatefinder.ui.components.RegionPickerState
 
 /**
- * What the Home folder's tab holds: the region picker's icon and the region's name, and, on the Elevation view, the view's chip on
- * the tab's second line at the right (the Map view shows none). Drawn inside the tab's Box, which sizes the tab's shape.
+ * What the Home folder's tab holds: the region picker's icon and the region's name, and the view's chip ("Map" or "Elevation") on
+ * the tab's second line at the right. Drawn inside the tab's Box, which sizes the tab's shape.
  *
- * A name of one line rides at the top of the icon's height while the chip is showing, so the chip has the second line to itself
- * and does not touch the name; a name of two lines already fills the icon's height.
+ * A name of one line rides at the top of the icon's height, so the chip has the second line to itself and does not touch the
+ * name; a name of two lines already fills the icon's height.
  */
 @Composable
 internal fun BoxScope.HomeFolderTabContent(
@@ -42,18 +42,19 @@ internal fun BoxScope.HomeFolderTabContent(
     selectedRegionId: String,
     homeTab: Int
 ) {
-    // The Elevation view's chip on the tab's second line at the right; the Map view shows none. The offset is a draw offset, so the
-    // layout does not change
+    // The view's chip on the tab's second line at the right, on both views ("Map" or "Elevation"), fading from one word to the other.
+    // The offset is a draw offset, so the layout does not change
     if (VIEW_CHIP_IN_TAB) {
-        androidx.compose.animation.AnimatedVisibility(
-            visible = homeTab == 1,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp).offset(y = 3.dp)
-        ) { HomeViewChip(1, height = VIEW_TAB_CHIP_HEIGHT) }
+        androidx.compose.animation.Crossfade(
+            targetState = homeTab,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp).offset(y = 3.dp),
+            label = "tabViewChip"
+        ) { view -> HomeViewChip(view, height = VIEW_TAB_CHIP_HEIGHT) }
     }
     // How many lines the name takes: one line is lifted to the top of the icon's height while the chip is showing
     var nameLines by remember(region.id) { mutableIntStateOf(1) }
     val lift by animateDpAsState(
-        targetValue = if (VIEW_CHIP_IN_TAB && homeTab == 1 && nameLines <= 1) NAME_LIFT else 0.dp,
+        targetValue = if (VIEW_CHIP_IN_TAB && nameLines <= 1) NAME_LIFT else 0.dp,
         label = "tabNameLift"
     )
     Row(
