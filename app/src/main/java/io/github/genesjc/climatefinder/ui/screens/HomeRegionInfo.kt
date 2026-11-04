@@ -238,7 +238,7 @@ internal fun RegionInfoContent(
     onOpenStationList: () -> Unit,
     /** Opens the About dialog over the sheet; its button sits in the title band. */
     onOpenAbout: () -> Unit,
-    /** The build label, shown under the word About on its button. */
+    /** The build label, shown under the About button on the blue band. */
     buildLabel: String,
     menuOpen: Boolean,
     dotScale: Float = 1f,
@@ -272,7 +272,7 @@ internal fun RegionInfoContent(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 // The About button, where the title was: the same white card and teal "i" as the menu's About row
-                Box(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.weight(1f)) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = Color.White.copy(alpha = 0.95f),
@@ -286,22 +286,21 @@ internal fun RegionInfoContent(
                         ) {
                             InfoMark(color = Color(0xFF0D9488), modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            // "About" with the build under it, so the version shows without opening the dialog
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.menu_about),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = stringResource(R.string.build_label, buildLabel),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Text(
+                                text = stringResource(R.string.menu_about),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
+                    // The build under the button, white on the blue band, so the version shows without opening the dialog
+                    Text(
+                        text = stringResource(R.string.build_label, buildLabel),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                    )
                 }
                 if (hasStationData) {
                     Spacer(modifier = Modifier.width(8.dp))
