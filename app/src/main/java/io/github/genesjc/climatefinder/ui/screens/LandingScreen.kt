@@ -418,16 +418,20 @@ fun LandingScreen(
                                             )
                                             // The gap between the picker icon and the name: 12dp (it was 8dp, 50 percent more)
                                             Spacer(modifier = Modifier.width(12.dp))
-                                            Text(
-                                                text = stringResource(region.nameRes),
-                                                fontSize = 15.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                lineHeight = 18.sp,
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.weight(1f, fill = false)
-                                            )
+                                            // The region's name with the view's name in a small line under it; the picker icon beside
+                                            // them is as tall as the two lines
+                                            Column(modifier = Modifier.weight(1f, fill = false)) {
+                                                Text(
+                                                    text = stringResource(region.nameRes),
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    lineHeight = 18.sp,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                HomeViewLabel(selected = homeTab)
+                                            }
                                         }
                                     }
                                     // The view button at the right of the first line, level with the tab's middle: it names the other view
@@ -440,8 +444,7 @@ fun LandingScreen(
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
-                                // The gap above the tile (12dp); with the toggle switch it holds a small line naming the view
-                                HomeViewGap(selected = homeTab)
+                                Spacer(modifier = Modifier.height(12.dp))
                                 // Under it, one row: the station tile, across the full width. The tile fills the height it is given, so the row is held to its
                                 // content's height (without this the tile fills the whole map)
                                 Row(
