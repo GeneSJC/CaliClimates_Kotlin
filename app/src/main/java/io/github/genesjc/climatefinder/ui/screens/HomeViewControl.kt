@@ -13,6 +13,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.launch
+import io.github.genesjc.climatefinder.ui.components.RegionHaptics
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.alpha
 import androidx.compose.runtime.getValue
@@ -100,6 +108,36 @@ internal val VIEW_TOP_CHIP_HEIGHT = 17.dp
 
 /** The chip's height on the folder tab, where it shares the tab's second line. */
 internal val VIEW_TAB_CHIP_HEIGHT = 22.dp
+
+/**
+ * Whether a toast in the middle of the screen names the view just switched into (Gene, 2026-11-04). Off: the chip on the folder tab
+ * already names the view, so it glows for a moment when the view changes and says it itself (see [VIEW_CHIP_GLOW_ON_CHANGE]). Turn it
+ * on to get the toast back.
+ */
+internal const val VIEW_CHANGE_TOAST = false
+
+/**
+ * Whether the tab chip gives a small pop and a shimmer when the view changes (the toast's job, see [VIEW_CHANGE_TOAST]). The first try
+ * also had a gold glow and outline; it was not visible enough and was taken out (Gene, 2026-11-04).
+ */
+internal const val VIEW_CHIP_GLOW_ON_CHANGE = true
+
+/** Whether the phone gives a short click when the view changes, together with the chip's pop and shimmer. */
+private const val VIEW_CHANGE_HAPTIC = true
+
+/** How long the shimmer takes to cross the chip (milliseconds): it was 700 and read as too fast, so it is drawn out. */
+private const val VIEW_SHIMMER_MS = 1600
+
+/** The share of the shimmer's sweep over which the old word fades out (it is gone by then), and where the new word's fade-in starts. */
+private const val VIEW_WORD_OUT_END = 0.7f
+private const val VIEW_WORD_IN_START = 0.82f
+
+/** The shimmer band's width as a share of the chip's width (it was 0.55), and its strongest opacity (it was 0.6): a bigger, bolder sweep. */
+private const val VIEW_SHIMMER_BAND = 0.8f
+private const val VIEW_SHIMMER_STRENGTH = 0.8f
+
+/** The shimmer's colour: a white sheen, which shows on the chip's deep fill. */
+private val VIEW_CHIP_SHIMMER = Color.White
 
 /** The room between the header and the controls under it (the view chip first): the controls start this far lower. */
 internal val CONTROLS_GAP = 20.dp
@@ -227,8 +265,8 @@ private fun rememberViewFlip(onSelect: (Int) -> Unit, toast: TagsToastState): (I
     val profileWords = stringResource(R.string.view_toast_profile)
     return { index ->
         onSelect(index)
-        // The view it is going into
-        toast.show(if (index == 1) profileWords else mapWords)
+        // The view it is going into (the chip's glow now says it; the toast is off, see VIEW_CHANGE_TOAST)
+        if (VIEW_CHANGE_TOAST) toast.show(if (index == 1) profileWords else mapWords)
     }
 }
 
@@ -298,23 +336,94 @@ internal fun HomeViewChip(selected: Int, modifier: Modifier = Modifier, height: 
  * fades; "Map" has more room on each side than it needs, which keeps the two views looking alike.
  */
 @Composable
-internal fun HomeViewTabChip(selected: Int, modifier: Modifier = Modifier, height: androidx.compose.ui.unit.Dp = VIEW_TAB_CHIP_HEIGHT) {
-    val elevationShown by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (selected == 1) 1f else 0f,
-        animationSpec = androidx.compose.animation.core.tween(180),
-        label = "tabChipWords"
-    )
+internal fun HomeViewTabChip(
+    selected: Int,
+    regionColorHex: String,
+    modifier: Modifier = Modifier,
+    height: androidx.compose.ui.unit.Dp = VIEW_TAB_CHIP_HEIGHT
+) {
+    // The chip's words follow the shimmer: the old word ([fromView]) fades out as the shimmer slides over it, the chip is blank for a
+    // beat, and then the new word ([toView]) fades in once the shimmer has finished (and the other way round going back)
+    var fromView by remember { androidx.compose.runtime.mutableIntStateOf(selected) }
+    var toView by remember { androidx.compose.runtime.mutableIntStateOf(selected) }
+    // Which way the shimmer travels: left to right when going to Elevation (as the toggle's thumb moves), right to left going back
+    var sweepRight by remember { androidx.compose.runtime.mutableStateOf(true) }
+    // A pulse (0 to 1 and back to 0) drives the pop, and a sweep (0 to 1) drives the shimmer; both run each time the view changes
+    // (not on the first look), with a click from the phone's vibrator
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val sweep = remember { androidx.compose.animation.core.Animatable(1f) }
+    val pulse = remember { androidx.compose.animation.core.Animatable(0f) }
+    var armed by remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(selected) {
+        if (!armed) {
+            armed = true
+            return@LaunchedEffect
+        }
+        if (VIEW_CHANGE_HAPTIC) RegionHaptics.tick(context)
+        if (!VIEW_CHIP_GLOW_ON_CHANGE) {
+            fromView = selected
+            toView = selected
+            return@LaunchedEffect
+        }
+        sweepRight = selected == 1
+        // The word that was showing is the one being replaced (a flip in mid-shimmer starts again from the newer word)
+        fromView = toView
+        toView = selected
+        pulse.snapTo(0f)
+        sweep.snapTo(0f)
+        // The shimmer crosses the chip while it pops and settles
+        launch { sweep.animateTo(1f, androidx.compose.animation.core.tween(VIEW_SHIMMER_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+        pulse.animateTo(1f, androidx.compose.animation.core.tween(180))
+        pulse.animateTo(0f, androidx.compose.animation.core.tween(420))
+    }
+    // The README-style pill: a deep, saturated shade of the region's colour with white bold letters, no outline
     Surface(
-        shape = RoundedCornerShape(6.dp),
-        color = VIEW_CHIP_COLOR,
-        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-        modifier = modifier.height(height)
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(percent = 50),
+        color = regionChipFill(regionColorHex),
+        modifier = modifier
+            .height(height)
+            .graphicsLayer { val pop = 1f + 0.08f * pulse.value; scaleX = pop; scaleY = pop }
     ) {
-        Box(modifier = Modifier.padding(horizontal = 7.dp), contentAlignment = Alignment.Center) {
-            TabChipWord(R.string.view_label_map, 1f - elevationShown)
-            TabChipWord(R.string.view_label_profile, elevationShown)
+        Box(
+            modifier = Modifier
+                // The shimmer: a soft diagonal band that crosses the chip from left to right (the Surface clips it to the chip's shape)
+                .drawWithContent {
+                    drawContent()
+                    val t = sweep.value
+                    if (t < 1f) {
+                        val band = size.width * VIEW_SHIMMER_BAND
+                        // Left to right: the band's lead edge runs from the chip's left to its right; right to left mirrors that
+                        val travelled = if (sweepRight) t else 1f - t
+                        val x = -band + (size.width + band * 2f) * travelled
+                        drawRect(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                colors = listOf(Color.Transparent, VIEW_CHIP_SHIMMER.copy(alpha = VIEW_SHIMMER_STRENGTH), Color.Transparent),
+                                start = if (sweepRight) Offset(x, 0f) else Offset(x + band, 0f),
+                                end = if (sweepRight) Offset(x + band, size.height) else Offset(x, size.height)
+                            )
+                        )
+                    }
+                }
+                .padding(horizontal = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            TabChipWord(R.string.view_label_map, chipWordAlpha(0, fromView, toView, sweep.value))
+            TabChipWord(R.string.view_label_profile, chipWordAlpha(1, fromView, toView, sweep.value))
         }
     }
+}
+
+/**
+ * How much of a view's word shows while the shimmer is at [t] (0 to 1, the whole sweep): the word being replaced fades out over the first
+ * [VIEW_WORD_OUT_END] of the sweep, with the shimmer sliding over it; the new word fades in over the last part, from
+ * [VIEW_WORD_IN_START]; between the two the chip is blank. At the end only the new word shows.
+ */
+private fun chipWordAlpha(view: Int, from: Int, to: Int, t: Float): Float = when {
+    t >= 1f -> if (view == to) 1f else 0f
+    view == to && view != from -> ((t - VIEW_WORD_IN_START) / (1f - VIEW_WORD_IN_START)).coerceIn(0f, 1f)
+    view == from && view != to -> (1f - t / VIEW_WORD_OUT_END).coerceIn(0f, 1f)
+    view == to -> 1f
+    else -> 0f
 }
 
 /** One of the tab chip's two words, at [alpha]; a word that is not showing is also hidden from screen readers. */
@@ -323,9 +432,9 @@ private fun TabChipWord(@androidx.annotation.StringRes res: Int, alpha: Float) {
     Text(
         text = stringResource(res),
         fontSize = ms(9f),
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Bold,
         maxLines = 1,
-        color = VIEW_CHIP_INK,
+        color = Color.White,
         modifier = Modifier
             .alpha(alpha)
             .then(if (alpha < 0.5f) Modifier.clearAndSetSemantics { } else Modifier)

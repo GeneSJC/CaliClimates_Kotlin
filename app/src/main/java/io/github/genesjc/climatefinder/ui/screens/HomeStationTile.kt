@@ -41,11 +41,12 @@ internal fun StationHeroTile(
     val skyTemp = (reading as? ObservationResult.Reading)?.observation?.temperatureFahrenheit
     HeroTile(
         fullWidthPx = fullWidthPx,
-        // The same colour as the open card: the plain surface, white in the light look
-        tileColor = MaterialTheme.colorScheme.surface,
+        // The same colour as the open card: the plain surface, white in the light look, a tenth see-through (STATION_TILE_OPACITY)
+        tileColor = MaterialTheme.colorScheme.surface.copy(alpha = STATION_TILE_OPACITY),
         tileBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-        // The card draws its own border; this backs it so nothing shows through
-        panelColor = MaterialTheme.colorScheme.surface,
+        // The card draws its own border and its own background (at the same opacity), so nothing is stacked behind it: a second
+        // layer under it would make the two add up to nearly solid
+        panelColor = Color.Transparent,
         openLabel = stringResource(R.string.station_card_show),
         closeLabel = stringResource(R.string.station_card_hide),
         // Stays open when another station is picked from the map, and the map stays tappable behind it
@@ -72,6 +73,7 @@ internal fun StationHeroTile(
                 onLess = close,
                 // The region's name stays at the top when the card is open
                 regionName = regionName,
+                containerAlpha = STATION_TILE_OPACITY,
                 // The first line of the open card: the sky's icon and wording, darkened to read on white; none without a reading
                 skyLine = skyTemp?.let { t ->
                     val sky = skyThemeFor(t)
@@ -81,3 +83,6 @@ internal fun StationHeroTile(
         }
     )
 }
+
+/** How solid the Home station tile and its open card are: 0.95, five percent see-through (0.9 let the map's dots show too clearly through the card). */
+private const val STATION_TILE_OPACITY = 0.95f

@@ -110,6 +110,8 @@ fun MapViewToggleSwitch(
     modifier: Modifier = Modifier,
     // The track while off (the Map view); a light slate when the switch sits on a white card, where white would vanish
     offTrackColor: Color = Color.White.copy(alpha = 0.90f),
+    // The off track's wash (the picker button's blue-to-green), over which the dark on-track fades in; null uses [offTrackColor]
+    offTrackBrush: androidx.compose.ui.graphics.Brush? = BlueGreenWash,
     // Stood on end: Map at the top (off), Profile at the bottom (on)
     vertical: Boolean = false
 ) {
@@ -118,14 +120,19 @@ fun MapViewToggleSwitch(
     val length = if (vertical) TOGGLE_VERTICAL_LENGTH else TOGGLE_WIDTH
     val thumbLength = if (vertical) TOGGLE_VERTICAL_THUMB_LENGTH else TOGGLE_THUMB_WIDTH
     val thumbAt by animateDpAsState(if (on) length - thumbLength - TOGGLE_INSET else TOGGLE_INSET, tween(150), label = "viewToggleThumb")
-    val track by animateColorAsState(if (on) SWITCH_INK else offTrackColor, tween(150), label = "viewToggleTrack")
-    val thumb by animateColorAsState(if (on) Color.White else SWITCH_INK, tween(150), label = "viewToggleThumb")
+    // With a wash, the track is the wash with the dark colour fading in over it (from transparent dark, so the fade stays dark-toned)
+    val track by animateColorAsState(if (on) SWITCH_INK else if (offTrackBrush != null) SWITCH_INK.copy(alpha = 0f) else offTrackColor, tween(150), label = "viewToggleTrack")
+    // The thumb is dark on the Map view and, on the Elevation view, the same wash as the Map view's track (the dark fades out over it)
+    val thumb by animateColorAsState(if (on) SWITCH_INK.copy(alpha = 0f) else SWITCH_INK.copy(alpha = 0.9f), tween(150), label = "viewToggleThumb")
     Box(
         modifier = modifier
+            // The whole switch 20 percent see-through, so the header and the map show through it
+            .alpha(TOGGLE_OPACITY)
             .semantics { contentDescription = description }
             .toggleable(value = on, role = Role.Switch, onValueChange = { onSelect(if (it) 1 else 0) })
             .size(width = if (vertical) TOGGLE_HEIGHT else length, height = if (vertical) length else TOGGLE_HEIGHT)
             .clip(CircleShape)
+            .then(if (offTrackBrush != null) Modifier.background(offTrackBrush) else Modifier)
             .background(track)
             .border(1.dp, if (on) SWITCH_INK else SWITCH_LINE, CircleShape)
     ) {
@@ -133,20 +140,28 @@ fun MapViewToggleSwitch(
             modifier = (if (vertical) Modifier.offset(y = thumbAt).align(Alignment.TopCenter) else Modifier.offset(x = thumbAt).align(Alignment.CenterStart))
                 .size(width = if (vertical) TOGGLE_THUMB else thumbLength, height = if (vertical) thumbLength else TOGGLE_THUMB)
                 .clip(CircleShape)
+                // The thumb's wash at 85 percent opacity (15 percent more see-through), so it is less bright on the dark track
+                .background(THUMB_WASH)
                 .background(thumb)
         )
     }
 }
 
-/** The toggle's size: 35 percent wider than the standard switch (52dp to 70dp) and 15 percent less tall (32dp to 27.2dp), the thumb inset 3dp all round. */
+/** How solid the whole view toggle is: 0.8, so what is behind it shows a little through the track and the thumb. */
+private const val TOGGLE_OPACITY = 0.8f
+
+/** The toggle's size: 70dp wide and 34dp tall (it was 27.2dp, made taller to be easier to grab), the thumb inset 3dp all round. */
 private val TOGGLE_WIDTH = 70.dp
-private val TOGGLE_HEIGHT = 27.2.dp
+private val TOGGLE_HEIGHT = 34.dp
 private val TOGGLE_INSET = 3.dp
 private val TOGGLE_THUMB = TOGGLE_HEIGHT - TOGGLE_INSET * 2
 
 /** The thumb is a wide pill (the newer desktop-switch look), not a circle; set this equal to the thumb's height (21.2dp) to go back to a circle. */
 private val TOGGLE_THUMB_WIDTH = 30.dp
 
-/** Stood on end (the compact header's card): the track is 27.2dp wide and 52dp tall, the pill thumb 21.2dp wide and 30dp tall. */
+/** Stood on end (the compact header's card): the track is as wide as the toggle is tall and 52dp long, the pill thumb 30dp long. */
 private val TOGGLE_VERTICAL_LENGTH = 52.dp
 private val TOGGLE_VERTICAL_THUMB_LENGTH = 30.dp
+
+/** The toggle thumb's wash on the Elevation view: the shared blue-to-green wash at 85 percent opacity. */
+private val THUMB_WASH = androidx.compose.ui.graphics.Brush.linearGradient(colors = BlueGreenWashColors.map { it.copy(alpha = 0.85f) })

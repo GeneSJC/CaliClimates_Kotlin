@@ -201,7 +201,8 @@ fun ZoomSlider(
     fun ratioFromZoom(zoom: Float) = (ln(zoom.coerceAtLeast(minValue) / minValue) / ln(maxValue / minValue)).coerceIn(0f, 1f)
 
     Surface(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+        // A very gentle lavender (it was the plain surface colour, which matched the map's green), at the same see-through level
+        color = ZOOM_SLIDER_TINT.copy(alpha = 0.78f),
         shape = RoundedCornerShape(12.dp),
         shadowElevation = 2.dp,
         modifier = modifier
@@ -333,3 +334,6 @@ fun ZoomSlider(
         }
     }
 }
+
+/** The zoom slider's background: a very pale lavender, so it does not blend with the map's green where there is no terrain. */
+internal val ZOOM_SLIDER_TINT = Color(0xFFE9E3F7)

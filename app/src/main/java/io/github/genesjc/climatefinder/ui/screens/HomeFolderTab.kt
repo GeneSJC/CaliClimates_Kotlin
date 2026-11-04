@@ -49,7 +49,7 @@ internal fun BoxScope.HomeFolderTabContent(
     // The view's chip on the tab's second line at the right, on both views: one chip of one size and place, the word in it fading
     // between "Map" and "Elevation". The offset is a draw offset, so the layout does not change
     if (VIEW_CHIP_IN_TAB) {
-        HomeViewTabChip(homeTab, Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp).offset(y = 3.dp))
+        HomeViewTabChip(homeTab, region.colorHex, Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 1.dp).offset(y = 3.dp))
     }
     // The name's ink: a deep, still-coloured shade of the region's picker colour (see regionInk), so it is dark but not black; in the dark
     // look the theme's own text colour
@@ -109,25 +109,6 @@ internal fun BoxScope.HomeFolderTabContent(
  * off whatever tint is behind it.
  */
 private const val TAB_TEXT_GLOW = false
-
-/** The brightness of the name's ink (0 is black, 1 full): low, so it is dark and reads on the tint. */
-private const val TAB_INK_VALUE = 0.44f
-
-/** How much the colour's saturation is multiplied for the name's ink, so a muted region colour does not go grey when it is darkened. */
-private const val TAB_INK_SATURATION_BOOST = 2.0f
-
-/**
- * The name's ink for a region colour: the same hue, darkened to [TAB_INK_VALUE] with its saturation lifted by [TAB_INK_SATURATION_BOOST]
- * (capped at 0.9), so Los Angeles gets a deep navy and the Bay Area a deep green. Fading the colour toward black instead (the first
- * try, build 149.62) kept it so desaturated that it looked plain black.
- */
-private fun regionInk(colorHex: String): Color {
-    val hsv = FloatArray(3)
-    android.graphics.Color.colorToHSV(android.graphics.Color.parseColor(colorHex), hsv)
-    hsv[1] = (hsv[1] * TAB_INK_SATURATION_BOOST).coerceAtMost(0.9f)
-    hsv[2] = TAB_INK_VALUE
-    return Color(android.graphics.Color.HSVToColor(hsv))
-}
 
 /** How far a one-line name moves up (half of the icon's 44dp less the line's 21dp) to sit at the top of the icon's height. */
 private val NAME_LIFT = (-11.5).dp

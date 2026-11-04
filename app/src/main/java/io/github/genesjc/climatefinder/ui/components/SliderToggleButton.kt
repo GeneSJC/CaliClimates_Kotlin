@@ -26,7 +26,8 @@ import io.github.genesjc.climatefinder.R
 fun SliderToggleButton(shown: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = Color.White.copy(alpha = 0.90f),
+        // White at 72 percent, like Info and North beside it (it was white at 90, then the slider's lavender)
+        color = Color.White.copy(alpha = 0.72f),
         border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier
             .size(32.dp)

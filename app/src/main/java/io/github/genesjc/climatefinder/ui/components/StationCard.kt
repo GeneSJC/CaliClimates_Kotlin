@@ -83,7 +83,9 @@ fun StationCard(
     // The station's live reading, from its ViewModel; null while it is being checked
     reading: ObservationResult? = null,
     // Compact only: the sky's icon and wording ("Crisp Sub-Alpine"), as the card's first line; none when null
-    skyLine: SkyLine? = null
+    skyLine: SkyLine? = null,
+    // How solid the card's background is (1 is opaque); Home's open card is a tenth see-through
+    containerAlpha: Float = 1f
 ) {
 
     val display = if (useMockReadings) mockDisplay(station) else liveDisplay(reading)
@@ -108,7 +110,7 @@ fun StationCard(
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
         // The card is the plain surface colour, selected or not (white in the light look); the selection shows in the border
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = containerAlpha))
     ) {
         if (compact) CompactStationBody(station, terrainBadgeColor, display, regionRangeMeters, onLess, elevationNote, regionName, skyLine) else Column(modifier = Modifier.padding(16.dp)) {
             // Header row: the badge (and the selected mark) at the left take the room they need; the elevation text takes

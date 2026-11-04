@@ -9,6 +9,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -54,7 +55,12 @@ private const val HANDLE_RADIUS_DP = 13f
  */
 private const val HANDLE_AS_PILL = true
 
-/** The pill's thickness across the band (the band less 8dp of margin each side) and its whole length along it (dp). */
+/** The pill is filled with the blue-to-green wash (the toggle's and the picker button's), drawn across the pill itself; it was white, then tangerine. */
+
+/** How solid the pill's wash is: 0.81 (it was solid, then 0.9; another tenth see-through so it is less bright). */
+private const val HANDLE_PILL_OPACITY = 0.81f
+
+/** The pill's thickness across the band (the band less 8dp of margin each side) and its whole length along it (dp): the proportions that read as a clearly defined pill; the bigger tangerine one (54 by 70 and 80) looked amorphous. */
 private const val HANDLE_PILL_THICKNESS_DP = BAND_WIDTH_DP - 16f
 private const val HANDLE_PILL_LENGTH_DP = 52f
 
@@ -135,7 +141,8 @@ fun BandAngleArc(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier = 
         val bandRect = Rect(center = pivot, radius = centreRadius)
         // The band: a quarter of a ring with round ends, dark and a little see-through like the key under it, outlined faintly
         drawArc(Color.White.copy(alpha = 0.18f), startAngle = 180f, sweepAngle = 90f, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = bandWidth + 2.dp.toPx(), cap = StrokeCap.Round))
-        drawArc(Color(0xE61E293B), startAngle = 180f, sweepAngle = 90f, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = bandWidth, cap = StrokeCap.Round))
+        // The band: dark slate at 81 percent (it was 90), so the chart shows a little through the swoop
+        drawArc(Color(0xFF1E293B).copy(alpha = 0.81f), startAngle = 180f, sweepAngle = 90f, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = bandWidth, cap = StrokeCap.Round))
         // Ticks every 15 degrees, longer at 0, 45 and 90, along the outer edge
         for (k in 0..6) {
             val degrees = k * BandAngle.TICK_EVERY
@@ -164,15 +171,18 @@ fun BandAngleArc(angle: Int, onAngleChange: (Int) -> Unit, modifier: Modifier = 
             drawText(layout, topLeft = Offset(at.x - layout.size.width / 2f, at.y - layout.size.height / 2f))
         }
         if (HANDLE_AS_PILL) {
-            // The handle: a wide white pill along the band, round at both ends, as if cut from the band
+            // The handle: a wide pill along the band, round at both ends, as if cut from the band, in the blue-to-green wash
             val thickness = HANDLE_PILL_THICKNESS_DP.dp.toPx()
             // The arc between the centres of the two round ends: the whole length less the two end caps
             val sweep = Math.toDegrees(((HANDLE_PILL_LENGTH_DP.dp.toPx() - thickness) / centreRadius).toDouble()).toFloat()
             val start = 270f - angle - sweep / 2f
             drawArc(Color.Black.copy(alpha = 0.25f), startAngle = start, sweepAngle = sweep, useCenter = false, topLeft = bandRect.topLeft + Offset(0f, 1.dp.toPx()), size = bandRect.size, style = Stroke(width = thickness + 2.dp.toPx(), cap = StrokeCap.Round))
-            drawArc(Color.White, startAngle = start, sweepAngle = sweep, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = thickness, cap = StrokeCap.Round))
             val rad = Math.toRadians(angle.toDouble())
             val middle = Offset(pivot.x - sin(rad).toFloat() * centreRadius, pivot.y - cos(rad).toFloat() * centreRadius)
+            // The wash runs diagonally across the pill (from its top-left to its bottom-right), not across the whole dial
+            val reach = HANDLE_PILL_LENGTH_DP.dp.toPx() / 2f
+            val wash = Brush.linearGradient(colors = BlueGreenWashColors.map { it.copy(alpha = HANDLE_PILL_OPACITY) }, start = middle - Offset(reach, reach), end = middle + Offset(reach, reach))
+            drawArc(wash, startAngle = start, sweepAngle = sweep, useCenter = false, topLeft = bandRect.topLeft, size = bandRect.size, style = Stroke(width = thickness, cap = StrokeCap.Round))
             // A solid black triangle in the middle of the pill, its tip pointing the way the view looks: straight out from the
             // dial's corner, which is the heading (up at north, left at west)
             val ahead = Offset(-sin(rad).toFloat(), -cos(rad).toFloat())
