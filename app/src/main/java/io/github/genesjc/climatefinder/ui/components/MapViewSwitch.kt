@@ -110,6 +110,8 @@ fun MapViewToggleSwitch(
     modifier: Modifier = Modifier,
     // The track while off (the Map view); a light slate when the switch sits on a white card, where white would vanish
     offTrackColor: Color = Color.White.copy(alpha = 0.90f),
+    // The off track's wash (the picker button's blue-to-green), over which the dark on-track fades in; null uses [offTrackColor]
+    offTrackBrush: androidx.compose.ui.graphics.Brush? = BlueGreenWash,
     // Stood on end: Map at the top (off), Profile at the bottom (on)
     vertical: Boolean = false
 ) {
@@ -118,7 +120,8 @@ fun MapViewToggleSwitch(
     val length = if (vertical) TOGGLE_VERTICAL_LENGTH else TOGGLE_WIDTH
     val thumbLength = if (vertical) TOGGLE_VERTICAL_THUMB_LENGTH else TOGGLE_THUMB_WIDTH
     val thumbAt by animateDpAsState(if (on) length - thumbLength - TOGGLE_INSET else TOGGLE_INSET, tween(150), label = "viewToggleThumb")
-    val track by animateColorAsState(if (on) SWITCH_INK else offTrackColor, tween(150), label = "viewToggleTrack")
+    // With a wash, the track is the wash with the dark colour fading in over it (from transparent dark, so the fade stays dark-toned)
+    val track by animateColorAsState(if (on) SWITCH_INK else if (offTrackBrush != null) SWITCH_INK.copy(alpha = 0f) else offTrackColor, tween(150), label = "viewToggleTrack")
     val thumb by animateColorAsState(if (on) Color.White else SWITCH_INK, tween(150), label = "viewToggleThumb")
     Box(
         modifier = modifier
@@ -126,6 +129,7 @@ fun MapViewToggleSwitch(
             .toggleable(value = on, role = Role.Switch, onValueChange = { onSelect(if (it) 1 else 0) })
             .size(width = if (vertical) TOGGLE_HEIGHT else length, height = if (vertical) length else TOGGLE_HEIGHT)
             .clip(CircleShape)
+            .then(if (offTrackBrush != null) Modifier.background(offTrackBrush) else Modifier)
             .background(track)
             .border(1.dp, if (on) SWITCH_INK else SWITCH_LINE, CircleShape)
     ) {

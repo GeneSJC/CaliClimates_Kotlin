@@ -30,9 +30,13 @@ import io.github.genesjc.climatefinder.R
 /** Whether the picker button has the blue-to-green wash (Gene, 2026-11-04) or the plain translucent white it had. */
 private const val PICKER_CHIP_GRADIENT = true
 
-/** The wash, from the button's top-left corner to its bottom-right: pale sea blue, a near-white band, pale land green. */
-private val PICKER_CHIP_BRUSH = Brush.linearGradient(
-    colors = listOf(Color(0xFFC6E2F7), Color(0xFFEDF7EF), Color(0xFFCFEFD6))
+/**
+ * The blue-to-green wash, from a shape's top-left corner to its bottom-right: sea blue, a blue-green middle, land green. The middle is
+ * tinted, not near-white, so there is colour all the way across (the first try had a pale strip there). Used by the picker button and
+ * the view toggle's off track.
+ */
+internal val BlueGreenWash = Brush.linearGradient(
+    colors = listOf(Color(0xFFB9DAF3), Color(0xFFCDE9E6), Color(0xFFC1EBCB))
 )
 
 /** The picker button's height, in the region's bar at the right of the header; tunable here. */
@@ -55,8 +59,8 @@ fun RegionPickerChip(
         modifier = modifier
             .clip(shape)
             // A soft diagonal wash, pale blue at the top left through a near-white middle to pale green at the bottom right (the sea and
-            // the land), in place of plain white; the state's outline on it is unchanged (see PICKER_CHIP_GRADIENT)
-            .background(if (PICKER_CHIP_GRADIENT) PICKER_CHIP_BRUSH else SolidColor(Color.White.copy(alpha = 0.9f)))
+            // the land), in place of plain white; the state's outline on it is unchanged (see PICKER_CHIP_GRADIENT); a blue-green middle so no white strip shows
+            .background(if (PICKER_CHIP_GRADIENT) BlueGreenWash else SolidColor(Color.White.copy(alpha = 0.9f)))
             .border(1.dp, MaterialTheme.colorScheme.primary, shape)
             .clickable(
                 enabled = !state.visible,
