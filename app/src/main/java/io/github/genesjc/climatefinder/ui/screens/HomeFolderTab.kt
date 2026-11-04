@@ -19,6 +19,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,12 +85,20 @@ internal fun BoxScope.HomeFolderTabContent(
                 // Two lines unless the view's name is under the region's name, where one line (ellipsis) keeps the tab's height
                 maxLines = if (VIEW_LABEL_UNDER_TOGGLE || VIEW_LABEL_OVER_TOGGLE || HEADER_COMPACT || VIEW_LABEL_ABOVE_NAME) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
+                // A soft white glow round the letters (no offset, only blur), so the dark text keeps its edge on any tint
+                style = if (TAB_TEXT_GLOW) androidx.compose.ui.text.TextStyle(shadow = Shadow(color = Color.White.copy(alpha = 0.9f), offset = Offset.Zero, blurRadius = 10f)) else androidx.compose.ui.text.TextStyle.Default,
                 onTextLayout = { nameLines = it.lineCount }
             )
             if (!VIEW_LABEL_ABOVE_NAME) HomeViewLabel(selected = homeTab, modifier = Modifier.align(Alignment.End))
         }
     }
 }
+
+/**
+ * Whether the region's name on the folder tab has a soft white glow behind its letters (Gene, 2026-11-04, to try): true is on; false
+ * is the plain text. The glow is a blurred white shadow with no offset, so it lifts the dark letters off whatever tint is behind them.
+ */
+private const val TAB_TEXT_GLOW = true
 
 /** How far a one-line name moves up (half of the icon's 44dp less the line's 21dp) to sit at the top of the icon's height. */
 private val NAME_LIFT = (-11.5).dp
