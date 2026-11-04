@@ -153,6 +153,8 @@ internal fun SpatialMapCanvas(
     val setSliderShown: (Boolean) -> Unit = { localSliderShown = it; onSliderShownChange?.invoke(it) }
     // Its top sits lower on Home, below that button and the view buttons
     val sliderTop = if (embedded) sliderToggleTop + 32.dp + 6.dp else 56.dp
+    // On Home with the view chip among the controls, the slider and its arrow button are at the left (under the controls), not the right
+    val sliderAtLeft = embedded && VIEW_CHIP_IN_CONTROLS
     androidx.compose.runtime.LaunchedEffect(zoom) { onZoomChange?.invoke(zoom) }
     var pan by remember(stations) { mutableStateOf(Offset.Zero) }
     // Button, rail-tap and double-tap zooms animate (so labels fade smoothly); pinch and drag stay direct
@@ -346,11 +348,11 @@ internal fun SpatialMapCanvas(
         // Areas taken by the fixed controls (compass, expand toggle, topo badge, scale bar, zoom slider) so labels stay clear of them
         val placedRects = mutableListOf(
             if (embedded) listOf(0f, 0f, widthDp.value, HOME_TILE_BAND.value) else listOf(0f, 0f, 0f, 0f),  // the floating station tile
-            if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + 50f) else listOf(0f, 0f, 58f, 40f),  // Home's control row, or the compass
+            if (embedded) listOf(0f, HOME_TILE_BAND.value, 140f, HOME_TILE_BAND.value + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP.value + 12f + VIEW_CHIP_HEIGHT.value + 6f + 32f else 50f)) else listOf(0f, 0f, 58f, 40f),  // Home's controls (the chip, the north and Info row), or the compass
             listOf(0f, heightDp.value - 46f, 130f, heightDp.value),     // scale bar
-            if (embedded) listOf(widthDp.value - 46f, sliderToggleTop.value, widthDp.value, sliderToggleTop.value + 32f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
-            if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(widthDp.value - 46f, sliderTop.value, widthDp.value, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) 0.8f else 1f)),  // zoom slider
-            if (embedded) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons
+            if (embedded) listOf(if (sliderAtLeft) 0f else widthDp.value - 46f, sliderToggleTop.value, if (sliderAtLeft) 46f else widthDp.value, sliderToggleTop.value + 32f) else listOf(0f, 0f, 0f, 0f),  // the slider's arrow button
+            if (embedded && !sliderShown) listOf(0f, 0f, 0f, 0f) else listOf(if (sliderAtLeft) 0f else widthDp.value - 46f, sliderTop.value, if (sliderAtLeft) 46f else widthDp.value, sliderTop.value + (heightDp.value - sliderTop.value - 4f) * (if (embedded) 0.8f else 1f)),  // zoom slider
+            if (embedded && !VIEW_CHIP_IN_CONTROLS) listOf(widthDp.value - 170f, HOME_TILE_BAND.value, widthDp.value, HOME_TILE_BAND.value + 56f) else listOf(0f, 0f, 0f, 0f),  // Home's view buttons (now the chip, at the left)
             listOf(widthDp.value - 126f, 52f, widthDp.value - 46f, 84f)  // expand / shrink toggle
         )
 
@@ -494,10 +496,11 @@ internal fun SpatialMapCanvas(
             SliderToggleButton(
                 shown = sliderShown,
                 onToggle = { setSliderShown(!sliderShown) },
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp + 5.dp * expandT, top = sliderToggleTop)
+                modifier = if (sliderAtLeft) Modifier.align(Alignment.TopStart).padding(start = 12.dp + 5.dp * expandT, top = sliderToggleTop)
+                else Modifier.align(Alignment.TopEnd).padding(end = 8.dp + 5.dp * expandT, top = sliderToggleTop)
             )
         }
-        // Floating zoom slider on the right edge (for now it sets the type size instead; see MapText)
+        // Floating zoom slider on the right edge (on Home with the chip among the controls, at the left, under the arrow button) (for now it sets the type size instead; see MapText)
         if (embedded && !sliderShown) {
             // hidden: pinch and double-tap still zoom
         } else if (MapText.SLIDER_SETS_FONT) {
@@ -508,8 +511,8 @@ internal fun SpatialMapCanvas(
                 maxValue = MapText.MAX_SCALE,
                 caption = stringResource(R.string.zoom_font_caption),
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = sliderTop, end = 4.dp + 5.dp * expandT, bottom = 4.dp)
+                    .align(if (sliderAtLeft) Alignment.TopStart else Alignment.TopEnd)
+                    .padding(top = sliderTop, start = if (sliderAtLeft) 4.dp + 5.dp * expandT else 0.dp, end = if (sliderAtLeft) 0.dp else 4.dp + 5.dp * expandT, bottom = 4.dp)
                     .width(40.dp)
                     // 20% shorter from the bottom on Home; the top stays under the arrow button
                 .fillMaxHeight(if (embedded) 0.8f else 1f)
@@ -524,8 +527,8 @@ internal fun SpatialMapCanvas(
             onStep = { newZoom -> animateZoomTo(newZoom, Offset(canvasW / 2f, canvasH / 2f), canvasW, canvasH) },
             // Its top stays under the data credit whatever the map's height; the bottom follows the map
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = sliderTop, end = 4.dp + 5.dp * expandT, bottom = 4.dp)
+                .align(if (sliderAtLeft) Alignment.TopStart else Alignment.TopEnd)
+                .padding(top = sliderTop, start = if (sliderAtLeft) 4.dp + 5.dp * expandT else 0.dp, end = if (sliderAtLeft) 0.dp else 4.dp + 5.dp * expandT, bottom = 4.dp)
                 .width(40.dp)
                 // 20% shorter from the bottom on Home; the top stays under the arrow button
                 .fillMaxHeight(if (embedded) 0.8f else 1f)

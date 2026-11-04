@@ -319,7 +319,8 @@ fun LandingScreen(
                             sliderShownShared = sliderShown,
                             onSliderShownChange = onSliderShownChange,
                             // The slider's arrow button sits at the top right of the map, level with the control row at the left
-                            sliderToggleTop = 12.dp + HOME_TILE_BAND,
+                            // The slider's arrow button: at the top right, or with the chip among the controls at the left under the chip and the north row
+                            sliderToggleTop = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP + VIEW_CHIP_HEIGHT + 6.dp + 38.dp else 0.dp),
                             expandT = expandT,
                             onSelectedOffscreenChange = { selectedOffscreen = it },
                             recenterTick = recenterTick
@@ -475,7 +476,7 @@ fun LandingScreen(
                             }
                         }
                         // The Region Info button, under the north indicator at the left (Topography only: Elevation has no Region Info)
-                        if (homeTab == 0) {
+                        if (homeTab == 0 && !VIEW_CHIP_IN_CONTROLS) {
                             InfoControlButton(
                                 open = infoOpen,
                                 onClick = { if (infoOpen) closeInfo() else openInfo() },
@@ -483,6 +484,8 @@ fun LandingScreen(
                                 modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP + VIEW_CHIP_HEIGHT + 44.dp else 40.dp))
                             )
                         }
+                        // The Region Info button, as a slot of the control row when the chip is among the controls
+                        val infoButton: @Composable () -> Unit = { InfoControlButton(open = infoOpen, onClick = { if (infoOpen) closeInfo() else openInfo() }) }
                         // Below the tile, at the left: the menu, the north indicator and the About button
                         MapControlRow(
                             onElevation = homeTab == 1,
@@ -503,6 +506,8 @@ fun LandingScreen(
                                 }
                             },
                             selectedView = homeTab,
+                            // On the Map view the Region Info button sits right of the north indicator
+                            afterNorth = if (homeTab == 0 && VIEW_CHIP_IN_CONTROLS) infoButton else null,
                             // The controls start CONTROLS_GAP under the header when the chip is among them
                             modifier = Modifier.align(Alignment.TopStart).zIndex(1f).padding(start = 12.dp, top = 12.dp + HOME_TILE_BAND + (if (VIEW_CHIP_IN_CONTROLS) CONTROLS_GAP else 0.dp))
                         )

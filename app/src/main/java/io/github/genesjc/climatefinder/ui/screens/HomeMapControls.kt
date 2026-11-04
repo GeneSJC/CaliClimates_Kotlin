@@ -133,6 +133,8 @@ internal fun MapControlRow(
     onPickStation: (String) -> Unit = {},
     /** The view you are in (0 Map, 1 Profile), for the chip that names it when VIEW_CHIP_IN_CONTROLS is on. */
     selectedView: Int = 0,
+    /** Topography only: a button to put right after the north indicator (Home puts the Region Info button there). */
+    afterNorth: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // With the chip in the controls, both views have a column under the header: the chip first, then the view's own items. On the
@@ -144,11 +146,11 @@ internal fun MapControlRow(
             if (onElevation) {
                 Row(modifier = Modifier.padding(start = 38.dp)) { StationsDropdown(stations, landmarkIds, selectedStationId, onPickStation) }
             } else {
-                MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, Modifier)
+                MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, afterNorth, Modifier)
             }
         }
     } else {
-        MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, modifier)
+        MapControlRowItems(onElevation, showLocate, onLocate, stations, landmarkIds, selectedStationId, onPickStation, selectedView, afterNorth, modifier)
     }
 }
 
@@ -163,6 +165,7 @@ private fun MapControlRowItems(
     selectedStationId: String?,
     onPickStation: (String) -> Unit,
     selectedView: Int,
+    afterNorth: (@Composable () -> Unit)?,
     modifier: Modifier
 ) {
     val blue = Color(0xFF0284C7)
@@ -182,6 +185,8 @@ private fun MapControlRowItems(
                     }
                 }
             }
+            // The Region Info button, right of the north indicator
+            afterNorth?.invoke()
             // The empty box (four corner brackets): brings the selected station back into view. It is only there while
             // the selected station is out of the visible map (panned away, or zoomed in past it)
             androidx.compose.animation.AnimatedVisibility(
