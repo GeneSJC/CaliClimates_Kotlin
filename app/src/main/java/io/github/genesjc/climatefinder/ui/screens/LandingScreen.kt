@@ -428,8 +428,8 @@ fun LandingScreen(
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = MaterialTheme.colorScheme.onSurface,
                                                     lineHeight = 18.sp,
-                                                    // One line, ellipsis when it is long, so the tab keeps its height
-                                                    maxLines = 1,
+                                                    // Two lines when the label is under the toggle; with the label under the name, one line (ellipsis) so the tab keeps its height
+                                                    maxLines = if (VIEW_LABEL_UNDER_TOGGLE) 2 else 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                                 HomeViewLabel(selected = homeTab)
@@ -442,7 +442,7 @@ fun LandingScreen(
                                         onSelect = onHomeTabChange,
                                         toast = viewToast,
                                         // More room from the tab's edge; 8.1dp below keeps the switch's distance from the folder's edge as the tab gets shorter
-                                        modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = 8.1.dp)
+                                        modifier = Modifier.align(Alignment.CenterVertically).padding(start = 14.dp, bottom = if (VIEW_LABEL_UNDER_TOGGLE) 0.dp else 8.1.dp)
                                     )
                                 }
                                 // A margin between the folder's top edge and the station tile, so the tile sits inside the outline
