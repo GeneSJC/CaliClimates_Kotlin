@@ -57,6 +57,14 @@ class StationNamesTest {
     }
 
     @Test
+    fun anAgencyCodeOrASiteNumberShowsThePlaceAlone() {
+        assertEquals("Camarillo", stationDisplayName("Camarillo", "Vnc Station 54"))
+        assertEquals("Apple Valley", stationDisplayName(null, "Apple Valley 2"))
+        assertEquals("Crystal Lake", stationDisplayName(null, "Crystal Lake #3324"))
+        assertEquals("Arnold", stationDisplayName("Arnold", "Btaws"))
+    }
+
+    @Test
     fun theTownTableNamesThePlacesOfTheBusiestFields() {
         assertEquals("Burbank", StateUsaCA.stationTowns["KBUR"])
         assertEquals("Oakland", StateUsaCA.stationTowns["KOAK"])
