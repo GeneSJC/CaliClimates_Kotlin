@@ -35,7 +35,11 @@ internal fun StationHeroTile(
     regionId: String,
     regionName: String,
     folded: Boolean,
-    readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>
+    readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>,
+    /** Goes back to the station selected before this one; null when there is none (the card then shows no Back button). */
+    onBack: (() -> Unit)? = null,
+    /** Goes forward again to a station gone back from; null when there is none. */
+    onForward: (() -> Unit)? = null
 ) {
     val reading by remember(station.id) { readingFor(station) }.collectAsStateWithLifecycle()
     val skyTemp = (reading as? ObservationResult.Reading)?.observation?.temperatureFahrenheit
@@ -53,6 +57,8 @@ internal fun StationHeroTile(
         passThrough = true,
         // Half the rounding of the other cards
         tileCornerRadius = 8.dp,
+        // The open card grows to the left, to within 12dp of the screen's edge, and not to the right: the map's stations stay in view beside it
+        growLeftMarginDp = 12.dp,
         // The Region Info sheet sits above this card: opening it folds the card
         forceClosed = folded,
         tile = { StationSummaryTile(station, reading = reading) },
@@ -74,6 +80,8 @@ internal fun StationHeroTile(
                 // The region's name stays at the top when the card is open
                 regionName = regionName,
                 containerAlpha = STATION_TILE_OPACITY,
+                onBack = onBack,
+                onForward = onForward,
                 // The first line of the open card: the sky's icon and wording, darkened to read on white; none without a reading
                 skyLine = skyTemp?.let { t ->
                     val sky = skyThemeFor(t)

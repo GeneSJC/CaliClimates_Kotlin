@@ -1,6 +1,6 @@
 package io.github.genesjc.climatefinder.domain.model
 
-import io.github.genesjc.climatefinder.domain.placeAndStationName
+import io.github.genesjc.climatefinder.domain.stationDisplayName
 
 data class MicroclimateStation(
     val id: String,
@@ -24,9 +24,12 @@ data class MicroclimateStation(
     // station's own name are put together for the screens is [displayName]
     val town: String? = null
 ) {
-    /** The name the screens show: the town and the station's own [name] together where they differ ("Jackson (Mount Zion)"), else the name. */
+    /**
+     * The name the screens show: the town and the station's own [name] together where they differ ("Jackson (Mount Zion)"), else the
+     * name; a name that describes a facility (an airport, a weather station) shows the place alone (see [stationDisplayName]).
+     */
     val displayName: String
-        get() = town?.let { placeAndStationName(it, name) } ?: name
+        get() = stationDisplayName(town, name)
 
     /** False only when the data files say the station does not report temperature. */
     val canHaveLiveReading: Boolean

@@ -130,6 +130,12 @@ fun LandingScreen(
     homeTab: Int,
     onHomeTabChange: (Int) -> Unit,
     selectedStationId: String?,
+    /** Whether an earlier station can be gone back to, and how: the open station card's Back button. */
+    canGoBackStation: Boolean = false,
+    onStationBack: () -> Unit = {},
+    /** Whether a station gone back from can be gone forward to, and how: the card's Forward button. */
+    canGoForwardStation: Boolean = false,
+    onStationForward: () -> Unit = {},
     onStationSelected: (String) -> Unit,
     pinScale: Float,
     onPinScaleChange: (Float) -> Unit,
@@ -447,7 +453,7 @@ fun LandingScreen(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                        if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx - with(mapDensity) { (FOLDER_MARGIN / 2).roundToPx() }, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor)
+                                        if (shown != null) StationHeroTile(shown, fullWidthPx = rowWidthPx - with(mapDensity) { (FOLDER_MARGIN / 2).roundToPx() }, regionStations = snapshotStations, regionId = region.id, regionName = stringResource(region.nameRes), folded = infoOpen || pickerState.visible, readingFor = readingFor, onBack = if (canGoBackStation) onStationBack else null, onForward = if (canGoForwardStation) onStationForward else null)
                                     }
                                 }
                             }

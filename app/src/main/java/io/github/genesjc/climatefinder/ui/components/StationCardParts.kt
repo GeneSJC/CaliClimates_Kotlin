@@ -82,6 +82,35 @@ internal fun CardToggle(label: String, onClickLabel: String, onClick: () -> Unit
 }
 
 /**
+ * One of the card's station-history arrows (back, forward): a bare chevron like a browser's, in a fixed 44dp square so the
+ * pair never shifts. With no [onClick] the square stays, empty and untappable, so the other arrow holds its place.
+ * [labelRes] is the chevron and [descriptionRes] what a screen reader says it does.
+ */
+@Composable
+internal fun CardNavButton(@androidx.annotation.StringRes labelRes: Int, @androidx.annotation.StringRes descriptionRes: Int, onClick: (() -> Unit)?) {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .then(
+                if (onClick != null) Modifier.clickable(onClickLabel = stringResource(descriptionRes), role = Role.Button, onClick = onClick)
+                else Modifier
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (onClick != null) {
+            Text(
+                text = stringResource(labelRes),
+                fontSize = ms(26f),
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/**
  * A row that folds the section under it: the [content] at the left, a small chevron at the right, and a tap area
  * of at least 40dp. The row stays when the section is folded, so what it says is what a folded section shows.
  */

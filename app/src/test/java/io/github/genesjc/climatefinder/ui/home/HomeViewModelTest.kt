@@ -169,6 +169,56 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun backGoesToTheStationBeforeAndOnlyOneStepAtATime() {
+        val vm = viewModel()
+        vm.selectStation("A")
+        vm.selectStation("B")
+        vm.selectStation("C")
+        assertEquals(listOf("A", "B"), vm.uiState.value.stationHistory)
+        vm.goBackStation()
+        assertEquals("B", vm.uiState.value.selectedStationId)
+        assertEquals("B", settings.station)
+        vm.goBackStation()
+        assertEquals("A", vm.uiState.value.selectedStationId)
+        // Nothing earlier: a further Back does nothing
+        vm.goBackStation()
+        assertEquals("A", vm.uiState.value.selectedStationId)
+        assertEquals(emptyList<String>(), vm.uiState.value.stationHistory)
+    }
+
+    @Test
+    fun forwardGoesBackToTheStationGoneBackFromUntilANewPickReplacesIt() {
+        val vm = viewModel()
+        vm.selectStation("A")
+        vm.selectStation("B")
+        vm.selectStation("C")
+        vm.goBackStation()
+        vm.goBackStation()
+        assertEquals("A", vm.uiState.value.selectedStationId)
+        assertEquals(listOf("C", "B"), vm.uiState.value.stationForward)
+        vm.goForwardStation()
+        assertEquals("B", vm.uiState.value.selectedStationId)
+        assertEquals(listOf("A"), vm.uiState.value.stationHistory)
+        assertEquals(listOf("C"), vm.uiState.value.stationForward)
+        // A new pick drops the way forward, as a browser does
+        vm.selectStation("D")
+        assertEquals(emptyList<String>(), vm.uiState.value.stationForward)
+        vm.goForwardStation()
+        assertEquals("D", vm.uiState.value.selectedStationId)
+    }
+
+    @Test
+    fun pickingTheSameStationAgainAndChangingRegionLeaveNoHistory() {
+        val vm = viewModel()
+        vm.selectStation("A")
+        vm.selectStation("A")
+        assertEquals(emptyList<String>(), vm.uiState.value.stationHistory)
+        vm.selectStation("B")
+        vm.selectRegion("b")
+        assertEquals(emptyList<String>(), vm.uiState.value.stationHistory)
+    }
+
+    @Test
     fun reopensAtTheSavedZoomOfTheSavedRegion() {
         settings.saveMapZoom("a", 3f)
         assertEquals(3f, viewModel().mapZoom)

@@ -16,8 +16,11 @@ class StationNamesTest {
 
     @Test
     fun keepsAStationNameThatAlreadyNamesTheTown() {
-        assertEquals("Sacramento Executive Airport", placeAndStationName("Sacramento", "Sacramento Executive Airport"))
+        assertEquals("Sacramento Mather", placeAndStationName("Sacramento", "Sacramento Mather"))
         assertEquals("Hollister, Ca", placeAndStationName("hollister", "Hollister, Ca"))
+        // A town that already holds the station's name stands alone
+        assertEquals("West Santa Monica", placeAndStationName("West Santa Monica", "Santa Monica"))
+        assertEquals("Mid-Wilshire", stationDisplayName("Mid-Wilshire", "Mid-Wilshire"))
     }
 
     @Test
@@ -38,6 +41,39 @@ class StationNamesTest {
     fun aStationOutsideTheTownListKeepsItsOwnName() {
         assertNull(towns.townOf("RSPC1"))
         assertEquals("Rose Peak", towns.cleanCityName("RSPC1", "Rose Peak"))
+    }
+
+    @Test
+    fun aFacilityNameShowsThePlaceAlone() {
+        // With a town on record: the town
+        assertEquals("Burbank", stationDisplayName("Burbank", "Burbank Bob Hope Airport"))
+        // Without one: the place part of the name, cut at a slash, a comma, a dash or "Near", and without the facility words
+        assertEquals("Santa Maria", stationDisplayName(null, "Santa Maria Public Airport/capt G Allan Hancock"))
+        assertEquals("Santa Barbara", stationDisplayName(null, "Santa Barbara, Santa Barbara Municipal Airport"))
+        assertEquals("Lake Kaweah", stationDisplayName(null, "Lake Kaweah Weather Station Near Lemoncove 3 S"))
+        // A name that does not describe a facility is put with its town as before
+        assertEquals("Jackson (Mount Zion)", stationDisplayName("Jackson", "Mount Zion"))
+        assertEquals("Rose Peak", stationDisplayName(null, "Rose Peak"))
+    }
+
+    @Test
+    fun anAgencyCodeOrASiteNumberShowsThePlaceAlone() {
+        assertEquals("Camarillo", stationDisplayName("Camarillo", "Vnc Station 54"))
+        assertEquals("Apple Valley", stationDisplayName(null, "Apple Valley 2"))
+        assertEquals("Crystal Lake", stationDisplayName(null, "Crystal Lake #3324"))
+        assertEquals("Arnold", stationDisplayName("Arnold", "Btaws"))
+        // A gauge named for what it is on and where: the place after "at", or its town
+        assertEquals("Briceburg", stationDisplayName(null, "Merced River at Briceburg"))
+        assertEquals("Coulterville", stationDisplayName("Coulterville", "Dry Creek at Coulterville Dcc"))
+    }
+
+    @Test
+    fun theTownTableNamesThePlacesOfTheBusiestFields() {
+        assertEquals("Burbank", StateUsaCA.stationTowns["KBUR"])
+        assertEquals("Oakland", StateUsaCA.stationTowns["KOAK"])
+        // Two Sacramento stations are told apart by their towns
+        assertEquals("Sacramento", StateUsaCA.stationTowns["KSMF"])
+        assertEquals("South Sacramento", StateUsaCA.stationTowns["KSAC"])
     }
 
     @Test
