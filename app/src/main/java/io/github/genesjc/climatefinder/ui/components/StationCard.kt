@@ -85,7 +85,9 @@ fun StationCard(
     // Compact only: the sky's icon and wording ("Crisp Sub-Alpine"), as the card's first line; none when null
     skyLine: SkyLine? = null,
     // How solid the card's background is (1 is opaque); Home's open card is a tenth see-through
-    containerAlpha: Float = 1f
+    containerAlpha: Float = 1f,
+    // Compact only: goes back to the station selected before; the Back button shows under the fold arrow only when this is given
+    onBack: (() -> Unit)? = null
 ) {
 
     val display = if (useMockReadings) mockDisplay(station) else liveDisplay(reading)
@@ -112,7 +114,7 @@ fun StationCard(
         // The card is the plain surface colour, selected or not (white in the light look); the selection shows in the border
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = containerAlpha))
     ) {
-        if (compact) CompactStationBody(station, terrainBadgeColor, display, regionRangeMeters, onLess, elevationNote, regionName, skyLine) else Column(modifier = Modifier.padding(16.dp)) {
+        if (compact) CompactStationBody(station, terrainBadgeColor, display, regionRangeMeters, onLess, elevationNote, regionName, skyLine, onBack) else Column(modifier = Modifier.padding(16.dp)) {
             // Header row: the badge (and the selected mark) at the left take the room they need; the elevation text takes
             // what is left and aligns to the right, wrapping inside its own space, so the two never overlap
             Row(
@@ -240,7 +242,8 @@ private fun CompactStationBody(
     onLess: (() -> Unit)? = null,
     elevationNote: String? = null,
     regionName: String? = null,
-    skyLine: SkyLine? = null
+    skyLine: SkyLine? = null,
+    onBack: (() -> Unit)? = null
 ) {
     // Which sections are open: the readings are, the height and the note start folded, so more of the map shows
     var readingsOpen by rememberSaveable { mutableStateOf(true) }
@@ -268,16 +271,19 @@ private fun CompactStationBody(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
-        // The region the station is in, as a small line under its name
-        if (regionName != null) {
-            Text(
-                text = regionName,
-                fontSize = ms(12f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(end = 6.dp)
-            )
+        // The region the station is in, as a small line under its name, with the Back button at the right (under the fold arrow)
+        if (regionName != null || onBack != null) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = regionName.orEmpty(),
+                    fontSize = ms(12f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(end = 6.dp)
+                )
+                if (onBack != null) CardBackButton(onBack)
+            }
         }
         // Row 2: the terrain badge and the height band
         Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {

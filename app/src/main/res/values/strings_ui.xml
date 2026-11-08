@@ -67,6 +67,8 @@
     <!-- Home -->
     <string name="tab_elevation">Profile</string>
     <string name="tab_topography">Map</string>
+    <!-- The station card's button that goes back to the station selected before -->
+    <string name="station_back_button">◂ Back</string>
     <!-- The toast in the middle of the screen when the view toggle switch flips -->
     <string name="view_toast_map">Map</string>
     <string name="view_toast_profile">Elevation</string>

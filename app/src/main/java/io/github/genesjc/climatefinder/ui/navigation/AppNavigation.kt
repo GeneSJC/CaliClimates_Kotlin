@@ -94,6 +94,8 @@ fun AppNavigation(
                 onHomeTabChange = homeViewModel::setTab,
                 selectedStationId = homeState.selectedStationId,
                 onStationSelected = homeViewModel::selectStation,
+                canGoBackStation = homeState.stationHistory.isNotEmpty(),
+                onStationBack = homeViewModel::goBackStation,
                 pinScale = homeState.pinScale,
                 onPinScaleChange = homeViewModel::setPinScale,
                 sliderShown = homeState.sliderShown,

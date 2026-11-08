@@ -81,6 +81,27 @@ internal fun CardToggle(label: String, onClickLabel: String, onClick: () -> Unit
     }
 }
 
+/** The card's Back button: a small pill under the fold arrow, with a tap area of at least 36dp tall, that goes to the station picked before. */
+@Composable
+internal fun CardBackButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .heightIn(min = 36.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClickLabel = stringResource(R.string.station_card_back), role = Role.Button, onClick = onClick)
+            .padding(horizontal = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = stringResource(R.string.station_back_button),
+            fontSize = ms(11f),
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1
+        )
+    }
+}
+
 /**
  * A row that folds the section under it: the [content] at the left, a small chevron at the right, and a tap area
  * of at least 40dp. The row stays when the section is folded, so what it says is what a folded section shows.
