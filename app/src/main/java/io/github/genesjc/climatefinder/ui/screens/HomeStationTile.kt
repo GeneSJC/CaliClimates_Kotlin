@@ -53,6 +53,8 @@ internal fun StationHeroTile(
         passThrough = true,
         // Half the rounding of the other cards
         tileCornerRadius = 8.dp,
+        // The open card grows to the left, to within 12dp of the screen's edge, and not to the right: the map's stations stay in view beside it
+        growLeftMarginDp = 12.dp,
         // The Region Info sheet sits above this card: opening it folds the card
         forceClosed = folded,
         tile = { StationSummaryTile(station, reading = reading) },

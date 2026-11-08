@@ -36,10 +36,13 @@ fun placeFromStationName(stationName: String): String {
 
 /**
  * The name shown for a station that has a known town: the town first, then the station's own name in brackets
- * ("Jackson (Mount Zion)"). A station whose name already says its town ("Hollister, Ca") keeps it.
+ * ("Jackson (Mount Zion)"). A station whose name already says its town ("Hollister, Ca") keeps it, and a town that already holds the
+ * station's name stands alone ("West Santa Monica", not "West Santa Monica (Santa Monica)").
  */
 fun placeAndStationName(place: String, stationName: String): String =
-    if (place.isBlank() || stationName.isBlank() || stationName.contains(place, ignoreCase = true)) {
+    if (place.isBlank() || stationName.isBlank() ||
+        stationName.contains(place, ignoreCase = true) || place.contains(stationName, ignoreCase = true)
+    ) {
         stationName
     } else {
         "$place ($stationName)"
