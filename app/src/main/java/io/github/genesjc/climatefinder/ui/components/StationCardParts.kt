@@ -82,7 +82,7 @@ internal fun CardToggle(label: String, onClickLabel: String, onClick: () -> Unit
 }
 
 /**
- * One of the card's station-history arrows (back, forward): a bare chevron like a browser's, in a fixed 36dp square so the
+ * One of the card's station-history arrows (back, forward): a bare chevron like a browser's, in a fixed 44dp square so the
  * pair never shifts. With no [onClick] the square stays, empty and untappable, so the other arrow holds its place.
  * [labelRes] is the chevron and [descriptionRes] what a screen reader says it does.
  */
@@ -90,7 +90,7 @@ internal fun CardToggle(label: String, onClickLabel: String, onClick: () -> Unit
 internal fun CardNavButton(@androidx.annotation.StringRes labelRes: Int, @androidx.annotation.StringRes descriptionRes: Int, onClick: (() -> Unit)?) {
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(44.dp)
             .clip(RoundedCornerShape(12.dp))
             .then(
                 if (onClick != null) Modifier.clickable(onClickLabel = stringResource(descriptionRes), role = Role.Button, onClick = onClick)
@@ -102,7 +102,7 @@ internal fun CardNavButton(@androidx.annotation.StringRes labelRes: Int, @androi
             Text(
                 text = stringResource(labelRes),
                 fontSize = ms(26f),
-                fontWeight = FontWeight.Light,
+                fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1
             )
