@@ -37,7 +37,9 @@ internal fun StationHeroTile(
     folded: Boolean,
     readingFor: (MicroclimateStation) -> StateFlow<ObservationResult?>,
     /** Goes back to the station selected before this one; null when there is none (the card then shows no Back button). */
-    onBack: (() -> Unit)? = null
+    onBack: (() -> Unit)? = null,
+    /** Goes forward again to a station gone back from; null when there is none. */
+    onForward: (() -> Unit)? = null
 ) {
     val reading by remember(station.id) { readingFor(station) }.collectAsStateWithLifecycle()
     val skyTemp = (reading as? ObservationResult.Reading)?.observation?.temperatureFahrenheit
@@ -79,6 +81,7 @@ internal fun StationHeroTile(
                 regionName = regionName,
                 containerAlpha = STATION_TILE_OPACITY,
                 onBack = onBack,
+                onForward = onForward,
                 // The first line of the open card: the sky's icon and wording, darkened to read on white; none without a reading
                 skyLine = skyTemp?.let { t ->
                     val sky = skyThemeFor(t)

@@ -9,9 +9,10 @@ private val FACILITY_WORDS = Regex(
     RegexOption.IGNORE_CASE
 )
 
-// Codes and fittings that name a piece of equipment or an agency, not a place ("Vnc Station 54", "Uscrn Site", "Sacata Repeater")
+// Codes and fittings that name a piece of equipment, a gauge or an agency, not a place ("Vnc Station 54", "Uscrn Site",
+// "Sacata Repeater", "Merced River at Briceburg", "Stony Creek-rainbow Diversion Dam")
 private val CODE_WORDS = Regex(
-    "\\b(Raws|Uscrn|Btaws|Iraws|Nwr|Vnc|Vor|Tower|Repeater|Portable|Booster|Met|Wx|Sdhgpa|Cfa|Powerplant|Gage)\\b",
+    "\\b(Raws|Uscrn|Btaws|Iraws|Nwr|Vnc|Vor|Tower|Repeater|Portable|Booster|Met|Wx|Sdhgpa|Cfa|Powerplant|Gage|Dam|Diversion|at)\\b",
     RegexOption.IGNORE_CASE
 )
 
@@ -35,6 +36,8 @@ fun placeFromStationName(stationName: String): String {
         .substringBefore(',')
         .substringBefore(" - ")
         .substringBefore(" Near ")
+        // A gauge named for what it is on and where ("Merced River at Briceburg"): the place is what follows "at"
+        .substringAfter(" at ")
         .replace(FACILITY_WORDS, " ")
         .replace(Regex("\\s+"), " ")
         .trim()

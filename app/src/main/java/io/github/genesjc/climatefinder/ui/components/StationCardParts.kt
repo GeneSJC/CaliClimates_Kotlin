@@ -81,19 +81,22 @@ internal fun CardToggle(label: String, onClickLabel: String, onClick: () -> Unit
     }
 }
 
-/** The card's Back button: a small pill under the fold arrow, with a tap area of at least 36dp tall, that goes to the station picked before. */
+/**
+ * One of the card's station-history buttons (Back, Forward): a small pill with a tap area of at least 36dp tall, shown under the fold
+ * arrow. [labelRes] is its words and [descriptionRes] what a screen reader says it does.
+ */
 @Composable
-internal fun CardBackButton(onClick: () -> Unit) {
+internal fun CardNavButton(@androidx.annotation.StringRes labelRes: Int, @androidx.annotation.StringRes descriptionRes: Int, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .heightIn(min = 36.dp)
             .clip(RoundedCornerShape(12.dp))
-            .clickable(onClickLabel = stringResource(R.string.station_card_back), role = Role.Button, onClick = onClick)
+            .clickable(onClickLabel = stringResource(descriptionRes), role = Role.Button, onClick = onClick)
             .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = stringResource(R.string.station_back_button),
+            text = stringResource(labelRes),
             fontSize = ms(11f),
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,

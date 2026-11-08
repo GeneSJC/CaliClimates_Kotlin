@@ -62,6 +62,9 @@ class StationNamesTest {
         assertEquals("Apple Valley", stationDisplayName(null, "Apple Valley 2"))
         assertEquals("Crystal Lake", stationDisplayName(null, "Crystal Lake #3324"))
         assertEquals("Arnold", stationDisplayName("Arnold", "Btaws"))
+        // A gauge named for what it is on and where: the place after "at", or its town
+        assertEquals("Briceburg", stationDisplayName(null, "Merced River at Briceburg"))
+        assertEquals("Coulterville", stationDisplayName("Coulterville", "Dry Creek at Coulterville Dcc"))
     }
 
     @Test

@@ -325,7 +325,12 @@ object StateUsaCA : StateUsaDefinition {
         "UCMC1" to "UC Merced",
         "VCMC1" to "Camarillo",
         "VTOC1" to "Thousand Oaks",
-        "XODC1" to "Zaca Lake"
+        "XODC1" to "Zaca Lake",
+        "DCUC1" to "Coulterville",
+        "DRFC1" to "Dry Creek",
+        "MAJC1" to "West Winton",
+        "MBGC1" to "Briceburg",
+        "RAOC1" to "Stony Creek"
     )
 
     // Approximate heights, for comparisons in plain words

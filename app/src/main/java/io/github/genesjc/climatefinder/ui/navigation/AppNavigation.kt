@@ -96,6 +96,8 @@ fun AppNavigation(
                 onStationSelected = homeViewModel::selectStation,
                 canGoBackStation = homeState.stationHistory.isNotEmpty(),
                 onStationBack = homeViewModel::goBackStation,
+                canGoForwardStation = homeState.stationForward.isNotEmpty(),
+                onStationForward = homeViewModel::goForwardStation,
                 pinScale = homeState.pinScale,
                 onPinScaleChange = homeViewModel::setPinScale,
                 sliderShown = homeState.sliderShown,

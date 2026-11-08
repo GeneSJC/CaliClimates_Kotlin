@@ -38,6 +38,7 @@
     <string name="station_card_show">Show the full station card</string>
     <string name="station_card_hide">Hide the full station card</string>
     <string name="station_card_back">Go back to the previous station</string>
+    <string name="station_card_forward">Go forward to the next station</string>
 
     <!-- Home -->
     <string name="region_choose">Choose region</string>

@@ -187,6 +187,27 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun forwardGoesBackToTheStationGoneBackFromUntilANewPickReplacesIt() {
+        val vm = viewModel()
+        vm.selectStation("A")
+        vm.selectStation("B")
+        vm.selectStation("C")
+        vm.goBackStation()
+        vm.goBackStation()
+        assertEquals("A", vm.uiState.value.selectedStationId)
+        assertEquals(listOf("C", "B"), vm.uiState.value.stationForward)
+        vm.goForwardStation()
+        assertEquals("B", vm.uiState.value.selectedStationId)
+        assertEquals(listOf("A"), vm.uiState.value.stationHistory)
+        assertEquals(listOf("C"), vm.uiState.value.stationForward)
+        // A new pick drops the way forward, as a browser does
+        vm.selectStation("D")
+        assertEquals(emptyList<String>(), vm.uiState.value.stationForward)
+        vm.goForwardStation()
+        assertEquals("D", vm.uiState.value.selectedStationId)
+    }
+
+    @Test
     fun pickingTheSameStationAgainAndChangingRegionLeaveNoHistory() {
         val vm = viewModel()
         vm.selectStation("A")
