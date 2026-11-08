@@ -18,6 +18,9 @@ class StationNamesTest {
     fun keepsAStationNameThatAlreadyNamesTheTown() {
         assertEquals("Sacramento Mather", placeAndStationName("Sacramento", "Sacramento Mather"))
         assertEquals("Hollister, Ca", placeAndStationName("hollister", "Hollister, Ca"))
+        // A town that already holds the station's name stands alone
+        assertEquals("West Santa Monica", placeAndStationName("West Santa Monica", "Santa Monica"))
+        assertEquals("Mid-Wilshire", stationDisplayName("Mid-Wilshire", "Mid-Wilshire"))
     }
 
     @Test
