@@ -285,8 +285,9 @@ private fun CompactStationBody(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f).padding(end = 6.dp)
                 )
-                if (onBack != null) CardNavButton(R.string.station_back_button, R.string.station_card_back, onBack)
-                if (onForward != null) CardNavButton(R.string.station_forward_button, R.string.station_card_forward, onForward)
+                // Both slots always take their room, so Back stays put whether or not Forward is showing
+                CardNavButton(R.string.station_back_button, R.string.station_card_back, onBack)
+                CardNavButton(R.string.station_forward_button, R.string.station_card_forward, onForward)
             }
         }
         // Row 2: the terrain badge and the height band
