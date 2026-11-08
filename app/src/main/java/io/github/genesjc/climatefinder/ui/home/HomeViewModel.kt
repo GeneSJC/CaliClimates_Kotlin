@@ -40,6 +40,10 @@ data class HomeUiState(
     val tab: Int = 0,
     /** The station selected on Home, shared by both map views and kept across a trip to the Station List. */
     val selectedStationId: String? = null,
+    /** The stations selected before this one, oldest first, for the card's Back button; cleared when the region changes. */
+    val stationHistory: List<String> = emptyList(),
+    /** The stations gone back from, most recent last, for the card's Forward button; cleared by a new pick and by a region change. */
+    val stationForward: List<String> = emptyList(),
     /** The Topography map's dot size. */
     val pinScale: Float = DEFAULT_PIN_SCALE,
     /** Whether the maps' zoom slider is showing: one setting for both map views. */
@@ -188,7 +192,7 @@ class HomeViewModel : AppBaseViewModel() {
         settings.saveSelectedStationId(regionId, null)
         mapZoom = 1f
         settings.saveMapZoom(regionId, 1f)
-        _uiState.update { it.copy(selectedRegionId = regionId, selectedStationId = null, regionDataset = dataset, loading = false) }
+        _uiState.update { it.copy(selectedRegionId = regionId, selectedStationId = null, stationHistory = emptyList(), stationForward = emptyList(), regionDataset = dataset, loading = false) }
         readDefaultDatasetIfNeeded(dataset)
         if (changed) _events.trySend(HomeEvent.RegionChanged)
     }
@@ -226,7 +230,46 @@ class HomeViewModel : AppBaseViewModel() {
 
     fun selectStation(stationId: String?) {
         settings.saveSelectedStationId(_uiState.value.selectedRegionId, stationId)
-        _uiState.update { it.copy(selectedStationId = stationId) }
+        _uiState.update { state ->
+            val current = state.selectedStationId
+            // The station being left goes on the history, so a wrong tap can be undone (see goBackStation)
+            val history = if (current != null && stationId != null && stationId != current) {
+                (state.stationHistory + current).takeLast(MAX_STATION_HISTORY)
+            } else {
+                state.stationHistory
+            }
+            // A new pick starts a new path, as in a browser: what could have been gone forward to is dropped
+            val forward = if (stationId != current) emptyList() else state.stationForward
+            state.copy(selectedStationId = stationId, stationHistory = history, stationForward = forward)
+        }
+    }
+
+    /** Goes back to the station selected before this one, if there is one; the one left is kept to go forward to (it is a step, not a new pick). */
+    fun goBackStation() {
+        val state = _uiState.value
+        val previous = state.stationHistory.lastOrNull() ?: return
+        settings.saveSelectedStationId(state.selectedRegionId, previous)
+        _uiState.update {
+            it.copy(
+                selectedStationId = previous,
+                stationHistory = it.stationHistory.dropLast(1),
+                stationForward = it.selectedStationId?.let { left -> it.stationForward + left } ?: it.stationForward
+            )
+        }
+    }
+
+    /** Goes forward again to the station gone back from, if there is one. */
+    fun goForwardStation() {
+        val state = _uiState.value
+        val next = state.stationForward.lastOrNull() ?: return
+        settings.saveSelectedStationId(state.selectedRegionId, next)
+        _uiState.update {
+            it.copy(
+                selectedStationId = next,
+                stationForward = it.stationForward.dropLast(1),
+                stationHistory = it.selectedStationId?.let { left -> (it.stationHistory + left).takeLast(MAX_STATION_HISTORY) } ?: it.stationHistory
+            )
+        }
     }
 
     fun setMapZoom(zoom: Float) {
@@ -253,3 +296,6 @@ class HomeViewModel : AppBaseViewModel() {
         const val ZOOM_SAVE_DELAY_MS = 500L
     }
 }
+
+/** How many earlier stations the Back button remembers. */
+private const val MAX_STATION_HISTORY = 20

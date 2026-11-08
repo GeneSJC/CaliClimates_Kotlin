@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -69,6 +71,12 @@ fun HeroTile(
     onOpenChange: ((Boolean) -> Unit)? = null,
     /** The collapsed tile's corner radius; the open panel rounds out to 16dp as it grows. */
     tileCornerRadius: androidx.compose.ui.unit.Dp = 16.dp,
+    /**
+     * When given, the panel grows to the LEFT as well as down, as far as this margin from the window's left edge, with its right edge
+     * staying where the tile's is; so a wide card does not cover what is right of the tile and the map shows beside it. Null grows to
+     * the right from the tile's left corner, to [fullWidthPx].
+     */
+    growLeftMarginDp: androidx.compose.ui.unit.Dp? = null,
     tile: @Composable () -> Unit,
     /** The open panel's content; it is given a way to fold the panel back. */
     panel: @Composable (close: () -> Unit) -> Unit
@@ -76,6 +84,8 @@ fun HeroTile(
     var open by remember(resetKey) { mutableStateOf(initialOpen) }
     var cardWidthPx by remember { mutableStateOf(0) }
     var cardHeightPx by remember { mutableStateOf(0) }
+    // Where the tile's left edge is in the window, for how far the panel may grow to the left
+    var tileLeftPx by remember { mutableStateOf(0) }
     val reveal = remember(resetKey) { Animatable(if (initialOpen) 1f else 0f) }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -115,6 +125,7 @@ fun HeroTile(
                     cardWidthPx = it.width
                     cardHeightPx = it.height
                 }
+                .onGloballyPositioned { tileLeftPx = it.positionInWindow().x.toInt() }
                 .clickable(onClickLabel = openLabel, role = Role.Button) { openPanel() }
         ) {
             tile()
@@ -125,14 +136,22 @@ fun HeroTile(
             val p = reveal.value
             val panelShape = RoundedCornerShape(lerp(tileCornerRadius, 16.dp, p))
             val startWidth = with(density) { cardWidthPx.toDp() }
-            val fullWidth = with(density) { fullWidthPx.toDp() }
+            // How far left of the tile the panel may reach, and so how wide it grows: its right edge stays on the tile's right edge
+            val extraLeftPx = if (growLeftMarginDp == null) 0 else (tileLeftPx - with(density) { growLeftMarginDp.roundToPx() }).coerceAtLeast(0)
+            val fullWidth = with(density) { (fullWidthPx + extraLeftPx).toDp() }
+            // The popup's window stays put at its final left edge for the whole growth, and only what is drawn in it grows (hanging from
+            // its right edge). Moving the window itself every frame lagged the drawing by a frame and made the text shudder.
             Popup(
                 alignment = Alignment.TopStart,
+                offset = androidx.compose.ui.unit.IntOffset(-extraLeftPx, 0),
                 onDismissRequest = { closePanel() },
                 properties = PopupProperties(focusable = !passThrough, dismissOnClickOutside = !passThrough)
             ) {
+                // Growing left: a fixed-width frame (the card's final width) with the card hung from its right edge; growing right, a bare frame
+                Box(modifier = if (growLeftMarginDp != null) Modifier.width(fullWidth) else Modifier) {
                 Box(
                     modifier = Modifier
+                        .align(if (growLeftMarginDp != null) Alignment.TopEnd else Alignment.TopStart)
                         .width(lerp(startWidth, fullWidth, p))
                         .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.8f).dp)
                         .layout { measurable, constraints ->
@@ -148,7 +167,9 @@ fun HeroTile(
                     Box(modifier = Modifier.verticalScroll(rememberScrollState())) {
                         // Laid out at full width and revealed as the panel grows; the tile's own
                         // content fades out as the full content fades in
-                        Box(modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true)) {
+                        // Growing left, the content hangs from the right edge (which stays on the tile's), so the tile's own content stays
+                        // in place while it fades and the card's content is revealed from the left; growing right, from the left edge
+                        Box(modifier = Modifier.wrapContentWidth(if (growLeftMarginDp != null) Alignment.End else Alignment.Start, unbounded = true)) {
                             Box(
                                 modifier = Modifier
                                     .width(fullWidth)
@@ -158,6 +179,7 @@ fun HeroTile(
                             }
                             Box(
                                 modifier = Modifier
+                                    .align(if (growLeftMarginDp != null) Alignment.TopEnd else Alignment.TopStart)
                                     .width(startWidth)
                                     .graphicsLayer { alpha = (1f - p * 3f).coerceIn(0f, 1f) }
                             ) {
@@ -165,6 +187,7 @@ fun HeroTile(
                             }
                         }
                     }
+                }
                 }
             }
         }
