@@ -139,15 +139,19 @@ fun HeroTile(
             // How far left of the tile the panel may reach, and so how wide it grows: its right edge stays on the tile's right edge
             val extraLeftPx = if (growLeftMarginDp == null) 0 else (tileLeftPx - with(density) { growLeftMarginDp.roundToPx() }).coerceAtLeast(0)
             val fullWidth = with(density) { (fullWidthPx + extraLeftPx).toDp() }
-            val growthPx = with(density) { (lerp(startWidth, fullWidth, p) - startWidth).roundToPx() }
+            // The popup's window stays put at its final left edge for the whole growth, and only what is drawn in it grows (hanging from
+            // its right edge). Moving the window itself every frame lagged the drawing by a frame and made the text shudder.
             Popup(
                 alignment = Alignment.TopStart,
-                offset = androidx.compose.ui.unit.IntOffset(-growthPx, 0),
+                offset = androidx.compose.ui.unit.IntOffset(-extraLeftPx, 0),
                 onDismissRequest = { closePanel() },
                 properties = PopupProperties(focusable = !passThrough, dismissOnClickOutside = !passThrough)
             ) {
+                // Growing left: a fixed-width frame (the card's final width) with the card hung from its right edge; growing right, a bare frame
+                Box(modifier = if (growLeftMarginDp != null) Modifier.width(fullWidth) else Modifier) {
                 Box(
                     modifier = Modifier
+                        .align(if (growLeftMarginDp != null) Alignment.TopEnd else Alignment.TopStart)
                         .width(lerp(startWidth, fullWidth, p))
                         .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.8f).dp)
                         .layout { measurable, constraints ->
@@ -183,6 +187,7 @@ fun HeroTile(
                             }
                         }
                     }
+                }
                 }
             }
         }
