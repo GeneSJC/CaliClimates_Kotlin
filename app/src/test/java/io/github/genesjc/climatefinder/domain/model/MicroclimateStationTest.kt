@@ -27,7 +27,13 @@ class MicroclimateStationTest {
 
     @Test
     fun aNameThatAlreadySaysItsTownIsKept() {
-        assertEquals("Sacramento Executive Airport", testStation(name = "Sacramento Executive Airport", town = "Sacramento").displayName)
+        assertEquals("Hollister, Ca", testStation(name = "Hollister, Ca", town = "Hollister").displayName)
+    }
+
+    @Test
+    fun aFacilityNameShowsThePlaceAlone() {
+        assertEquals("Burbank", testStation(name = "Burbank Bob Hope Airport", town = "Burbank").displayName)
+        assertEquals("Chico", testStation(name = "Chico Municipal Airport").displayName)
     }
 
     @Test

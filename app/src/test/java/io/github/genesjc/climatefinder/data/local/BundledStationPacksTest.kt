@@ -1,6 +1,8 @@
 package io.github.genesjc.climatefinder.data.local
 
 import io.github.genesjc.climatefinder.config.StateUsaCA
+import io.github.genesjc.climatefinder.domain.StationNameFormatter
+import io.github.genesjc.climatefinder.domain.hasFacilityWords
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -57,6 +59,18 @@ class BundledStationPacksTest {
             val pack = regionPack.getValue(regionId)
             val stationIds = StationPack.decode(packText(pack))!!.lines().drop(1).filter { it.isNotBlank() }.map { it.substringBefore(",") }.toSet()
             for (id in ids) assertTrue("$id is not in $pack ($regionId)", id in stationIds)
+        }
+    }
+
+    @Test
+    fun noStationIsShownUnderAFacilityName() {
+        // The name the screens show is the place alone: no airport, field or weather-station word anywhere in it
+        val format = StationCsvFormat(StationNameFormatter(StateUsaCA.stationTowns))
+        for ((fileName, region, _) in packs) {
+            val csv = StationPack.decode(packText(fileName))!!
+            for (station in format.parse(csv.reader().buffered())) {
+                assertTrue("${station.id} ($region) is shown as '${station.displayName}'", !hasFacilityWords(station.displayName))
+            }
         }
     }
 
