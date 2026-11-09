@@ -110,8 +110,9 @@ fun MapViewToggleSwitch(
     modifier: Modifier = Modifier,
     // The track while off (the Map view); a light slate when the switch sits on a white card, where white would vanish
     offTrackColor: Color = Color.White.copy(alpha = 0.90f),
-    // The off track's wash (the picker button's blue-to-green), over which the dark on-track fades in; null uses [offTrackColor]
-    offTrackBrush: androidx.compose.ui.graphics.Brush? = BlueGreenWash,
+    // The off track's wash, over which the dark on-track fades in; null uses [offTrackColor]. A deeper green-teal than the picker
+    // button's wash, so the track stands out from the header's pale green on every region (see TOGGLE_OFF_TRACK_WASH)
+    offTrackBrush: androidx.compose.ui.graphics.Brush? = TOGGLE_OFF_TRACK_WASH,
     // Stood on end: Map at the top (off), Profile at the bottom (on)
     vertical: Boolean = false
 ) {
@@ -134,7 +135,7 @@ fun MapViewToggleSwitch(
             .clip(CircleShape)
             .then(if (offTrackBrush != null) Modifier.background(offTrackBrush) else Modifier)
             .background(track)
-            .border(1.dp, if (on) SWITCH_INK else SWITCH_LINE, CircleShape)
+            .border(1.dp, if (on) SWITCH_INK else TOGGLE_OFF_EDGE, CircleShape)
     ) {
         Box(
             modifier = (if (vertical) Modifier.offset(y = thumbAt).align(Alignment.TopCenter) else Modifier.offset(x = thumbAt).align(Alignment.CenterStart))
@@ -165,3 +166,15 @@ private val TOGGLE_VERTICAL_THUMB_LENGTH = 30.dp
 
 /** The toggle thumb's wash on the Elevation view: the shared blue-to-green wash at 85 percent opacity. */
 private val THUMB_WASH = androidx.compose.ui.graphics.Brush.linearGradient(colors = BlueGreenWashColors.map { it.copy(alpha = 0.85f) })
+
+/**
+ * The off (Map view) track: a deeper green-teal than the picker button's blue-to-green wash, which blended into the header's
+ * pale green. These are the colours before the switch's own 20 percent see-through: on the SF Bay header they show as about
+ * (150, 190, 176). Look B of the 2026-11-09 mock-up; the thumb on the Elevation view keeps the lighter wash ([THUMB_WASH]).
+ */
+private val TOGGLE_OFF_TRACK_WASH = androidx.compose.ui.graphics.Brush.linearGradient(
+    colors = listOf(Color(0xFF88B3B4), Color(0xFF86B5A9), Color(0xFF8BB99C))
+)
+
+/** The off track's edge, a little darker than the track, in the same family (about (120, 160, 148) as shown on the SF Bay header). */
+private val TOGGLE_OFF_EDGE = Color(0xFF608F86)
