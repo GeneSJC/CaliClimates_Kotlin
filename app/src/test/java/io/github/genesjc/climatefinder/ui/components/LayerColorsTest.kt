@@ -81,8 +81,8 @@ class LayerColorsTest {
     fun theKeyAndHazeFollowTheEndsToo() {
         for (band in 0 until DepthBands.COUNT) {
             assertEquals(LayerKeyColors[bandLook(band, BandAxis.WEST_EAST)], keyColor(band, 90))
-            assertEquals(DepthBands.haze(bandLook(band, BandAxis.NORTH_SOUTH)), hazeColor(band, 0).alpha, 0.001f)
-            assertEquals(DepthBands.haze(bandLook(band, BandAxis.WEST_EAST)), hazeColor(band, 90).alpha, 0.001f)
+            assertEquals(DepthBands.haze(bandLook(band, BandAxis.NORTH_SOUTH)), hazeColor(band, 0).alpha, ALPHA_STEP)
+            assertEquals(DepthBands.haze(bandLook(band, BandAxis.WEST_EAST)), hazeColor(band, 90).alpha, ALPHA_STEP)
         }
     }
 
@@ -100,5 +100,10 @@ class LayerColorsTest {
         assertEquals(0f, hazeColor(0, 0).alpha, 0f)
         assertTrue(hazeColor(0, 45).alpha > 0f)
         assertTrue(hazeColor(0, 90).alpha > hazeColor(0, 45).alpha)
+    }
+
+    private companion object {
+        // A colour holds its alpha in 8 bits, so 0.3 comes back as 77/255 (0.3019608)
+        const val ALPHA_STEP = 0.005f
     }
 }

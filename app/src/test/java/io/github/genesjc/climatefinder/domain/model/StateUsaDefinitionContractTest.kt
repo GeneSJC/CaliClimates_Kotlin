@@ -20,8 +20,9 @@ class StateUsaDefinitionContractTest {
         for (d in definitions) check(d, d.regions.map { it.id }.toSet())
     }
 
-    private fun inside(view: GeoBounds, lon: Double, lat: Double) =
-        lon in view.minLon..view.maxLon && lat in view.minLat..view.maxLat
+    // The artwork's points are Floats (31.9f is 31.89999..), so a point on the window's edge is allowed a hair of rounding
+    private fun inside(view: GeoBounds, lon: Double, lat: Double, slack: Double = 1e-4) =
+        lon in (view.minLon - slack)..(view.maxLon + slack) && lat in (view.minLat - slack)..(view.maxLat + slack)
 
     @Test
     fun hasACodeAndRegionsWithUniqueIds() = eachDefinition { d, ids ->

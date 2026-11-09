@@ -24,6 +24,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.climatefinder.testStation
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -51,12 +52,12 @@ class HomeViewModelTest {
 
     private val repository = StationRepository(FakeStationSource(), Dispatchers.Unconfined)
 
-    private fun viewModel(datasets: RegionDatasetCatalog = FakeDatasets()): HomeViewModel {
+    private fun viewModel(datasets: RegionDatasetCatalog = FakeDatasets(), stations: StationRepository = repository): HomeViewModel {
         restartKoin {
             single<RegionSettings> { settings }
             single<RegionDatasetCatalog> { datasets }
             single<StateUsaDefinition> { StateUsaCA }
-            single { repository }
+            single { stations }
             single { testLiveReadingsRepository(CoroutineScope(Dispatchers.Unconfined), observations) }
         }
         return HomeViewModel()
@@ -220,8 +221,9 @@ class HomeViewModelTest {
 
     @Test
     fun theStationHomeOpenedOnIsInTheHistoryEvenWhenNoneWasSaved() = runBlocking {
-        val vm = viewModel()
-        repository.load(FakeDatasets().cachedDatasetFor("a"))
+        val region = StationRepository(FakeStationSource(listOf(testStation(id = "a"), testStation(id = "X"), testStation(id = "Y"))), Dispatchers.Unconfined)
+        val vm = viewModel(stations = region)
+        region.load(FakeDatasets().cachedDatasetFor("a"))
         // Nothing saved: the screens show the region's first station ("a"), so Back must be able to return to it
         assertNull(vm.uiState.value.selectedStationId)
         vm.selectStation("X")
