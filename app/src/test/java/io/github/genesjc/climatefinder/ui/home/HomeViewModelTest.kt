@@ -219,6 +219,45 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun theStationHomeOpenedOnIsInTheHistoryEvenWhenNoneWasSaved() = runBlocking {
+        val vm = viewModel()
+        repository.load(FakeDatasets().cachedDatasetFor("a"))
+        // Nothing saved: the screens show the region's first station ("a"), so Back must be able to return to it
+        assertNull(vm.uiState.value.selectedStationId)
+        vm.selectStation("X")
+        vm.selectStation("Y")
+        assertEquals(listOf("a", "X"), vm.uiState.value.stationHistory)
+        vm.goBackStation()
+        vm.goBackStation()
+        assertEquals("a", vm.uiState.value.selectedStationId)
+        vm.goForwardStation()
+        assertEquals("X", vm.uiState.value.selectedStationId)
+    }
+
+    @Test
+    fun aSavedStationTheRegionNoLongerHasIsNotPutInTheHistory() = runBlocking {
+        settings.saveSelectedStationId("a", "GONE")
+        val vm = viewModel()
+        repository.load(FakeDatasets().cachedDatasetFor("a"))
+        vm.selectStation("X")
+        // The screens were showing the first station, not the missing one
+        assertEquals(listOf("a"), vm.uiState.value.stationHistory)
+    }
+
+    @Test
+    fun theHistoryIsKeptAcrossMapViewsAndForTheWholeRun() {
+        val vm = viewModel()
+        vm.selectStation("S0")
+        vm.setTab(1)
+        (1..30).forEach { vm.selectStation("S$it") }
+        vm.setTab(0)
+        assertEquals((0..29).map { "S$it" }, vm.uiState.value.stationHistory)
+        assertEquals("S30", vm.uiState.value.selectedStationId)
+        repeat(30) { vm.goBackStation() }
+        assertEquals("S0", vm.uiState.value.selectedStationId)
+    }
+
+    @Test
     fun reopensAtTheSavedZoomOfTheSavedRegion() {
         settings.saveMapZoom("a", 3f)
         assertEquals(3f, viewModel().mapZoom)

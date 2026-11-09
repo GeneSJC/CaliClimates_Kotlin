@@ -40,7 +40,7 @@ data class HomeUiState(
     val tab: Int = 0,
     /** The station selected on Home, shared by both map views and kept across a trip to the Station List. */
     val selectedStationId: String? = null,
-    /** The stations selected before this one, oldest first, for the card's Back button; cleared when the region changes. */
+    /** The stations selected before this one, oldest first, for the card's Back button; kept for the whole run and across both map views, cleared when the region changes. */
     val stationHistory: List<String> = emptyList(),
     /** The stations gone back from, most recent last, for the card's Forward button; cleared by a new pick and by a region change. */
     val stationForward: List<String> = emptyList(),
@@ -228,13 +228,26 @@ class HomeViewModel : AppBaseViewModel() {
     /** The station's live reading for its tile and card, null while it is being checked. Ask once per station shown. */
     fun reading(station: MicroclimateStation): StateFlow<ObservationResult?> = readings.flowFor(station)
 
+    /**
+     * The station the screens are showing: the selected one, or, when none is selected (nothing saved, or a saved station
+     * the region no longer has), the region's first station, which is what the map, the tile and the card fall back to. The
+     * history counts this one too, or the station Home opened on would be missing from Back.
+     */
+    private fun shownStationId(state: HomeUiState): String? {
+        val stations = stations(state.selectedRegionId)
+        val selected = state.selectedStationId
+        // Stations not read yet: trust the selection
+        return if (selected != null && (stations.isEmpty() || stations.any { it.id == selected })) selected else stations.firstOrNull()?.id
+    }
+
     fun selectStation(stationId: String?) {
         settings.saveSelectedStationId(_uiState.value.selectedRegionId, stationId)
         _uiState.update { state ->
-            val current = state.selectedStationId
-            // The station being left goes on the history, so a wrong tap can be undone (see goBackStation)
+            val current = shownStationId(state)
+            // The station being left goes on the history, so a wrong tap can be undone (see goBackStation). The history is
+            // Home's, so it is the same whichever map view the pick was made on, and it is kept for the whole run
             val history = if (current != null && stationId != null && stationId != current) {
-                (state.stationHistory + current).takeLast(MAX_STATION_HISTORY)
+                state.stationHistory + current
             } else {
                 state.stationHistory
             }
@@ -253,7 +266,7 @@ class HomeViewModel : AppBaseViewModel() {
             it.copy(
                 selectedStationId = previous,
                 stationHistory = it.stationHistory.dropLast(1),
-                stationForward = it.selectedStationId?.let { left -> it.stationForward + left } ?: it.stationForward
+                stationForward = shownStationId(it)?.let { left -> it.stationForward + left } ?: it.stationForward
             )
         }
     }
@@ -267,7 +280,7 @@ class HomeViewModel : AppBaseViewModel() {
             it.copy(
                 selectedStationId = next,
                 stationForward = it.stationForward.dropLast(1),
-                stationHistory = it.selectedStationId?.let { left -> (it.stationHistory + left).takeLast(MAX_STATION_HISTORY) } ?: it.stationHistory
+                stationHistory = shownStationId(it)?.let { left -> it.stationHistory + left } ?: it.stationHistory
             )
         }
     }
@@ -296,6 +309,3 @@ class HomeViewModel : AppBaseViewModel() {
         const val ZOOM_SAVE_DELAY_MS = 500L
     }
 }
-
-/** How many earlier stations the Back button remembers. */
-private const val MAX_STATION_HISTORY = 20
