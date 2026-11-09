@@ -31,7 +31,7 @@
   <tr>
     <td align="center"><img src="docs/images/screen-elevation-north.png" alt="The Elevation view looking north-northwest, the land rising to the Sierra" width="230"></td>
     <td align="center"><img src="docs/images/screen-elevation-coast.png" alt="The Elevation view looking west-northwest, the coast and the sea" width="230"></td>
-    <td></td>
+    <td align="center"><img src="docs/images/screen-station-list.png" alt="The Station List for the Bay Area and Sacramento region, a card for each station with its readings" width="230"></td>
   </tr>
 </table>
 
