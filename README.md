@@ -20,6 +20,8 @@
 
 <a id="screens"></a>
 
+## 📱 Screens
+
 <div align="center">
 
 <table>
@@ -46,11 +48,13 @@
 <a id="badge-android"><img src="https://img.shields.io/badge/Android-7.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android 7.0 and newer"></a>
 <a id="badge-license"><img src="https://img.shields.io/badge/License-Apache_2.0-0B1736?style=flat-square" alt="License: Apache 2.0"></a>
 
-[**Screens**](#screens) &nbsp;·&nbsp; [**What it does**](#-what-cali-climates-does) &nbsp;·&nbsp; [**Design choices**](#-design-choices) &nbsp;·&nbsp; [**Run it**](#-run-it) &nbsp;·&nbsp; [**Architecture**](#architecture) &nbsp;·&nbsp; [**Tech stack**](#-tech-stack) &nbsp;·&nbsp; [**Docs**](#-docs) &nbsp;·&nbsp; [**Status**](#-status)
+[**Screens**](#screens) &nbsp;·&nbsp; [**What it does**](#what-it-does) &nbsp;·&nbsp; [**Design choices**](#design-choices) &nbsp;·&nbsp; [**Run it**](#run-it) &nbsp;·&nbsp; [**Tech stack**](#tech-stack) &nbsp;·&nbsp; [**Architecture**](#architecture) &nbsp;·&nbsp; [**Docs**](#docs)
 
 <img src="docs/images/divider.png" alt="" width="100%">
 
 </div>
+
+<a id="what-it-does"></a>
 
 ## ✨ What Cali Climates does
 
@@ -88,6 +92,8 @@ each, and how the numbers change as the ground climbs.
     </td>
   </tr>
 </table>
+
+<a id="design-choices"></a>
 
 ## 🧭 Design choices
 
@@ -191,6 +197,8 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
 </table>
 
 
+<a id="run-it"></a>
+
 ## 🚀 Run it
 
 Cali Climates is a standard Gradle project, so you can work on it in the editor you like best. It runs on Android 7.0 (API 24) and
@@ -240,6 +248,20 @@ local test server) and the station-file format. Two of them are rules written as
 in code (every word is a string resource), and every USA state definition must satisfy the same checks.
 
 </details>
+
+<a id="tech-stack"></a>
+
+## 🧰 Tech stack
+
+| | |
+|---|---|
+| **Language** | Kotlin 2.2 |
+| **UI** | Jetpack Compose (BOM 2026.02), Material 3, custom Canvas drawing for the maps and the elevation chart |
+| **Architecture** | MVVM with repositories and a state holder for live readings; Koin 4.2 for dependency injection |
+| **Networking** | Retrofit 3.0 over OkHttp 4.12, kotlinx.serialization |
+| **Async** | Kotlin Coroutines and Flow (StateFlow for state, a Channel for one-off events) |
+| **Build** | Android Gradle Plugin 9.4, two flavor dimensions, minSdk 24, targetSdk 37 |
+| **Tests** | JUnit 4, coroutines-test, MockK and MockWebServer where an Android class or the network is involved; fakes elsewhere |
 
 <a id="architecture"></a>
 
@@ -399,17 +421,7 @@ app/src/core/ demo/ foss/ commercial/   per-flavor code
 docs/                      restore guides and README art
 ```
 
-## 🧰 Tech stack
-
-| | |
-|---|---|
-| **Language** | Kotlin 2.2 |
-| **UI** | Jetpack Compose (BOM 2026.02), Material 3, custom Canvas drawing for the maps and the elevation chart |
-| **Architecture** | MVVM with repositories and a state holder for live readings; Koin 4.2 for dependency injection |
-| **Networking** | Retrofit 3.0 over OkHttp 4.12, kotlinx.serialization |
-| **Async** | Kotlin Coroutines and Flow (StateFlow for state, a Channel for one-off events) |
-| **Build** | Android Gradle Plugin 9.4, two flavor dimensions, minSdk 24, targetSdk 37 |
-| **Tests** | JUnit 4, coroutines-test, MockK and MockWebServer where an Android class or the network is involved; fakes elsewhere |
+<a id="docs"></a>
 
 ## 📚 Docs
 
@@ -419,6 +431,8 @@ docs/                      restore guides and README art
 | [`docs/news-restore.md`](docs/news-restore.md) | What the parked local-news feature was and how to bring it back |
 | [`tools/angle-controls/`](tools/angle-controls/README.md) | Two earlier controls for the viewing angle, a slider and a heading strip, kept outside the build for comparing |
 | [`docs/images/README.md`](docs/images/README.md) | The README artwork: what each image is and how to regenerate it |
+
+<a id="license"></a>
 
 ## 📄 License
 
