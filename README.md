@@ -25,20 +25,18 @@ Live National Weather Service readings from 338 stations in six regions, on shad
 
 <table>
   <tr>
-    <td align="center"><img src="docs/images/screen-map.png" alt="The Map view: stations as dots over shaded relief, the selected station ringed" width="230"><br><sub><b>Map</b><br>stations over shaded relief,<br>the chosen one ringed</sub></td>
-    <td align="center"><img src="docs/images/screen-station-card.png" alt="The open station card: temperature, readings, height and microclimate" width="230"><br><sub><b>Station card</b><br>live reading, height,<br>microclimate; Back and Forward</sub></td>
-    <td align="center"><img src="docs/images/screen-elevation-bands.png" alt="The Elevation view with its bands, looking northwest" width="230"><br><sub><b>Elevation</b><br>bands by latitude,<br>looking northwest</sub></td>
+    <td align="center"><img src="docs/images/screen-map.png" alt="The Map view: stations as dots over shaded relief, the selected station ringed" width="230"></td>
+    <td align="center"><img src="docs/images/screen-station-card.png" alt="The open station card: temperature, readings, height and microclimate" width="230"></td>
+    <td align="center"><img src="docs/images/screen-elevation-bands.png" alt="The Elevation view with its bands, looking northwest" width="230"></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/images/screen-elevation-north.png" alt="The Elevation view looking north-northwest, the land rising to the Sierra" width="230"><br><sub><b>Turn the dial</b><br>looking north, the land<br>rises toward the Sierra</sub></td>
-    <td align="center"><img src="docs/images/screen-elevation-coast.png" alt="The Elevation view looking west-northwest, the coast and the sea" width="230"><br><sub><b>And west</b><br>the same stations,<br>the coast and the sea</sub></td>
+    <td align="center"><img src="docs/images/screen-elevation-north.png" alt="The Elevation view looking north-northwest, the land rising to the Sierra" width="230"></td>
+    <td align="center"><img src="docs/images/screen-elevation-coast.png" alt="The Elevation view looking west-northwest, the coast and the sea" width="230"></td>
     <td></td>
   </tr>
 </table>
 
 </div>
-
-<sub>Screenshots from a phone, Davis and the SF Bay Area region. Short clips are planned (see [`docs/images`](docs/images/README.md)).</sub>
 
 <br>
 
