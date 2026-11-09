@@ -40,9 +40,9 @@ data class HomeUiState(
     val tab: Int = 0,
     /** The station selected on Home, shared by both map views and kept across a trip to the Station List. */
     val selectedStationId: String? = null,
-    /** The stations selected before this one, oldest first, for the card's Back button; kept for the whole run and across both map views, cleared when the region changes. */
+    /** The stations selected before this one, oldest first, for the card's Back button; kept for the whole run, across both map views and, region by region, across regions. */
     val stationHistory: List<String> = emptyList(),
-    /** The stations gone back from, most recent last, for the card's Forward button; cleared by a new pick and by a region change. */
+    /** The stations gone back from, most recent last, for the card's Forward button; cleared by a new pick. */
     val stationForward: List<String> = emptyList(),
     /** The Topography map's dot size. */
     val pinScale: Float = DEFAULT_PIN_SCALE,
@@ -79,8 +79,8 @@ sealed interface HomeEvent {
  *
  * - State: [uiState] is a [StateFlow]; the UI collects it and calls the functions below for every change.
  * - Region: the saved region's stations are read off the main thread when Home starts ([HomeUiState.loading] is true until
- *   they are in). Choosing a region reads its stations off the main thread too, then saves it and clears the selected
- *   station. The selected station and the map zoom are saved too, and come back on the next launch as long as they were
+ *   they are in). Choosing a region reads its stations off the main thread too, then saves it; a region left keeps its station and
+ *   Back and Forward history for the run, and a new one starts with none. The selected station and the map zoom are saved too, and come back on the next launch as long as they were
  *   set in the saved region.
  * - Live readings: whenever the region changes, it opens a visit to the new region in [LiveReadingsRepository], which fetches
  *   the region's featured stations and cancels the previous visit's fetch.
@@ -135,6 +135,9 @@ class HomeViewModel : AppBaseViewModel() {
     /** The region being read (at start-up, or after a choice); a newer choice replaces it. */
     private var regionLoad: Job? = null
 
+    /** The station trails of the regions left so far this run, by region id (not saved: they last until the app closes). */
+    private val trails = mutableMapOf<String, StationTrail>()
+
     /** The read of the default region's dataset, started once the first region with no data shows up. */
     private var defaultDatasetLoad: Job? = null
 
@@ -168,7 +171,7 @@ class HomeViewModel : AppBaseViewModel() {
     }
 
     /**
-     * Changes the app-wide region, remembers it, and clears (and forgets) the station chosen in the old one. A region
+     * Changes the app-wide region and remembers it. The station chosen in the old region (with its Back and Forward history) is kept for the run, and a region visited before comes back on the station it was left on. A region
      * whose stations have not been read yet is read first, off the main thread, and the screen switches when they are
      * ready: switching first would make the screen read the region's pack on the main thread, which on a cold start (the
      * first run after an install, before the background warm-up has reached that region) freezes the app. Choosing
@@ -188,11 +191,27 @@ class HomeViewModel : AppBaseViewModel() {
     }
 
     private fun applyRegion(regionId: String, dataset: StationDatasetInfo?, changed: Boolean) {
+        val state = _uiState.value
+        val leaving = state.selectedRegionId
+        // Each region keeps its own trail for the run: the station it was on, and its Back and Forward history. Leaving a region
+        // files its trail away; coming back to it brings the trail back, so Back works across regions too
+        if (leaving != regionId) trails[leaving] = StationTrail(state.selectedStationId, state.stationHistory, state.stationForward)
+        val trail = if (leaving != regionId) trails[regionId] else null
+        val station = trail?.selected
         settings.saveSelectedRegionId(regionId)
-        settings.saveSelectedStationId(regionId, null)
+        settings.saveSelectedStationId(regionId, station)
         mapZoom = 1f
         settings.saveMapZoom(regionId, 1f)
-        _uiState.update { it.copy(selectedRegionId = regionId, selectedStationId = null, stationHistory = emptyList(), stationForward = emptyList(), regionDataset = dataset, loading = false) }
+        _uiState.update {
+            it.copy(
+                selectedRegionId = regionId,
+                selectedStationId = station,
+                stationHistory = trail?.history ?: emptyList(),
+                stationForward = trail?.forward ?: emptyList(),
+                regionDataset = dataset,
+                loading = false
+            )
+        }
         readDefaultDatasetIfNeeded(dataset)
         if (changed) _events.trySend(HomeEvent.RegionChanged)
     }
@@ -309,3 +328,6 @@ class HomeViewModel : AppBaseViewModel() {
         const val ZOOM_SAVE_DELAY_MS = 500L
     }
 }
+
+/** A region's station trail, filed away while another region is showing: the station it was on, and its Back and Forward lists. */
+private class StationTrail(val selected: String?, val history: List<String>, val forward: List<String>)

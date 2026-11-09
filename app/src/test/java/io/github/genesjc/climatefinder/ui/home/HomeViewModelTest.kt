@@ -208,7 +208,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun pickingTheSameStationAgainAndChangingRegionLeaveNoHistory() {
+    fun pickingTheSameStationAgainLeavesNoHistoryAndANewRegionStartsWithNone() {
         val vm = viewModel()
         vm.selectStation("A")
         vm.selectStation("A")
@@ -255,6 +255,31 @@ class HomeViewModelTest {
         assertEquals("S30", vm.uiState.value.selectedStationId)
         repeat(30) { vm.goBackStation() }
         assertEquals("S0", vm.uiState.value.selectedStationId)
+    }
+
+    @Test
+    fun eachRegionKeepsItsOwnTrailAndGetsItBackOnReturn() {
+        val vm = viewModel()
+        vm.selectStation("A1")
+        vm.selectStation("A2")
+        vm.goBackStation()
+        vm.selectRegion("b")
+        // A region visited for the first time starts clean
+        assertNull(vm.uiState.value.selectedStationId)
+        assertEquals(emptyList<String>(), vm.uiState.value.stationHistory)
+        vm.selectStation("B1")
+        vm.selectStation("B2")
+        vm.selectRegion("a")
+        // Back where it was left, with its history and the forward it had
+        assertEquals("A1", vm.uiState.value.selectedStationId)
+        assertEquals("A1", settings.station)
+        assertEquals(emptyList<String>(), vm.uiState.value.stationHistory)
+        assertEquals(listOf("A2"), vm.uiState.value.stationForward)
+        vm.selectRegion("b")
+        assertEquals("B2", vm.uiState.value.selectedStationId)
+        assertEquals(listOf("B1"), vm.uiState.value.stationHistory)
+        vm.goBackStation()
+        assertEquals("B1", vm.uiState.value.selectedStationId)
     }
 
     @Test
