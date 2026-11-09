@@ -72,3 +72,16 @@ fun stationDisplayName(town: String?, stationName: String): String = when {
     town != null -> town
     else -> placeFromStationName(stationName)
 }
+
+/**
+ * Splits a name for the screens into its main part and its note in parentheses, so a screen with room can put the note on a line
+ * of its own: "Mid-Wilshire (Los Angeles)" gives "Mid-Wilshire" and "(Los Angeles)"; a name with no note gives the name and null.
+ */
+fun splitStationNote(displayName: String): Pair<String, String?> {
+    val open = displayName.lastIndexOf(" (")
+    return if (open > 0 && displayName.endsWith(")")) {
+        displayName.substring(0, open) to displayName.substring(open + 1)
+    } else {
+        displayName to null
+    }
+}

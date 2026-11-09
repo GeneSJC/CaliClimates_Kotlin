@@ -81,4 +81,13 @@ class StationNamesTest {
         assertEquals("Yuba", towns.cleanCityName("KXXX", "Yuba County Airport"))
         assertEquals("County Line", towns.cleanCityName("CLNC1", "County Line"))
     }
+
+    @Test
+    fun aNoteInParenthesesSplitsOffForALineOfItsOwn() {
+        assertEquals("Mid-Wilshire" to "(Los Angeles)", splitStationNote("Mid-Wilshire (Los Angeles)"))
+        assertEquals("Crescent City" to "(McNamara)", splitStationNote("Crescent City (McNamara)"))
+        assertEquals("Burbank" to null, splitStationNote("Burbank"))
+        // Only a note at the end counts
+        assertEquals("Mount (Zion) Peak" to null, splitStationNote("Mount (Zion) Peak"))
+    }
 }
