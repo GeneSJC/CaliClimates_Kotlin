@@ -16,7 +16,7 @@ class StateUsaCATest {
         assertTrue(towns.all { (id, town) -> id.isNotBlank() && town.isNotBlank() })
         assertEquals("Jackson", towns["MTZC1"])
         assertEquals("Sacramento", towns["KSMF"])
-        assertEquals("Sacramento", towns["KSAC"])
+        assertEquals("South Sacramento", towns["KSAC"])
     }
 
     @Test

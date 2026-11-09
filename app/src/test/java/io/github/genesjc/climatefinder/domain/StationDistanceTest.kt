@@ -16,9 +16,9 @@ class StationDistanceTest {
     }
 
     @Test
-    fun santaCruzToAuburnIsAboutOneHundredSixtyMiles() {
+    fun santaCruzToAuburnIsAboutOneHundredFortyFiveMiles() {
         val miles = StationDistance.miles(santaCruz.first, santaCruz.second, auburn.first, auburn.second)
-        assertEquals(159.0, miles, 3.0)
+        assertEquals(144.7, miles, 1.0)
     }
 
     @Test
@@ -52,7 +52,7 @@ class StationDistanceTest {
         val b = testStation(id = "B", latitude = auburn.first, longitude = auburn.second)
         val miles = StationDistance.milesFrom(a, listOf(a, b))
         assertEquals(setOf("B"), miles.keys)
-        assertEquals(159.0, miles.getValue("B").toDouble(), 3.0)
+        assertEquals(145.0, miles.getValue("B").toDouble(), 1.0)
     }
 
     @Test
