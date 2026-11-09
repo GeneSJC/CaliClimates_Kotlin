@@ -89,10 +89,6 @@ each, and how the numbers change as the ground climbs.
   </tr>
 </table>
 
-> [!NOTE]
-> Readings come from the National Weather Service's public API (`api.weather.gov`), which needs no key. A station that cannot
-> report shows plainly that it has no reading, instead of a made-up number.
-
 ## 🧭 Design choices
 
 The six things on the banner are decisions about how the app should feel, made first and then built inside the usual Android
