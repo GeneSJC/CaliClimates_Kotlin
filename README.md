@@ -41,6 +41,7 @@
 
 <br>
 
+<a id="badge-ci"><img src="https://github.com/GeneSJC/CaliClimates_Kotlin/actions/workflows/ci.yml/badge.svg?branch=develop" alt="CI status of the develop branch"></a>
 <a id="badge-kotlin"><img src="https://img.shields.io/badge/Kotlin-2.2-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin 2.2"></a>
 <a id="badge-compose"><img src="https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose, Material 3"></a>
 <a id="badge-architecture"><img src="https://img.shields.io/badge/Architecture-MVVM-1D4ED8?style=flat-square" alt="Architecture: MVVM"></a>
@@ -141,7 +142,7 @@ Any other editor works the same way: build with `./gradlew` and install with `ad
 
 About 350 unit tests in 44 classes cover the ViewModels, the repositories, the live-readings holder, the NWS client (against a
 local test server) and the station-file format. Two of them are rules written as tests: no user-facing word may be written
-in code (every word is a string resource), and every USA state definition must satisfy the same checks.
+in code (every word is a string resource), and every USA state definition must satisfy the same checks. CI runs the same tests on every pull request.
 
 </details>
 
@@ -158,6 +159,7 @@ in code (every word is a string resource), and every USA state definition must s
 | **Async** | Kotlin Coroutines and Flow (StateFlow for state, a Channel for one-off events) |
 | **Build** | Android Gradle Plugin 9.4, two flavor dimensions, minSdk 24, targetSdk 37 |
 | **Tests** | JUnit 4, coroutines-test, MockK and MockWebServer where an Android class or the network is involved; fakes elsewhere |
+| **CI** | GitHub Actions: the unit tests for both distributions and a debug build, on every pull request and every push to `develop` and `main` |
 
 <a id="design-choices"></a>
 

@@ -1,0 +1,51 @@
+name: CI
+
+# Runs the unit tests and a debug build on every push to develop and main, and on every pull request. It is the check that
+# catches a compile error or a broken rule (the layering, wording and structure tests) before it lands, on a clean machine
+# rather than a developer's.
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+
+# A newer push to the same branch or pull request replaces a run that is still going
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The JDK Gradle itself runs under; the Android SDK is already on the runner and Gradle fetches any platform it needs.
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Unit tests
+        # Both distributions are named: with two flavor dimensions the bare task name is ambiguous to Gradle.
+        run: ./gradlew testCoreFossDebugUnitTest testCoreCommercialDebugUnitTest --stacktrace
+
+      - name: Debug build
+        run: ./gradlew assembleCoreFossDebug --stacktrace
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: app/build/reports/tests/
+          retention-days: 14
