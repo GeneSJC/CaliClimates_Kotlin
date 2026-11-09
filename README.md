@@ -39,11 +39,11 @@
 
 <br>
 
-![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?style=flat-square&logo=kotlin&logoColor=white)
-![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)
-![Architecture](https://img.shields.io/badge/Architecture-MVVM-1D4ED8?style=flat-square)
-![Koin](https://img.shields.io/badge/DI-Koin-F2A50F?style=flat-square)
-![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](#-tech-stack)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](#-tech-stack)
+[![Architecture](https://img.shields.io/badge/Architecture-MVVM-1D4ED8?style=flat-square)](#-architecture)
+[![Koin](https://img.shields.io/badge/DI-Koin-F2A50F?style=flat-square)](#-architecture)
+[![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)](#-run-it)
 [![License](https://img.shields.io/badge/License-Apache_2.0-0B1736?style=flat-square)](LICENSE)
 
 [**Screens**](#screens) &nbsp;·&nbsp; [**What it does**](#-what-cali-climates-does) &nbsp;·&nbsp; [**Design choices**](#-design-choices) &nbsp;·&nbsp; [**Run it**](#-run-it) &nbsp;·&nbsp; [**Architecture**](#-architecture) &nbsp;·&nbsp; [**Tech stack**](#-tech-stack) &nbsp;·&nbsp; [**Docs**](#-docs) &nbsp;·&nbsp; [**Status**](#-status)
