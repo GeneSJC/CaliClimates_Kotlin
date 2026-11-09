@@ -14,8 +14,7 @@
 
 <br>
 
-**An Android app that shows how California's weather changes from the coast to the mountains to the desert.**<br>
-Live National Weather Service readings from 338 stations in six regions, on shaded-relief maps and an elevation chart.
+**An Android app that shows how California's weather changes from the coast to the mountains to the desert.**
 
 <br>
 
