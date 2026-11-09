@@ -193,16 +193,36 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
 
 ## 🚀 Run it
 
-**You need** Android Studio (current stable). The app runs on Android 7.0 (API 24) and newer.
+Cali Climates is a standard Gradle project, so you can work on it in the editor you like best. It runs on Android 7.0 (API 24) and
+newer, and the readings need an internet connection.
 
 ```bash
 git clone https://github.com/GeneSJC/CaliClimates_Kotlin.git
 cd CaliClimates_Kotlin
 ```
 
+### Android Studio
+
+One install brings the Android SDK, an emulator manager, Compose previews, and the layout and profiling tools. Use the current stable release.
+
 1. Open the folder in Android Studio and let Gradle sync.
 2. In the **Build Variants** panel keep the default, `coreFossDebug` (the app on its own, the open-source build).
-3. Run it on a device or an emulator. The readings need an internet connection.
+3. Run it on a device or an emulator.
+
+### Visual Studio Code
+
+A light, fast editor with a built-in terminal; the Kotlin and Gradle extensions add syntax coloring, code navigation and Gradle tasks.
+
+1. Install a JDK (17 or newer) and the Android SDK (the command-line tools are enough), then point Gradle at the SDK: set `ANDROID_HOME`, or put `sdk.dir=/path/to/Android/sdk` in a `local.properties` file in the project folder.
+2. Open the folder in VS Code and add the **Kotlin** and **Gradle for Java** extensions.
+3. Connect a phone or start an emulator (`adb devices` lists what is connected), then in the terminal:
+
+```bash
+./gradlew installCoreFossDebug
+adb shell am start -n io.github.genesjc.climatefinder/.MainActivity
+```
+
+Any other editor works the same way: build with `./gradlew` and install with `adb`.
 
 <details>
 <summary><b>Command line and tests</b></summary>
