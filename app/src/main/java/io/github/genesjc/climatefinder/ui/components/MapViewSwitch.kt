@@ -110,8 +110,9 @@ fun MapViewToggleSwitch(
     modifier: Modifier = Modifier,
     // The track while off (the Map view); a light slate when the switch sits on a white card, where white would vanish
     offTrackColor: Color = Color.White.copy(alpha = 0.90f),
-    // The off track's wash (the picker button's blue-to-green), over which the dark on-track fades in; null uses [offTrackColor]
-    offTrackBrush: androidx.compose.ui.graphics.Brush? = BlueGreenWash,
+    // The off track's wash, over which the dark on-track fades in; null uses [offTrackColor]. A solid light orange, so the track
+    // stands out from every region's header (see TOGGLE_OFF_TRACK_WASH)
+    offTrackBrush: androidx.compose.ui.graphics.Brush? = TOGGLE_OFF_TRACK_WASH,
     // Stood on end: Map at the top (off), Profile at the bottom (on)
     vertical: Boolean = false
 ) {
@@ -123,7 +124,7 @@ fun MapViewToggleSwitch(
     // With a wash, the track is the wash with the dark colour fading in over it (from transparent dark, so the fade stays dark-toned)
     val track by animateColorAsState(if (on) SWITCH_INK else if (offTrackBrush != null) SWITCH_INK.copy(alpha = 0f) else offTrackColor, tween(150), label = "viewToggleTrack")
     // The thumb is dark on the Map view and, on the Elevation view, the same wash as the Map view's track (the dark fades out over it)
-    val thumb by animateColorAsState(if (on) SWITCH_INK.copy(alpha = 0f) else SWITCH_INK.copy(alpha = 0.9f), tween(150), label = "viewToggleThumb")
+    val thumb by animateColorAsState(if (on) SWITCH_INK.copy(alpha = 0f) else SWITCH_INK, tween(150), label = "viewToggleThumb")
     Box(
         modifier = modifier
             // The whole switch 20 percent see-through, so the header and the map show through it
@@ -134,7 +135,7 @@ fun MapViewToggleSwitch(
             .clip(CircleShape)
             .then(if (offTrackBrush != null) Modifier.background(offTrackBrush) else Modifier)
             .background(track)
-            .border(1.dp, if (on) SWITCH_INK else SWITCH_LINE, CircleShape)
+            .border(1.dp, if (on) SWITCH_INK else TOGGLE_OFF_EDGE, CircleShape)
     ) {
         Box(
             modifier = (if (vertical) Modifier.offset(y = thumbAt).align(Alignment.TopCenter) else Modifier.offset(x = thumbAt).align(Alignment.CenterStart))
@@ -147,8 +148,8 @@ fun MapViewToggleSwitch(
     }
 }
 
-/** How solid the whole view toggle is: 0.8, so what is behind it shows a little through the track and the thumb. */
-private const val TOGGLE_OPACITY = 0.8f
+/** How solid the whole view toggle is: 0.92, 8 percent see-through, so what is behind it shows only a little through the track and the thumb. */
+private const val TOGGLE_OPACITY = 0.92f
 
 /** The toggle's size: 70dp wide and 34dp tall (it was 27.2dp, made taller to be easier to grab), the thumb inset 3dp all round. */
 private val TOGGLE_WIDTH = 70.dp
@@ -165,3 +166,13 @@ private val TOGGLE_VERTICAL_THUMB_LENGTH = 30.dp
 
 /** The toggle thumb's wash on the Elevation view: the shared blue-to-green wash at 85 percent opacity. */
 private val THUMB_WASH = androidx.compose.ui.graphics.Brush.linearGradient(colors = BlueGreenWashColors.map { it.copy(alpha = 0.85f) })
+
+/**
+ * The off (Map view) track: a solid light orange, so it stands out from the header's greens, lavenders and blues (the first
+ * deeper-green try, 157.1, blended in and looked smudged). Look 1 of the 2026-11-09 second mock-up. A flat brush, so the
+ * switch's own see-through ([TOGGLE_OPACITY]) is the only softening; the thumb on the Elevation view keeps the lighter wash ([THUMB_WASH]).
+ */
+private val TOGGLE_OFF_TRACK_WASH = androidx.compose.ui.graphics.SolidColor(Color(0xFFFAC994))
+
+/** The off track's edge, a darker orange of the same family. */
+private val TOGGLE_OFF_EDGE = Color(0xFFD68C46)
