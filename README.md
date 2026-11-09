@@ -319,7 +319,7 @@ flowchart LR
 - 🔤 **Every user-facing word is a string resource,** in files by category. `WordingRulesTest` fails when a literal sneaks into a screen or ViewModel.
 - 🧪 **Everything is testable without a device.** Data sources sit behind small interfaces; tests register fakes with `restartKoin { single { fake } }`.
 - 📏 **The structure is tested too.** One public type per file and no file over 600 lines (`ArchitectureRulesTest`, `FileSizeRulesTest`).
-- 🅿️ **Parked work stays recoverable.** A feature that is not shipping leaves the main line, is tagged, and gets a restore guide (see [Parked features](#parked-features)).
+- 🅿️ **Parked work stays recoverable.** A feature that is not shipping leaves the main line, is tagged, and gets a restore guide (see [`docs/ads-restore.md`](docs/ads-restore.md) and [`docs/news-restore.md`](docs/news-restore.md)).
 
 <details>
 <summary><b>The full architecture notes: terms and decisions</b> (click to expand)</summary>
@@ -372,7 +372,7 @@ differ, so both install side by side.
 <br>
 
 No build contains an ads library or any code that talks to one. The parked ads work and the parked local-news block are
-kept by tags and restore guides: see [Parked features](#parked-features) and [`docs/ads-restore.md`](docs/ads-restore.md).
+kept by tags and restore guides: [`docs/ads-restore.md`](docs/ads-restore.md) and [`docs/news-restore.md`](docs/news-restore.md).
 
 </details>
 
@@ -419,31 +419,6 @@ docs/                      restore guides and README art
 | [`docs/news-restore.md`](docs/news-restore.md) | What the parked local-news feature was and how to bring it back |
 | [`tools/angle-controls/`](tools/angle-controls/README.md) | Two earlier controls for the viewing angle, a slider and a heading strip, kept outside the build for comparing |
 | [`docs/images/README.md`](docs/images/README.md) | The README artwork: what each image is and how to regenerate it |
-
-## 📊 Status
-
-| | |
-|---|---|
-| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread, and an Elevation view with distance cues and Elevation Bands (stations in three layers, by latitude, by longitude or at any angle between, turned with a dial) |
-| ⏸️ **Parked** | Ads (AdMob banner and a one-hour ad-free reward) and a local-news block, each kept recoverable by a tag and a restore guide |
-| 🔜 **Next** | A first release (store listing, privacy policy, signing), short clips for this page, and continuous integration |
-| 💡 **Later** | A second USA state, localized place names, search on the Station List, and a cross-section chart (distance along a line) for the Elevation view |
-
-<a id="parked-features"></a>
-
-## 📦 Parked features
-
-Two features were built or started and then taken out of the main line so the code base only holds what ships. Each is
-kept by an annotated git tag, and has a restore guide in this repository (Markdown, in `docs/`) that says what is in the
-tag, what is missing, and how to bring it back onto a fresh branch from `develop`. Do not merge a tag: copy files from it.
-
-| Feature | Tag | Restore guide | State |
-|---|---|---|---|
-| **Ads** (AdMob banner, consent, an ad-free hour for a rewarded video) | `ads-parked-2026-10-27` | [docs/ads-restore.md](docs/ads-restore.md) | Not on `develop`. The app is not published with ads for now, so the `commercial` build is ads-free: no ads code, library or manifest entry. The tag holds an SDK-free seam, the Gradle `adsEnabled` switch, tests, the foss-clean script and a copy of the ads kit. Written, never built; the real AdMob controller was not written. |
-| **Local news** (a news block and story dialog on the station card) | `news-parked-2026-10-27` | [docs/news-restore.md](docs/news-restore.md) | Removed at Build 98.1. It was never shown to users (sample stories, behind a switch that was off). The tag is `develop` at Build 96.1, the last commit that had it, and it worked. |
-
-Read a file from a tag without checking it out: `git show <tag>:<path>`. The station-to-town naming that used to live
-beside the news code stays in the app, in `StationNameFormatter`.
 
 ## 📄 License
 
