@@ -39,6 +39,12 @@ interface StateUsaDefinition {
 
     val outline: StateUsaOutline
 
+    /**
+     * Decorative dots for the opening view: (longitude, latitude) points scattered inside the outline, to say "weather stations on a
+     * map". They are not real stations and are not read from any data; a state with none shows just its outline.
+     */
+    val introDots: List<Pair<Double, Double>> get() = emptyList()
+
     /** The ground each region's terrain picture covers (the images are generated to these bounds). */
     val terrainBounds: Map<String, GeoBounds>
 
