@@ -53,8 +53,9 @@ internal fun StationHeroTile(
         panelColor = Color.Transparent,
         openLabel = stringResource(R.string.station_card_show),
         closeLabel = stringResource(R.string.station_card_hide),
-        // Stays open when another station is picked from the map, and the map stays tappable behind it
-        passThrough = true,
+        // A tap anywhere outside the open card folds it (the tap itself does not reach the map behind: the first tap closes the card, the next
+        // one picks); with STATION_CARD_FOLDS_ON_OUTSIDE_TAP off, the card stays open and the map stays tappable behind it, as before
+        passThrough = !STATION_CARD_FOLDS_ON_OUTSIDE_TAP,
         // Half the rounding of the other cards
         tileCornerRadius = 8.dp,
         // The open card grows to the left, to within 12dp of the screen's edge, and not to the right: the map's stations stay in view beside it
@@ -94,3 +95,6 @@ internal fun StationHeroTile(
 
 /** How solid the Home station tile and its open card are: 0.95, five percent see-through (0.9 let the map's dots show too clearly through the card). */
 private const val STATION_TILE_OPACITY = 0.95f
+
+/** True: tapping outside the open station card folds it. False: the card stays open until its own arrow or a tap on it, and the map behind it stays tappable. */
+private const val STATION_CARD_FOLDS_ON_OUTSIDE_TAP = true
