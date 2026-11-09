@@ -8,7 +8,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -41,8 +43,9 @@ private const val INTRO_HOLD_MS = 4500L
 
 /**
  * The opening view: it picks up where the system splash screen leaves off (the round icon, centred, on the
- * same dark blue-slate), adds a soft glow behind the icon, and fades the app's name and tagline in under it,
- * then fades away into the app. A tap skips it.
+ * same dark blue-slate), adds a soft glow behind the icon and the state's outline with its scattered dots (see
+ * [StateUsaIntroBackdrop]), and fades the app's name and tagline in below the outline, then fades away into the app.
+ * A tap skips it.
  */
 @Composable
 fun IntroOverlay(onDone: () -> Unit) {
@@ -60,7 +63,7 @@ fun IntroOverlay(onDone: () -> Unit) {
         onDone()
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer { alpha = exit.value }
@@ -69,6 +72,11 @@ fun IntroOverlay(onDone: () -> Unit) {
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onDone() },
         contentAlignment = Alignment.Center
     ) {
+        val stateUsa = LocalStateUsa.current
+        // The state's outline sits behind the icon, a little above the middle; the name and tagline go below the whole outline
+        val stateHeight = stateUsa.introStateHeight(maxWidth, maxHeight)
+        val stateCenterY = maxHeight * INTRO_STATE_CENTER
+        val textTop = stateCenterY + stateHeight / 2 + INTRO_TEXT_GAP
         // A soft glow behind the icon, in the icon's own blue
         Box(
             modifier = Modifier
@@ -81,38 +89,55 @@ fun IntroOverlay(onDone: () -> Unit) {
                     )
                 )
         )
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // The icon, the same size and place as the system splash's: a 156dp circle showing the middle of the artwork
-            Box(modifier = Modifier.size(156.dp).clip(CircleShape), contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(R.drawable.ic_launcher_vector),
-                    contentDescription = null,
-                    modifier = Modifier.requiredSize(234.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(28.dp))
-            Column(
-                modifier = Modifier.graphicsLayer {
+        // The state's outline with its scattered dots, fading in with the glow
+        StateUsaIntroBackdrop(
+            stateUsa = stateUsa,
+            stateHeight = stateHeight,
+            centerY = stateCenterY,
+            iconRadius = INTRO_ICON_SIZE / 2,
+            modifier = Modifier.fillMaxSize().graphicsLayer { alpha = glow.value }
+        )
+        // The icon, the same size and place as the system splash's: a 156dp circle showing the middle of the artwork
+        Box(modifier = Modifier.size(INTRO_ICON_SIZE).clip(CircleShape), contentAlignment = Alignment.Center) {
+            Image(
+                painter = painterResource(R.drawable.ic_launcher_vector),
+                contentDescription = null,
+                modifier = Modifier.requiredSize(234.dp)
+            )
+        }
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = textTop)
+                .graphicsLayer {
                     alpha = text.value
                     translationY = (1f - text.value) * 24f
                 },
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = stringResource(LocalStateUsa.current.taglineRes),
-                    color = Color(0xFFBAE6FD),
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.app_name),
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(stateUsa.taglineRes),
+                color = Color(0xFFBAE6FD),
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
+
+/** The icon's size on the opening view, the same as the system splash's. */
+private val INTRO_ICON_SIZE = 156.dp
+
+/** Where the middle of the state's outline sits, as a share of the view's height (the icon is at the middle, 0.5). */
+private const val INTRO_STATE_CENTER = 0.47f
+
+/** The room between the bottom of the state's outline and the app name. */
+private val INTRO_TEXT_GAP = 22.dp
