@@ -209,6 +209,24 @@ object StateUsaCA : StateUsaDefinition {
         )
     )
 
+    // Decorative dots for the opening view: spread evenly inside the outline (at least 0.3 degrees from its edge, 0.5 apart). Not stations.
+    override val introDots: List<Pair<Double, Double>> = listOf(
+        -123.80 to 41.54, -121.63 to 41.46, -122.49 to 41.43, -120.47 to 41.40,
+        -123.01 to 40.90, -122.10 to 40.81, -121.32 to 40.73, -120.57 to 40.51,
+        -123.98 to 40.46, -122.59 to 40.39, -121.64 to 40.14, -123.00 to 39.92,
+        -120.85 to 39.91, -123.69 to 39.89, -120.95 to 39.27, -122.26 to 39.22,
+        -123.16 to 39.20, -121.63 to 38.84, -120.42 to 38.63, -122.85 to 38.42,
+        -121.54 to 38.20, -122.15 to 37.89, -119.99 to 37.83, -121.05 to 37.68,
+        -118.72 to 37.57, -119.96 to 37.22, -119.26 to 37.18, -121.56 to 37.16,
+        -117.81 to 36.84, -120.31 to 36.62, -119.32 to 36.58, -121.16 to 36.49,
+        -118.23 to 36.33, -117.04 to 36.18, -119.92 to 36.05, -120.65 to 35.88,
+        -118.25 to 35.77, -119.28 to 35.77, -116.28 to 35.64, -117.21 to 35.63,
+        -118.79 to 35.27, -115.65 to 35.26, -117.18 to 35.07, -120.23 to 35.04,
+        -118.17 to 34.98, -119.26 to 34.79, -116.26 to 34.71, -115.46 to 34.65,
+        -117.42 to 34.28, -118.40 to 34.23, -115.28 to 33.96, -116.17 to 33.95,
+        -117.26 to 33.59, -115.13 to 33.34, -116.72 to 33.13, -115.86 to 33.12
+    )
+
     // What each terrain picture covers. The images are generated to these bounds; a unit test checks the stations fit.
     override val terrainBounds: Map<String, GeoBounds> = mapOf(
         "northern_california" to GeoBounds(-125.4572, -118.9025, 37.3110, 43.8160),
