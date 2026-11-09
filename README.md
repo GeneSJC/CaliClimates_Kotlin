@@ -243,7 +243,7 @@ Any other editor works the same way: build with `./gradlew` and install with `ad
 ./gradlew testCoreFossDebugUnitTest testCoreCommercialDebugUnitTest
 ```
 
-About 200 unit tests in 28 classes cover the ViewModels, the repositories, the live-readings holder, the NWS client (against a
+About 350 unit tests in 44 classes cover the ViewModels, the repositories, the live-readings holder, the NWS client (against a
 local test server) and the station-file format. Two of them are rules written as tests: no user-facing word may be written
 in code (every word is a string resource), and every USA state definition must satisfy the same checks.
 
