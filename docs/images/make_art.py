@@ -1,4 +1,4 @@
-"""Generates the README's artwork (banner, divider, footer icon, placeholder screens) with Pillow, from the app's own files.
+"""Generates the README's artwork (banner, chips, divider, footer icon) with Pillow, from the app's own files.
 
 Run from this folder:  python3 make_art.py
 It reads the app's launcher icon, the statewide terrain picture and California's region shapes (from StateUsaCA.kt)
@@ -187,28 +187,9 @@ def footer_icon(path):
     icon.putalpha(Image.composite(icon.split()[-1], Image.new("L", icon.size, 0), mask))
     icon.save(path, optimize=True)
 
-def placeholder(path, size, title, subtitle, phone=True):
-    """A labelled 'Screenshot coming' card: phone-shaped for screens, wide for the demo slot. Never passed off as a real screen."""
-    w, h = size
-    img = gradient(w, h, (14, 30, 54), (30, 64, 104)).convert("RGBA")
-    d = ImageDraw.Draw(img)
-    d.rounded_rectangle((3, 3, w - 4, h - 4), radius=44 if phone else 24, outline=(125, 211, 252, 150), width=4)
-    if phone:
-        d.rounded_rectangle((w // 2 - 60, 26, w // 2 + 60, 40), radius=7, fill=(125, 211, 252, 120))  # the speaker slot
-    cy = h // 2
-    tf, sf, lf = font(FONT_BOLD, 40), font(FONT_TEXT, 26), font(FONT_BOLD, 24)
-    for text, f, y, fill in ((title, tf, cy - 70, (255, 255, 255)), (subtitle, sf, cy - 10, (203, 225, 245)), ("Screenshot coming", lf, cy + 50, (251, 191, 36))):
-        bbox = d.textbbox((0, 0), text, font=f)
-        d.text(((w - (bbox[2] - bbox[0])) / 2 - bbox[0], y), text, font=f, fill=fill)
-    img.convert("RGB").save(path, optimize=True)
-
 if __name__ == "__main__":
     banner(os.path.join(HERE, "banner.png"))
     chip_images()
     divider(os.path.join(HERE, "divider.png"))
     footer_icon(os.path.join(HERE, "icon.png"))
-    placeholder(os.path.join(HERE, "placeholder-home.png"), (540, 1100), "Home", "region, station tile, map")
-    placeholder(os.path.join(HERE, "placeholder-elevation.png"), (540, 1100), "Elevation", "ridges, skyline, the chart")
-    placeholder(os.path.join(HERE, "placeholder-regions.png"), (540, 1100), "Regions", "tap a region on the map")
-    placeholder(os.path.join(HERE, "placeholder-demo.png"), (1280, 360), "A short demo", "changing region, panning the map", phone=False)
-    print("wrote the banner, divider, footer icon and placeholders")
+    print("wrote the banner, chips, divider and footer icon")

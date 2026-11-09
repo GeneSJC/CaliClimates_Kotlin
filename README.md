@@ -25,19 +25,20 @@ Live National Weather Service readings from 338 stations in six regions, on shad
 
 <table>
   <tr>
-    <td align="center"><img src="docs/images/placeholder-home.png" alt="Home screen" width="230"><br><sub><b>Home</b><br>region, station tile, map</sub></td>
-    <td align="center"><img src="docs/images/placeholder-elevation.png" alt="Profile view" width="230"><br><sub><b>Profile</b><br>ridges and the profile</sub></td>
-    <td align="center"><img src="docs/images/placeholder-regions.png" alt="Region picker" width="230"><br><sub><b>Regions</b><br>tap a region on the map</sub></td>
+    <td align="center"><img src="docs/images/screen-map.png" alt="The Map view: stations as dots over shaded relief, the selected station ringed" width="230"><br><sub><b>Map</b><br>stations over shaded relief,<br>the chosen one ringed</sub></td>
+    <td align="center"><img src="docs/images/screen-station-card.png" alt="The open station card: temperature, readings, height and microclimate" width="230"><br><sub><b>Station card</b><br>live reading, height,<br>microclimate; Back and Forward</sub></td>
+    <td align="center"><img src="docs/images/screen-elevation-bands.png" alt="The Elevation view with its bands, looking northwest" width="230"><br><sub><b>Elevation</b><br>bands by latitude,<br>looking northwest</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/screen-elevation-north.png" alt="The Elevation view looking north-northwest, the land rising to the Sierra" width="230"><br><sub><b>Turn the dial</b><br>looking north, the land<br>rises toward the Sierra</sub></td>
+    <td align="center"><img src="docs/images/screen-elevation-coast.png" alt="The Elevation view looking west-northwest, the coast and the sea" width="230"><br><sub><b>And west</b><br>the same stations,<br>the coast and the sea</sub></td>
+    <td></td>
   </tr>
 </table>
 
-<br>
-
-<img src="docs/images/placeholder-demo.png" alt="Demo of the app" width="640">
-
 </div>
 
-<sub>Screenshots and a demo GIF are on the way. The images above are placeholders (see [`docs/images`](docs/images/README.md)).</sub>
+<sub>Screenshots from a phone, Davis and the SF Bay Area region. Short clips are planned (see [`docs/images`](docs/images/README.md)).</sub>
 
 <br>
 
@@ -77,7 +78,7 @@ each, and how the numbers change as the ground climbs.
   </tr>
   <tr>
     <td valign="top">
-      <h4>📈 Profile view</h4>
+      <h4>📈 Elevation view</h4>
       The same stations as a profile from valley floor to ridge, with layered distant ranges drawn from the real skyline, so you can see why the temperature changes. Switch on <b>Elevation Bands</b> and the stations separate into three layers, north at the back, with distance from the selected station on every label. A quarter dial turns the view from north toward west, and the scenery pans as you turn: the sea and a few sailboats slide in at the horizon beside a wandering shore.
     </td>
     <td valign="top">
@@ -128,7 +129,7 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
   </thead>
   <tr>
     <td width="30%" valign="top"><img src="docs/images/chip-terrain-relief.png" alt="Terrain Relief" width="200"></td>
-    <td valign="top">Each region has a shaded-relief picture built from public elevation data (USGS 3DEP and NASA SRTM, through AWS Terrain Tiles). It is the ground under the Map view and the relief behind the Profile ridges. The pictures are made with scripts outside the app, so the app only loads them, off the main thread.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainRepository.kt"><code>TerrainRepository.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainAssetPaths.kt"><code>TerrainAssetPaths.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/theme/AppBackground.kt"><code>AppBackground.kt</code></a></sub></td>
+    <td valign="top">Each region has a shaded-relief picture built from public elevation data (USGS 3DEP and NASA SRTM, through AWS Terrain Tiles). It is the ground under the Map view and the relief behind the Elevation ridges. The pictures are made with scripts outside the app, so the app only loads them, off the main thread.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainRepository.kt"><code>TerrainRepository.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/data/local/TerrainAssetPaths.kt"><code>TerrainAssetPaths.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/theme/AppBackground.kt"><code>AppBackground.kt</code></a></sub></td>
   </tr>
 </table>
 
@@ -144,7 +145,7 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
   </thead>
   <tr>
     <td width="30%" valign="top"><img src="docs/images/chip-distance-aware-labels.png" alt="Distance-Aware Labels" width="200"></td>
-    <td valign="top">In the Profile view the labels around the selected station say how far each one is ("Name · 57 mi"). Near stations get larger, more solid labels and dots; far ones shrink and fade, but never below a readable size. The distances are great-circle miles, and the size, fade and dot factors are plain functions.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/StationDistance.kt"><code>StationDistance.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/DepthCue.kt"><code>DepthCue.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationLabels.kt"><code>ElevationLabels.kt</code></a></sub></td>
+    <td valign="top">In the Elevation view the labels around the selected station say how far each one is ("Name · 57 mi"). Near stations get larger, more solid labels and dots; far ones shrink and fade, but never below a readable size. The distances are great-circle miles, and the size, fade and dot factors are plain functions.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/StationDistance.kt"><code>StationDistance.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/domain/DepthCue.kt"><code>DepthCue.kt</code></a>, <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/screens/ElevationLabels.kt"><code>ElevationLabels.kt</code></a></sub></td>
   </tr>
 </table>
 
@@ -192,7 +193,7 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
   </thead>
   <tr>
     <td width="30%" valign="top"><img src="docs/images/chip-one-state-two-views.png" alt="One State, Two Views" width="200"></td>
-    <td valign="top">Map and Profile are two views of one set of choices. The selected station, the zoom, the dot size, the text size and whether the zoom slider shows are held once, in the Home view model, and handed to both views, so switching views never loses your place.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/home/HomeViewModel.kt"><code>HomeViewModel.kt</code></a></sub></td>
+    <td valign="top">Map and Elevation are two views of one set of choices. The selected station, the zoom, the dot size, the text size and whether the zoom slider shows are held once, in the Home view model, and handed to both views, so switching views never loses your place.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/home/HomeViewModel.kt"><code>HomeViewModel.kt</code></a></sub></td>
   </tr>
 </table>
 
@@ -314,7 +315,7 @@ app/src/main/java/io/github/genesjc/climatefinder/
     ├── components/   cards, the region picker, the Region Info sheet, map controls
     ├── home/ map/ regionpicker/ root/ stationlist/   the ViewModels
     ├── navigation/   which screen is showing (a ViewModel) and the navigation host
-    ├── screens/      Home, the maps, the Profile view, the Station List, the region screen
+    ├── screens/      Home, the maps, the Elevation view, the Station List, the region screen
     ├── text/         the helpers that turn facts into words, and the resource ids for domain values
     └── theme/        colors, the backdrop, and the USA state handed to the screens
 
@@ -348,10 +349,10 @@ app/src/core/  demo/  foss/  commercial/   per-flavor code      docs/   restore 
 
 | | |
 |---|---|
-| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread, and a Profile view with distance cues and Elevation Bands (stations in three layers, by latitude, by longitude or at any angle between, turned with a dial) |
+| ✅ **Done** | Layered MVVM with Koin, string resources for every word, a USA state definition, live readings in one app-wide holder, Retrofit for the weather call, one settings store, a region change that never blocks the main thread, and an Elevation view with distance cues and Elevation Bands (stations in three layers, by latitude, by longitude or at any angle between, turned with a dial) |
 | ⏸️ **Parked** | Ads (AdMob banner and a one-hour ad-free reward) and a local-news block, each kept recoverable by a tag and a restore guide |
-| 🔜 **Next** | A first release (store listing, privacy policy, signing), real screenshots for this page, and continuous integration |
-| 💡 **Later** | A second USA state, localized place names, search on the Station List, and a cross-section chart (distance along a line) for the Profile view |
+| 🔜 **Next** | A first release (store listing, privacy policy, signing), short clips for this page, and continuous integration |
+| 💡 **Later** | A second USA state, localized place names, search on the Station List, and a cross-section chart (distance along a line) for the Elevation view |
 
 <a id="parked-features"></a>
 
