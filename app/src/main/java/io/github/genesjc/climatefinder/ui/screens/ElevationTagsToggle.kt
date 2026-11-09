@@ -20,10 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,18 +44,6 @@ private val TOAST_GREEN = Color(0xFF14532D)
 
 /** Above the zoom slider, the compass, the dial and the key, which are all drawn at the default level (0). */
 private const val TOAST_Z_INDEX = 10f
-
-/** The words of the toast in the middle of the chart, and when it goes away. */
-@Stable
-internal class TagsToastState {
-    var message by mutableStateOf<String?>(null)
-    var tick by mutableIntStateOf(0)
-
-    fun show(text: String) {
-        message = text
-        tick++
-    }
-}
 
 @Composable
 internal fun rememberTagsToast(): TagsToastState = remember { TagsToastState() }

@@ -25,6 +25,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -317,6 +320,44 @@ internal fun MicroclimateCallout(terrainName: String, color: Color, note: String
                 lineHeight = ms(14f),
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 2.dp)
+            )
+        }
+    }
+}
+
+/**
+ * A station's name for a card: the main part on its line, and the note in parentheses ("(Los Angeles)") on a line of its own
+ * under it, smaller and quieter. When the name takes more than one line, [extraTopWhenTall] more space goes above it so it
+ * does not crowd the top of the card.
+ */
+@Composable
+internal fun StationNameBlock(
+    displayName: String,
+    modifier: Modifier = Modifier,
+    titleSize: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
+    noteSize: androidx.compose.ui.unit.TextUnit = ms(12f),
+    extraTopWhenTall: androidx.compose.ui.unit.Dp = 0.dp
+) {
+    val (main, note) = remember(displayName) { io.github.genesjc.climatefinder.domain.splitStationNote(displayName) }
+    var mainLines by remember { androidx.compose.runtime.mutableIntStateOf(1) }
+    val tall = note != null || mainLines > 1
+    Column(modifier = modifier.padding(top = if (tall) extraTopWhenTall else 0.dp)) {
+        Text(
+            text = main,
+            style = MaterialTheme.typography.titleMedium,
+            fontSize = titleSize,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            onTextLayout = { mainLines = it.lineCount }
+        )
+        if (note != null) {
+            Text(
+                text = note,
+                fontSize = noteSize,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

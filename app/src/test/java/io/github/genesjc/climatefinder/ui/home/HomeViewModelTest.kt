@@ -24,6 +24,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.climatefinder.testStation
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -51,12 +52,12 @@ class HomeViewModelTest {
 
     private val repository = StationRepository(FakeStationSource(), Dispatchers.Unconfined)
 
-    private fun viewModel(datasets: RegionDatasetCatalog = FakeDatasets()): HomeViewModel {
+    private fun viewModel(datasets: RegionDatasetCatalog = FakeDatasets(), stations: StationRepository = repository): HomeViewModel {
         restartKoin {
             single<RegionSettings> { settings }
             single<RegionDatasetCatalog> { datasets }
             single<StateUsaDefinition> { StateUsaCA }
-            single { repository }
+            single { stations }
             single { testLiveReadingsRepository(CoroutineScope(Dispatchers.Unconfined), observations) }
         }
         return HomeViewModel()
@@ -208,7 +209,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun pickingTheSameStationAgainAndChangingRegionLeaveNoHistory() {
+    fun pickingTheSameStationAgainLeavesNoHistoryAndANewRegionStartsWithNone() {
         val vm = viewModel()
         vm.selectStation("A")
         vm.selectStation("A")
@@ -216,6 +217,71 @@ class HomeViewModelTest {
         vm.selectStation("B")
         vm.selectRegion("b")
         assertEquals(emptyList<String>(), vm.uiState.value.stationHistory)
+    }
+
+    @Test
+    fun theStationHomeOpenedOnIsInTheHistoryEvenWhenNoneWasSaved() = runBlocking {
+        val region = StationRepository(FakeStationSource(listOf(testStation(id = "a"), testStation(id = "X"), testStation(id = "Y"))), Dispatchers.Unconfined)
+        val vm = viewModel(stations = region)
+        region.load(FakeDatasets().cachedDatasetFor("a"))
+        // Nothing saved: the screens show the region's first station ("a"), so Back must be able to return to it
+        assertNull(vm.uiState.value.selectedStationId)
+        vm.selectStation("X")
+        vm.selectStation("Y")
+        assertEquals(listOf("a", "X"), vm.uiState.value.stationHistory)
+        vm.goBackStation()
+        vm.goBackStation()
+        assertEquals("a", vm.uiState.value.selectedStationId)
+        vm.goForwardStation()
+        assertEquals("X", vm.uiState.value.selectedStationId)
+    }
+
+    @Test
+    fun aSavedStationTheRegionNoLongerHasIsNotPutInTheHistory() = runBlocking {
+        settings.saveSelectedStationId("a", "GONE")
+        val vm = viewModel()
+        repository.load(FakeDatasets().cachedDatasetFor("a"))
+        vm.selectStation("X")
+        // The screens were showing the first station, not the missing one
+        assertEquals(listOf("a"), vm.uiState.value.stationHistory)
+    }
+
+    @Test
+    fun theHistoryIsKeptAcrossMapViewsAndForTheWholeRun() {
+        val vm = viewModel()
+        vm.selectStation("S0")
+        vm.setTab(1)
+        (1..30).forEach { vm.selectStation("S$it") }
+        vm.setTab(0)
+        assertEquals((0..29).map { "S$it" }, vm.uiState.value.stationHistory)
+        assertEquals("S30", vm.uiState.value.selectedStationId)
+        repeat(30) { vm.goBackStation() }
+        assertEquals("S0", vm.uiState.value.selectedStationId)
+    }
+
+    @Test
+    fun eachRegionKeepsItsOwnTrailAndGetsItBackOnReturn() {
+        val vm = viewModel()
+        vm.selectStation("A1")
+        vm.selectStation("A2")
+        vm.goBackStation()
+        vm.selectRegion("b")
+        // A region visited for the first time starts clean
+        assertNull(vm.uiState.value.selectedStationId)
+        assertEquals(emptyList<String>(), vm.uiState.value.stationHistory)
+        vm.selectStation("B1")
+        vm.selectStation("B2")
+        vm.selectRegion("a")
+        // Back where it was left, with its history and the forward it had
+        assertEquals("A1", vm.uiState.value.selectedStationId)
+        assertEquals("A1", settings.station)
+        assertEquals(emptyList<String>(), vm.uiState.value.stationHistory)
+        assertEquals(listOf("A2"), vm.uiState.value.stationForward)
+        vm.selectRegion("b")
+        assertEquals("B2", vm.uiState.value.selectedStationId)
+        assertEquals(listOf("B1"), vm.uiState.value.stationHistory)
+        vm.goBackStation()
+        assertEquals("B1", vm.uiState.value.selectedStationId)
     }
 
     @Test

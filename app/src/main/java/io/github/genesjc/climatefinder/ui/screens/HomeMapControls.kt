@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
 import io.github.genesjc.climatefinder.domain.model.MicroclimateStation
+import io.github.genesjc.climatefinder.domain.splitStationNote
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.Canvas
@@ -347,12 +348,19 @@ private fun StationsDropdown(stations: List<MicroclimateStation>, landmarkIds: L
                     val current = station.id == selectedStationId
                     DropdownMenuItem(
                         text = {
-                            Text(
-                                text = station.displayName,
-                                fontSize = ms(9f),
-                                fontWeight = if (current) FontWeight.Bold else FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            // The note in parentheses sits on its own line under the name
+                            val (main, note) = splitStationNote(station.displayName)
+                            Column {
+                                Text(
+                                    text = main,
+                                    fontSize = ms(9f),
+                                    fontWeight = if (current) FontWeight.Bold else FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                if (note != null) {
+                                    Text(text = note, fontSize = ms(8f), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
                         },
                         onClick = {
                             open = false

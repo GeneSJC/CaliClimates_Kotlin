@@ -167,11 +167,7 @@ fun StationCard(
                 verticalAlignment = Alignment.Bottom
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = station.displayName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    StationNameBlock(displayName = station.displayName)
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = station.microclimateNote ?: terrainDescriptionText(station.terrain, station.elevationMeters),
@@ -255,13 +251,11 @@ private fun CompactStationBody(
     Column(modifier = Modifier.padding(start = 14.dp, end = 8.dp, top = 2.dp, bottom = 12.dp)) {
         // Row 1: the station's name, whole, and the card's fold arrow at the right (no word, so the name has the room)
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = station.displayName,
-                style = MaterialTheme.typography.titleMedium,
-                fontSize = ms(17f),
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+            // The note in parentheses goes on its own line under the name, with more room above when the name takes two lines
+            StationNameBlock(
+                displayName = station.displayName,
+                titleSize = ms(17f),
+                extraTopWhenTall = 8.dp,
                 modifier = Modifier.weight(1f).padding(end = 6.dp)
             )
             if (onLess != null) {
