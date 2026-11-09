@@ -48,7 +48,7 @@
 <a id="badge-android"><img src="https://img.shields.io/badge/Android-7.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android 7.0 and newer"></a>
 <a id="badge-license"><img src="https://img.shields.io/badge/License-Apache_2.0-0B1736?style=flat-square" alt="License: Apache 2.0"></a>
 
-[**Screens**](#screens) &nbsp;·&nbsp; [**What it does**](#what-it-does) &nbsp;·&nbsp; [**Design choices**](#design-choices) &nbsp;·&nbsp; [**Run it**](#run-it) &nbsp;·&nbsp; [**Tech stack**](#tech-stack) &nbsp;·&nbsp; [**Architecture**](#architecture) &nbsp;·&nbsp; [**Docs**](#docs)
+[**Screens**](#screens) &nbsp;·&nbsp; [**What it does**](#what-it-does) &nbsp;·&nbsp; [**Run it**](#run-it) &nbsp;·&nbsp; [**Tech stack**](#tech-stack) &nbsp;·&nbsp; [**Design choices**](#design-choices) &nbsp;·&nbsp; [**Architecture**](#architecture) &nbsp;·&nbsp; [**Docs**](#docs)
 
 <img src="docs/images/divider.png" alt="" width="100%">
 
@@ -92,6 +92,72 @@ each, and how the numbers change as the ground climbs.
     </td>
   </tr>
 </table>
+
+<a id="run-it"></a>
+
+## 🚀 Run it
+
+Cali Climates is a standard Gradle project, so you can work on it in the editor you like best. It runs on Android 7.0 (API 24) and
+newer, and the readings need an internet connection.
+
+```bash
+git clone https://github.com/GeneSJC/CaliClimates_Kotlin.git
+cd CaliClimates_Kotlin
+```
+
+### Android Studio
+
+One install brings the Android SDK, an emulator manager, Compose previews, and the layout and profiling tools. Use the current stable release.
+
+1. Open the folder in Android Studio and let Gradle sync.
+2. In the **Build Variants** panel keep the default, `coreFossDebug` (the app on its own, the open-source build).
+3. Run it on a device or an emulator.
+
+### Visual Studio Code
+
+A light, fast editor with a built-in terminal; the Kotlin and Gradle extensions add syntax coloring, code navigation and Gradle tasks.
+
+1. Install a JDK (17 or newer) and the Android SDK (the command-line tools are enough), then point Gradle at the SDK: set `ANDROID_HOME`, or put `sdk.dir=/path/to/Android/sdk` in a `local.properties` file in the project folder.
+2. Open the folder in VS Code and add the **Kotlin** and **Gradle for Java** extensions.
+3. Connect a phone or start an emulator (`adb devices` lists what is connected), then in the terminal:
+
+```bash
+./gradlew installCoreFossDebug
+adb shell am start -n io.github.genesjc.climatefinder/.MainActivity
+```
+
+Any other editor works the same way: build with `./gradlew` and install with `adb`.
+
+<details>
+<summary><b>Command line and tests</b></summary>
+
+```bash
+# a debug APK of the default variant
+./gradlew assembleCoreFossDebug
+
+# unit tests (name both distributions: the bare task name is ambiguous with two flavor dimensions)
+./gradlew testCoreFossDebugUnitTest testCoreCommercialDebugUnitTest
+```
+
+About 350 unit tests in 44 classes cover the ViewModels, the repositories, the live-readings holder, the NWS client (against a
+local test server) and the station-file format. Two of them are rules written as tests: no user-facing word may be written
+in code (every word is a string resource), and every USA state definition must satisfy the same checks.
+
+</details>
+
+<a id="tech-stack"></a>
+
+## 🧰 Tech stack
+
+| | |
+|---|---|
+| **Language** | Kotlin 2.2 |
+| **UI** | Jetpack Compose (BOM 2026.02), Material 3, custom Canvas drawing for the maps and the elevation chart |
+| **Architecture** | MVVM with repositories and a state holder for live readings; Koin 4.2 for dependency injection |
+| **Networking** | Retrofit 3.0 over OkHttp 4.12, kotlinx.serialization |
+| **Async** | Kotlin Coroutines and Flow (StateFlow for state, a Channel for one-off events) |
+| **Build** | Android Gradle Plugin 9.4, two flavor dimensions, minSdk 24, targetSdk 37 |
+| **Tests** | JUnit 4, coroutines-test, MockK and MockWebServer where an Android class or the network is involved; fakes elsewhere |
 
 <a id="design-choices"></a>
 
@@ -195,73 +261,6 @@ constructs (Jetpack Compose, MVVM, Retrofit). Each row says what the choice is a
     <td valign="top">Map and Elevation are two views of one set of choices. The selected station, the zoom, the dot size, the text size and whether the zoom slider shows are held once, in the Home view model, and handed to both views, so switching views never loses your place.<br><sub>Code: <a href="app/src/main/java/io/github/genesjc/climatefinder/ui/home/HomeViewModel.kt"><code>HomeViewModel.kt</code></a></sub></td>
   </tr>
 </table>
-
-
-<a id="run-it"></a>
-
-## 🚀 Run it
-
-Cali Climates is a standard Gradle project, so you can work on it in the editor you like best. It runs on Android 7.0 (API 24) and
-newer, and the readings need an internet connection.
-
-```bash
-git clone https://github.com/GeneSJC/CaliClimates_Kotlin.git
-cd CaliClimates_Kotlin
-```
-
-### Android Studio
-
-One install brings the Android SDK, an emulator manager, Compose previews, and the layout and profiling tools. Use the current stable release.
-
-1. Open the folder in Android Studio and let Gradle sync.
-2. In the **Build Variants** panel keep the default, `coreFossDebug` (the app on its own, the open-source build).
-3. Run it on a device or an emulator.
-
-### Visual Studio Code
-
-A light, fast editor with a built-in terminal; the Kotlin and Gradle extensions add syntax coloring, code navigation and Gradle tasks.
-
-1. Install a JDK (17 or newer) and the Android SDK (the command-line tools are enough), then point Gradle at the SDK: set `ANDROID_HOME`, or put `sdk.dir=/path/to/Android/sdk` in a `local.properties` file in the project folder.
-2. Open the folder in VS Code and add the **Kotlin** and **Gradle for Java** extensions.
-3. Connect a phone or start an emulator (`adb devices` lists what is connected), then in the terminal:
-
-```bash
-./gradlew installCoreFossDebug
-adb shell am start -n io.github.genesjc.climatefinder/.MainActivity
-```
-
-Any other editor works the same way: build with `./gradlew` and install with `adb`.
-
-<details>
-<summary><b>Command line and tests</b></summary>
-
-```bash
-# a debug APK of the default variant
-./gradlew assembleCoreFossDebug
-
-# unit tests (name both distributions: the bare task name is ambiguous with two flavor dimensions)
-./gradlew testCoreFossDebugUnitTest testCoreCommercialDebugUnitTest
-```
-
-About 350 unit tests in 44 classes cover the ViewModels, the repositories, the live-readings holder, the NWS client (against a
-local test server) and the station-file format. Two of them are rules written as tests: no user-facing word may be written
-in code (every word is a string resource), and every USA state definition must satisfy the same checks.
-
-</details>
-
-<a id="tech-stack"></a>
-
-## 🧰 Tech stack
-
-| | |
-|---|---|
-| **Language** | Kotlin 2.2 |
-| **UI** | Jetpack Compose (BOM 2026.02), Material 3, custom Canvas drawing for the maps and the elevation chart |
-| **Architecture** | MVVM with repositories and a state holder for live readings; Koin 4.2 for dependency injection |
-| **Networking** | Retrofit 3.0 over OkHttp 4.12, kotlinx.serialization |
-| **Async** | Kotlin Coroutines and Flow (StateFlow for state, a Channel for one-off events) |
-| **Build** | Android Gradle Plugin 9.4, two flavor dimensions, minSdk 24, targetSdk 37 |
-| **Tests** | JUnit 4, coroutines-test, MockK and MockWebServer where an Android class or the network is involved; fakes elsewhere |
 
 <a id="architecture"></a>
 
