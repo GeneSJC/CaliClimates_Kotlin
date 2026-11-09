@@ -67,7 +67,8 @@ class AppBaseViewModelTest {
     @Test
     fun onlyTheModuleReadsTheBuildConstants() {
         val offenders = File("src/main/java").walk()
-            .filter { it.extension == "kt" && it.name != "AppModule.kt" && it.name != "BuildInfo.kt" }
+            // The application class turns on the debug-only main-thread checks (BuildConfig.DEBUG) before the module exists
+            .filter { it.extension == "kt" && it.name != "AppModule.kt" && it.name != "BuildInfo.kt" && it.name != "CaliClimatesApplication.kt" }
             .flatMap { file ->
                 file.readLines()
                     .filter { Regex("""\b(BuildInfo|BuildConfig)\.""").containsMatchIn(it) }
