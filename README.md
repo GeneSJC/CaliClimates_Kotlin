@@ -387,7 +387,8 @@ flowchart LR
 | `distribution` | `foss` (default), `commercial` | Who publishes the build. `foss` is `io.github.genesjc.climatefinder` (version suffix `-foss`); `commercial` is `io.github.genesjc.climatefinder.commercial` (suffix `-commercial`). |
 
 `coreFossDebug` is the default variant, so a fresh checkout builds and runs the app on its own. The two distribution ids
-differ, so both install side by side.
+differ, so both install side by side, and the launcher icon tells them apart: `foss` has a violet mountain, `commercial` a green one.
+`docs/images/make_icon.py` generates both from one description.
 
 <details>
 <summary><b>Where the ads went</b></summary>
