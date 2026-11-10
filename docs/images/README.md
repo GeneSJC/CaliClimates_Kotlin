@@ -10,6 +10,19 @@ The images used by the front-page `README.md`.
 | `icon.png` | The footer icon | Keep (the app's launcher icon) |
 | `screen-map.png`, `screen-station-card.png`, `screen-elevation-bands.png`, `screen-elevation-north.png`, `screen-elevation-coast.png`, `screen-station-list.png` | The six phone screenshots in the "Screens" gallery (three on each row) | Real screenshots of the app (Davis, SF Bay Area), taken on a phone, with the status bar and navigation bar cropped off and scaled to 540 px wide; kept under about 400 KB each. To change one, replace the file (same name) or edit its `src` and caption in the README |
 
+**Two launcher icons.** The icon has two variants that differ only in the mountain's colour. The default, a green mountain, lives in
+`app/src/main` and is what the `commercial` build and the README show; the `foss` build has a violet mountain, a small overlay in
+`app/src/foss/res` (twelve files: the foreground and vector drawables and ten Android 7 images). Android's resource merge puts the
+overlay over the main files in every foss build, including the demo edition. The two violets are `MOUNTAIN_PALETTES["foss"]` in
+`make_icon.py`. Regenerate either variant from this folder (the second command writes only the overlay):
+
+```bash
+python3 make_icon.py                  # the green icon, into app/src/main
+python3 make_icon.py --variant foss   # the violet-mountain overlay, into app/src/foss
+```
+
+`IconVariantFilesTest` keeps the overlay to exactly those twelve files, with none a copy of the main one.
+
 `make_icon.py` draws the launcher icon (a sun, a small cloud and snow-capped mountains over a green hill, in a cartoon style
 with thick navy outlines, on a blue sky) and writes every file that comes from it: the adaptive icon's vector layers in `app/src/main/res/drawable/`, the
 themed (monochrome) layer, the Android 7 fallback images in `mipmap-*` and the 512 px Play Store icon. The vector files are

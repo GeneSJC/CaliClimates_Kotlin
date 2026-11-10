@@ -8,10 +8,19 @@ in a cartoon style: thick dark-navy outlines, flat colours with one soft gradien
   - the fallback launcher images for Android 7 (mipmap-*/ic_launcher.webp and ic_launcher_round.webp);
   - the 512 px Play Store icon, which the README artwork (make_art.py) also reads.
 
-Needs Pillow. Run from this folder: python3 make_icon.py   (then python3 make_art.py to refresh the README artwork).
+There are two variants of the same artwork, differing only in the colour of the mountain: the default (a green mountain,
+written into app/src/main, used by the commercial build and by any build with no overlay of its own) and "foss" (a violet
+mountain, written into app/src/foss, which Android's resource merge puts over the main files in every foss build). The foss
+variant writes only the files whose pixels change: the foreground and vector drawables and the ten Android 7 images. The
+background, the themed icon and the Play Store icon are the same in both, so they are not repeated.
+
+Needs Pillow. Run from this folder:
+    python3 make_icon.py                  the default (green) icon, into app/src/main; then python3 make_art.py for the README artwork
+    python3 make_icon.py --variant foss   the violet-mountain overlay, into app/src/foss
 The vector files are generated: change this script, not them. Launchers show only the middle two-thirds of the canvas
 (a 72 unit circle or rounded square), so everything that matters sits inside it and the sky bleeds out to the edges.
 """
+import argparse
 import math
 import os
 from PIL import Image, ImageDraw, ImageFilter
@@ -24,9 +33,22 @@ GLOW = (58, 42, 44, (0xBF, 0xE8, 0xFF), 0.45)    # centre x, y, radius, colour, 
 SUN = (58, 45, 15)
 SUN_GRAD = ((0xFF, 0xE0, 0x5A), (0xFF, 0xA3, 0x1A)); RAY = (0xFF, 0xC8, 0x3D)
 RAY_FROM, RAY_TO, RAY_OUTLINE, RAY_CORE = 3.4, 9.0, 6.0, 2.8
-MOUNTAINS = [  # one big mountain, back left: outline points, light face, shaded face, apex x
-    ([(-8, 92), (30, 34), (68, 92)], (0x35, 0xB5, 0x7A), (0x1F, 0x86, 0x5C), 30),
+MOUNTAIN_SHAPES = [  # one big mountain, back left: outline points, apex x
+    ([(-8, 92), (30, 34), (68, 92)], 30),
 ]
+# The mountain's two colours (lit face, shaded face) in each variant; everything else in the icon is the same
+MOUNTAIN_PALETTES = {
+    "default": ((0x35, 0xB5, 0x7A), (0x1F, 0x86, 0x5C)),   # green
+    "foss": ((0x9B, 0x6B, 0xE0), (0x6B, 0x45, 0xB0)),      # violet
+}
+
+
+def mountains(variant="default"):
+    light, dark = MOUNTAIN_PALETTES[variant]
+    return [(pts, light, dark, apex) for pts, apex in MOUNTAIN_SHAPES]
+
+
+MOUNTAINS = mountains()                          # the shapes (the themed icon draws only these)
 SNOW_CAPS = [(30, 34, 15, 12)]                   # apex x, apex y, width, height
 SNOW = (0xFF, 0xFF, 0xFF)
 HILL = [(-10, 92), (20, 88), (54, 91), (86, 88), (118, 92)]; HILL_COLOR = (0x1F, 0x8F, 0x62)
@@ -92,7 +114,7 @@ def hill_pts(): return catmull(HILL)
 
 
 # ---------- Pillow backend ----------
-def render(S=1080, layers="both"):
+def render(S=1080, layers="both", variant="default"):
     k = S / 108
     def P(pts): return [(x * k, y * k) for x, y in pts]
     clear = lambda: Image.new("RGBA", (S, S), (0, 0, 0, 0))
@@ -118,7 +140,7 @@ def render(S=1080, layers="both"):
         put(glow)
     if layers in ("both", "fg"):
         d = ImageDraw.Draw(img)
-        for pts, light, dark, apex in MOUNTAINS:
+        for pts, light, dark, apex in mountains(variant):
             d.polygon(P(pts), fill=light + (255,))
             sh = clear(); ImageDraw.Draw(sh).polygon(P(shade(pts, apex)), fill=dark + (255,))
             put(sh); d = ImageDraw.Draw(img)
@@ -202,10 +224,10 @@ def background():
     return x + "</vector>\n"
 
 
-def foreground(standalone=True):
+def foreground(standalone=True, variant="default"):
     x = HEAD if standalone else ""
     x += "    <!-- Foreground layer: the sun, the mountains and a small cloud, outlined in deep navy. -->\n"
-    for pts, light, dark, apex in MOUNTAINS:
+    for pts, light, dark, apex in mountains(variant):
         x += fill(poly_d(pts), light, "Mountain")
         x += fill(poly_d(shade(pts, apex)), dark)
         x += outlined(poly_d(pts), OUT, LINE)
@@ -229,7 +251,7 @@ def foreground(standalone=True):
     return x + ("</vector>\n" if standalone else "")
 
 
-def composite(): return background().rsplit("</vector>", 1)[0] + foreground(standalone=False) + "</vector>\n"
+def composite(variant="default"): return background().rsplit("</vector>", 1)[0] + foreground(standalone=False, variant=variant) + "</vector>\n"
 
 
 def monochrome():
@@ -244,19 +266,22 @@ def monochrome():
 
 # ---------- files ----------
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-RES = os.path.join(REPO, "app", "src", "main", "res")
 LEGACY_SIZES = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
+# Where each variant writes: the default is app/src/main; foss is an overlay in app/src/foss
+SOURCE_SETS = {"default": "main", "foss": "foss"}
 
 
 def write(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
 
 
-def rasters():
-    core = render(1080).crop((180, 180, 900, 900))     # the middle 72 of 108 units, which is what a launcher shows
+def rasters(res, variant):
+    core = render(1080, variant=variant).crop((180, 180, 900, 900))     # the middle 72 of 108 units, which is what a launcher shows
     for density, px in LEGACY_SIZES.items():
-        folder = os.path.join(RES, "mipmap-" + density)
+        folder = os.path.join(res, "mipmap-" + density)
+        os.makedirs(folder, exist_ok=True)
         art = core.resize((px, px), Image.LANCZOS)
         square = art.copy(); m = Image.new("L", (px * 4, px * 4), 0)
         ImageDraw.Draw(m).rounded_rectangle([0, 0, px * 4 - 1, px * 4 - 1], radius=int(px * 4 * 0.22), fill=255)
@@ -264,14 +289,25 @@ def rasters():
         rnd = art.copy(); c = Image.new("L", (px * 4, px * 4), 0)
         ImageDraw.Draw(c).ellipse([0, 0, px * 4 - 1, px * 4 - 1], fill=255)
         rnd.putalpha(c.resize((px, px), Image.LANCZOS)); rnd.save(os.path.join(folder, "ic_launcher_round.webp"), lossless=True)
-    core.resize((512, 512), Image.LANCZOS).save(os.path.join(REPO, "app", "src", "main", "ic_launcher-playstore.png"), optimize=True)
+    return core
 
 
 if __name__ == "__main__":
-    drawable = os.path.join(RES, "drawable")
-    write(os.path.join(drawable, "ic_launcher_background.xml"), background())
-    write(os.path.join(drawable, "ic_launcher_foreground.xml"), foreground())
-    write(os.path.join(drawable, "ic_launcher_vector.xml"), composite())
-    write(os.path.join(drawable, "ic_launcher_monochrome.xml"), monochrome())
-    rasters()
-    print("wrote the icon's vector layers, the fallback launcher images and the Play Store icon")
+    parser = argparse.ArgumentParser(description="Writes the Cali Climates launcher icon files.")
+    parser.add_argument("--variant", choices=sorted(SOURCE_SETS), default="default",
+                        help="default: the green icon into app/src/main (as always); foss: the violet-mountain overlay into app/src/foss")
+    variant = parser.parse_args().variant
+    source_set = os.path.join(REPO, "app", "src", SOURCE_SETS[variant])
+    res = os.path.join(source_set, "res")
+    drawable = os.path.join(res, "drawable")
+    write(os.path.join(drawable, "ic_launcher_foreground.xml"), foreground(variant=variant))
+    write(os.path.join(drawable, "ic_launcher_vector.xml"), composite(variant))
+    core = rasters(res, variant)
+    if variant == "default":
+        # These do not depend on the mountain's colour, so only the default writes them; the foss overlay inherits them from main
+        write(os.path.join(drawable, "ic_launcher_background.xml"), background())
+        write(os.path.join(drawable, "ic_launcher_monochrome.xml"), monochrome())
+        core.resize((512, 512), Image.LANCZOS).save(os.path.join(source_set, "ic_launcher-playstore.png"), optimize=True)
+        print("wrote the icon's vector layers, the fallback launcher images and the Play Store icon (green mountain, app/src/main)")
+    else:
+        print("wrote the violet-mountain overlay: the foreground and vector drawables and the ten fallback images (app/src/foss/res)")
