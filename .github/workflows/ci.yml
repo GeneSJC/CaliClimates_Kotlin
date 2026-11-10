@@ -39,8 +39,9 @@ jobs:
         # Both distributions are named: with two flavor dimensions the bare task name is ambiguous to Gradle.
         run: ./gradlew testCoreFossDebugUnitTest testCoreCommercialDebugUnitTest --stacktrace
 
-      - name: Debug build
-        run: ./gradlew assembleCoreFossDebug --stacktrace
+      - name: Debug builds
+        # Both distributions: the foss build merges the violet launcher icon over the main one, the commercial build keeps the green
+        run: ./gradlew assembleCoreFossDebug assembleCoreCommercialDebug --stacktrace
 
       - name: Upload test results
         if: always()
