@@ -19,6 +19,14 @@
             android:label="@string/app_name"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.CaliClimates">
+        </activity>
+        <!-- SANDBOX ENTRY: the launcher filter lives here while walking through the code.
+             Move it back to MainActivity above to run the real app. -->
+        <activity
+            android:name=".MainActivity2"
+            android:exported="true"
+            android:label="Sandbox"
+            android:theme="@style/Theme.CaliClimates">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
