@@ -14,22 +14,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+/** SANDBOX ONLY (never merged). One start-page button: its label and what happens when it is tapped. */
+class Demo(val title: String, val onOpen: () -> Unit)
+
 /** SANDBOX ONLY (never merged). The start page: one button per demo, stacked vertically. */
 @Composable
-fun StartPage(
-    onRemember: () -> Unit,
-    onModifiers: () -> Unit,
-    onViewModel: () -> Unit,
-    onCoroutines: () -> Unit,
-    onFlow: () -> Unit
-) {
+fun StartPage(demos: List<Demo>) {
     PageColumn {
         Text("Sandbox demos", style = MaterialTheme.typography.headlineSmall)
-        Button(onClick = onRemember, modifier = Modifier.fillMaxWidth()) { Text("remember vs rememberSaveable") }
-        Button(onClick = onModifiers, modifier = Modifier.fillMaxWidth()) { Text("Modifier order") }
-        Button(onClick = onViewModel, modifier = Modifier.fillMaxWidth()) { Text("ViewModel") }
-        Button(onClick = onCoroutines, modifier = Modifier.fillMaxWidth()) { Text("Coroutines") }
-        Button(onClick = onFlow, modifier = Modifier.fillMaxWidth()) { Text("Flow") }
+        demos.forEach { demo ->
+            Button(onClick = demo.onOpen, modifier = Modifier.fillMaxWidth()) { Text(demo.title) }
+        }
     }
 }
 

@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
 /** The pages of the sandbox. */
-private enum class Screen { Start, Remember, Modifiers, ViewModel, Coroutines, Flow }
+private enum class Screen { Start, Remember, Modifiers, ViewModel, Coroutines, Flow, UiState }
 
 /**
  * SANDBOX ONLY (feature-set/walkthroughSandbox, never merged).
@@ -37,17 +37,21 @@ class MainActivity2 : ComponentActivity() {
             Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF3C4043), contentColor = Color.White) {
                 when (screen) {
                     Screen.Start -> StartPage(
-                        onRemember = { screen = Screen.Remember },
-                        onModifiers = { screen = Screen.Modifiers },
-                        onViewModel = { screen = Screen.ViewModel },
-                        onCoroutines = { screen = Screen.Coroutines },
-                        onFlow = { screen = Screen.Flow }
+                        listOf(
+                            Demo("remember vs rememberSaveable") { screen = Screen.Remember },
+                            Demo("Modifier order") { screen = Screen.Modifiers },
+                            Demo("ViewModel") { screen = Screen.ViewModel },
+                            Demo("Coroutines") { screen = Screen.Coroutines },
+                            Demo("Flow") { screen = Screen.Flow },
+                            Demo("MVVM and UiState") { screen = Screen.UiState }
+                        )
                     )
                     Screen.Remember -> DemoPage("remember vs rememberSaveable", onBack = toMenu) { RememberDemo() }
                     Screen.Modifiers -> DemoPage("Modifier order", onBack = toMenu) { ModifierOrderDemo() }
                     Screen.ViewModel -> DemoPage("ViewModel", onBack = toMenu) { ViewModelDemo() }
                     Screen.Coroutines -> DemoPage("Coroutines", onBack = toMenu) { CoroutineDemo() }
                     Screen.Flow -> DemoPage("Flow", onBack = toMenu) { FlowDemo() }
+                    Screen.UiState -> DemoPage("MVVM and UiState", onBack = toMenu) { UiStateDemo() }
                 }
             }
         }
