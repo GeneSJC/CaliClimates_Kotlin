@@ -8,8 +8,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /**
@@ -34,15 +38,19 @@ class MainActivity2 : ComponentActivity() {
             Log.d("Mini", "setContent lambda ran")
             var plain by remember { mutableStateOf(0) }          // lost when the Activity is recreated
             var saved by rememberSaveable { mutableStateOf(0) }  // survives recreation, like showIntro in MainActivity
-            Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text("remember: $plain", style = MaterialTheme.typography.headlineSmall)
-                Text("rememberSaveable: $saved", style = MaterialTheme.typography.headlineSmall)
-                Button(onClick = { plain++; saved++ }) { Text("Tap (+1 to both)") } // state write -> recomposition
-                Text("Tap a few times, then rotate the device. Watch which counter resets.")
-                ModifierOrderDemo() // modifier-order demo, see ModifierOrderDemo.kt
+            // Fixed gray background and white text, whatever the system dark mode is (the real app does this with its theme)
+            Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF3C4043), contentColor = Color.White) {
+                Column(
+                    // scroll before padding, so the padding scrolls with the content
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("remember: $plain", style = MaterialTheme.typography.headlineSmall)
+                    Text("rememberSaveable: $saved", style = MaterialTheme.typography.headlineSmall)
+                    Button(onClick = { plain++; saved++ }) { Text("Tap (+1 to both)") } // state write -> recomposition
+                    Text("Tap a few times, then rotate the device. Watch which counter resets.")
+                    ModifierOrderDemo() // modifier-order demo, see ModifierOrderDemo.kt
+                }
             }
         }
     }
