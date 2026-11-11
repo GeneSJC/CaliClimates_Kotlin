@@ -41,8 +41,8 @@ class MainActivity2 : ComponentActivity() {
             // Fixed gray background and white text, whatever the system dark mode is (the real app does this with its theme)
             Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF3C4043), contentColor = Color.White) {
                 Column(
-                    // scroll before padding, so the padding scrolls with the content
-                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+                    // scroll before padding, so the padding scrolls with the content; narrower sides leave room for two columns
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text("remember: $plain", style = MaterialTheme.typography.headlineSmall)
