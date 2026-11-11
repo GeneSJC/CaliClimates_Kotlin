@@ -22,8 +22,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -84,41 +87,40 @@ fun ModifierOrderDemo() {
     val taps = remember { mutableStateListOf(0, 0, 0, 0, 0) } // one tap count per variant
     val all = variants(onTap = { i -> taps[i] = taps[i] + 1 })
     val right = (left + 1) % all.size
+    val listLines = 1 + all.maxOf { it.steps.size } // the "Modifier" line plus the longest chain
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Mode: Variants ${left + 1} and ${right + 1} of ${all.size}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            VariantPane(left + 1, all[left], taps[left], Modifier.weight(1f))
-            VariantPane(right + 1, all[right], taps[right], Modifier.weight(1f))
+            VariantPane(all[left], taps[left], listLines, Modifier.weight(1f))
+            VariantPane(all[right], taps[right], listLines, Modifier.weight(1f))
         }
         Text("Cyan border: the fixed frame around each box", color = Cyan, fontSize = 12.sp)
         Button(onClick = { left = (left + 1) % all.size }) { Text("Next variants") }
     }
 }
 
-/** One column: the frame with the box under test, then its modifier chain, then what to expect. */
+/**
+ * One column: its modifier chain, then the frame with the box under test, then what to expect.
+ * listLines reserves the same height for every chain, so the two frames line up.
+ */
 @Composable
-private fun VariantPane(number: Int, variant: Variant, taps: Int, modifier: Modifier = Modifier) {
-    // The box under test is built from the same steps that are listed below it
+private fun VariantPane(variant: Variant, taps: Int, listLines: Int, modifier: Modifier = Modifier) {
+    // The box under test is built from the same steps that are listed above it
     val subject = variant.steps.fold<Step, Modifier>(Modifier) { chain, step -> step.apply(chain) }
-    val mono = FontFamily.Monospace
+    // The modifier chain, one line per modifier, coloured to match what it draws
+    val listing = buildAnnotatedString {
+        append("Modifier")
+        variant.steps.forEach { step ->
+            append("\n")
+            withStyle(SpanStyle(color = step.color ?: Color.Unspecified)) { append(".${step.code}") }
+        }
+    }
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Variant $number", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Text(listing, fontFamily = FontFamily.Monospace, fontSize = 12.sp, minLines = listLines)
         Box(Modifier.size(FrameSize).border(4.dp, Cyan), contentAlignment = Alignment.Center) {
             Box(subject) // the box under test
-        }
-        // The modifier chain, one line per modifier, coloured to match what it draws
-        Column {
-            Text("Modifier", fontFamily = mono, fontSize = 12.sp)
-            variant.steps.forEach { step ->
-                Text(
-                    ".${step.code}",
-                    fontFamily = mono,
-                    fontSize = 12.sp,
-                    color = step.color ?: Color.Unspecified
-                )
-            }
         }
         Text(variant.expect, fontSize = 13.sp)
         if (variant.isClickable) Text("taps on the box: $taps", fontSize = 13.sp)
