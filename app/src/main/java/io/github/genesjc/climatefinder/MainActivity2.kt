@@ -42,6 +42,7 @@ class MainActivity2 : ComponentActivity() {
                 Text("rememberSaveable: $saved", style = MaterialTheme.typography.headlineSmall)
                 Button(onClick = { plain++; saved++ }) { Text("Tap (+1 to both)") } // state write -> recomposition
                 Text("Tap a few times, then rotate the device. Watch which counter resets.")
+                ModifierOrderDemo() // modifier-order demo, see ModifierOrderDemo.kt
             }
         }
     }
