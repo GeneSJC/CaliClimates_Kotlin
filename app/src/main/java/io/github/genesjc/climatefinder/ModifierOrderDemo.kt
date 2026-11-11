@@ -45,11 +45,35 @@ fun ModifierOrderDemo() {
         "Clickable is inside the padding: tapping the margin does nothing."
     )
     val subject: Modifier = when (variant) {
-        0 -> Modifier.size(120.dp).background(Color.Red).padding(24.dp).background(Color.Blue)
-        1 -> Modifier.size(120.dp).padding(24.dp).background(Color.Red)
-        2 -> Modifier.size(100.dp).size(50.dp).background(Color.Red)
-        3 -> Modifier.size(120.dp).border(1.dp, Color.LightGray).clickable { taps++ }.padding(24.dp).background(Color.Red)
-        else -> Modifier.size(120.dp).border(1.dp, Color.LightGray).padding(24.dp).clickable { taps++ }.background(Color.Red)
+        0 -> Modifier
+            .size(120.dp)
+            .background(Color.Red)
+            .padding(24.dp)
+            .background(Color.Blue)
+
+        1 -> Modifier
+            .size(120.dp)
+            .padding(24.dp)
+            .background(Color.Red)
+
+        2 -> Modifier
+            .size(100.dp)
+            .size(50.dp)
+            .background(Color.Red)
+
+        3 -> Modifier
+            .size(120.dp)
+            .border(1.dp, Color.LightGray)
+            .clickable { taps++ }
+            .padding(24.dp)
+            .background(Color.Red)
+
+        else -> Modifier
+            .size(120.dp)
+            .border(1.dp, Color.LightGray)
+            .padding(24.dp)
+            .clickable { taps++ }
+            .background(Color.Red)
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
