@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
 /** The pages of the sandbox. */
-private enum class Screen { Start, Remember, Modifiers, ViewModel }
+private enum class Screen { Start, Remember, Modifiers, ViewModel, Coroutines }
 
 /**
  * SANDBOX ONLY (feature-set/walkthroughSandbox, never merged).
@@ -39,11 +39,13 @@ class MainActivity2 : ComponentActivity() {
                     Screen.Start -> StartPage(
                         onRemember = { screen = Screen.Remember },
                         onModifiers = { screen = Screen.Modifiers },
-                        onViewModel = { screen = Screen.ViewModel }
+                        onViewModel = { screen = Screen.ViewModel },
+                        onCoroutines = { screen = Screen.Coroutines }
                     )
                     Screen.Remember -> DemoPage("remember vs rememberSaveable", onBack = toMenu) { RememberDemo() }
                     Screen.Modifiers -> DemoPage("Modifier order", onBack = toMenu) { ModifierOrderDemo() }
                     Screen.ViewModel -> DemoPage("ViewModel", onBack = toMenu) { ViewModelDemo() }
+                    Screen.Coroutines -> DemoPage("Coroutines", onBack = toMenu) { CoroutineDemo() }
                 }
             }
         }

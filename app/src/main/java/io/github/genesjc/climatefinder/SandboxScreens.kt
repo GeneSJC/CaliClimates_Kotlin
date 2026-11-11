@@ -16,12 +16,13 @@ import androidx.compose.ui.unit.dp
 
 /** SANDBOX ONLY (never merged). The start page: one button per demo, stacked vertically. */
 @Composable
-fun StartPage(onRemember: () -> Unit, onModifiers: () -> Unit, onViewModel: () -> Unit) {
+fun StartPage(onRemember: () -> Unit, onModifiers: () -> Unit, onViewModel: () -> Unit, onCoroutines: () -> Unit) {
     PageColumn {
         Text("Sandbox demos", style = MaterialTheme.typography.headlineSmall)
         Button(onClick = onRemember, modifier = Modifier.fillMaxWidth()) { Text("remember vs rememberSaveable") }
         Button(onClick = onModifiers, modifier = Modifier.fillMaxWidth()) { Text("Modifier order") }
         Button(onClick = onViewModel, modifier = Modifier.fillMaxWidth()) { Text("ViewModel") }
+        Button(onClick = onCoroutines, modifier = Modifier.fillMaxWidth()) { Text("Coroutines") }
     }
 }
 
